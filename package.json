@@ -1,0 +1,36 @@
+{
+  "name": "tradeflow-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TradeFlow — Intelligent Logistics & Freight Matching Platform for Landlocked Ethiopia",
+  "workspaces": [
+    "packages/*",
+    "services/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npx concurrently -k -n \"API,WEB,MOBILE\" -c \"bgBlue.bold,bgCyan.bold,bgMagenta.bold\" \"npm run dev:api\" \"npm run dev:web\" \"npm run dev:mobile\"",
+    "dev:all": "npx concurrently -k -n \"API,WEB,MOBILE\" -c \"bgBlue.bold,bgCyan.bold,bgMagenta.bold\" \"npm run dev:api\" \"npm run dev:web\" \"npm run dev:mobile\"",
+    "dev:api": "npm run dev --workspace=services/api",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "dev:mobile": "npm run start --workspace=apps/mobile",
+    "dev:mobile:tunnel": "npm run start --workspace=apps/mobile -- --tunnel",
+    "build": "npm run build --workspaces",
+    "prisma:push": "npm run prisma:push --workspace=services/api",
+    "prisma:reset": "npm run prisma:reset --workspace=services/api",
+    "prisma:seed": "npm run prisma:seed --workspace=services/api",
+    "prisma:studio": "npm run prisma:studio --workspace=services/api",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
+  },
+  "keywords": [
+    "tradeflow",
+    "logistics",
+    "ethiopia",
+    "djibouti-corridor",
+    "telebirr"
+  ],
+  "author": "TradeFlow Team",
+  "license": "UNLICENSED"
+}

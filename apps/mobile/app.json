@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "TradeFlow Mobile",
+    "slug": "tradeflow-mobile",
+    "version": "1.0.0",
+    "sdkVersion": "52.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.tradeflow.mobile"
+    },
+    "android": {
+      "package": "com.tradeflow.mobile",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA"
+      ]
+    }
+  }
+}
