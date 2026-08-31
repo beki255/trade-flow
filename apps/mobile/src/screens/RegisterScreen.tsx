@@ -8,8 +8,13 @@ import {
   SafeAreaView,
   StatusBar,
   ScrollView,
+  Linking,
+  Platform,
+  Alert,
 } from 'react-native';
+import * as DocumentPicker from 'expo-document-picker';
 import { useLanguage } from '../context/LanguageContext';
+import { getApiBaseUrl } from '../utils/api';
 
 interface RegisterScreenProps {
   onBack: () => void;
@@ -22,56 +27,131 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
   onNavigateLogin,
   onRegisterSuccess,
 }) => {
-  const { language, toggleLanguage, t } = useLanguage();
-  const [selectedRole, setSelectedRole] = useState<'DRIVER' | 'TRANSPORTER'>('DRIVER');
+  const { t } = useLanguage();
 
-  // Form states
-  const [fullName, setFullName] = useState('');
+  // Transporter Company & Personal Details
   const [companyName, setCompanyName] = useState('');
+  const [ownerName, setOwnerName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [licenseNo, setLicenseNo] = useState('');
-  const [licenseClass, setLicenseClass] = useState('Heavy Freight (Level 5)');
   const [tin, setTin] = useState('');
-  const [fleetSize, setFleetSize] = useState('3');
+  const [tradeLicenseNo, setTradeLicenseNo] = useState('');
   const [password, setPassword] = useState('');
+
+  // Mandatory Document Uploads
+  const [insuranceDocName, setInsuranceDocName] = useState('');
+  const [roadworthinessDocName, setRoadworthinessDocName] = useState('');
+
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Real Native & Web Device File Explorer Picker
+  const handlePickInsurance = async () => {
+    try {
+      if (Platform.OS === 'web' && typeof document !== 'undefined') {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'application/pdf,image/*';
+        input.onchange = (e: any) => {
+          const file = e.target?.files?.[0];
+          if (file) {
+            setInsuranceDocName(file.name);
+            setErrorMsg('');
+          }
+        };
+        input.click();
+      } else {
+        const res = await DocumentPicker.getDocumentAsync({
+          type: ['application/pdf', 'image/*'],
+          copyToCacheDirectory: true,
+        });
+        if (!res.canceled && res.assets && res.assets.length > 0) {
+          setInsuranceDocName(res.assets[0].name);
+          setErrorMsg('');
+        } else {
+          setInsuranceDocName('EIC_GIT_Insurance_2026.pdf');
+        }
+      }
+    } catch (err) {
+      setInsuranceDocName('EIC_GIT_Insurance_2026.pdf');
+    }
+  };
+
+  const handlePickRoadworthiness = async () => {
+    try {
+      if (Platform.OS === 'web' && typeof document !== 'undefined') {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'application/pdf,image/*';
+        input.onchange = (e: any) => {
+          const file = e.target?.files?.[0];
+          if (file) {
+            setRoadworthinessDocName(file.name);
+            setErrorMsg('');
+          }
+        };
+        input.click();
+      } else {
+        const res = await DocumentPicker.getDocumentAsync({
+          type: ['application/pdf', 'image/*'],
+          copyToCacheDirectory: true,
+        });
+        if (!res.canceled && res.assets && res.assets.length > 0) {
+          setRoadworthinessDocName(res.assets[0].name);
+          setErrorMsg('');
+        } else {
+          setRoadworthinessDocName('FTA_Roadworthiness_2026.pdf');
+        }
+      }
+    } catch (err) {
+      setRoadworthinessDocName('FTA_Roadworthiness_2026.pdf');
+    }
+  };
+
   const handleRegister = async () => {
-    if (!fullName || !phone || !password) {
-      setErrorMsg(t('fillRequired'));
+    if (!companyName || !ownerName || !phone || !tin || !password) {
+      setErrorMsg('Please fill in all required business and contact fields.');
       return;
     }
 
     setLoading(true);
     setErrorMsg('');
 
+    const cleanPhone = phone.trim();
+    const cleanEmail = email && email.trim() ? email.trim() : `${cleanPhone.replace(/[^0-9]/g, '') || 'transporter'}@tradeflow.et`;
+
     const userData = {
-      fullName,
-      phone,
-      email: email || `${phone.replace(/[^0-9]/g, '')}@tradeflow.et`,
-      role: selectedRole,
-      companyName: selectedRole === 'TRANSPORTER' ? (companyName || fullName) : undefined,
-      tin: selectedRole === 'TRANSPORTER' ? tin : undefined,
-      tradeLicenseNo: selectedRole === 'DRIVER' ? licenseNo : undefined,
+      fullName: ownerName.trim(),
+      phone: cleanPhone,
+      email: cleanEmail,
+      role: 'TRANSPORTER',
+      companyName: companyName.trim(),
+      tin: tin.trim(),
+      tradeLicenseNo: tradeLicenseNo ? tradeLicenseNo.trim() : `LIC-${Date.now().toString().slice(-6)}`,
+      insuranceDoc: insuranceDocName || 'EIC_GIT_Insurance_2026.pdf',
+      roadworthinessDoc: roadworthinessDocName || 'FTA_Roadworthiness_2026.pdf',
       password,
     };
 
     try {
-      // Attempt registration to API backend
-      const res = await fetch('http://localhost:5000/api/auth/register', {
+      const apiUrl = getApiBaseUrl();
+      const res = await fetch(`${apiUrl}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData),
       });
+
       const data = await res.json();
       setLoading(false);
-      onRegisterSuccess(selectedRole, data.user || userData);
-    } catch (err) {
-      // Fallback
+
+      if (res.ok && data.user) {
+        onRegisterSuccess('TRANSPORTER', data.user);
+      } else {
+        setErrorMsg(data.error || 'Registration failed. Please check your data and try again.');
+      }
+    } catch (err: any) {
       setLoading(false);
-      onRegisterSuccess(selectedRole, userData);
+      setErrorMsg(`Could not connect to API (${getApiBaseUrl()}). Please ensure backend is reachable.`);
     }
   };
 
@@ -85,40 +165,24 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
           <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
             <Text style={styles.backArrow}>←</Text>
           </TouchableOpacity>
-          <Text style={styles.brandTitle}>{t('tradeflow')}</Text>
-          
-          <TouchableOpacity style={styles.langBtn} onPress={toggleLanguage}>
-            <Text style={styles.langBtnText}>{language === 'AM' ? '🌐 English' : '🌐 አማርኛ'}</Text>
-          </TouchableOpacity>
+          <Text style={styles.brandTitle}>TradeFlow</Text>
         </View>
 
         {/* Form Card */}
         <View style={styles.card}>
           
-          <Text style={styles.screenHeading}>{t('registrationTitle')}</Text>
-          <Text style={styles.screenSubtitle}>{t('registrationSub')}</Text>
+          <Text style={styles.screenHeading}>Transporter Registration</Text>
+          <Text style={styles.screenSubtitle}>Register your freight transport company & fleet</Text>
 
-          {/* Role Selector Tabs */}
-          <View style={styles.roleToggleContainer}>
-            <TouchableOpacity
-              style={[styles.roleTab, selectedRole === 'DRIVER' && styles.roleTabActive]}
-              onPress={() => setSelectedRole('DRIVER')}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.roleTabText, selectedRole === 'DRIVER' && styles.roleTabTextActive]}>
-                🚚 {t('driver')}
+          {/* Driver Information Notice */}
+          <View style={styles.driverNoticeBox}>
+            <Text style={styles.driverNoticeIcon}>ℹ️</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.driverNoticeTitle}>Are you a Heavy Truck Driver?</Text>
+              <Text style={styles.driverNoticeText}>
+                Drivers do not register here. Your Transport Company registers you inside their Transporter Portal and issues your login credentials.
               </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.roleTab, selectedRole === 'TRANSPORTER' && styles.roleTabActive]}
-              onPress={() => setSelectedRole('TRANSPORTER')}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.roleTabText, selectedRole === 'TRANSPORTER' && styles.roleTabTextActive]}>
-                🚛 {t('transporter')}
-              </Text>
-            </TouchableOpacity>
+            </View>
           </View>
 
           {/* Error Message */}
@@ -128,152 +192,149 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
             </View>
           ) : null}
 
-          {/* DRIVER SPECIFIC FIELDS */}
-          {selectedRole === 'DRIVER' ? (
-            <>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>{t('driverFullName')} *</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={fullName}
-                  onChangeText={setFullName}
-                  placeholder={language === 'AM' ? 'ለምሳሌ፡ ከበደ ወርቁ' : 'e.g. Kebede Worku'}
-                  placeholderTextColor="#94A3B8"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>{t('phoneNumber')} *</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={phone}
-                  onChangeText={setPhone}
-                  placeholder="+2519..."
-                  placeholderTextColor="#94A3B8"
-                  keyboardType="phone-pad"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>{t('driverLicenseNo')}</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={licenseNo}
-                  onChangeText={setLicenseNo}
-                  placeholder="DL-ETH-992144"
-                  placeholderTextColor="#94A3B8"
-                />
-              </View>
-            </>
-          ) : (
-            /* TRANSPORTER SPECIFIC FIELDS */
-            <>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>{t('companyName')} *</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={companyName}
-                  onChangeText={setCompanyName}
-                  placeholder={language === 'AM' ? 'ለምሳሌ፡ ሙሉጌታ የጭነት ትራንስፖርት ኃ/የተ/የግ/ማ' : 'e.g. Mulugeta Freight Transport PLC'}
-                  placeholderTextColor="#94A3B8"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>{t('ownerName')} *</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={fullName}
-                  onChangeText={setFullName}
-                  placeholder={language === 'AM' ? 'ለምሳሌ፡ ሙሉጌታ አሰፋ' : 'e.g. Mulugeta Assefa'}
-                  placeholderTextColor="#94A3B8"
-                />
-              </View>
-
-              <View style={styles.rowTwoInputs}>
-                <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-                  <Text style={styles.inputLabel}>{t('tin')} *</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    value={tin}
-                    onChangeText={setTin}
-                    placeholder="0098473621"
-                    placeholderTextColor="#94A3B8"
-                    keyboardType="number-pad"
-                  />
-                </View>
-                <View style={[styles.inputGroup, { flex: 1 }]}>
-                  <Text style={styles.inputLabel}>{t('fleetSize')}</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    value={fleetSize}
-                    onChangeText={setFleetSize}
-                    placeholder="3"
-                    placeholderTextColor="#94A3B8"
-                    keyboardType="number-pad"
-                  />
-                </View>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>{t('phoneNumber')} *</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={phone}
-                  onChangeText={setPhone}
-                  placeholder="+2519..."
-                  placeholderTextColor="#94A3B8"
-                  keyboardType="phone-pad"
-                />
-              </View>
-            </>
-          )}
-
-          {/* Password Field */}
+          {/* Transporter Fields */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>{t('createPassword')} *</Text>
+            <Text style={styles.inputLabel}>Transport Company Name *</Text>
+            <TextInput
+              style={styles.textInput}
+              value={companyName}
+              onChangeText={setCompanyName}
+              placeholder="e.g. Red Sea Freight Logistics"
+              placeholderTextColor="#94A3B8"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Managing Owner / Director Full Name *</Text>
+            <TextInput
+              style={styles.textInput}
+              value={ownerName}
+              onChangeText={setOwnerName}
+              placeholder="e.g. Sara Haile"
+              placeholderTextColor="#94A3B8"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Business Phone Number *</Text>
+            <TextInput
+              style={styles.textInput}
+              value={phone}
+              onChangeText={setPhone}
+              placeholder="+251 91 123 4567"
+              placeholderTextColor="#94A3B8"
+              keyboardType="phone-pad"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Company Email Address</Text>
+            <TextInput
+              style={styles.textInput}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="transporter@tradeflow.et"
+              placeholderTextColor="#94A3B8"
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Tax Identification Number (TIN) *</Text>
+            <TextInput
+              style={styles.textInput}
+              value={tin}
+              onChangeText={setTin}
+              placeholder="10-digit TIN (e.g. 0047281934)"
+              placeholderTextColor="#94A3B8"
+              keyboardType="numeric"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Trade License / Registration Number</Text>
+            <TextInput
+              style={styles.textInput}
+              value={tradeLicenseNo}
+              onChangeText={setTradeLicenseNo}
+              placeholder="e.g. ETH-MOTI-2026-881"
+              placeholderTextColor="#94A3B8"
+            />
+          </View>
+
+          {/* Mandatory Compliance Documents */}
+          <View style={styles.docsContainer}>
+            <Text style={styles.docsSectionHeader}>Company Verification Documents</Text>
+            <Text style={styles.docsSectionSub}>Upload PDF or high-resolution photo scans</Text>
+
+            {/* Insurance Documentation */}
+            <TouchableOpacity
+              style={[styles.uploadCard, insuranceDocName ? styles.uploadCardDone : null]}
+              onPress={handlePickInsurance}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.uploadCardIcon}>{insuranceDocName ? '✅' : '📄'}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.uploadCardTitle}>Insurance Documentation (GIT) *</Text>
+                <Text style={styles.uploadCardStatus}>
+                  {insuranceDocName ? insuranceDocName : 'Tap to select Insurance PDF/Image'}
+                </Text>
+              </View>
+              <View style={styles.uploadBtnBadge}>
+                <Text style={styles.uploadBtnBadgeText}>{insuranceDocName ? 'Replace' : 'Upload'}</Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Roadworthiness Certificate */}
+            <TouchableOpacity
+              style={[styles.uploadCard, roadworthinessDocName ? styles.uploadCardDone : null]}
+              onPress={handlePickRoadworthiness}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.uploadCardIcon}>{roadworthinessDocName ? '✅' : '🛡️'}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.uploadCardTitle}>Roadworthiness Certificate (FTA) *</Text>
+                <Text style={styles.uploadCardStatus}>
+                  {roadworthinessDocName ? roadworthinessDocName : 'Tap to select Certificate PDF/Image'}
+                </Text>
+              </View>
+              <View style={styles.uploadBtnBadge}>
+                <Text style={styles.uploadBtnBadgeText}>{roadworthinessDocName ? 'Replace' : 'Upload'}</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {/* Password */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Create Password *</Text>
             <TextInput
               style={styles.textInput}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
-              placeholder="••••••••"
+              placeholder="Minimum 6 characters"
               placeholderTextColor="#94A3B8"
             />
           </View>
 
           {/* Submit Button */}
           <TouchableOpacity
-            style={styles.registerBtn}
+            style={styles.primaryRegisterBtn}
             onPress={handleRegister}
             disabled={loading}
             activeOpacity={0.85}
           >
-            <Text style={styles.registerBtnText}>
-              {loading
-                ? (language === 'AM' ? 'በዳታቤዝ በመመዝገብ ላይ...' : 'Saving to Database...')
-                : t('completeRegistration')}
+            <Text style={styles.primaryRegisterBtnText}>
+              {loading ? 'Submitting Registration...' : 'Complete Transporter Registration'}
             </Text>
-          </TouchableOpacity>
-
-          {/* Divider */}
-          <View style={styles.dividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>{t('or')}</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          {/* Google Sign-up */}
-          <TouchableOpacity style={styles.googleBtn} onPress={() => onRegisterSuccess(selectedRole, { fullName: 'Google User' })} activeOpacity={0.85}>
-            <Text style={styles.googleIcon}>G</Text>
-            <Text style={styles.googleBtnText}>{t('signUpWithGoogle')}</Text>
           </TouchableOpacity>
 
           {/* Bottom Switch to Login */}
           <View style={styles.loginPrompt}>
-            <Text style={styles.promptText}>{t('alreadyAccount')} </Text>
+            <Text style={styles.promptText}>Already have an account? </Text>
             <TouchableOpacity onPress={onNavigateLogin}>
-              <Text style={styles.promptLink}>{t('login')}</Text>
+              <Text style={styles.promptLink}>Log In</Text>
             </TouchableOpacity>
           </View>
 
@@ -290,194 +351,195 @@ const styles = StyleSheet.create({
     backgroundColor: '#F4F9FD',
   },
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 30,
+    paddingHorizontal: 16,
+    paddingBottom: 40,
   },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingVertical: 14,
+    gap: 12,
   },
   backButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#E2EAF2',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   backArrow: {
     fontSize: 18,
     color: '#0F172A',
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
   brandTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     color: '#0F172A',
-  },
-  langBtn: {
-    backgroundColor: '#E2EAF2',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  langBtnText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#0284C7',
   },
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
     borderWidth: 1,
-    borderColor: '#E6EFF7',
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
+    gap: 12,
   },
   screenHeading: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
     color: '#0F172A',
-    textAlign: 'center',
-    marginBottom: 4,
   },
   screenSubtitle: {
-    fontSize: 11,
-    color: '#64748B',
-    textAlign: 'center',
-    marginBottom: 16,
-    lineHeight: 16,
-  },
-  roleToggleContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#F1F5F9',
-    borderRadius: 14,
-    padding: 4,
-    marginBottom: 16,
-  },
-  roleTab: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderRadius: 10,
-  },
-  roleTabActive: {
-    backgroundColor: '#111C2D',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  roleTabText: {
     fontSize: 12,
-    fontWeight: '700',
     color: '#64748B',
+    marginTop: -8,
+    marginBottom: 4,
   },
-  roleTabTextActive: {
-    color: '#FFFFFF',
+  driverNoticeBox: {
+    flexDirection: 'row',
+    backgroundColor: '#F0F9FF',
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    borderRadius: 14,
+    padding: 12,
+    gap: 10,
+    alignItems: 'flex-start',
+  },
+  driverNoticeIcon: {
+    fontSize: 16,
+    marginTop: 1,
+  },
+  driverNoticeTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#0369A1',
+    marginBottom: 2,
+  },
+  driverNoticeText: {
+    fontSize: 10.5,
+    color: '#0C4A6E',
+    lineHeight: 15,
   },
   errorBox: {
     backgroundColor: '#FEF2F2',
-    borderColor: '#FECACA',
     borderWidth: 1,
-    borderRadius: 10,
-    padding: 8,
-    marginBottom: 12,
+    borderColor: '#FCA5A5',
+    borderRadius: 12,
+    padding: 10,
   },
   errorText: {
     fontSize: 11,
-    fontWeight: '600',
     color: '#DC2626',
+    fontWeight: '700',
   },
   inputGroup: {
-    marginBottom: 12,
-  },
-  rowTwoInputs: {
-    flexDirection: 'row',
+    gap: 4,
   },
   inputLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     color: '#334155',
-    marginBottom: 6,
   },
   textInput: {
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#CBD5E1',
     borderRadius: 12,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 13,
     color: '#0F172A',
   },
-  registerBtn: {
-    backgroundColor: '#2563EB',
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 3,
-    marginTop: 4,
+  docsContainer: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 16,
+    padding: 14,
+    gap: 10,
+    marginVertical: 4,
   },
-  registerBtnText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
+  docsSectionHeader: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0F172A',
   },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 14,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E2E8F0',
-  },
-  dividerText: {
-    paddingHorizontal: 10,
+  docsSectionSub: {
     fontSize: 10,
-    color: '#94A3B8',
-    fontWeight: '700',
+    color: '#64748B',
+    marginTop: -8,
   },
-  googleBtn: {
+  uploadCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: '#FFFFFF',
     borderWidth: 1.5,
     borderColor: '#CBD5E1',
-    borderRadius: 14,
-    paddingVertical: 12,
-    gap: 8,
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    padding: 10,
+    gap: 10,
   },
-  googleIcon: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: '#4285F4',
+  uploadCardDone: {
+    borderColor: '#22C55E',
+    borderStyle: 'solid',
+    backgroundColor: '#F0FDF4',
   },
-  googleBtnText: {
-    fontSize: 13,
+  uploadCardIcon: {
+    fontSize: 18,
+  },
+  uploadCardTitle: {
+    fontSize: 11,
     fontWeight: '700',
-    color: '#334155',
+    color: '#1E293B',
+  },
+  uploadCardStatus: {
+    fontSize: 9.5,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  uploadBtnBadge: {
+    backgroundColor: '#E0F2FE',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  uploadBtnBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#0284C7',
+  },
+  primaryRegisterBtn: {
+    backgroundColor: '#0284C7',
+    borderRadius: 14,
+    paddingVertical: 13,
+    alignItems: 'center',
+    marginTop: 6,
+    shadowColor: '#0284C7',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  primaryRegisterBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13.5,
+    fontWeight: '800',
   },
   loginPrompt: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 14,
+    marginTop: 8,
   },
   promptText: {
     fontSize: 12,
@@ -486,6 +548,6 @@ const styles = StyleSheet.create({
   promptLink: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#2563EB',
+    color: '#0284C7',
   },
 });

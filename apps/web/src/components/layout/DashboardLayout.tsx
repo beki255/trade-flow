@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { useLanguage } from '../../context/LanguageContext';
 import { Logo } from '../Logo';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Package,
   PlusCircle,
@@ -24,7 +23,6 @@ import {
   History,
   LogOut,
   Bell,
-  Globe,
   Menu,
   X,
   ExternalLink,
@@ -34,7 +32,6 @@ import {
 interface NavItem {
   id: string;
   label: string;
-  labelAm: string;
   icon: any;
   badge?: string | number;
 }
@@ -52,12 +49,18 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   onTabChange,
   children,
 }) => {
-  const { user, logout } = useAuth();
-  const { language, setLanguage } = useLanguage();
+  const { user, logout, isVerifyingSession } = useAuth();
   const navigate = useNavigate();
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Strict Authentication Guard: Redirect to /login if user is not authenticated or deleted from DB
+  React.useEffect(() => {
+    if (!isVerifyingSession && !user) {
+      navigate('/login');
+    }
+  }, [isVerifyingSession, user, navigate]);
 
   // User Verification Status State (PENDING | VERIFIED | SUSPENDED)
   const verificationStatus: 'PENDING' | 'VERIFIED' | 'SUSPENDED' = 
@@ -68,34 +71,34 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     switch (portalRole) {
       case 'SHIPPER':
         return [
-          { id: 'dashboard', label: 'Dashboard', labelAm: 'ዳሽቦርድ', icon: Package },
-          { id: 'post-load', label: 'Load Posting', labelAm: 'ጭነት መመዝገቢያ', icon: PlusCircle },
-          { id: 'bids', label: 'Bid Management', labelAm: 'የጨረታ አስተዳደር', icon: Gavel },
-          { id: 'tracking', label: 'Live Tracking Map', labelAm: 'የቀጥታ ክትትል ካርታ', icon: Navigation },
-          { id: 'documents', label: 'Customs Documents', labelAm: 'የጉምሩክ ሰነዶች', icon: FileText },
-          { id: 'payments', label: 'Payments & TeleBirr', labelAm: 'ክፍያ እና ቴሌብር', icon: CreditCard },
-          { id: 'ratings', label: 'Ratings & Reviews', labelAm: 'ግምገማ እና ደረጃ', icon: Star },
+          { id: 'dashboard', label: 'Dashboard', icon: Package },
+          { id: 'post-load', label: 'Load Posting', icon: PlusCircle },
+          { id: 'bids', label: 'Bid Management', icon: Gavel },
+          { id: 'tracking', label: 'Live Tracking Map', icon: Navigation },
+          { id: 'documents', label: 'Customs Documents', icon: FileText },
+          { id: 'payments', label: 'Payments & TeleBirr', icon: CreditCard },
+          { id: 'ratings', label: 'Ratings & Reviews', icon: Star },
         ];
       case 'FORWARDER':
         return [
-          { id: 'multi-shipper', label: 'Multi-Shipper Dashboard', labelAm: 'የደንበኞች ዳሽቦርድ', icon: Users },
-          { id: 'consolidation', label: 'Consolidated Loads', labelAm: 'ጭነት ማጠቃለያ (LTL)', icon: Layers },
-          { id: 'customs-coord', label: 'Customs Coordination', labelAm: 'የጉምሩክ ቅንጅት', icon: FileCheck2 },
-          { id: 'multimodal', label: 'Multi-Modal Tracking', labelAm: 'የባለብዙ-ትራንስፖርት ክትትል', icon: GitMerge },
+          { id: 'multi-shipper', label: 'Multi-Shipper Dashboard', icon: Users },
+          { id: 'consolidation', label: 'Consolidated Loads', icon: Layers },
+          { id: 'customs-coord', label: 'Customs Coordination', icon: FileCheck2 },
+          { id: 'multimodal', label: 'Multi-Modal Tracking', icon: GitMerge },
         ];
       case 'CUSTOMS':
         return [
-          { id: 'review-queue', label: 'Document Review Queue', labelAm: 'የሰነድ ማረጋገጫ ተራ', icon: FileSpreadsheet },
-          { id: 'compliance', label: 'Compliance Validation', labelAm: 'ህጋዊነት ማጣሪያ', icon: ShieldCheck },
-          { id: 'clearance', label: 'Clearance Status', labelAm: 'የመልቀቂያ ፈቃድ', icon: CheckCircle2 },
+          { id: 'review-queue', label: 'Document Review Queue', icon: FileSpreadsheet },
+          { id: 'compliance', label: 'Compliance Validation', icon: ShieldCheck },
+          { id: 'clearance', label: 'Clearance Status', icon: CheckCircle2 },
         ];
       case 'ADMIN':
         return [
-          { id: 'verifications', label: 'Verification Queue', labelAm: 'የማረጋገጫ ተራ', icon: ShieldCheck },
-          { id: 'disputes', label: 'Dispute Resolution', labelAm: 'የአለመግባባት መፍቻ', icon: AlertTriangle },
-          { id: 'system-health', label: 'System Health', labelAm: 'የሲስተም ጤና', icon: Activity },
-          { id: 'fraud', label: 'Fraud Detection', labelAm: 'ማጭበርበር መቆጣጠሪያ', icon: ShieldAlert },
-          { id: 'audit-logs', label: 'Audit Logs', labelAm: 'የእንቅስቃሴ መዝገብ', icon: History },
+          { id: 'verifications', label: 'Verification Queue', icon: ShieldCheck },
+          { id: 'disputes', label: 'Dispute Resolution', icon: AlertTriangle },
+          { id: 'system-health', label: 'System Health', icon: Activity },
+          { id: 'fraud', label: 'Fraud Detection', icon: ShieldAlert },
+          { id: 'audit-logs', label: 'Audit Logs', icon: History },
         ];
     }
   };
@@ -133,14 +136,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       >
         {/* Brand Header */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800/90">
-          <Link to="/" className="flex items-center gap-3 group">
-            <Logo className="w-8 h-8 text-[#38BDF8] group-hover:scale-105 transition-transform" size={28} />
+          <div className="flex items-center gap-3">
+            <Logo className="w-8 h-8 text-[#38BDF8]" size={28} />
             {sidebarOpen && (
               <span className="text-xl font-bold tracking-tight text-white">
                 TradeFlow
               </span>
             )}
-          </Link>
+          </div>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
@@ -195,7 +198,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 <IconComponent className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-[#38BDF8]' : 'text-slate-400'}`} />
                 {sidebarOpen && (
                   <span className="truncate flex-1 text-left">
-                    {language === 'AM' ? item.labelAm : item.label}
+                    {item.label}
                   </span>
                 )}
                 {sidebarOpen && item.badge && (
@@ -208,27 +211,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           })}
         </nav>
 
-        {/* Bottom Sidebar Footer: Landing Link & Logout */}
+        {/* Bottom Sidebar Footer: Logout Button */}
         <div className="p-3 border-t border-slate-800">
-          <div className="flex items-center justify-between">
-            <Link
-              to="/"
-              className="flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-white"
-              title="Return to Public Site"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-              {sidebarOpen && <span>Landing</span>}
-            </Link>
-
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-1 text-[11px] text-rose-400 hover:text-rose-300 font-bold"
-              title="Logout"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              {sidebarOpen && <span>{language === 'AM' ? 'ውጣ' : 'Logout'}</span>}
-            </button>
-          </div>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/20 text-xs font-bold transition-all"
+            title="Logout"
+          >
+            <LogOut className="w-4 h-4 flex-shrink-0" />
+            {sidebarOpen && <span>Logout Session</span>}
+          </button>
         </div>
       </aside>
 
@@ -290,7 +282,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                     }`}
                   >
                     <IconComponent className="w-4 h-4" />
-                    <span>{language === 'AM' ? item.labelAm : item.label}</span>
+                    <span>{item.label}</span>
                   </button>
                 );
               })}
@@ -303,7 +295,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 className="w-full py-2.5 rounded-xl bg-rose-600/20 text-rose-400 border border-rose-500/30 text-xs font-bold flex items-center justify-center gap-2"
               >
                 <LogOut className="w-4 h-4" />
-                <span>{language === 'AM' ? 'ውጣ' : 'Logout'}</span>
+                <span>Logout</span>
               </button>
             </div>
           </div>
@@ -328,7 +320,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             
             <div>
               <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-                <span>{language === 'AM' ? navItems.find((n) => n.id === activeTab)?.labelAm : navItems.find((n) => n.id === activeTab)?.label || 'Portal'}</span>
+                <span>{navItems.find((n) => n.id === activeTab)?.label || 'Portal'}</span>
                 <span className="hidden sm:inline-block text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
                   {portalInfo.title}
                 </span>
@@ -336,7 +328,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             </div>
           </div>
 
-          {/* Right: Live Corridor Status, Language Switcher, Notifications, Profile */}
+          {/* Right: Live Corridor Status, Notifications, Profile */}
           <div className="flex items-center gap-2 sm:gap-3">
             
             {/* Live Corridor Status Indicator */}
@@ -344,15 +336,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>Corridor: Active</span>
             </div>
-
-            {/* Language Switcher */}
-            <button
-              onClick={() => setLanguage(language === 'EN' ? 'AM' : 'EN')}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700"
-            >
-              <Globe className="w-3.5 h-3.5 text-[#0284C7]" />
-              <span>{language === 'EN' ? 'አማርኛ' : 'EN'}</span>
-            </button>
 
             {/* Notifications */}
             <button className="relative p-2 rounded-lg text-slate-500 hover:bg-slate-100 border border-slate-200">
@@ -389,12 +372,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 <Clock className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                 <div className="space-y-0.5">
                   <span className="font-extrabold block">
-                    {language === 'AM' ? 'የማረጋገጫ ሁኔታ፡ በማጣራት ላይ (Pending Administrative Review)' : 'Verification Status: Pending Administrative Review'}
+                    Verification Status: Pending Administrative Review
                   </span>
                   <p className="text-amber-800">
-                    {language === 'AM'
-                      ? 'የንግድ ፈቃድዎ እና የTIN ሰነድዎ በሲስተም አድሚኖች እየተጣራ ነው። ሲረጋገጥ የሙሉ ጨረታ እና የክፍያ አገልግሎቶች ይከፈቱልዎታል።'
-                      : 'Your trade license and TIN documents are currently being validated by platform administrators in the Verification Queue. Full bidding and dispatch features will unlock upon approval.'}
+                    Your trade license and TIN documents are currently being validated by platform administrators in the Verification Queue. Full bidding and dispatch features will unlock upon approval.
                   </p>
                 </div>
               </div>

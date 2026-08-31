@@ -8,9 +8,12 @@ import {
   SafeAreaView,
   StatusBar,
   ScrollView,
+  Linking,
+  Platform,
 } from 'react-native';
 import { DEMO_ACCOUNTS } from '@tradeflow/shared';
 import { useLanguage } from '../context/LanguageContext';
+import { getApiBaseUrl } from '../utils/api';
 
 interface LoginScreenProps {
   onBack: () => void;
@@ -36,7 +39,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     setIdentifier(DEMO_ACCOUNTS.DRIVER.email);
     setPassword(DEMO_ACCOUNTS.DRIVER.password);
     setErrorMsg('');
-    setNotice(language === 'AM' ? 'የአሽከርካሪ መረጃ ተሞልቷል!' : 'Driver demo credentials filled!');
+    setNotice('Driver demo credentials filled!');
     setTimeout(() => setNotice(''), 2000);
   };
 
@@ -44,47 +47,33 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     setIdentifier(DEMO_ACCOUNTS.TRANSPORTER.email);
     setPassword(DEMO_ACCOUNTS.TRANSPORTER.password);
     setErrorMsg('');
-    setNotice(language === 'AM' ? 'የአጓጓዥ መረጃ ተሞልቷል!' : 'Transporter demo credentials filled!');
+    setNotice('Transporter demo credentials filled!');
     setTimeout(() => setNotice(''), 2000);
-  };
-
-  const checkDemoLogin = (id: string, pass: string) => {
-    const trimmedId = id.toLowerCase().trim();
-    if (trimmedId === DEMO_ACCOUNTS.DRIVER.email.toLowerCase()) {
-      if (pass === DEMO_ACCOUNTS.DRIVER.password) return { role: 'DRIVER', user: DEMO_ACCOUNTS.DRIVER };
-      return { error: 'Incorrect password for Driver account.' };
-    }
-    if (trimmedId === DEMO_ACCOUNTS.TRANSPORTER.email.toLowerCase()) {
-      if (pass === DEMO_ACCOUNTS.TRANSPORTER.password) return { role: 'TRANSPORTER', user: DEMO_ACCOUNTS.TRANSPORTER };
-      return { error: 'Incorrect password for Transporter account.' };
-    }
-    return null;
   };
 
   const handleSubmit = async () => {
     if (!identifier || !password) {
-      setErrorMsg(t('fillRequired'));
+      setErrorMsg('Please fill all required fields');
       return;
     }
 
     setLoading(true);
     setErrorMsg('');
 
-    // Check demo accounts first
-    const demo = checkDemoLogin(identifier, password);
-    if (demo) {
-      setLoading(false);
-      if (demo.error) {
-        setErrorMsg(demo.error);
-        return;
-      }
-      onLoginSuccess(demo.role!, demo.user);
-      return;
+    const trimmedId = identifier.toLowerCase().trim();
+
+    // Check standard demo accounts
+    let matchedDemo: any = null;
+    if (trimmedId === DEMO_ACCOUNTS.DRIVER.email.toLowerCase() && password === DEMO_ACCOUNTS.DRIVER.password) {
+      matchedDemo = { role: 'DRIVER', user: DEMO_ACCOUNTS.DRIVER };
+    } else if (trimmedId === DEMO_ACCOUNTS.TRANSPORTER.email.toLowerCase() && password === DEMO_ACCOUNTS.TRANSPORTER.password) {
+      matchedDemo = { role: 'TRANSPORTER', user: DEMO_ACCOUNTS.TRANSPORTER };
     }
 
     try {
-      // Direct API database login
-      const res = await fetch('http://localhost:5000/api/auth/login', {
+      // Direct PostgreSQL database login via API
+      const apiUrl = getApiBaseUrl();
+      const res = await fetch(`${apiUrl}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier: identifier.trim(), password }),
@@ -94,17 +83,47 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
       if (res.ok && data.user) {
         onLoginSuccess(data.user.role, data.user);
-      } else {
-        setErrorMsg(data.error || (language === 'AM' ? 'ተጠቃሚው አልተገኘም፤ እባክዎን መረጃዎን ያረጋግጡ ወይም ይመዝገቡ' : 'User not found. Please check your credentials or register.'));
+        return;
       }
+
+      if (matchedDemo) {
+        onLoginSuccess(matchedDemo.role, matchedDemo.user);
+        return;
+      }
+
+      setErrorMsg(data.error || 'User not found. Please check your credentials or register.');
     } catch (err) {
       setLoading(false);
-      setErrorMsg(language === 'AM' ? 'ተጠቃሚው በዳታቤዝ ውስጥ አልተገኘም፤ እባክዎን ይመዝገቡ' : 'User not found in database. Please register.');
+      if (matchedDemo) {
+        onLoginSuccess(matchedDemo.role, matchedDemo.user);
+        return;
+      }
+      setErrorMsg('Cannot connect to backend API server. Please ensure the server is running or register.');
     }
   };
 
-  const handleGoogleLogin = () => {
-    onLoginSuccess('DRIVER', { fullName: 'Google User', role: 'DRIVER' });
+  const handleGoogleLogin = async () => {
+    const clientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || '134488171607-3numfgilpa83d4p2d87gb9s7cjlgml4i.apps.googleusercontent.com';
+    const redirectUri = (typeof window !== 'undefined' && window?.location?.origin) ? window.location.origin : 'http://localhost:8081';
+    const scope = encodeURIComponent('openid email profile');
+    const state = encodeURIComponent(JSON.stringify({ mode: 'login', role: 'DRIVER' }));
+    const nonce = Math.random().toString(36).substring(2);
+
+    const googleOAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(
+      clientId
+    )}&redirect_uri=${encodeURIComponent(
+      redirectUri
+    )}&response_type=token%20id_token&scope=${scope}&prompt=select_account&state=${state}&nonce=${nonce}`;
+
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window?.location) {
+      window.location.href = googleOAuthUrl;
+    } else {
+      try {
+        await Linking.openURL(googleOAuthUrl);
+      } catch (e) {
+        console.warn('Could not open Google OAuth URL:', e);
+      }
+    }
   };
 
   return (
@@ -117,11 +136,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
             <Text style={styles.backArrow}>←</Text>
           </TouchableOpacity>
-          <Text style={styles.brandTitle}>{t('tradeflow')}</Text>
-          
-          <TouchableOpacity style={styles.langBtn} onPress={toggleLanguage}>
-            <Text style={styles.langBtnText}>{language === 'AM' ? '🌐 English' : '🌐 አማርኛ'}</Text>
-          </TouchableOpacity>
+          <Text style={styles.brandTitle}>TradeFlow</Text>
         </View>
 
         {/* Form Card */}
@@ -201,27 +216,27 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             activeOpacity={0.85}
           >
             <Text style={styles.primaryLoginBtnText}>
-              {loading ? (language === 'AM' ? 'በማረጋገጥ ላይ...' : 'Authenticating...') : t('loginButton')}
+              {loading ? 'Authenticating...' : 'Log In'}
             </Text>
           </TouchableOpacity>
 
           {/* Fast Demo One-Click Fill Buttons */}
           <View style={styles.demoBar}>
             <Text style={styles.demoTitle}>
-              {language === 'AM' ? '⚡ በአንድ ንክኪ ለመግባት (የሙከራ አካውንቶች):' : '⚡ Quick 1-Click Demo Accounts:'}
+              ⚡ Quick 1-Click Demo Accounts:
             </Text>
             <View style={styles.demoBtnRow}>
               <TouchableOpacity
                 style={styles.demoChip}
                 onPress={handleAutoFillDriver}
               >
-                <Text style={styles.demoChipText}>⚡ {t('autoFillDriver')}</Text>
+                <Text style={styles.demoChipText}>⚡ Driver Demo</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.demoChip}
                 onPress={handleAutoFillTransporter}
               >
-                <Text style={styles.demoChipText}>⚡ {t('autoFillTransporter')}</Text>
+                <Text style={styles.demoChipText}>⚡ Transporter Demo</Text>
               </TouchableOpacity>
             </View>
           </View>

@@ -102,7 +102,7 @@ npm run dev:api
 ```powershell
 npm run dev:web
 ```
-- **Web App**: [http://localhost:5173](http://localhost:5173)
+- **Web App**: [http://localhost:3000](http://localhost:3000)
 
 #### Terminal 3 — Driver & Transporter Mobile App:
 ```powershell

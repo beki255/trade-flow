@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import authRoutes from './routes/auth.routes';
+import portalRoutes from './routes/portal.routes';
+import matchingRoutes from './routes/matching.routes';
 import { swaggerDocsHandler, swaggerJsonHandler } from './docs/swagger';
 
 dotenv.config();
@@ -41,6 +43,8 @@ app.get('/api/docs/json', swaggerJsonHandler);
 
 // Mount Application Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/portal', portalRoutes);
+app.use('/api/matching', matchingRoutes);
 
 // Socket.io Real-Time Telematics Channel
 io.on('connection', (socket) => {
@@ -51,8 +55,8 @@ io.on('connection', (socket) => {
   });
 });
 
-// Start Server
-server.listen(PORT, () => {
-  console.log(`🚀 TradeFlow Backend API running on http://localhost:${PORT}`);
+// Start Server on all interfaces (0.0.0.0) so Expo Go on physical phones can connect
+server.listen(Number(PORT), '0.0.0.0', () => {
+  console.log(`🚀 TradeFlow Backend API running on http://0.0.0.0:${PORT} (http://localhost:${PORT})`);
   console.log(`📑 Swagger Documentation available at http://localhost:${PORT}/api/docs`);
 });

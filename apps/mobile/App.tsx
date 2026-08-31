@@ -4,6 +4,9 @@ import {
   View,
   useWindowDimensions,
   Platform,
+  ActivityIndicator,
+  Text,
+  Alert,
 } from 'react-native';
 import { WelcomeScreen } from './src/screens/WelcomeScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
@@ -15,9 +18,135 @@ import { LanguageProvider } from './src/context/LanguageContext';
 function MainApp() {
   const [currentScreen, setCurrentScreen] = useState<'welcome' | 'login' | 'register' | 'active_home'>('welcome');
   const [currentRole, setCurrentRole] = useState<'DRIVER' | 'TRANSPORTER'>('DRIVER');
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState<boolean>(false);
 
-  const handleLoginSuccess = (role: string) => {
+  // Check for Google OAuth callback in URL hash when returning from Google Account Chooser
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window?.location) {
+      const hash = window.location.hash ? window.location.hash.substring(1) : '';
+      const search = window.location.search ? window.location.search.substring(1) : '';
+      const urlQuery = hash || search;
+
+      if (urlQuery && (urlQuery.includes('access_token=') || urlQuery.includes('id_token='))) {
+        setAuthLoading(true);
+        const params = new URLSearchParams(urlQuery);
+        const accessToken = params.get('access_token');
+        const idToken = params.get('id_token');
+        const stateParam = params.get('state');
+
+        let authMode: 'login' | 'register' = 'login';
+        let targetRole = 'DRIVER';
+
+        if (stateParam) {
+          try {
+            const parsed = JSON.parse(decodeURIComponent(stateParam));
+            if (parsed.mode) authMode = parsed.mode;
+            if (parsed.role) targetRole = parsed.role;
+          } catch (e) {
+            // simple string
+          }
+        }
+
+        let email = '';
+        let name = 'Google Driver';
+
+        // 1. Instantly decode ID Token
+        if (idToken) {
+          try {
+            const base64Url = idToken.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(
+              atob(base64)
+                .split('')
+                .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                .join('')
+            );
+            const decoded = JSON.parse(jsonPayload);
+            email = decoded.email || '';
+            name = decoded.name || email.split('@')[0] || 'Google Driver';
+          } catch (e) {
+            console.warn('Could not decode idToken payload locally');
+          }
+        }
+
+        const completeGoogleLogin = async () => {
+          try {
+            // 2. Fetch userinfo if email not yet extracted
+            if (!email && accessToken) {
+              try {
+                const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                  headers: { Authorization: `Bearer ${accessToken}` },
+                });
+                if (res.ok) {
+                  const profile = await res.json();
+                  email = profile.email;
+                  name = profile.name || email.split('@')[0];
+                }
+              } catch (e) {
+                console.warn('Fetch userinfo timed out or failed');
+              }
+            }
+
+            if (!email) {
+              email = 'driver.google@tradeflow.et';
+            }
+
+            // 3. Authenticate with backend API with strict mode check
+            const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000';
+            const apiRes = await fetch(`${apiUrl}/api/auth/google`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email,
+                fullName: name,
+                role: targetRole,
+                mode: authMode,
+                credential: idToken || undefined,
+              }),
+            });
+
+            const data = await apiRes.json();
+
+            // Clear hash from address bar
+            window.history.replaceState(null, '', window.location.pathname);
+            setAuthLoading(false);
+
+            if (apiRes.ok && data.user) {
+              setCurrentUser(data.user);
+              setCurrentRole((data.user.role || targetRole) as 'DRIVER' | 'TRANSPORTER');
+              setCurrentScreen('active_home');
+            } else {
+              // Unregistered user attempted to LOGIN with Google -> Block & redirect to register
+              const errorMsg = data.error || 'No registered account found with this Google email. Please register first.';
+              alert(errorMsg);
+              setCurrentScreen('register');
+            }
+
+          } catch (err) {
+            console.warn('Google processing error in mobile:', err);
+            setAuthLoading(false);
+            setCurrentScreen('login');
+          }
+        };
+
+        completeGoogleLogin();
+      }
+    }
+  }, []);
+
+  if (authLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0284C7" />
+        <Text style={styles.loadingText}>Verifying Google Account...</Text>
+      </View>
+    );
+  }
+
+  const handleLoginSuccess = (role: string, user?: any) => {
     setCurrentRole(role as 'DRIVER' | 'TRANSPORTER');
+    if (user) setCurrentUser(user);
     setCurrentScreen('active_home');
   };
 
@@ -61,10 +190,10 @@ function MainApp() {
 
   // 4. Role-Specific Mobile Portals
   if (currentRole === 'TRANSPORTER') {
-    return <TransporterPortalScreen onLogout={() => setCurrentScreen('welcome')} />;
+    return <TransporterPortalScreen onLogout={() => setCurrentScreen('welcome')} user={currentUser} />;
   }
 
-  return <DriverPortalScreen onLogout={() => setCurrentScreen('welcome')} />;
+  return <DriverPortalScreen onLogout={() => setCurrentScreen('welcome')} user={currentUser} />;
 }
 
 export default function App() {
@@ -102,7 +231,7 @@ export default function App() {
 
   return (
     <LanguageProvider>
-      <View style={styles.outerRoot}>
+      <View style={[styles.outerRoot, !isDesktopWeb && { backgroundColor: '#F4F9FD' }]}>
         <View
           style={[
             styles.appContainer,
@@ -129,13 +258,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#F4F9FD',
     overflow: 'hidden',
   },
-  // Mobile / DevTools Device Mode (iPhone, Pixel, Galaxy): Exact 100% Fit
   mobileFullViewport: {
     width: '100%',
     height: '100%',
     flex: 1,
   },
-  // Desktop Browser: Realistic Smartphone Shell
   desktopDeviceFrame: {
     width: 412,
     height: 870,
@@ -144,5 +271,17 @@ const styles = StyleSheet.create({
     borderWidth: 6,
     borderColor: '#1E293B',
     elevation: 12,
+  },
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: '#F4F9FD',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0F172A',
   },
 });

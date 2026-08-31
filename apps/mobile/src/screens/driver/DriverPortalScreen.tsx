@@ -4,33 +4,24 @@ import {
   Text,
   View,
   TouchableOpacity,
+  ScrollView,
   SafeAreaView,
   StatusBar,
-  ScrollView,
   TextInput,
 } from 'react-native';
-import { useLanguage } from '../../context/LanguageContext';
 
-interface DriverPortalProps {
+interface DriverPortalScreenProps {
   onLogout: () => void;
 }
 
-export const DriverPortalScreen: React.FC<DriverPortalProps> = ({ onLogout }) => {
-  const { language, toggleLanguage, t } = useLanguage();
+export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout }) => {
   const [activeTab, setActiveTab] = useState<'trip' | 'nav' | 'checkin' | 'incident' | 'pod'>('trip');
 
   // Emergency SOS state
   const [sosActive, setSosActive] = useState(false);
 
-  // Active Trip Dynamic State (Can be null or active)
-  const [activeTrip, setActiveTrip] = useState<any>({
-    id: 'TF-TRIP-01',
-    cargo: language === 'AM' ? 'የተመደበ ንግድ ጭነት' : 'Assigned Freight Cargo',
-    origin: language === 'AM' ? 'አዲስ አበባ' : 'Addis Ababa',
-    destination: language === 'AM' ? 'ጅቡቲ ወደብ' : 'Djibouti Port',
-    speed: '0 km/h',
-    status: 'IN_TRANSIT',
-  });
+  // Active Trip Dynamic State (null by default until trip is assigned from database)
+  const [activeTrip, setActiveTrip] = useState<any>(null);
 
   // Check-in state
   const [checkedInSuccess, setCheckedInSuccess] = useState('');
@@ -48,12 +39,12 @@ export const DriverPortalScreen: React.FC<DriverPortalProps> = ({ onLogout }) =>
   const [podSuccess, setPodSuccess] = useState(false);
 
   const waypoints = [
-    { id: 'WP-1', name: 'Addis Ababa (Kaliti Dispatch)', nameAm: 'አዲስ አበባ (ቃሊቲ መነሻ)', status: 'COMPLETED', time: '06:00 AM' },
-    { id: 'WP-2', name: 'Modjo Dry Port Toll Gate', nameAm: 'የሞጆ ደረቅ ወደብ የክፍያ በር', status: 'COMPLETED', time: '07:45 AM' },
-    { id: 'WP-3', name: 'Awash Arba Safe Parking & Fuel Stop', nameAm: 'አዋሽ አርባ ማረፊያ እና ነዳጅ ማደያ', status: 'ACTIVE_NOW', time: 'In Transit' },
-    { id: 'WP-4', name: 'Semera Checkpoint & Scale', nameAm: 'ሰመራ የጭነት ሚዛን እና ኬላ', status: 'PENDING', time: 'Upcoming' },
-    { id: 'WP-5', name: 'Galafi Border Customs (Ethiopia-Djibouti)', nameAm: 'ገላፊ የድንበር ጉምሩክ ኬላ', status: 'PENDING', time: 'Upcoming' },
-    { id: 'WP-6', name: 'Djibouti Port Container Terminal', nameAm: 'የጅቡቲ ወደብ የኮንቴይነር ተርሚናል', status: 'PENDING', time: 'Destination' },
+    { id: 'WP-1', name: 'Addis Ababa (Kaliti Dispatch)', status: 'COMPLETED', time: '06:00 AM' },
+    { id: 'WP-2', name: 'Modjo Dry Port Toll Gate', status: 'COMPLETED', time: '07:45 AM' },
+    { id: 'WP-3', name: 'Awash Arba Safe Parking & Fuel Stop', status: 'ACTIVE_NOW', time: 'In Transit' },
+    { id: 'WP-4', name: 'Semera Checkpoint & Scale', status: 'PENDING', time: 'Upcoming' },
+    { id: 'WP-5', name: 'Galafi Border Customs (Ethiopia-Djibouti)', status: 'PENDING', time: 'Upcoming' },
+    { id: 'WP-6', name: 'Djibouti Port Container Terminal', status: 'PENDING', time: 'Destination' },
   ];
 
   const handleCheckin = () => {
@@ -63,7 +54,7 @@ export const DriverPortalScreen: React.FC<DriverPortalProps> = ({ onLogout }) =>
       coords: '11.758° N, 41.834° E',
     };
     setCheckinHistory([record, ...checkinHistory]);
-    setCheckedInSuccess(language === 'AM' ? 'የጂፒኤስ መድረሻ ማረጋገጫ ተጠናቋል!' : 'GPS Check-in Confirmed!');
+    setCheckedInSuccess('GPS Check-in Confirmed!');
     setTimeout(() => setCheckedInSuccess(''), 3000);
   };
 
@@ -76,175 +67,191 @@ export const DriverPortalScreen: React.FC<DriverPortalProps> = ({ onLogout }) =>
       time: new Date().toLocaleTimeString(),
     };
     setIncidentsList([newInc, ...incidentsList]);
+    setIncidentSent(true);
     setIncidentType('');
     setIncidentNotes('');
-    setIncidentSent(true);
-    setTimeout(() => setIncidentSent(false), 3000);
+    setTimeout(() => setIncidentSent(false), 3500);
   };
 
-  const handleSignPod = () => {
+  const handleSignPOD = () => {
     if (!recipientName) return;
     setSignedPOD(true);
     setPodSuccess(true);
-    setTimeout(() => setPodSuccess(false), 3000);
+    setTimeout(() => setPodSuccess(false), 4000);
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0B1120" />
+      <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
 
-      {/* Top Driver Header */}
+      {/* Top Mobile Header */}
       <View style={styles.topHeader}>
         <View>
-          <Text style={styles.driverName}>
-            {language === 'AM' ? 'የአሽከርካሪ መተግበሪያ' : 'Driver Portal'}
-          </Text>
-          <Text style={styles.truckDetails}>🚚 TradeFlow Corridor Mobile Network</Text>
+          <Text style={styles.brandTitle}>TradeFlow Driver</Text>
+          <Text style={styles.truckSub}>Truck: ET-3-49102 • Volvo FH16</Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          <TouchableOpacity style={styles.langBtn} onPress={toggleLanguage}>
-            <Text style={styles.langBtnText}>{language === 'AM' ? '🌐 EN' : '🌐 አማ'}</Text>
-          </TouchableOpacity>
           <TouchableOpacity style={styles.logoutBtn} onPress={onLogout}>
-            <Text style={styles.logoutText}>{t('logout')}</Text>
+            <Text style={styles.logoutText}>Logout</Text>
           </TouchableOpacity>
         </View>
       </View>
 
+      {/* Emergency SOS Banner Button */}
+      <TouchableOpacity
+        style={[styles.sosBanner, sosActive && styles.sosBannerActive]}
+        onPress={() => setSosActive(!sosActive)}
+        activeOpacity={0.85}
+      >
+        <Text style={styles.sosText}>
+          {sosActive ? '🚨 SOS EMERGENCY SIGNAL ACTIVE (BROADCASTING)' : '🚨 EMERGENCY SOS ASSISTANCE'}
+        </Text>
+      </TouchableOpacity>
+
       {/* Main Scrollable Content */}
       <ScrollView contentContainerStyle={styles.scrollContent}>
         
-        {/* 1. ACTIVE TRIP DASHBOARD */}
+        {/* 1. TRIP SUMMARY & ROUTE STATUS */}
         {activeTab === 'trip' && (
           <View style={styles.sectionContainer}>
-            
-            {/* SOS Emergency Button */}
-            <TouchableOpacity
-              style={[styles.sosButton, sosActive && styles.sosButtonActive]}
-              onPress={() => setSosActive(!sosActive)}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.sosText}>
-                {sosActive ? `🚨 ${t('sosBroadcasting')}` : `🚨 ${t('sosEmergency')}`}
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.kpiGrid}>
+              <View style={styles.kpiCard}>
+                <Text style={styles.kpiLabel}>Speed</Text>
+                <Text style={styles.kpiValue}>64 km/h</Text>
+              </View>
 
-            {/* Trip Overview Card */}
+              <View style={styles.kpiCard}>
+                <Text style={styles.kpiLabel}>Estimated ETA</Text>
+                <Text style={[styles.kpiValue, { color: '#0284C7' }]}>11h 20m</Text>
+              </View>
+
+              <View style={styles.kpiCard}>
+                <Text style={styles.kpiLabel}>Remaining</Text>
+                <Text style={styles.kpiValue}>482 km</Text>
+              </View>
+            </View>
+
+            {/* Active Assignment Card */}
             {activeTrip ? (
-              <View style={styles.darkCard}>
+              <View style={styles.card}>
                 <View style={styles.cardHeader}>
-                  <Text style={styles.tripIdBadge}>{activeTrip.id}</Text>
-                  <Text style={styles.speedIndicator}>⚡ {activeTrip.speed}</Text>
+                  <Text style={styles.cardTitle}>Active Freight Route</Text>
+                  <View style={styles.statusBadge}>
+                    <Text style={styles.statusBadgeText}>IN TRANSIT</Text>
+                  </View>
                 </View>
 
-                <Text style={styles.cargoHeading}>{activeTrip.cargo}</Text>
+                <View style={styles.routeBox}>
+                  <Text style={styles.routeCity}>📍 Addis Ababa (Kaliti)</Text>
+                  <Text style={styles.routeArrow}>⬇️ 870 km Corridor Transit</Text>
+                  <Text style={styles.routeCity}>🏁 Djibouti Port (Container Terminal)</Text>
+                </View>
 
-                <View style={styles.cardDividerDark} />
+                <View style={styles.cardDivider} />
 
-                <View style={styles.routeGrid}>
-                  <View>
-                    <Text style={styles.routeLabel}>{t('origin')}</Text>
-                    <Text style={styles.routeValue}>{activeTrip.origin}</Text>
-                  </View>
-                  <Text style={styles.routeArrow}>➔</Text>
-                  <View>
-                    <Text style={styles.routeLabel}>{t('destination')}</Text>
-                    <Text style={styles.routeValue}>{activeTrip.destination}</Text>
-                  </View>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Cargo:</Text>
+                  <Text style={styles.infoValue}>{activeTrip.cargo}</Text>
+                </View>
+
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Container:</Text>
+                  <Text style={styles.infoValue}>40ft HC (MSCU-9948102)</Text>
+                </View>
+
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Weight:</Text>
+                  <Text style={styles.infoValue}>28.5 Metric Tons</Text>
                 </View>
               </View>
             ) : (
               <View style={styles.emptyCard}>
                 <Text style={styles.emptyIcon}>🚚</Text>
                 <Text style={styles.emptyTitle}>
-                  {language === 'AM' ? 'እስካሁን የተመደበ ንቁ ጉዞ የለም' : 'No Active Trip Assigned'}
+                  No Active Trip Assigned
                 </Text>
                 <Text style={styles.emptySub}>
-                  {language === 'AM' ? 'አጓጓዥ ድርጅትዎ አዲስ ጉዞ ሲመድብልዎ እዚህ ጋር ማየት ይችላሉ።' : 'When your fleet manager assigns a corridor route, it will display here.'}
+                  When your fleet manager assigns a corridor route, it will display here.
                 </Text>
               </View>
             )}
-
           </View>
         )}
 
-        {/* 2. OFFLINE-CAPABLE TURN-BY-TURN NAVIGATION */}
+        {/* 2. TURN-BY-TURN CORRIDOR WAYPOINTS */}
         {activeTab === 'nav' && (
           <View style={styles.sectionContainer}>
-            <View style={styles.offlinePill}>
-              <Text style={styles.offlinePillText}>💾 {t('offlineModeActive')}</Text>
+            <Text style={styles.sectionTitle}>Corridor Waypoints & Checkpoints</Text>
+            
+            <View style={styles.timeline}>
+              {waypoints.map((wp, idx) => (
+                <View key={wp.id} style={styles.timelineItem}>
+                  <View style={styles.timelineLeft}>
+                    <View
+                      style={[
+                        styles.dot,
+                        wp.status === 'COMPLETED' && styles.dotCompleted,
+                        wp.status === 'ACTIVE_NOW' && styles.dotActive,
+                      ]}
+                    />
+                    {idx < waypoints.length - 1 && <View style={styles.line} />}
+                  </View>
+
+                  <View style={styles.timelineRight}>
+                    <View style={styles.wpHeader}>
+                      <Text style={styles.wpName}>{wp.name}</Text>
+                      <Text
+                        style={[
+                          styles.wpStatus,
+                          wp.status === 'COMPLETED' && styles.statusCompletedText,
+                          wp.status === 'ACTIVE_NOW' && styles.statusActiveText,
+                        ]}
+                      >
+                        {wp.status === 'COMPLETED'
+                          ? 'PASSED ✓'
+                          : wp.status === 'ACTIVE_NOW'
+                          ? 'CURRENT 📍'
+                          : 'UPCOMING'}
+                      </Text>
+                    </View>
+                    <Text style={styles.wpTime}>Status: {wp.time}</Text>
+                  </View>
+                </View>
+              ))}
             </View>
-
-            <Text style={styles.sectionTitle}>{t('corridorWaypoints')}</Text>
-
-            {waypoints.map((wp, idx) => (
-              <View
-                key={wp.id}
-                style={[
-                  styles.waypointCard,
-                  wp.status === 'ACTIVE_NOW' && styles.waypointCardActive,
-                ]}
-              >
-                <View style={styles.waypointIndexBox}>
-                  <Text style={styles.waypointIndexText}>{idx + 1}</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.waypointName}>
-                    {language === 'AM' ? wp.nameAm : wp.name}
-                  </Text>
-                  <Text style={styles.waypointTime}>{wp.time}</Text>
-                </View>
-                <View
-                  style={[
-                    styles.wpBadge,
-                    wp.status === 'COMPLETED'
-                      ? styles.wpCompleted
-                      : wp.status === 'ACTIVE_NOW'
-                      ? styles.wpActive
-                      : styles.wpPending,
-                  ]}
-                >
-                  <Text style={styles.wpBadgeText}>
-                    {wp.status === 'COMPLETED' 
-                      ? (language === 'AM' ? 'ተጠናቋል ✓' : 'PASSED ✓')
-                      : wp.status === 'ACTIVE_NOW' 
-                      ? (language === 'AM' ? 'የአሁኑ ቦታ 📍' : 'CURRENT 📍')
-                      : (language === 'AM' ? 'ቀጣይ' : 'UPCOMING')}
-                  </Text>
-                </View>
-              </View>
-            ))}
           </View>
         )}
 
-        {/* 3. WAYPOINT CHECK-IN */}
+        {/* 3. OFFLINE WAYPOINT CHECK-IN */}
         {activeTab === 'checkin' && (
           <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>{t('gpsCheckinTitle')}</Text>
+            <Text style={styles.sectionTitle}>Offline GPS Waypoint Check-in</Text>
             
             {checkedInSuccess ? (
-              <View style={styles.successBanner}>
-                <Text style={styles.successBannerText}>{checkedInSuccess}</Text>
+              <View style={styles.successBox}>
+                <Text style={styles.successText}>✓ {checkedInSuccess}</Text>
               </View>
             ) : null}
 
             <View style={styles.card}>
-              <Text style={styles.gpsCoordHeading}>📍 {t('autoGpsLocation')}:</Text>
-              <Text style={styles.gpsAccuracy}>{t('gpsAccuracy')}: High (± 3m)</Text>
+              <Text style={styles.infoLabel}>GPS Status:</Text>
+              <Text style={styles.coordsText}>📍 11.758° N, 41.834° E (Awash Arba)</Text>
 
-              <TouchableOpacity style={styles.primaryActionBtn} onPress={handleCheckin}>
-                <Text style={styles.primaryActionBtnText}>{t('confirmCheckin')}</Text>
+              <TouchableOpacity style={styles.checkinBtn} onPress={handleCheckin}>
+                <Text style={styles.checkinBtnText}>Confirm GPS Check-In</Text>
               </TouchableOpacity>
             </View>
 
+            {/* Checkin History */}
             {checkinHistory.length > 0 && (
-              <View style={{ gap: 6, marginTop: 8 }}>
+              <View style={{ gap: 8, marginTop: 10 }}>
                 <Text style={styles.sectionTitle}>
-                  {language === 'AM' ? 'የተረጋገጡ የቦታ ምዝገባዎች' : 'Confirmed Check-ins'}
+                  Confirmed Check-ins
                 </Text>
-                {checkinHistory.map((c) => (
-                  <View key={c.id} style={styles.card}>
-                    <Text style={styles.infoLabel}>{c.coords} • Recorded at {c.time}</Text>
+                {checkinHistory.map((chk) => (
+                  <View key={chk.id} style={styles.historyCard}>
+                    <Text style={styles.historyId}>{chk.id} • {chk.time}</Text>
+                    <Text style={styles.historyCoords}>{chk.coords}</Text>
                   </View>
                 ))}
               </View>
@@ -252,56 +259,56 @@ export const DriverPortalScreen: React.FC<DriverPortalProps> = ({ onLogout }) =>
           </View>
         )}
 
-        {/* 4. GEOTAGGED INCIDENT REPORTING */}
+        {/* 4. INCIDENT REPORTING */}
         {activeTab === 'incident' && (
           <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>{t('incidentTitle')}</Text>
+            <Text style={styles.sectionTitle}>Incident Reporting</Text>
 
             {incidentSent ? (
-              <View style={styles.successBanner}>
-                <Text style={styles.successBannerText}>
-                  {language === 'AM' ? '✓ ሪፖርቱ ወደ ደህንነት ማዕከሉ ተልኳል!' : '✓ Incident broadcasted to control center!'}
+              <View style={styles.successBox}>
+                <Text style={styles.successText}>
+                  ✓ Incident broadcasted to control center!
                 </Text>
               </View>
             ) : null}
 
             <View style={styles.card}>
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>{t('incidentCategory')} *:</Text>
+                <Text style={styles.inputLabel}>Incident Type:</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder={language === 'AM' ? 'ለምሳሌ፡ የመንገድ መዘጋት ወይም የጎማ መሰበር' : 'e.g. Road Closure, Tire Puncture'}
+                  placeholder="e.g. Road Closure, Tire Puncture"
                   value={incidentType}
                   onChangeText={setIncidentType}
                 />
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>{t('incidentDescription')}:</Text>
+                <Text style={styles.inputLabel}>Incident Details:</Text>
                 <TextInput
-                  style={[styles.input, { height: 75, textAlignVertical: 'top' }]}
-                  placeholder={language === 'AM' ? 'የቦታውና የሁኔታው ማብራሪያ...' : 'Details and milepost marker...'}
+                  style={[styles.input, { height: 70, textAlignVertical: 'top' }]}
+                  placeholder="Details and milepost marker..."
                   value={incidentNotes}
                   onChangeText={setIncidentNotes}
                   multiline
                 />
               </View>
 
-              <TouchableOpacity style={[styles.primaryActionBtn, { backgroundColor: '#DC2626' }]} onPress={handleSendIncident}>
-                <Text style={styles.primaryActionBtnText}>{t('broadcastIncident')}</Text>
+              <TouchableOpacity style={styles.reportBtn} onPress={handleSendIncident}>
+                <Text style={styles.reportBtnText}>Broadcast Incident Alert</Text>
               </TouchableOpacity>
             </View>
 
+            {/* Incident History List */}
             {incidentsList.length > 0 && (
-              <View style={{ gap: 6, marginTop: 8 }}>
+              <View style={{ gap: 8, marginTop: 10 }}>
                 <Text style={styles.sectionTitle}>
-                  {language === 'AM' ? 'የተላኩ ሪፖርቶች' : 'Submitted Incident Reports'}
+                  Submitted Incident Reports
                 </Text>
                 {incidentsList.map((inc) => (
-                  <View key={inc.id} style={styles.card}>
-                    <Text style={[styles.waypointName, { color: '#DC2626' }]}>⚠️ {inc.type}</Text>
-                    <Text style={styles.infoLabel}>{inc.notes}</Text>
-                    <Text style={[styles.infoLabel, { fontSize: 10 }]}>Time: {inc.time}</Text>
+                  <View key={inc.id} style={styles.historyCard}>
+                    <Text style={[styles.historyId, { color: '#EF4444' }]}>⚠️ {inc.type}</Text>
+                    <Text style={styles.historyCoords}>{inc.notes || 'No extra notes'} ({inc.time})</Text>
                   </View>
                 ))}
               </View>
@@ -309,48 +316,50 @@ export const DriverPortalScreen: React.FC<DriverPortalProps> = ({ onLogout }) =>
           </View>
         )}
 
-        {/* 5. DIGITAL PROOF-OF-DELIVERY (POD) */}
+        {/* 5. DIGITAL POD (PROOF OF DELIVERY) */}
         {activeTab === 'pod' && (
           <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>{t('podTitle')}</Text>
-            
+            <Text style={styles.sectionTitle}>Digital Proof of Delivery (e-POD)</Text>
+
             {podSuccess ? (
-              <View style={styles.successBanner}>
-                <Text style={styles.successBannerText}>
-                  {language === 'AM' 
-                    ? '✓ ርክክቡ ተጠናቀቀ! የዲጂታል ፊርማ ተመዝግቧል።'
-                    : '✓ POD Signed! Cargo Delivered & Signature Recorded.'}
+              <View style={styles.successBox}>
+                <Text style={styles.successText}>
+                  ✓ Delivery confirmed! Digital POD stored on ledger.
                 </Text>
               </View>
             ) : null}
 
             <View style={styles.card}>
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>{t('recipientName')} *:</Text>
+                <Text style={styles.inputLabel}>Recipient Name:</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder={language === 'AM' ? 'የተረካቢው ሙሉ ስም' : 'Recipient Full Name'}
+                  placeholder="Recipient Full Name"
                   value={recipientName}
                   onChangeText={setRecipientName}
                 />
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>{t('electronicSignature')}:</Text>
+                <Text style={styles.inputLabel}>Recipient Electronic Signature:</Text>
                 <TouchableOpacity
-                  style={styles.signaturePad}
-                  onPress={() => setSignedPOD(true)}
+                  style={[styles.signatureBox, signedPOD && styles.signatureBoxSigned]}
+                  onPress={handleSignPOD}
                 >
-                  <Text style={styles.signatureLine}>
-                    {signedPOD 
-                      ? (language === 'AM' ? '✍️ [ዲጂታል ፊርማ ተረጋግጧል ✓]' : '✍️ [Verified Electronic Signature Signed ✓]')
-                      : (language === 'AM' ? 'እዚህ ጋር ይንኩና ፊርማ ያኑሩ' : 'Tap here to capture signature')}
+                  <Text style={styles.signatureText}>
+                    {signedPOD
+                      ? '✍️ [Verified Electronic Signature Signed ✓]'
+                      : 'Tap here to capture signature'}
                   </Text>
                 </TouchableOpacity>
               </View>
 
-              <TouchableOpacity style={[styles.primaryActionBtn, { backgroundColor: '#10B981' }]} onPress={handleSignPod}>
-                <Text style={styles.primaryActionBtnText}>{t('signAndComplete')}</Text>
+              <TouchableOpacity
+                style={[styles.podBtn, (!recipientName || !signedPOD) && styles.podBtnDisabled]}
+                onPress={handleSignPOD}
+                disabled={!recipientName || !signedPOD}
+              >
+                <Text style={styles.podBtnText}>Complete Electronic POD</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -364,8 +373,8 @@ export const DriverPortalScreen: React.FC<DriverPortalProps> = ({ onLogout }) =>
           style={styles.navTab}
           onPress={() => setActiveTab('trip')}
         >
-          <Text style={[styles.navIcon, activeTab === 'trip' && styles.navIconActive]}>📍</Text>
-          <Text style={[styles.navLabel, activeTab === 'trip' && styles.navLabelActive]}>{t('activeTripTab')}</Text>
+          <Text style={[styles.navIcon, activeTab === 'trip' && styles.navIconActive]}>🗺️</Text>
+          <Text style={[styles.navLabel, activeTab === 'trip' && styles.navLabelActive]}>Trip</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -373,15 +382,15 @@ export const DriverPortalScreen: React.FC<DriverPortalProps> = ({ onLogout }) =>
           onPress={() => setActiveTab('nav')}
         >
           <Text style={[styles.navIcon, activeTab === 'nav' && styles.navIconActive]}>🧭</Text>
-          <Text style={[styles.navLabel, activeTab === 'nav' && styles.navLabelActive]}>{t('offlineNavTab')}</Text>
+          <Text style={[styles.navLabel, activeTab === 'nav' && styles.navLabelActive]}>Route</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.navTab}
           onPress={() => setActiveTab('checkin')}
         >
-          <Text style={[styles.navIcon, activeTab === 'checkin' && styles.navIconActive]}>📌</Text>
-          <Text style={[styles.navLabel, activeTab === 'checkin' && styles.navLabelActive]}>{t('checkinTab')}</Text>
+          <Text style={[styles.navIcon, activeTab === 'checkin' && styles.navIconActive]}>📍</Text>
+          <Text style={[styles.navLabel, activeTab === 'checkin' && styles.navLabelActive]}>Check-in</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -389,7 +398,7 @@ export const DriverPortalScreen: React.FC<DriverPortalProps> = ({ onLogout }) =>
           onPress={() => setActiveTab('incident')}
         >
           <Text style={[styles.navIcon, activeTab === 'incident' && styles.navIconActive]}>⚠️</Text>
-          <Text style={[styles.navLabel, activeTab === 'incident' && styles.navLabelActive]}>{t('incidentTab')}</Text>
+          <Text style={[styles.navLabel, activeTab === 'incident' && styles.navLabelActive]}>Incident</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -397,7 +406,7 @@ export const DriverPortalScreen: React.FC<DriverPortalProps> = ({ onLogout }) =>
           onPress={() => setActiveTab('pod')}
         >
           <Text style={[styles.navIcon, activeTab === 'pod' && styles.navIconActive]}>✍️</Text>
-          <Text style={[styles.navLabel, activeTab === 'pod' && styles.navLabelActive]}>{t('podTab')}</Text>
+          <Text style={[styles.navLabel, activeTab === 'pod' && styles.navLabelActive]}>e-POD</Text>
         </TouchableOpacity>
       </View>
 
@@ -408,107 +417,168 @@ export const DriverPortalScreen: React.FC<DriverPortalProps> = ({ onLogout }) =>
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F4F9FD',
   },
   topHeader: {
-    backgroundColor: '#0B1120',
+    backgroundColor: '#0F172A',
     paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingTop: 14,
+    paddingBottom: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderBottomWidth: 1,
     borderBottomColor: '#1E293B',
   },
-  driverName: {
-    fontSize: 16,
-    fontWeight: '800',
+  brandTitle: {
+    fontSize: 18,
+    fontWeight: '900',
     color: '#FFFFFF',
+    letterSpacing: -0.5,
   },
-  truckDetails: {
+  truckSub: {
     fontSize: 11,
     color: '#38BDF8',
+    fontWeight: '700',
     marginTop: 2,
   },
-  langBtn: {
-    backgroundColor: '#1E293B',
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  langBtnText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#38BDF8',
-  },
   logoutBtn: {
-    backgroundColor: '#1E293B',
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
     paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
+    paddingVertical: 6,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: 'rgba(239, 68, 68, 0.3)',
   },
   logoutText: {
-    fontSize: 10,
-    fontWeight: 'bold',
+    fontSize: 11,
     color: '#F87171',
+    fontWeight: '700',
+  },
+  sosBanner: {
+    backgroundColor: '#DC2626',
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sosBannerActive: {
+    backgroundColor: '#991B1B',
+  },
+  sosText: {
+    color: '#FFFFFF',
+    fontWeight: '900',
+    fontSize: 12,
+    letterSpacing: 0.5,
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 80,
+    paddingBottom: 90,
   },
   sectionContainer: {
-    gap: 12,
+    gap: 14,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '800',
     color: '#0F172A',
   },
-  sosButton: {
-    backgroundColor: '#DC2626',
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#DC2626',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 3,
+  kpiGrid: {
+    flexDirection: 'row',
+    gap: 10,
   },
-  sosButtonActive: {
-    backgroundColor: '#991B1B',
-  },
-  sosText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '900',
-    textAlign: 'center',
-  },
-  darkCard: {
-    backgroundColor: '#0F172A',
+  kpiCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
     borderRadius: 18,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#E2EAF2',
+    gap: 4,
+  },
+  kpiLabel: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  kpiValue: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#0F172A',
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-    gap: 8,
+    borderWidth: 1,
+    borderColor: '#E2EAF2',
+    gap: 10,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  cardTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  statusBadge: {
+    backgroundColor: '#E0F2FE',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  statusBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#0284C7',
+  },
+  routeBox: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    padding: 12,
+    gap: 6,
+  },
+  routeCity: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  routeArrow: {
+    fontSize: 11,
+    color: '#64748B',
+    paddingLeft: 18,
+  },
+  cardDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+    marginVertical: 4,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  infoLabel: {
+    fontSize: 12,
+    color: '#64748B',
+  },
+  infoValue: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F172A',
   },
   emptyCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderRadius: 20,
+    padding: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    borderWidth: 1,
+    borderColor: '#E2EAF2',
+    borderStyle: 'dashed',
+    gap: 8,
   },
   emptyIcon: {
     fontSize: 32,
@@ -516,9 +586,8 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#334155',
-    textAlign: 'center',
+    fontWeight: '800',
+    color: '#0F172A',
   },
   emptySub: {
     fontSize: 11,
@@ -526,150 +595,121 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 16,
   },
-  cardHeader: {
+  timeline: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E2EAF2',
+  },
+  timelineItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    minHeight: 56,
+  },
+  timelineLeft: {
     alignItems: 'center',
+    width: 24,
+    marginRight: 10,
   },
-  tripIdBadge: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#38BDF8',
-    backgroundColor: '#1E293B',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+  dot: {
+    width: 12,
+    height: 12,
     borderRadius: 6,
-  },
-  speedIndicator: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#10B981',
-  },
-  cargoHeading: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    backgroundColor: '#CBD5E1',
     marginTop: 4,
   },
-  cardDividerDark: {
-    height: 1,
-    backgroundColor: '#1E293B',
+  dotCompleted: {
+    backgroundColor: '#10B981',
+  },
+  dotActive: {
+    backgroundColor: '#0284C7',
+    borderWidth: 2,
+    borderColor: '#BAE6FD',
+  },
+  line: {
+    flex: 1,
+    width: 2,
+    backgroundColor: '#E2E8F0',
     marginVertical: 4,
   },
-  routeGrid: {
+  timelineRight: {
+    flex: 1,
+    paddingBottom: 16,
+  },
+  wpHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  routeLabel: {
+  wpName: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+    flex: 1,
+  },
+  wpStatus: {
     fontSize: 10,
-    color: '#94A3B8',
-    textTransform: 'uppercase',
+    fontWeight: '800',
+    color: '#64748B',
   },
-  routeValue: {
-    fontSize: 12,
-    fontWeight: 'bold',
+  statusCompletedText: {
+    color: '#10B981',
+  },
+  statusActiveText: {
+    color: '#0284C7',
+  },
+  wpTime: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  coordsText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginVertical: 4,
+  },
+  checkinBtn: {
+    backgroundColor: '#0284C7',
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  checkinBtnText: {
     color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
   },
-  routeArrow: {
-    fontSize: 16,
-    color: '#38BDF8',
-  },
-  offlinePill: {
-    backgroundColor: '#E0F2FE',
-    borderColor: '#BAE6FD',
+  successBox: {
+    backgroundColor: '#DCFCE7',
     borderWidth: 1,
-    borderRadius: 10,
-    padding: 8,
+    borderColor: '#86EFAC',
+    borderRadius: 12,
+    padding: 12,
     alignItems: 'center',
   },
-  offlinePillText: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: '#0369A1',
+  successText: {
+    color: '#166534',
+    fontSize: 12,
+    fontWeight: '700',
   },
-  waypointCard: {
+  historyCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+    borderColor: '#E2EAF2',
+    gap: 2,
   },
-  waypointCardActive: {
-    borderColor: '#0284C7',
-    backgroundColor: '#F0F9FF',
-  },
-  waypointIndexBox: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#0F172A',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  waypointIndexText: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  waypointName: {
+  historyId: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  waypointTime: {
-    fontSize: 10,
-    color: '#64748B',
-  },
-  wpBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  wpCompleted: {
-    backgroundColor: '#DCFCE7',
-  },
-  wpActive: {
-    backgroundColor: '#E0F2FE',
-  },
-  wpPending: {
-    backgroundColor: '#F1F5F9',
-  },
-  wpBadgeText: {
-    fontSize: 9,
-    fontWeight: 'bold',
-    color: '#0F172A',
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    gap: 10,
-  },
-  gpsCoordHeading: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#0F172A',
-  },
-  gpsAccuracy: {
-    fontSize: 10,
-    color: '#10B981',
-  },
-  primaryActionBtn: {
-    backgroundColor: '#0284C7',
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  primaryActionBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
     fontWeight: '800',
+    color: '#0F172A',
+  },
+  historyCoords: {
+    fontSize: 11,
+    color: '#64748B',
   },
   inputGroup: {
     gap: 4,
@@ -677,89 +717,99 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#334155',
+    color: '#475569',
   },
   input: {
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 10,
+    borderRadius: 12,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 10,
     fontSize: 12,
     color: '#0F172A',
   },
-  signaturePad: {
-    height: 70,
+  reportBtn: {
+    backgroundColor: '#EF4444',
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  reportBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  signatureBox: {
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 10,
+    borderStyle: 'dashed',
+    borderRadius: 14,
+    height: 70,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  signatureLine: {
+  signatureBoxSigned: {
+    borderColor: '#10B981',
+    backgroundColor: '#F0FDF4',
+    borderStyle: 'solid',
+  },
+  signatureText: {
     fontSize: 12,
-    fontStyle: 'italic',
-    color: '#0284C7',
-    fontWeight: 'bold',
+    color: '#64748B',
+    fontWeight: '600',
   },
-  successBanner: {
-    backgroundColor: '#ECFDF5',
-    borderColor: '#A7F3D0',
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 10,
+  podBtn: {
+    backgroundColor: '#10B981',
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 4,
   },
-  successBannerText: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: '#047857',
+  podBtnDisabled: {
+    backgroundColor: '#CBD5E1',
+  },
+  podBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
   },
   bottomNavContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: 64,
-    backgroundColor: '#0F172A',
+    height: 72,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E2EAF2',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    borderTopWidth: 1,
-    borderTopColor: '#1E293B',
+    paddingBottom: 10,
     elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
   },
   navTab: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 6,
+    gap: 2,
+    flex: 1,
   },
   navIcon: {
-    fontSize: 18,
-    opacity: 0.6,
+    fontSize: 20,
+    opacity: 0.5,
   },
   navIconActive: {
     opacity: 1,
-    transform: [{ scale: 1.15 }],
   },
   navLabel: {
     fontSize: 10,
     fontWeight: '700',
     color: '#94A3B8',
-    marginTop: 2,
   },
   navLabelActive: {
-    color: '#38BDF8',
-    fontWeight: '800',
-  },
-  infoLabel: {
-    fontSize: 11,
-    color: '#64748B',
+    color: '#0284C7',
   },
 });

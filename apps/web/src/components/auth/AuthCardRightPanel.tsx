@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { DEMO_ACCOUNTS } from '@tradeflow/shared';
 import { GoogleAuthButton } from './GoogleAuthButton';
@@ -9,7 +8,6 @@ import {
   FileCheck,
   Eye,
   EyeOff,
-  Globe,
   Zap,
 } from 'lucide-react';
 
@@ -22,7 +20,6 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
   initialMode = 'login',
   onAuthSuccess,
 }) => {
-  const { language, setLanguage } = useLanguage();
   const { loginUser, registerUser, googleAuthUser } = useAuth();
 
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
@@ -37,30 +34,46 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
   const [fullName, setFullName] = useState<string>('');
   const [companyName, setCompanyName] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
+  const [physicalAddress, setPhysicalAddress] = useState<string>('');
   const [tin, setTin] = useState<string>('');
   const [licenseNo, setLicenseNo] = useState<string>('');
+  const [tradeLicenseDocName, setTradeLicenseDocName] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [notice, setNotice] = useState<string>('');
+
+  const handlePickTradeLicense = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/pdf,image/*';
+    input.onchange = (e: any) => {
+      const file = e.target?.files?.[0];
+      if (file) {
+        setTradeLicenseDocName(file.name);
+        setErrorMsg('');
+      }
+    };
+    input.click();
+  };
 
   // 3 Dedicated Web Public Roles (Used only during Registration)
   const webRoles = [
     {
       key: 'SHIPPER',
-      label: language === 'AM' ? 'አስመጪ-ላኪ' : 'Shipper',
-      sub: language === 'AM' ? 'የጭነት ባለቤት' : 'Cargo Owner',
+      label: 'Shipper',
+      sub: 'Cargo Owner',
       icon: Package,
     },
     {
       key: 'FORWARDER',
-      label: language === 'AM' ? 'የጭነት አስተላላፊ' : 'Freight Forwarder',
-      sub: language === 'AM' ? 'ሎጂስቲክስ አስተባባሪ' : 'Logistics Partner',
+      label: 'Freight Forwarder',
+      sub: 'Logistics Partner',
       icon: Building2,
     },
     {
       key: 'CUSTOMS',
-      label: language === 'AM' ? 'ጉምሩክ ባለስልጣን' : 'Customs Authority',
-      sub: language === 'AM' ? 'ኢንስፔክተር' : 'Inspector',
+      label: 'Customs Authority',
+      sub: 'Inspector / Officer',
       icon: FileCheck,
     },
   ];
@@ -72,18 +85,14 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
     setEmail(demo.email);
     setPassword(demo.password);
     setErrorMsg('');
-    setNotice(
-      language === 'AM' 
-        ? `${demo.fullName} የሙከራ መረጃ ተሞልቷል!` 
-        : `${demo.fullName} demo credentials filled!`
-    );
+    setNotice(`${demo.fullName} demo credentials filled!`);
     setTimeout(() => setNotice(''), 2500);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      setErrorMsg(language === 'AM' ? 'እባክዎን ሁሉንም አስፈላጊ መረጃዎች ይሙሉ' : 'Please fill all required fields');
+      setErrorMsg('Please fill all required fields');
       return;
     }
 
@@ -97,8 +106,10 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
           companyName: companyName || fullName,
           email,
           phone: phone || '+251911000000',
+          physicalAddress: physicalAddress || 'Addis Ababa, Ethiopia',
           tin: tin || undefined,
           tradeLicenseNo: licenseNo || undefined,
+          tradeLicenseDoc: tradeLicenseDocName || undefined,
           role: selectedRole,
           password,
         };
@@ -124,7 +135,8 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
       const res = await googleAuthUser(
         googleData.email,
         googleData.fullName,
-        selectedRole
+        selectedRole,
+        mode
       );
       setLoading(false);
       const role = res?.user?.role || selectedRole;
@@ -138,33 +150,12 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
   return (
     <div className="w-full h-full min-h-screen bg-[#F0F6FB] p-6 sm:p-10 lg:p-14 flex flex-col justify-center items-center overflow-y-auto">
       
-      {/* Top Header: Back to Home Link & Language Switcher */}
-      <div className="w-full max-w-md flex items-center justify-between mb-4">
-        <a
-          href="/"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm transition-all"
-        >
-          <span>{language === 'AM' ? '← ወደ ዋና ገጽ' : '← Back to Home'}</span>
-        </a>
-
-        <button
-          type="button"
-          onClick={() => setLanguage(language === 'EN' ? 'AM' : 'EN')}
-          className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm transition-all"
-        >
-          <Globe className="w-3.5 h-3.5 text-[#0284C7]" />
-          <span>{language === 'EN' ? 'አማርኛ' : 'English'}</span>
-        </button>
-      </div>
-
       {/* Main Floating Auth Card */}
       <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 flex flex-col gap-5">
         
         {/* Card Title */}
         <h2 className="text-2xl sm:text-[26px] font-black text-[#0F172A] tracking-tight text-center sm:text-left">
-          {mode === 'login' 
-            ? (language === 'AM' ? 'ወደ ትሬድፍሎው ይግቡ' : 'Log In to TradeFlow') 
-            : (language === 'AM' ? 'አዲስ አካውንት ይፍጠሩ' : 'Create TradeFlow Account')}
+          {mode === 'login' ? 'Log In to TradeFlow' : 'Create TradeFlow Account'}
         </h2>
 
         {/* Dual Tab Toggle: Log In / Register Pill */}
@@ -181,7 +172,7 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            {language === 'AM' ? 'ይግቡ' : 'Log In'}
+            Log In
           </button>
           <button
             type="button"
@@ -195,7 +186,7 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            {language === 'AM' ? 'ይመዝገቡ' : 'Register'}
+            Register
           </button>
         </div>
 
@@ -203,7 +194,7 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
         {mode === 'register' && (
           <div>
             <div className="text-[11px] font-semibold text-slate-500 mb-2">
-              {language === 'AM' ? 'የድርጅትዎን አይነት ይምረጡ:' : 'Select Account Type:'}
+              Select Account Type:
             </div>
             <div className="grid grid-cols-3 gap-2">
               {webRoles.map((r) => {
@@ -256,28 +247,28 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
             <>
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {language === 'AM' ? 'ሙሉ ስም *' : 'Full Name *'}
+                  Full Name *
                 </label>
                 <input
                   type="text"
                   required
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder={language === 'AM' ? 'ለምሳሌ፡ ዳዊት ታደሰ' : 'e.g. Dawit Tadesse'}
+                  placeholder="e.g. Dawit Tadesse"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#0284C7] outline-none text-xs font-medium text-slate-900"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {language === 'AM' ? 'የድርጅቱ ስም *' : 'Company Name *'}
+                  Company Name *
                 </label>
                 <input
                   type="text"
                   required
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
-                  placeholder={language === 'AM' ? 'ለምሳሌ፡ የኢትዮ ቡና ላኪዎች ኃ/የተ/የግ/ማ' : 'e.g. Ethio Coffee Exporters PLC'}
+                  placeholder="e.g. Ethio Coffee Exporters PLC"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#0284C7] outline-none text-xs font-medium text-slate-900"
                 />
               </div>
@@ -285,7 +276,7 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    {language === 'AM' ? 'TIN ቁጥር *' : 'TIN (Tax ID) *'}
+                    TIN (Tax ID) *
                   </label>
                   <input
                     type="text"
@@ -298,16 +289,74 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    {language === 'AM' ? 'ስልክ ቁጥር' : 'Phone'}
+                    Trade License No *
                   </label>
                   <input
                     type="text"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+2519..."
+                    value={licenseNo}
+                    onChange={(e) => setLicenseNo(e.target.value)}
+                    placeholder="ETH-MOTI-2026-99"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#0284C7] outline-none text-xs font-medium text-slate-900"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Physical Office Address *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={physicalAddress}
+                  onChange={(e) => setPhysicalAddress(e.target.value)}
+                  placeholder="e.g. Bole Sub-City, Woreda 03, Addis Ababa"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#0284C7] outline-none text-xs font-medium text-slate-900"
+                />
+              </div>
+
+              {/* Trade License Document Upload */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Trade License / Certificate of Incorporation
+                </label>
+                <div
+                  onClick={handlePickTradeLicense}
+                  className={`cursor-pointer p-3 rounded-xl border border-dashed flex items-center justify-between transition-all ${
+                    tradeLicenseDocName
+                      ? 'border-emerald-400 bg-emerald-50/60'
+                      : 'border-slate-300 hover:border-slate-400 bg-slate-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">{tradeLicenseDocName ? '✅' : '📄'}</span>
+                    <div>
+                      <div className="text-[11px] font-bold text-slate-800">
+                        {tradeLicenseDocName || 'Attach Trade License (PDF/Image)'}
+                      </div>
+                      <div className="text-[9.5px] text-slate-400">
+                        {tradeLicenseDocName ? 'File selected for verification' : 'Tap to browse files'}
+                      </div>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold text-[#0284C7] bg-[#E0F2FE] px-2 py-1 rounded-lg">
+                    {tradeLicenseDocName ? 'Replace' : 'Upload'}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Phone Number *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+251 91 123 4567"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#0284C7] outline-none text-xs font-medium text-slate-900"
+                />
               </div>
             </>
           )}
@@ -315,7 +364,7 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
           {/* Email / Phone Field */}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              {language === 'AM' ? 'ኢሜይል አድራሻ *' : 'Email Address *'}
+              Email Address *
             </label>
             <input
               type="email"
@@ -330,7 +379,7 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
           {/* Password Field */}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              {language === 'AM' ? 'የይለፍ ቃል *' : 'Password *'}
+              Password *
             </label>
             <div className="relative">
               <input
@@ -361,10 +410,10 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="rounded text-[#0284C7] focus:ring-[#0284C7] w-3.5 h-3.5"
                 />
-                <span>{language === 'AM' ? 'አስታውሰኝ' : 'Remember me'}</span>
+                <span>Remember me</span>
               </label>
               <a href="#forgot" className="text-[#0284C7] hover:underline font-semibold">
-                {language === 'AM' ? 'የይለፍ ቃል ረሱ?' : 'Forgot Password?'}
+                Forgot Password?
               </a>
             </div>
           )}
@@ -376,11 +425,11 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
             className="w-full py-3 rounded-xl text-xs sm:text-sm font-bold text-white bg-[#1D70B8] hover:bg-[#155e9c] active:scale-[0.99] transition-all shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 mt-1"
           >
             {loading ? (
-              <span>{language === 'AM' ? 'በማረጋገጥ ላይ...' : 'Authenticating...'}</span>
+              <span>Authenticating...</span>
             ) : mode === 'login' ? (
-              <span>{language === 'AM' ? 'ይግቡ' : 'Log In'}</span>
+              <span>Log In</span>
             ) : (
-              <span>{language === 'AM' ? 'በዳታቤዝ መዝግብ' : 'Register Account'}</span>
+              <span>Register Account</span>
             )}
           </button>
 
@@ -388,7 +437,7 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
           {mode === 'login' && (
             <div className="pt-2 border-t border-slate-100">
               <div className="text-[10px] font-bold text-slate-400 uppercase mb-2 text-center">
-                {language === 'AM' ? '⚡ በአንድ ንክኪ ለመግባት (የሙከራ አካውንቶች):' : '⚡ Quick 1-Click Demo Accounts:'}
+                ⚡ Quick 1-Click Demo Accounts:
               </div>
               <div className="grid grid-cols-2 gap-1.5">
                 <button
@@ -458,7 +507,7 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
           <div className="text-center text-xs text-slate-500 pt-0.5">
             {mode === 'login' ? (
               <span>
-                {language === 'AM' ? 'አዲስ ተጠቃሚ ነዎት? ' : 'New to TradeFlow? '}
+                New to TradeFlow?{' '}
                 <button
                   type="button"
                   onClick={() => {
@@ -467,12 +516,12 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
                   }}
                   className="text-[#0284C7] font-bold hover:underline"
                 >
-                  {language === 'AM' ? 'ይመዝገቡ' : 'Register'}
+                  Register
                 </button>
               </span>
             ) : (
               <span>
-                {language === 'AM' ? 'አካውንት አለዎት? ' : 'Already have an account? '}
+                Already have an account?{' '}
                 <button
                   type="button"
                   onClick={() => {
@@ -481,7 +530,7 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
                   }}
                   className="text-[#0284C7] font-bold hover:underline"
                 >
-                  {language === 'AM' ? 'ይግቡ' : 'Log In'}
+                  Log In
                 </button>
               </span>
             )}
@@ -491,13 +540,13 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
           <div className="relative flex py-1 items-center">
             <div className="flex-grow border-t border-slate-200"></div>
             <span className="flex-shrink mx-3 text-[11px] text-slate-400 uppercase font-bold">
-              {language === 'AM' ? 'ወይም' : 'or'}
+              or
             </span>
             <div className="flex-grow border-t border-slate-200"></div>
           </div>
 
           {/* Google Authentication */}
-          <GoogleAuthButton mode={mode} onSuccess={handleGoogleSuccess} />
+          <GoogleAuthButton mode={mode} selectedRole={selectedRole} onSuccess={handleGoogleSuccess} />
 
         </form>
 

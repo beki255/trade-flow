@@ -4,6 +4,7 @@ import { LanguageProvider } from './context/LanguageContext';
 import { AuthProvider } from './context/AuthContext';
 import { LandingPage } from './pages/LandingPage';
 import { AuthPage } from './pages/AuthPage';
+import { AuthCallbackPage } from './pages/AuthCallbackPage';
 import { ShipperPortalPage } from './pages/ShipperPortalPage';
 import { ForwarderPortalPage } from './pages/ForwarderPortalPage';
 import { CustomsPortalPage } from './pages/CustomsPortalPage';
@@ -20,6 +21,7 @@ export const App: React.FC = () => {
             <Route path="/login" element={<AuthPage initialMode="login" />} />
             <Route path="/register" element={<AuthPage initialMode="register" />} />
             <Route path="/auth" element={<AuthPage initialMode="login" />} />
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
             {/* Shipper Portal */}
             <Route path="/shipper" element={<ShipperPortalPage />} />

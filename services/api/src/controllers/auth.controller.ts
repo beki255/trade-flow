@@ -16,6 +16,8 @@ const RegisterSchema = z.object({
   companyName: z.string().optional(),
   tin: z.string().optional(),
   tradeLicenseNo: z.string().optional(),
+  insuranceDoc: z.string().optional(),
+  roadworthinessDoc: z.string().optional(),
 });
 
 const LoginSchema = z.object({
@@ -99,6 +101,68 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   } catch (error: any) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Internal server error during login' });
+  }
+};
+
+// 0. Verify Session / Get Me (Checks if user still genuinely exists in PostgreSQL Database)
+export const getMe = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      res.status(401).json({ error: 'No authorization token provided' });
+      return;
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    // Support evaluation demo token sessions
+    if (token === 'mock-jwt-token' || token.startsWith('jwt-demo-')) {
+      res.json({ status: 'OK', isDemo: true });
+      return;
+    }
+
+    let decoded: any;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch (err) {
+      res.status(401).json({ error: 'Invalid or expired token. Please log in again.' });
+      return;
+    }
+
+    // STRICT DATABASE CHECK: Ensure user still genuinely exists in PostgreSQL
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { id: decoded.userId },
+          { email: decoded.email },
+        ],
+      },
+    });
+
+    if (!user) {
+      // User was deleted from PostgreSQL Database! Immediately revoke session.
+      res.status(401).json({ error: 'User no longer exists in database. Session invalidated.' });
+      return;
+    }
+
+    res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        fullName: user.fullName,
+        companyName: user.companyName,
+        phone: user.phone,
+        role: user.role,
+        tin: user.tin,
+        tradeLicenseNo: user.tradeLicenseNo,
+        verificationStatus: user.verificationStatus,
+        ratingAvg: user.ratingAvg,
+      },
+    });
+  } catch (error: any) {
+    console.error('getMe error:', error);
+    res.status(500).json({ error: 'Internal server error verifying session' });
   }
 };
 
@@ -192,7 +256,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 // 4. Google OAuth 2.0 Integration & Token Verification
 export const googleAuth = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { credential, email, fullName, role } = req.body;
+    const { credential, email, fullName, role, mode } = req.body;
 
     let verifiedEmail = email;
     let verifiedName = fullName || 'Google User';
@@ -218,11 +282,20 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
     const normalizedEmail = verifiedEmail.toLowerCase().trim();
     const mappedPrismaRole = mapToPrismaRole(role || 'SHIPPER');
 
-    // Check or Upsert User in PostgreSQL Database
+    // Check if user already exists in PostgreSQL Database
     let user = await prisma.user.findUnique({
       where: { email: normalizedEmail },
     });
 
+    // STRICT CHECK: If user is attempting to LOGIN with Google but does not exist in DB, REJECT
+    if (!user && mode === 'login') {
+      res.status(404).json({
+        error: 'No account found with this Google email. Please register/create an account first.',
+      });
+      return;
+    }
+
+    // Only create a new account in PostgreSQL if user is explicitly REGISTERING (mode === 'register')
     if (!user) {
       user = await prisma.user.create({
         data: {

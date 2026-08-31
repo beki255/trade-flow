@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -6,10 +6,15 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StatusBar,
+  ScrollView,
+  useWindowDimensions,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 import { useLanguage } from '../context/LanguageContext';
 import { CorridorIsometricIllustration } from '../components/CorridorIsometricIllustration';
 import { CorridorRouteMapIllustration } from '../components/CorridorRouteMapIllustration';
+import { CorridorHighwayIllustration } from '../components/CorridorHighwayIllustration';
 
 interface WelcomeScreenProps {
   onNavigateLogin?: () => void;
@@ -22,9 +27,41 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   onNavigateRegister,
   onFastDemoLogin,
 }) => {
-  // First dot [● ○ ○] is default
   const [activeDot, setActiveDot] = useState(0);
-  const { language, toggleLanguage } = useLanguage();
+  const { toggleLanguage } = useLanguage();
+  const { width } = useWindowDimensions();
+  const scrollRef = useRef<ScrollView>(null);
+
+  // Full edge-to-edge slide width for zero border cutoffs
+  const slideWidth = width;
+
+  const slideData = [
+    {
+      title: 'AI-Powered Logistics',
+      desc: 'Intelligent freight matching and real-time corridor telematics connecting Djibouti Port to Addis Ababa.',
+    },
+    {
+      title: 'Interactive Corridor Map',
+      desc: 'Live tracking across Lake Abbe, Galafi border customs, and Modjo Dry Port checkpoints.',
+    },
+    {
+      title: 'Cross-Border Cargo & Journey',
+      desc: 'Track your freight journey along the Ethiopia–Djibouti corridor, record check-ins offline, and receive digital payments instantly.',
+    },
+  ];
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const pageIndex = Math.round(offsetX / slideWidth);
+    if (pageIndex !== activeDot && pageIndex >= 0 && pageIndex < 3) {
+      setActiveDot(pageIndex);
+    }
+  };
+
+  const handleDotPress = (index: number) => {
+    setActiveDot(index);
+    scrollRef.current?.scrollTo({ x: index * slideWidth, animated: true });
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -33,153 +70,98 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
       {/* Main Container */}
       <View style={styles.content}>
         
-        {/* Top Header: Clean Non-Overlapping Layout with lowered TradeFlow Title */}
+        {/* Top Header: TradeFlow Branding & Language Indicator */}
         <View style={styles.header}>
-          {/* Left spacer for perfect horizontal centering */}
           <View style={styles.headerSpacer} />
-
-          {/* Centered Brand Title: "TradeFlow" */}
           <Text style={styles.brandTitle}>TradeFlow</Text>
-          
-          {/* Right Language Switcher with distinct background pill */}
           <TouchableOpacity
             style={styles.langBtn}
             onPress={toggleLanguage}
             activeOpacity={0.8}
           >
-            <Text style={styles.langBtnText}>
-              🌐 {language === 'AM' ? 'EN' : 'አማርኛ'}
-            </Text>
+            <Text style={styles.langBtnText}>🌐 English</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Center Illustration Area */}
-        <View style={styles.illustrationCard}>
-          
-          {/* ========================================================
-              SLIDE 0 (DOT 1 [● ○ ○]): 1:1 3D ISOMETRIC VECTOR ILLUSTRATION
-             ======================================================== */}
-          {activeDot === 0 && (
-            <CorridorIsometricIllustration />
-          )}
-
-          {/* ========================================================
-              SLIDE 1 (DOT 2 [○ ● ○]): 1:1 2D CORRIDOR ROUTE MAP VECTOR ILLUSTRATION
-             ======================================================== */}
-          {activeDot === 1 && (
-            <CorridorRouteMapIllustration />
-          )}
-
-          {/* ========================================================
-              SLIDE 2 (DOT 3 [○ ○ ●]): Cross-Border Cargo & Journey Straight Highway
-             ======================================================== */}
-          {activeDot === 2 && (
-            <View style={styles.mapCanvas}>
-              {/* Soft Cloud Backdrop */}
-              <View style={[styles.s2CloudBackdrop, { top: 12, left: 25, width: 250, height: 120 }]} />
-
-              {/* Djibouti Flag (Left) */}
-              <View style={[styles.s2FlagBox, { left: 16 }]}>
-                <View style={styles.flagPoleLine} />
-                <View style={styles.djiboutiBanner}>
-                  <View style={styles.djiboutiBlueBand} />
-                  <View style={styles.djiboutiGreenBand} />
-                  <View style={styles.djiboutiTriangleShape} />
-                  <View style={styles.djiboutiRedStar} />
-                </View>
-              </View>
-
-              {/* Ethiopian Flag (Right) */}
-              <View style={[styles.s2FlagBox, { right: 16 }]}>
-                <View style={styles.flagPoleLine} />
-                <View style={styles.ethiopiaBanner}>
-                  <View style={styles.ethiopiaGreenBand} />
-                  <View style={styles.ethiopiaYellowBand} />
-                  <View style={styles.ethiopiaRedBand} />
-                  <View style={styles.ethiopiaEmblemDisk} />
-                </View>
-              </View>
-
-              {/* Horizontal Asphalt Highway */}
-              <View style={styles.s2RoadTrack}>
-                <View style={styles.s2RoadDashedDivider} />
-              </View>
-
-              {/* Forward Semi-Truck */}
-              <View style={styles.s2TruckAssembly}>
-                <View style={styles.s2TrailerBox}>
-                  <View style={styles.s2SpeedLinesBox}>
-                    <View style={styles.s2SpeedLine} />
-                    <View style={styles.s2SpeedLine} />
-                    <View style={styles.s2SpeedLine} />
-                  </View>
-                </View>
-                <View style={styles.s2CabinBox}>
-                  <View style={styles.s2Windshield} />
-                  <View style={styles.s2SideWindow} />
-                </View>
-
-                {/* Wheels */}
-                <View style={[styles.s2Wheel, { left: 16 }]} />
-                <View style={[styles.s2Wheel, { left: 38 }]} />
-                <View style={[styles.s2Wheel, { left: 110 }]} />
-                <View style={[styles.s2Wheel, { left: 130 }]} />
-                <View style={[styles.s2Wheel, { right: 14 }]} />
-              </View>
+        {/* Center Illustration Area: Full Edge-to-Edge Cross-Platform Carousel */}
+        <View style={styles.carouselContainer}>
+          <ScrollView
+            ref={scrollRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+            decelerationRate="fast"
+            snapToInterval={slideWidth}
+            snapToAlignment="center"
+            contentContainerStyle={styles.scrollTrack}
+          >
+            {/* SLIDE 0 [● ○ ○]: Full Bleed Reference Image Illustration */}
+            <View style={[styles.slideCard, { width: slideWidth }]}>
+              <CorridorIsometricIllustration />
             </View>
-          )}
 
+            {/* SLIDE 1 [○ ● ○]: Full Bleed 2D Corridor Route Map Illustration */}
+            <View style={[styles.slideCard, { width: slideWidth }]}>
+              <CorridorRouteMapIllustration />
+            </View>
+
+            {/* SLIDE 2 [○ ○ ●]: Full Bleed Cross-Border Highway Illustration */}
+            <View style={[styles.slideCard, { width: slideWidth }]}>
+              <CorridorHighwayIllustration />
+            </View>
+          </ScrollView>
         </View>
 
-        {/* Dynamic Titles & Descriptions */}
+        {/* Dynamic Titles & Descriptions synced with Carousel Swipe */}
         <View style={styles.textContainer}>
-          {activeDot === 2 ? (
-            <View style={styles.slide2TitleBox}>
-              <Text style={styles.slide2MainTitle}>የድንበር ተሻጋሪ ጭነት እና ጉዞ</Text>
-              <Text style={styles.slide2SubTitle}>Cross-Border Cargo & Journey</Text>
-            </View>
-          ) : null}
-
-          <Text style={styles.amharicDescription}>
-            በኢትዮጵያ-ጅቡቲ መስመር ላይ ጉዞዎን በቀላሉ ይከታተሉ፤ ያለ ኢንተርኔት ፍተሻዎችን ይመዝግቡ፤ የዲጂታል ክፍያዎን በፍጥነት ይቀበሉ
+          <Text style={styles.slideTitle}>
+            {slideData[activeDot].title}
           </Text>
-          <Text style={styles.englishDescription}>
-            Track your journey on the Ethiopia-Djibouti route, record check-ins offline, and receive digital payments instantly.
+          <Text style={styles.slideDescription}>
+            {slideData[activeDot].desc}
           </Text>
         </View>
 
         {/* 3 Pagination Carousel Dots [● ○ ○] */}
         <View style={styles.paginationContainer}>
-          <TouchableOpacity onPress={() => setActiveDot(0)} activeOpacity={0.7}>
-            <View style={[styles.paginationDot, activeDot === 0 ? styles.dotActive : styles.dotInactive]} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setActiveDot(1)} activeOpacity={0.7}>
-            <View style={[styles.paginationDot, activeDot === 1 ? styles.dotActive : styles.dotInactive]} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setActiveDot(2)} activeOpacity={0.7}>
-            <View style={[styles.paginationDot, activeDot === 2 ? styles.dotActive : styles.dotInactive]} />
-          </TouchableOpacity>
+          {[0, 1, 2].map((idx) => (
+            <TouchableOpacity
+              key={idx}
+              onPress={() => handleDotPress(idx)}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <View
+                style={[
+                  styles.paginationDot,
+                  activeDot === idx ? styles.dotActive : styles.dotInactive,
+                ]}
+              />
+            </TouchableOpacity>
+          ))}
         </View>
 
-        {/* Bottom Action Buttons (Exact match to screenshot) */}
+        {/* Bottom Action Buttons */}
         <View style={styles.buttonsWrapper}>
           
-          {/* Primary Solid Blue Button: ይግቡ / Login */}
+          {/* Primary Solid Blue Button: Login */}
           <TouchableOpacity
             style={styles.loginButton}
             onPress={onNavigateLogin}
             activeOpacity={0.85}
           >
-            <Text style={styles.loginButtonText}>ይግቡ / Login</Text>
+            <Text style={styles.loginButtonText}>Log In</Text>
           </TouchableOpacity>
 
-          {/* Secondary Outlined Button: አዲስ አካውንት ይክፈቱ / Create Account */}
+          {/* Secondary Outlined Button: Create Account */}
           <TouchableOpacity
             style={styles.registerButton}
             onPress={onNavigateRegister}
             activeOpacity={0.85}
           >
-            <Text style={styles.registerButtonText}>አዲስ አካውንት ይክፈቱ / Create Account</Text>
+            <Text style={styles.registerButtonText}>Create Account</Text>
           </TouchableOpacity>
 
           {/* Fast Demo One-Click Fill */}
@@ -205,16 +187,17 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 22,
     justifyContent: 'space-between',
     paddingVertical: 12,
+    alignItems: 'center',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 18,
+    paddingTop: 14,
     paddingBottom: 4,
+    paddingHorizontal: 22,
     width: '100%',
   },
   headerSpacer: {
@@ -242,302 +225,108 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#0284C7',
   },
-  illustrationCard: {
+  carouselContainer: {
     width: '100%',
-    height: 260,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
+    height: 280,
     marginTop: 4,
+    overflow: 'hidden',
   },
-  mapCanvas: {
-    width: '100%',
-    maxWidth: 320,
-    height: 240,
-    position: 'relative',
-    justifyContent: 'center',
+  scrollTrack: {
     alignItems: 'center',
+  },
+  slideCard: {
+    height: 280,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
-  // SLIDE 2 (DOT 3): HORIZONTAL TRUCK & HIGHWAY
-  s2CloudBackdrop: {
-    position: 'absolute',
-    backgroundColor: '#E6EFF7',
-    borderRadius: 60,
-    opacity: 0.75,
-  },
-  s2FlagBox: {
-    position: 'absolute',
-    top: 30,
-    flexDirection: 'row',
-  },
-  flagPoleLine: {
-    width: 2,
-    height: 42,
-    backgroundColor: '#475569',
-  },
-  djiboutiBanner: {
-    width: 36,
-    height: 23,
-    borderRadius: 2,
-    overflow: 'hidden',
-    position: 'relative',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 0.5,
-    borderColor: '#94A3B8',
-  },
-  djiboutiBlueBand: {
-    width: '100%',
-    height: 11.5,
-    backgroundColor: '#60A5FA',
-  },
-  djiboutiGreenBand: {
-    width: '100%',
-    height: 11.5,
-    backgroundColor: '#22C55E',
-  },
-  djiboutiTriangleShape: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    width: 0,
-    height: 0,
-    borderTopWidth: 11.5,
-    borderBottomWidth: 11.5,
-    borderLeftWidth: 15,
-    borderStyle: 'solid',
-    backgroundColor: 'transparent',
-    borderTopColor: 'transparent',
-    borderBottomColor: 'transparent',
-    borderLeftColor: '#FFFFFF',
-  },
-  djiboutiRedStar: {
-    position: 'absolute',
-    left: 3,
-    top: 9,
-    width: 5,
-    height: 5,
-    backgroundColor: '#EF4444',
-    borderRadius: 2.5,
-  },
-  ethiopiaBanner: {
-    width: 36,
-    height: 22,
-    borderRadius: 2,
-    overflow: 'hidden',
-    position: 'relative',
-    borderWidth: 0.5,
-    borderColor: '#94A3B8',
-  },
-  ethiopiaGreenBand: {
-    width: '100%',
-    height: 7,
-    backgroundColor: '#16A34A',
-  },
-  ethiopiaYellowBand: {
-    width: '100%',
-    height: 7,
-    backgroundColor: '#EAB308',
-  },
-  ethiopiaRedBand: {
-    width: '100%',
-    height: 8,
-    backgroundColor: '#DC2626',
-  },
-  ethiopiaEmblemDisk: {
-    position: 'absolute',
-    left: 14,
-    top: 7,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#2563EB',
-  },
-  s2RoadTrack: {
-    position: 'absolute',
-    bottom: 35,
-    width: '100%',
-    maxWidth: 290,
-    height: 34,
-    backgroundColor: '#CBD5E1',
-    borderRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  s2RoadDashedDivider: {
-    width: '88%',
-    height: 3,
-    borderStyle: 'dashed',
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
-  },
-  s2TruckAssembly: {
-    position: 'absolute',
-    bottom: 46,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    zIndex: 10,
-  },
-  s2TrailerBox: {
-    width: 155,
-    height: 54,
-    backgroundColor: '#E2E8F0',
-    borderWidth: 2,
-    borderColor: '#94A3B8',
-    borderRadius: 4,
-    justifyContent: 'center',
-    paddingHorizontal: 10,
-  },
-  s2SpeedLinesBox: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'center',
-  },
-  s2SpeedLine: {
-    width: 22,
-    height: 28,
-    backgroundColor: '#60A5FA',
-    borderRadius: 4,
-    transform: [{ skewX: '-25deg' }],
-  },
-  s2CabinBox: {
-    width: 40,
-    height: 44,
-    backgroundColor: '#64748B',
-    borderTopRightRadius: 10,
-    borderBottomRightRadius: 3,
-    borderWidth: 2,
-    borderColor: '#475569',
-    marginLeft: -2,
-    padding: 4,
-    justifyContent: 'space-between',
-  },
-  s2Windshield: {
-    width: 16,
-    height: 14,
-    backgroundColor: '#93C5FD',
-    borderRadius: 3,
-    alignSelf: 'flex-end',
-  },
-  s2SideWindow: {
-    width: 8,
-    height: 8,
-    backgroundColor: '#93C5FD',
-    borderRadius: 2,
-  },
-  s2Wheel: {
-    position: 'absolute',
-    bottom: -7,
-    width: 15,
-    height: 15,
-    borderRadius: 7.5,
-    backgroundColor: '#1E293B',
-    borderWidth: 2.5,
-    borderColor: '#64748B',
-  },
-
-  // Dynamic Typography Section
+  // Dynamic Titles & Descriptions
   textContainer: {
-    paddingHorizontal: 6,
     alignItems: 'center',
-    marginVertical: 4,
+    paddingHorizontal: 24,
+    minHeight: 78,
+    justifyContent: 'center',
+    width: '100%',
   },
-  slide2TitleBox: {
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  slide2MainTitle: {
-    fontSize: 17,
+  slideTitle: {
+    fontSize: 18,
     fontWeight: '800',
     color: '#0F172A',
     textAlign: 'center',
+    marginBottom: 6,
+    letterSpacing: -0.2,
   },
-  slide2SubTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#1E293B',
-    textAlign: 'center',
-  },
-  amharicDescription: {
-    fontSize: 11.5,
-    color: '#334155',
-    textAlign: 'center',
-    lineHeight: 17,
-    fontWeight: '500',
-    marginBottom: 4,
-  },
-  englishDescription: {
-    fontSize: 10.5,
+  slideDescription: {
+    fontSize: 12,
     color: '#64748B',
     textAlign: 'center',
-    lineHeight: 15,
+    lineHeight: 18,
   },
 
-  // Carousel Pagination Dots
+  // 3 Pagination Dots
   paginationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginVertical: 6,
+    marginVertical: 4,
   },
   paginationDot: {
-    width: 8,
-    height: 8,
+    height: 7,
     borderRadius: 4,
   },
   dotActive: {
-    backgroundColor: '#5A8EB9',
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 24,
+    backgroundColor: '#0284C7',
   },
   dotInactive: {
-    backgroundColor: 'transparent',
-    borderWidth: 1.5,
-    borderColor: '#94A3B8',
+    width: 7,
+    backgroundColor: '#CBD5E1',
   },
 
-  // Bottom Action Buttons
+  // Action Buttons
   buttonsWrapper: {
     width: '100%',
+    paddingHorizontal: 22,
     gap: 10,
-    paddingBottom: 8,
+    paddingBottom: 4,
   },
   loginButton: {
-    backgroundColor: '#6B9AC4',
-    borderRadius: 25,
-    paddingVertical: 13,
+    backgroundColor: '#0284C7',
+    paddingVertical: 14,
+    borderRadius: 16,
     alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 2,
+    shadowColor: '#0284C7',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
   },
   loginButtonText: {
     color: '#FFFFFF',
-    fontSize: 14.5,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '800',
   },
   registerButton: {
     backgroundColor: 'transparent',
-    borderRadius: 25,
-    paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: '#6B9AC4',
+    borderColor: '#0284C7',
+    paddingVertical: 13,
+    borderRadius: 16,
+    alignItems: 'center',
   },
   registerButtonText: {
-    color: '#2C5777',
-    fontSize: 13.5,
-    fontWeight: '700',
+    color: '#0284C7',
+    fontSize: 15,
+    fontWeight: '800',
   },
   fastDemoWrapper: {
     alignItems: 'center',
-    paddingVertical: 2,
+    paddingVertical: 4,
   },
   fastDemoLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#334155',
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '700',
   },
 });

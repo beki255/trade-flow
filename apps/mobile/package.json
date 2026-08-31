@@ -13,6 +13,7 @@
     "@tradeflow/shared": "*",
     "expo": "~52.0.37",
     "expo-asset": "~11.0.4",
+    "expo-document-picker": "^57.0.1",
     "expo-font": "~13.0.4",
     "expo-location": "~18.0.7",
     "expo-sqlite": "~15.0.6",

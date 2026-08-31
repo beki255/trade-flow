@@ -319,7 +319,7 @@ export const renderSwaggerUiHtml = () => `
     <div class="topbar-links">
       <a href="/api/health" target="_blank" class="topbar-link">🏥 Health Check</a>
       <a href="/api/docs/json" target="_blank" class="topbar-link">📄 OpenAPI JSON</a>
-      <a href="http://localhost:5173" target="_blank" class="topbar-link">🌐 Web Portal</a>
+      <a href="http://localhost:3000" target="_blank" class="topbar-link">🌐 Web Portal</a>
     </div>
   </div>
 

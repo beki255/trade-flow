@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import {
+  getMe,
   login,
   register,
   googleAuth,
@@ -9,6 +10,8 @@ import {
 
 const router = Router();
 
+router.get('/me', getMe);
+router.get('/verify-session', getMe);
 router.post('/login', login);
 router.post('/register', register);
 router.post('/google', googleAuth);

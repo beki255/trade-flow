@@ -42,15 +42,12 @@ export const Navbar: React.FC = () => {
         {/* Right CTA Button & Language Switcher */}
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Language Switcher */}
-          <button
-            type="button"
-            onClick={() => setLanguage(language === 'EN' ? 'AM' : 'EN')}
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-[11px] font-semibold text-slate-200 transition-all"
-            title="Toggle Language"
+          <div
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-slate-800/90 border border-slate-700 text-[11px] font-semibold text-slate-200"
           >
             <Globe className="w-3.5 h-3.5 text-[#38BDF8]" />
-            <span>{language === 'EN' ? 'አማርኛ' : 'EN'}</span>
-          </button>
+            <span>English</span>
+          </div>
 
           {/* "Get Started Free" Pill Button */}
           <Link

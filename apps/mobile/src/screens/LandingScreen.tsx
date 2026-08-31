@@ -75,7 +75,7 @@ export const LandingScreen: React.FC = () => {
             <Text style={styles.roleIcon}>🚚</Text>
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={styles.roleName}>Driver Portal</Text>
-              <Text style={styles.roleAmharic}>የአሽከርካሪ መተግበሪያ (Offline-First)</Text>
+              <Text style={styles.roleAmharic}>Offline-First Mobile Dispatch</Text>
             </View>
             <View style={styles.roleBadge}>
               <Text style={styles.roleBadgeText}>Active Trip</Text>
@@ -102,7 +102,7 @@ export const LandingScreen: React.FC = () => {
             <Text style={styles.roleIcon}>🚛</Text>
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={styles.roleName}>Transporter Portal</Text>
-              <Text style={styles.roleAmharic}>የጭነት አጓጓዥ / የመኪና ባለቤት</Text>
+              <Text style={styles.roleAmharic}>Fleet & Bidding Manager</Text>
             </View>
             <View style={[styles.roleBadge, { backgroundColor: '#10B98120' }]}>
               <Text style={[styles.roleBadgeText, { color: '#10B981' }]}>Load Board</Text>
