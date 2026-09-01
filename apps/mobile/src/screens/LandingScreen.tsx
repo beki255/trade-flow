@@ -17,7 +17,7 @@ export const LandingScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0B0F19" />
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        
+
         {/* Brand Header */}
         <View style={styles.header}>
           <View style={styles.logoBadge}>

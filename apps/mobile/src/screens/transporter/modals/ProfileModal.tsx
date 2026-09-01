@@ -65,8 +65,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     carrierStatus === 'VERIFIED'
                       ? styles.chipVerified
                       : carrierStatus === 'PENDING'
-                      ? styles.chipPending
-                      : styles.chipSuspended,
+                        ? styles.chipPending
+                        : styles.chipSuspended,
                   ]}
                 >
                   <Text
@@ -75,8 +75,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                       carrierStatus === 'VERIFIED'
                         ? { color: '#059669' }
                         : carrierStatus === 'PENDING'
-                        ? { color: '#D97706' }
-                        : { color: '#DC2626' },
+                          ? { color: '#D97706' }
+                          : { color: '#DC2626' },
                     ]}
                   >
                     Status: {carrierStatus}
