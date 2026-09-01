@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../../context/LanguageContext';
 import { transporterStyles as styles } from './transporterStyles';
 import { UserProfile, TruckItem, DriverItem, LoadItem, BidItem, TransporterTabType } from './types';
-import { getApiBaseUrl } from '../../utils/api';
+import { getApiBaseUrl, apiFetch } from '../../utils/api';
 
 // Modular Tabs
 import { OverviewTab } from './tabs/OverviewTab';
@@ -102,10 +102,9 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
 
   // Fetch real corridor loads, vehicles, and drivers
   const refreshAllData = async () => {
-    const apiUrl = getApiBaseUrl();
     try {
       // 1. Fetch Loads
-      const loadsRes = await fetch(`${apiUrl}/api/portal/loads`);
+      const loadsRes = await apiFetch('/api/portal/loads');
       if (loadsRes.ok) {
         const data = await loadsRes.json();
         if (data.loads) {
@@ -127,8 +126,8 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
       }
 
       // 2. Fetch Fleet Vehicles (Strictly Scoped to this Transporter)
-      const fleetRes = await fetch(
-        `${apiUrl}/api/portal/vehicles?transporterId=${user?.id || ''}&transporterEmail=${encodeURIComponent(user?.email || '')}`
+      const fleetRes = await apiFetch(
+        `/api/portal/vehicles?transporterId=${user?.id || ''}&transporterEmail=${encodeURIComponent(user?.email || '')}`
       );
       if (fleetRes.ok) {
         const data = await fleetRes.json();
@@ -151,8 +150,8 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
       }
 
       // 3. Fetch Authorized Drivers (Strictly Scoped to this Transporter)
-      const driversRes = await fetch(
-        `${apiUrl}/api/portal/drivers?transporterId=${user?.id || ''}&transporterEmail=${encodeURIComponent(user?.email || '')}`
+      const driversRes = await apiFetch(
+        `/api/portal/drivers?transporterId=${user?.id || ''}&transporterEmail=${encodeURIComponent(user?.email || '')}`
       );
       if (driversRes.ok) {
         const data = await driversRes.json();
@@ -175,8 +174,8 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
       }
 
       // 4. Fetch Quotes
-      const bidsRes = await fetch(
-        `${apiUrl}/api/portal/bids?transporterId=${user?.id || ''}&transporterEmail=${encodeURIComponent(user?.email || '')}`
+      const bidsRes = await apiFetch(
+        `/api/portal/bids?transporterId=${user?.id || ''}&transporterEmail=${encodeURIComponent(user?.email || '')}`
       );
       if (bidsRes.ok) {
         const data = await bidsRes.json();
@@ -259,7 +258,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
     }
 
     try {
-      await fetch(`${apiUrl}/api/portal/vehicles`, {
+      await apiFetch('/api/portal/vehicles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -287,7 +286,6 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
       Alert.alert('Missing Fields', 'Please enter the driver legal name and phone number.');
       return;
     }
-    const apiUrl = getApiBaseUrl();
     const newDriver: DriverItem = {
       id: `DRV-${Date.now().toString().slice(-4)}`,
       fullName: driverFullName.trim(),
@@ -307,7 +305,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
     }
 
     try {
-      await fetch(`${apiUrl}/api/portal/drivers`, {
+      await apiFetch('/api/portal/drivers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -386,7 +384,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
     setTimeout(() => setBidSuccess(''), 4000);
 
     try {
-      const res = await fetch(`${apiUrl}/api/portal/bids`, {
+      const res = await apiFetch('/api/portal/bids', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -418,9 +416,8 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
 
   // Respond to Direct Match Offer
   const handleRespondDirectOffer = async (bidId: string, action: 'ACCEPT' | 'REJECT') => {
-    const apiUrl = getApiBaseUrl();
     try {
-      const res = await fetch(`${apiUrl}/api/portal/bids/respond`, {
+      const res = await apiFetch('/api/portal/bids/respond', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ bidId, action }),
@@ -475,10 +472,9 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
     );
 
     const targetLoadId = selectedAcceptedBid?.loadId || '';
-    const apiUrl = getApiBaseUrl();
 
     try {
-      await fetch(`${apiUrl}/api/portal/dispatch`, {
+      await apiFetch('/api/portal/dispatch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

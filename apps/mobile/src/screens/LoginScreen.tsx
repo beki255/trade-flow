@@ -14,7 +14,7 @@ import {
 import { DEMO_ACCOUNTS } from '@tradeflow/shared';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../context/LanguageContext';
-import { getApiBaseUrl } from '../utils/api';
+import { getApiBaseUrl, setCustomServerIp, getCustomServerIp, apiFetch } from '../utils/api';
 
 interface LoginScreenProps {
   onBack: () => void;
@@ -35,6 +35,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   const [errorMsg, setErrorMsg] = useState('');
   const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showIpModal, setShowIpModal] = useState(false);
+  const [customIpInput, setCustomIpInput] = useState(getCustomServerIp() || '');
 
   const handleAutoFillDriver = () => {
     setIdentifier(DEMO_ACCOUNTS.DRIVER.email);
@@ -73,8 +75,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
     try {
       // Direct PostgreSQL database login via API
-      const apiUrl = getApiBaseUrl();
-      const res = await fetch(`${apiUrl}/api/auth/login`, {
+      const res = await apiFetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier: identifier.trim(), password }),
@@ -273,7 +274,66 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
         </View>
 
+        {/* Server Connection Status & IP Configurator */}
+        <TouchableOpacity
+          style={styles.serverPill}
+          onPress={() => {
+            const current = getApiBaseUrl().replace('http://', '').replace(':5000', '');
+            setCustomIpInput(getCustomServerIp() || current);
+            setShowIpModal(true);
+          }}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="wifi-outline" size={13} color="#0284C7" />
+          <Text style={styles.serverPillText} numberOfLines={1}>
+            API Endpoint: {getApiBaseUrl()}
+          </Text>
+          <Ionicons name="settings-outline" size={12} color="#64748B" />
+        </TouchableOpacity>
+
       </ScrollView>
+
+      {/* Manual Server IP Modal */}
+      {showIpModal ? (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>Configure Server IP</Text>
+            <Text style={styles.modalSub}>
+              Enter your computer's local Wi-Fi IP address (or leave empty to reset):
+            </Text>
+            <TextInput
+              style={[styles.textInput, { borderWidth: 1, borderColor: '#CBD5E1', marginBottom: 12 }]}
+              value={customIpInput}
+              onChangeText={setCustomIpInput}
+              placeholder="e.g. 192.168.1.5 or 10.189.78.14"
+              placeholderTextColor="#94A3B8"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity
+                style={[styles.modalBtn, { backgroundColor: '#F1F5F9' }]}
+                onPress={() => setShowIpModal(false)}
+              >
+                <Text style={{ color: '#475569', fontWeight: '700' }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalBtn, { backgroundColor: '#0284C7' }]}
+                onPress={() => {
+                  if (customIpInput.trim()) {
+                    setCustomServerIp(customIpInput.trim());
+                  }
+                  setShowIpModal(false);
+                  setNotice(`API endpoint updated to ${getApiBaseUrl()}!`);
+                  setTimeout(() => setNotice(''), 3000);
+                }}
+              >
+                <Text style={{ color: '#FFFFFF', fontWeight: '800' }}>Save & Connect</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 };
@@ -545,5 +605,68 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#2563EB',
+  },
+  serverPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F0F9FF',
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    marginTop: 16,
+    gap: 6,
+    alignSelf: 'center',
+  },
+  serverPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0369A1',
+    maxWidth: 240,
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+    zIndex: 999,
+  },
+  modalBox: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 20,
+    width: '100%',
+    maxWidth: 360,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 4,
+  },
+  modalSub: {
+    fontSize: 12,
+    color: '#64748B',
+    marginBottom: 12,
+    lineHeight: 17,
+  },
+  modalBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

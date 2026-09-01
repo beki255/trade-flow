@@ -11,7 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { driverStyles as styles } from './driverStyles';
 import { WaypointItem, CheckinRecord, IncidentRecord, ActiveTripDetails, DriverTabType } from './types';
-import { getApiBaseUrl } from '../../utils/api';
+import { getApiBaseUrl, apiFetch } from '../../utils/api';
 
 // Modular Tabs
 import { TripTab } from './tabs/TripTab';
@@ -37,15 +37,16 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
 
   // Fetch real-time active trip assigned by Transporter
   const fetchActiveTrip = async () => {
-    const apiUrl = getApiBaseUrl();
     try {
-      const res = await fetch(
-        `${apiUrl}/api/portal/driver/active-trip?driverId=${user?.id || ''}&driverEmail=${encodeURIComponent(user?.email || '')}&driverName=${encodeURIComponent(user?.fullName || '')}`
+      const res = await apiFetch(
+        `/api/portal/driver/active-trip?driverId=${user?.id || ''}&driverEmail=${encodeURIComponent(user?.email || '')}&driverName=${encodeURIComponent(user?.fullName || '')}`
       );
       if (res.ok) {
         const data = await res.json();
         if (data.activeTrip) {
           setActiveTrip(data.activeTrip);
+        } else {
+          setActiveTrip(null);
         }
       }
     } catch (err) {

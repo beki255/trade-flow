@@ -965,7 +965,7 @@ export const createBid = async (req: Request, res: Response): Promise<void> => {
         pickupEstimatedTime: pickupEst,
         deliveryEstimatedTime: deliveryEst,
         validityHours: parseInt(validityHours) || 24,
-        proposalNotes: notes || 'Ready for corridor dispatch',
+        proposalNotes: proposalNotes || 'Ready for corridor dispatch',
         status: BidStatus.PENDING,
         expiresAt,
       },
