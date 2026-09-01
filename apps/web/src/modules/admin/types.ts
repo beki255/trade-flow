@@ -1,0 +1,44 @@
+export interface VerificationUser {
+  id: string;
+  fullName: string;
+  companyName: string | null;
+  email: string;
+  phone: string;
+  role: string;
+  tin: string | null;
+  tradeLicenseNo: string | null;
+  verificationStatus: 'PENDING' | 'VERIFIED' | 'SUSPENDED' | 'REJECTED';
+  verificationNotes: string | null;
+  createdAt: string;
+  vehicles?: any[];
+}
+
+export interface DocumentPreviewData {
+  title: string;
+  docType: string;
+  docNumber: string;
+  issuer: string;
+  fileName: string;
+  status: string;
+  issuedDate: string;
+  ownerName: string;
+}
+
+export interface AuditLogItem {
+  id: string;
+  timestamp: string;
+  action: string;
+  category: string;
+  targetName: string;
+  previousStatus?: string;
+  newStatus?: string;
+  performedByAdminId: string;
+  notes: string;
+}
+
+export interface AdminStats {
+  pendingVerifications: number;
+  verifiedUsers: number;
+  systemHealth: string;
+  fraudAlerts: number;
+}

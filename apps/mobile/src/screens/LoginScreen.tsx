@@ -12,6 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import { DEMO_ACCOUNTS } from '@tradeflow/shared';
+import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../context/LanguageContext';
 import { getApiBaseUrl } from '../utils/api';
 
@@ -187,7 +188,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 onPress={() => setShowPassword(!showPassword)}
                 style={styles.eyeBtn}
               >
-                <Text style={styles.eyeText}>{showPassword ? '🙈' : '👁️'}</Text>
+                <Ionicons
+                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                  size={18}
+                  color="#64748B"
+                />
               </TouchableOpacity>
             </View>
           </View>
@@ -223,20 +228,24 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           {/* Fast Demo One-Click Fill Buttons */}
           <View style={styles.demoBar}>
             <Text style={styles.demoTitle}>
-              ⚡ Quick 1-Click Demo Accounts:
+              Quick 1-Click Demo Accounts:
             </Text>
             <View style={styles.demoBtnRow}>
               <TouchableOpacity
                 style={styles.demoChip}
                 onPress={handleAutoFillDriver}
+                activeOpacity={0.8}
               >
-                <Text style={styles.demoChipText}>⚡ Driver Demo</Text>
+                <Ionicons name="person-outline" size={13} color="#0284C7" style={{ marginRight: 4 }} />
+                <Text style={styles.demoChipText}>Driver Demo</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.demoChip}
                 onPress={handleAutoFillTransporter}
+                activeOpacity={0.8}
               >
-                <Text style={styles.demoChipText}>⚡ Transporter Demo</Text>
+                <Ionicons name="business-outline" size={13} color="#0284C7" style={{ marginRight: 4 }} />
+                <Text style={styles.demoChipText}>Transporter Demo</Text>
               </TouchableOpacity>
             </View>
           </View>

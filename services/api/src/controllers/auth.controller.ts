@@ -48,24 +48,35 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     const { identifier, password } = parseResult.data;
 
-    // Query database for existing user
+    const cleanDigits = identifier.replace(/[^0-9]/g, '');
+    const phoneSuffix = cleanDigits.length >= 8 ? cleanDigits.slice(-8) : cleanDigits;
+
+    // Query database for existing user across all phone/email variations
     const user = await prisma.user.findFirst({
       where: {
         OR: [
           { email: identifier.toLowerCase().trim() },
           { username: identifier.trim() },
           { phone: identifier.trim() },
+          ...(cleanDigits.length >= 8
+            ? [
+                { phone: { contains: cleanDigits } },
+                { phone: { contains: phoneSuffix } },
+                { email: { contains: phoneSuffix } },
+                { username: { contains: phoneSuffix } },
+              ]
+            : []),
         ],
       },
     });
 
     if (!user) {
-      res.status(401).json({ error: 'User not found. Please check your credentials or register.' });
+      res.status(401).json({ error: 'User not found. Please check your phone number or credentials.' });
       return;
     }
 
     // Check password
-    if (user.passwordHash !== password) {
+    if ((user.passwordHash || '').trim() !== password.trim()) {
       res.status(401).json({ error: 'Incorrect password. Please try again.' });
       return;
     }

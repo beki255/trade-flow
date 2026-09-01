@@ -1,1726 +1,782 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  StyleSheet,
   Text,
   View,
   TouchableOpacity,
   ScrollView,
   SafeAreaView,
   StatusBar,
-  TextInput,
-  Modal,
   Alert,
+  RefreshControl,
+  Platform,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../../context/LanguageContext';
+import { transporterStyles as styles } from './transporterStyles';
+import { UserProfile, TruckItem, DriverItem, LoadItem, BidItem, TransporterTabType } from './types';
 import { getApiBaseUrl } from '../../utils/api';
+
+// Modular Tabs
+import { OverviewTab } from './tabs/OverviewTab';
+import { FleetTab } from './tabs/FleetTab';
+import { LoadsTab } from './tabs/LoadsTab';
+import { BiddingTab } from './tabs/BiddingTab';
+import { EarningsTab } from './tabs/EarningsTab';
+
+// Modular Modals
+import { AddTruckModal } from './modals/AddTruckModal';
+import { AddDriverModal } from './modals/AddDriverModal';
+import { DispatchModal } from './modals/DispatchModal';
+import { ProfileModal } from './modals/ProfileModal';
 
 interface TransporterPortalScreenProps {
   onLogout: () => void;
-  user?: any;
+  user?: UserProfile;
 }
 
-export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = ({ onLogout, user }) => {
-  const { language, toggleLanguage, t } = useLanguage();
-  const [activeTab, setActiveTab] = useState<'fleet' | 'loads' | 'bidding' | 'earnings'>('fleet');
-  const [showProfileModal, setShowProfileModal] = useState(false);
+export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = ({
+  onLogout,
+  user,
+}) => {
+  const { language, toggleLanguage } = useLanguage();
+  const [activeTab, setActiveTab] = useState<TransporterTabType>('overview');
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Fleet Sub-tab ('vehicles' or 'drivers')
-  const [fleetSubTab, setFleetSubTab] = useState<'vehicles' | 'drivers'>('vehicles');
-
-  // Dynamic Fleet List (starts empty, populated by real user vehicles)
-  const [fleetList, setFleetList] = useState<any[]>([]);
-
-  // Dynamic Drivers List (Registered by Transporter)
-  const [driversList, setDriversList] = useState<any[]>([]);
-
-  // New Truck Form State (Fleet Details)
-  const [showAddTruck, setShowAddTruck] = useState(false);
-  const [newPlate, setNewPlate] = useState('');
-  const [newModel, setNewModel] = useState('');
-  const [newDriver, setNewDriver] = useState('');
-  const [newType, setNewType] = useState<'Container' | 'Flatbed' | 'Box' | 'Tanker'>('Container');
-  const [newPayload, setNewPayload] = useState('35 Tons');
-  const [newFuel, setNewFuel] = useState<'Diesel' | 'Electric' | 'Hybrid'>('Diesel');
-
-  // New Driver Form State (Transporter registers their drivers)
-  const [showAddDriver, setShowAddDriver] = useState(false);
-  const [driverName, setDriverName] = useState('');
-  const [driverPhone, setDriverPhone] = useState('');
-  const [driverLicenseNo, setDriverLicenseNo] = useState('');
-  const [driverLicenseClass, setDriverLicenseClass] = useState('Level 5 (Heavy Freight)');
-  const [driverPassword, setDriverPassword] = useState('');
-  const [driverAssignedPlate, setDriverAssignedPlate] = useState('');
-
-  // Carrier Verification Status & Access Control (Synced with logged in user or defaults to VERIFIED)
-  const [carrierStatus, setCarrierStatus] = useState<'PENDING' | 'VERIFIED' | 'SUSPENDED'>(
-    user?.verificationStatus === 'PENDING'
+  // Verification Status
+  const [carrierStatus] = useState<'PENDING' | 'VERIFIED' | 'SUSPENDED'>(
+    user?.isVerified
+      ? 'VERIFIED'
+      : user?.verificationStatus === 'PENDING'
       ? 'PENDING'
       : user?.verificationStatus === 'SUSPENDED'
       ? 'SUSPENDED'
       : 'VERIFIED'
   );
 
-  // Loads & Bidding State
-  const [loadsList, setLoadsList] = useState<any[]>([]);
+  // Data Collections
+  const [fleetList, setFleetList] = useState<TruckItem[]>([]);
+  const [driversList, setDriversList] = useState<DriverItem[]>([]);
+  const [loadsList, setLoadsList] = useState<LoadItem[]>([]);
+  const [submittedBids, setSubmittedBids] = useState<BidItem[]>([]);
+
+  // Modals Visibility
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showAddTruck, setShowAddTruck] = useState(false);
+  const [showAddDriver, setShowAddDriver] = useState(false);
+  const [showDispatchModal, setShowDispatchModal] = useState(false);
+  const [selectedAcceptedBid, setSelectedAcceptedBid] = useState<BidItem | null>(null);
+
+  // Add Truck Form State
+  const [truckPlate, setTruckPlate] = useState('');
+  const [truckType, setTruckType] = useState('Flatbed');
+  const [truckCapacity, setTruckCapacity] = useState('28.0');
+  const [truckDriver, setTruckDriver] = useState('');
+  const [insuranceDoc, setInsuranceDoc] = useState(true);
+  const [roadworthinessDoc, setRoadworthinessDoc] = useState(true);
+  const [showDriverDropdown, setShowDriverDropdown] = useState(false);
+
+  // Add Driver Form State
+  const [driverFullName, setDriverFullName] = useState('');
+  const [driverPhone, setDriverPhone] = useState('');
+  const [driverLicense, setDriverLicense] = useState('');
+  const [driverCategory, setDriverCategory] = useState('Grade 5 Heavy');
+  const [driverExperience, setDriverExperience] = useState('5');
+  const [driverAssignedPlate, setDriverAssignedPlate] = useState('');
+  const [showTruckDropdown, setShowTruckDropdown] = useState(false);
+
+  // Bidding State
   const [selectedLoadId, setSelectedLoadId] = useState('');
   const [bidPrice, setBidPrice] = useState('');
   const [transitHours, setTransitHours] = useState('');
   const [bidNotes, setBidNotes] = useState('');
+  const [bidValidityHours, setBidValidityHours] = useState(24);
   const [bidSuccess, setBidSuccess] = useState('');
-  const [submittedBids, setSubmittedBids] = useState<any[]>([]);
+  const [biddingSubTab, setBiddingSubTab] = useState<'create' | 'history'>('create');
 
-  // Fetch real corridor loads, vehicles, and drivers from PostgreSQL database (Scoped to this Transporter)
+  // Load Search State
+  const [loadSearchQuery, setLoadSearchQuery] = useState('');
+
+  // Dispatch Assignment State
+  const [dispatchTruck, setDispatchTruck] = useState('');
+  const [dispatchDriver, setDispatchDriver] = useState('');
+
+  // Fetch real corridor loads, vehicles, and drivers
   const refreshAllData = async () => {
     const apiUrl = getApiBaseUrl();
     try {
-      // 1. Fetch Loads (Available for all verified transporters)
+      // 1. Fetch Loads
       const loadsRes = await fetch(`${apiUrl}/api/portal/loads`);
       if (loadsRes.ok) {
         const data = await loadsRes.json();
         if (data.loads) {
-          const mapped = data.loads.map((l: any) => ({
-            id: `TF-SH-${l.id.slice(-4).toUpperCase()}`,
-            rawId: l.id,
-            title: l.title,
-            weight: `${(l.weightKg / 1000).toFixed(1)} Tons`,
-            route: `${l.originAddress} ➔ ${l.destinationAddress}`,
-            budget: `${Number(l.targetBudgetEtb || '180000').toLocaleString()} ETB`,
-          }));
-          setLoadsList(mapped);
-          if (mapped.length > 0 && !selectedLoadId) {
-            setSelectedLoadId(mapped[0].id);
-          }
+          setLoadsList(
+            data.loads.map((l: any) => ({
+              id: l.id ? `LD-${l.id.slice(-4).toUpperCase()}` : 'LD-9901',
+              rawId: l.id,
+              title: l.title || 'Corridor Consignment',
+              origin: l.originName || 'Addis Ababa',
+              destination: l.destName || 'Djibouti Port',
+              route: `${l.originName || 'Addis Ababa'} ➔ ${l.destName || 'Djibouti Port'}`,
+              cargoType: l.cargoType || 'General Freight',
+              weight: `${l.weightTons || 28.0} Tons`,
+              budget: l.targetBudgetEtb ? `${Number(l.targetBudgetEtb).toLocaleString()} ETB` : '',
+              status: l.status || 'OPEN',
+            }))
+          );
         }
       }
 
-      // 2. Fetch Vehicles strictly scoped to this Transporter
-      const userParam = user?.id
-        ? `transporterId=${encodeURIComponent(user.id)}`
-        : user?.email
-        ? `transporterEmail=${encodeURIComponent(user.email)}`
-        : '';
-
-      const vehiclesRes = await fetch(`${apiUrl}/api/portal/vehicles?${userParam}`);
-      if (vehiclesRes.ok) {
-        const vData = await vehiclesRes.json();
-        if (vData.vehicles) {
-          const mappedV = vData.vehicles.map((v: any) => ({
-            id: `TRK-${v.id.slice(-4).toUpperCase()}`,
-            plate: v.plateNumber,
-            model: `${v.vehicleType} Heavy Transport`,
-            type: v.vehicleType,
-            payload: `${v.capacityTons} Tons`,
-            fuelType: v.fuelType || 'Diesel',
-            driver: v.drivers?.[0]?.user?.fullName || 'Assigned Driver',
-            insuranceNo: v.insurancePolicyNo || 'EIC-GIT-2026-09',
-            roadworthinessNo: 'FTA-RW-2026',
-            status: v.isAvailable ? 'AVAILABLE' : 'IN_TRANSIT',
-            location: 'Kaliti Logistics Hub',
-            fuel: '95%',
+      // 2. Fetch Fleet Vehicles (Strictly Scoped to this Transporter)
+      const fleetRes = await fetch(
+        `${apiUrl}/api/portal/vehicles?transporterId=${user?.id || ''}&transporterEmail=${encodeURIComponent(user?.email || '')}`
+      );
+      if (fleetRes.ok) {
+        const data = await fleetRes.json();
+        if (data.vehicles && data.vehicles.length > 0) {
+          const mappedVehicles = data.vehicles.map((v: any) => ({
+            id: v.id,
+            rawId: v.id,
+            plate: v.plateNumber || 'ET-3-88412',
+            type: v.model || 'Heavy Flatbed',
+            capacity: `${v.capacityTons || 32.0} Tons`,
+            status: v.status === 'IN_TRANSIT' ? 'IN_TRANSIT' : 'AVAILABLE',
+            insuranceStatus: 'VERIFIED',
+            driver: v.driver?.fullName || 'Unassigned',
+            gpsEnabled: true,
           }));
-          setFleetList(mappedV);
+          setFleetList(mappedVehicles);
         } else {
           setFleetList([]);
         }
       }
 
-      // 3. Fetch Drivers strictly scoped to this Transporter
-      const driversRes = await fetch(`${apiUrl}/api/portal/drivers?${userParam}`);
+      // 3. Fetch Authorized Drivers (Strictly Scoped to this Transporter)
+      const driversRes = await fetch(
+        `${apiUrl}/api/portal/drivers?transporterId=${user?.id || ''}&transporterEmail=${encodeURIComponent(user?.email || '')}`
+      );
       if (driversRes.ok) {
-        const dData = await driversRes.json();
-        if (dData.drivers) {
-          const mappedD = dData.drivers.map((d: any) => ({
-            id: `DRV-${d.id.slice(-4).toUpperCase()}`,
-            fullName: d.fullName,
-            phone: d.phone,
-            licenseNo: d.driverProfile?.driverLicenseNo || 'ET-LIC-9921',
-            licenseClass: d.driverProfile?.licenseClass || 'Level 5 (Heavy Freight)',
-            assignedPlate: d.driverProfile?.assignedVehicle?.plateNumber || 'Unassigned',
-            status: 'ACTIVE_READY',
-            registeredAt: new Date(d.createdAt).toLocaleDateString(),
+        const data = await driversRes.json();
+        if (data.drivers && data.drivers.length > 0) {
+          const mappedDrivers = data.drivers.map((d: any) => ({
+            id: d.id,
+            rawId: d.id,
+            fullName: d.fullName || 'Dawit Hailemariam',
+            phone: d.phone || '+251 91 123 4567',
+            licenseNumber: d.driverProfile?.driverLicenseNo || d.licenseNumber || 'ETH-DL-984218',
+            licenseCategory: d.driverProfile?.licenseClass || 'Grade 5 Heavy',
+            experienceYears: `${d.driverProfile?.experienceYears || d.experienceYears || 8}`,
+            status: 'ACTIVE',
+            assignedTruckPlate: d.driverProfile?.assignedVehicle?.plateNumber || d.assignedVehiclePlate || '',
           }));
-          setDriversList(mappedD);
+          setDriversList(mappedDrivers);
         } else {
           setDriversList([]);
         }
       }
+
+      // 4. Fetch Quotes
+      const bidsRes = await fetch(
+        `${apiUrl}/api/portal/bids?transporterId=${user?.id || ''}&transporterEmail=${encodeURIComponent(user?.email || '')}`
+      );
+      if (bidsRes.ok) {
+        const data = await bidsRes.json();
+        if (data.bids && data.bids.length > 0) {
+          const mappedBids = data.bids.map((b: any) => ({
+            id: `BID-${b.id.slice(-4).toUpperCase()}`,
+            rawId: b.id,
+            loadId: b.loadId ? `LD-${b.loadId.slice(-4).toUpperCase()}` : 'LD-9901',
+            loadTitle: b.load?.title || 'Corridor Freight Consignment',
+            route: b.load?.originName ? `${b.load.originName} ➔ ${b.load.destName}` : 'Addis Ababa ➔ Djibouti Port',
+            weight: `${b.load?.weightTons || 28.0} Tons`,
+            price: `${Number(b.proposedRateEtb).toLocaleString()} ETB`,
+            hours: `${b.pickupEstimatedHours || 18} Hours Transit`,
+            notes: b.proposalNotes || '',
+            status: b.status || 'PENDING',
+            submittedAt: new Date(b.createdAt).toLocaleTimeString(),
+          }));
+          setSubmittedBids(mappedBids);
+        }
+      }
     } catch (err) {
-      console.warn('Could not sync with PostgreSQL API backend:', err);
+      console.warn('API sync error:', err);
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     refreshAllData();
-  }, [user]);
+  }, [user?.id]);
 
-  const handleAddTruck = async () => {
-    if (!newPlate) return;
-    const apiUrl = getApiBaseUrl();
-
-    try {
-      const res = await fetch(`${apiUrl}/api/portal/vehicles`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          transporterId: user?.id,
-          transporterEmail: user?.email,
-          plateNumber: newPlate.toUpperCase().trim(),
-          vehicleType: newType,
-          capacityTons: parseFloat(newPayload) || 35.0,
-          capacityVolumeCbm: 45.0,
-          insurancePolicyNo: insuranceNo || 'EIC-GIT-2026-09',
-        }),
-      });
-
-      if (res.ok) {
-        refreshAllData();
-      }
-    } catch (e) {
-      console.warn('Failed to save truck to database:', e);
-    }
-
-    setNewPlate('');
-    setNewModel('');
-    setNewDriver('');
-    setShowAddTruck(false);
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refreshAllData();
+    setRefreshing(false);
   };
 
-  const handleAddDriver = async () => {
-    if (!driverName || !driverPhone || !driverPassword) return;
+  // Filtered Loads for Load Board
+  const filteredLoads = loadsList.filter((load) => {
+    const q = loadSearchQuery.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      load.title?.toLowerCase().includes(q) ||
+      load.route?.toLowerCase().includes(q) ||
+      load.id?.toLowerCase().includes(q) ||
+      load.origin?.toLowerCase().includes(q) ||
+      load.destination?.toLowerCase().includes(q) ||
+      load.cargoType?.toLowerCase().includes(q)
+    );
+  });
+
+  // Direct AI Instant Match Requests (Option A from Shipper)
+  const directMatchRequests = submittedBids.filter(
+    (b) =>
+      (b.notes?.includes('DIRECT AI INSTANT MATCH') || b.notes?.includes('Option A')) &&
+      b.status === 'PENDING'
+  );
+
+  // Add Truck Handler
+  const handleAddTruck = async () => {
+    if (!truckPlate) {
+      Alert.alert('Missing Field', 'Please enter the vehicle license plate number.');
+      return;
+    }
     const apiUrl = getApiBaseUrl();
+    const newTruck: TruckItem = {
+      id: `TRK-${Date.now().toString().slice(-4)}`,
+      plate: truckPlate.trim().toUpperCase(),
+      type: truckType,
+      capacity: `${truckCapacity} Tons`,
+      status: 'AVAILABLE',
+      insuranceStatus: 'VERIFIED',
+      driver: truckDriver || 'Unassigned',
+      gpsEnabled: true,
+    };
+    setFleetList((prev) => [newTruck, ...prev]);
+
+    if (truckDriver) {
+      setDriversList((prev) =>
+        prev.map((d) => (d.fullName === truckDriver ? { ...d, assignedTruckPlate: newTruck.plate } : d))
+      );
+    }
 
     try {
-      const res = await fetch(`${apiUrl}/api/portal/drivers`, {
+      await fetch(`${apiUrl}/api/portal/vehicles`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           transporterId: user?.id,
           transporterEmail: user?.email,
-          fullName: driverName.trim(),
-          phone: driverPhone.trim(),
-          email: `${driverPhone.replace(/[^0-9]/g, '')}@tradeflow.et`,
-          licenseNo: driverLicenseNo || 'ET-LIC-9921',
-          licenseClass: driverLicenseClass,
-          assignedVehiclePlate: driverAssignedPlate,
-          password: driverPassword,
+          plateNumber: newTruck.plate,
+          vehicleType: newTruck.type,
+          capacityTons: parseFloat(truckCapacity) || 30.0,
+          driverName: truckDriver,
         }),
       });
-
-      if (res.ok) {
-        refreshAllData();
-      }
-    } catch (e) {
-      console.warn('Failed to save driver to database:', e);
+    } catch (err) {
+      console.warn('Vehicle save error:', err);
     }
 
-    setDriverName('');
+    setTruckPlate('');
+    setTruckDriver('');
+    setShowAddTruck(false);
+    Alert.alert('Success', `Vehicle ${newTruck.plate} registered successfully!`);
+  };
+
+  // Add Driver Handler (Scoped to Logged-in Transporter)
+  const handleAddDriver = async () => {
+    if (!driverFullName || !driverPhone) {
+      Alert.alert('Missing Fields', 'Please enter the driver legal name and phone number.');
+      return;
+    }
+    const apiUrl = getApiBaseUrl();
+    const newDriver: DriverItem = {
+      id: `DRV-${Date.now().toString().slice(-4)}`,
+      fullName: driverFullName.trim(),
+      phone: driverPhone.trim(),
+      licenseNumber: driverLicense || `ETH-DL-${Math.floor(100000 + Math.random() * 900000)}`,
+      licenseCategory: driverCategory,
+      experienceYears: driverExperience || '5',
+      status: 'ACTIVE',
+      assignedTruckPlate: driverAssignedPlate,
+    };
+    setDriversList((prev) => [newDriver, ...prev]);
+
+    if (driverAssignedPlate) {
+      setFleetList((prev) =>
+        prev.map((t) => (t.plate === driverAssignedPlate ? { ...t, driver: newDriver.fullName } : t))
+      );
+    }
+
+    try {
+      await fetch(`${apiUrl}/api/portal/drivers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transporterId: user?.id,
+          transporterEmail: user?.email,
+          fullName: newDriver.fullName,
+          phone: newDriver.phone,
+          licenseNo: newDriver.licenseNumber,
+          experienceYears: parseInt(driverExperience) || 5,
+          assignedVehiclePlate: driverAssignedPlate,
+        }),
+      });
+    } catch (err) {
+      console.warn('Driver save error:', err);
+    }
+
+    setDriverFullName('');
     setDriverPhone('');
-    setDriverLicenseNo('');
-    setDriverPassword('');
+    setDriverLicense('');
     setDriverAssignedPlate('');
     setShowAddDriver(false);
+    Alert.alert('Success', `Driver ${newDriver.fullName} registered successfully!`);
   };
 
-  // Access Control: Block unverified or suspended transporters
+  // Submit Bid Handler
   const handleSubmitBid = async () => {
     if (carrierStatus === 'PENDING') {
       Alert.alert(
-        '⚠️ Verification Required (Access Control)',
-        'Your carrier account is currently PENDING administrative verification. You cannot submit bids or accept shipments until Platform Administrators approve your Trade License and Insurance.\n\nYou can browse corridor freight postings while documents are under review.',
-        [{ text: 'I Understand', style: 'default' }]
+        '⚠️ Verification Required',
+        'Your carrier account is currently PENDING verification. You cannot submit bids until Platform Administrators approve your Trade License.'
       );
       return;
     }
 
-    if (carrierStatus === 'SUSPENDED') {
+    if (!selectedLoadId || !bidPrice) {
+      Alert.alert('Incomplete Quote', 'Please select a corridor load and enter your proposed price.');
+      return;
+    }
+
+    const selectedLoadObj = loadsList.find((l) => l.id === selectedLoadId || l.rawId === selectedLoadId);
+
+    // Prevent duplicate bid submissions on the same load
+    const isAlreadyBid = submittedBids.some(
+      (b) =>
+        (b.loadId === selectedLoadId ||
+          b.rawId === selectedLoadId ||
+          (selectedLoadObj?.title && b.loadTitle === selectedLoadObj.title)) &&
+        b.status !== 'REJECTED'
+    );
+    if (isAlreadyBid) {
       Alert.alert(
-        '⛔ Account Suspended',
-        'Your carrier account has been suspended by TradeFlow Compliance. All transactional functions are blocked. Please contact compliance@tradeflow.et.',
-        [{ text: 'OK', style: 'destructive' }]
+        'Quote Already Placed',
+        'You have already submitted an active bid for this corridor load. Shipper will review your quote.'
       );
       return;
     }
-
-    if (!selectedLoadId || !bidPrice) return;
 
     const apiUrl = getApiBaseUrl();
+
+    const newBid: BidItem = {
+      id: `BID-${Date.now().toString().slice(-4)}`,
+      rawId: `temp-${Date.now()}`,
+      loadId: selectedLoadId,
+      loadTitle: selectedLoadObj?.title || 'Corridor Freight Consignment',
+      route: selectedLoadObj?.route || 'Addis Ababa ➔ Djibouti Port',
+      weight: selectedLoadObj?.weight || '28.0 Tons',
+      price: `${Number(bidPrice.replace(/[^0-9.]/g, '')).toLocaleString()} ETB`,
+      hours: `${transitHours || '18'} Hours Transit`,
+      notes: bidNotes || 'GPS live tracking enabled. Ready for immediate corridor dispatch.',
+      status: 'PENDING',
+      submittedAt: new Date().toLocaleTimeString(),
+    };
+
+    setSubmittedBids((prev) => [newBid, ...prev.filter((b) => b.id !== newBid.id)]);
+    setBidSuccess('Bid submitted successfully! Shipper will review your quote.');
+    setTimeout(() => setBidSuccess(''), 4000);
+
     try {
-      await fetch(`${apiUrl}/api/matching/submit-bid`, {
+      const res = await fetch(`${apiUrl}/api/portal/bids`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          loadId: selectedLoadId,
-          bidAmountEtb: parseFloat(bidPrice) || 175000,
-          estimatedTransitHours: parseInt(transitHours) || 18,
-          transporterNotes: bidNotes || 'Ready for corridor pickup.',
+          loadId: selectedLoadObj?.rawId || selectedLoadId,
+          transporterId: user?.id,
+          transporterEmail: user?.email,
+          proposedRateEtb: parseFloat(bidPrice.replace(/[^0-9.]/g, '')) || 175000,
+          pickupEstimatedHours: parseInt(transitHours) || 18,
+          proposalNotes: bidNotes || 'Ready for corridor pickup.',
+          validityHours: bidValidityHours || 24,
         }),
       });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.bid) {
+          setSubmittedBids((prev) =>
+            prev.map((b) => (b.id === newBid.id ? { ...b, rawId: data.bid.id } : b))
+          );
+        }
+      }
     } catch (err) {
       console.warn('Could not post bid to database:', err);
     }
 
-    const newBid = {
-      id: `BID-${Date.now().toString().slice(-4)}`,
-      loadId: selectedLoadId,
-      price: `${Number(bidPrice).toLocaleString()} ETB`,
-      hours: `${transitHours || '18'} Hours`,
-      submittedAt: new Date().toLocaleTimeString(),
-    };
-    setSubmittedBids([...submittedBids, newBid]);
-    setBidSuccess('Bid submitted and recorded in database successfully!');
-    setTimeout(() => setBidSuccess(''), 3000);
+    setBidPrice('');
+    setTransitHours('');
+    setBidNotes('');
   };
+
+  // Respond to Direct Match Offer
+  const handleRespondDirectOffer = async (bidId: string, action: 'ACCEPT' | 'REJECT') => {
+    const apiUrl = getApiBaseUrl();
+    try {
+      const res = await fetch(`${apiUrl}/api/portal/bids/respond`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bidId, action }),
+      });
+      if (res.ok) {
+        setSubmittedBids((prev) =>
+          prev.map((b) =>
+            b.rawId === bidId || b.id === bidId
+              ? { ...b, status: action === 'ACCEPT' ? 'ACCEPTED' : 'REJECTED' }
+              : b
+          )
+        );
+        Alert.alert(
+          action === 'ACCEPT' ? '🎉 Match Confirmed!' : 'Offer Declined',
+          action === 'ACCEPT'
+            ? 'You have officially accepted the AI Instant Match! TeleBirr Escrow is locked.'
+            : 'You declined the instant match request.'
+        );
+      }
+    } catch (err) {
+      console.warn('Could not respond to direct offer:', err);
+    }
+  };
+
+  // Post-Acceptance Dispatch Assignment
+  const handleConfirmDispatch = async () => {
+    if (!dispatchTruck || !dispatchDriver) {
+      Alert.alert('Incomplete Assignment', 'Please select both an available vehicle and an authorized driver.');
+      return;
+    }
+
+    setSubmittedBids((prev) =>
+      prev.map((b) =>
+        b.id === selectedAcceptedBid?.id
+          ? { ...b, dispatchedTruck: dispatchTruck, dispatchedDriver: dispatchDriver }
+          : b
+      )
+    );
+
+    // Update fleet truck and driver active trip status
+    setFleetList((prev) =>
+      prev.map((t) =>
+        t.plate === dispatchTruck ? { ...t, status: 'IN_TRANSIT', driver: dispatchDriver } : t
+      )
+    );
+    setDriversList((prev) =>
+      prev.map((d) =>
+        d.fullName === dispatchDriver
+          ? { ...d, status: 'IN_TRANSIT', assignedTruckPlate: dispatchTruck }
+          : d
+      )
+    );
+
+    const targetLoadId = selectedAcceptedBid?.loadId || '';
+    const apiUrl = getApiBaseUrl();
+
+    try {
+      await fetch(`${apiUrl}/api/portal/dispatch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bidId: selectedAcceptedBid?.rawId || selectedAcceptedBid?.id,
+          loadId: selectedAcceptedBid?.loadId,
+          transporterId: user?.id,
+          transporterEmail: user?.email,
+          truckPlate: dispatchTruck,
+          driverName: dispatchDriver,
+        }),
+      });
+    } catch (err) {
+      console.warn('Dispatch sync error:', err);
+    }
+
+    setShowDispatchModal(false);
+    setDispatchTruck('');
+    setDispatchDriver('');
+
+    Alert.alert(
+      '🚀 Fleet Dispatched!',
+      `Vehicle ${dispatchTruck} and Driver ${dispatchDriver} have been officially assigned and dispatched for shipment ${targetLoadId}. TeleBirr escrow is locked and live GPS tracking is now streaming!`
+    );
+  };
+
+  const availableTrucksForDriver = fleetList.filter((t) => !t.driver || t.driver === 'Unassigned');
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
 
-      {/* Top Mobile Header */}
+      {/* Top Header */}
       <View style={styles.topHeader}>
-        <View style={{ flex: 1, marginRight: 8 }}>
-          <Text style={styles.brandTitle} numberOfLines={1}>TradeFlow Transporter</Text>
-          <Text style={styles.companySub} numberOfLines={1}>
-            {user?.companyName || user?.fullName || 'Carrier Operations'}
+        <View>
+          <Text style={styles.brandTitle}>TradeFlow Carrier</Text>
+          <Text style={styles.companySub}>
+            {user?.companyName || 'Mulugeta Cross-Border Freight'}
           </Text>
         </View>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          {/* Profile Avatar with Verification Badge */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <TouchableOpacity
             style={styles.profileHeaderContainer}
             onPress={() => setShowProfileModal(true)}
-            activeOpacity={0.8}
           >
             <View style={styles.profileAvatarBox}>
               <Text style={styles.profileAvatarLetter}>
-                {(user?.companyName || user?.fullName || 'T').charAt(0).toUpperCase()}
+                {user?.companyName ? user.companyName.charAt(0).toUpperCase() : 'T'}
               </Text>
               <View
                 style={[
                   styles.avatarStatusDot,
                   carrierStatus === 'VERIFIED'
-                    ? { backgroundColor: '#10B981' }
+                    ? { backgroundColor: '#22C55E' }
                     : carrierStatus === 'PENDING'
                     ? { backgroundColor: '#F59E0B' }
                     : { backgroundColor: '#EF4444' },
                 ]}
               />
             </View>
-            <View
-              style={[
-                styles.headerVerifiedChip,
-                carrierStatus === 'VERIFIED'
-                  ? styles.chipVerified
-                  : carrierStatus === 'PENDING'
-                  ? styles.chipPending
-                  : styles.chipSuspended,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.headerVerifiedText,
-                  carrierStatus === 'VERIFIED'
-                    ? { color: '#059669' }
-                    : carrierStatus === 'PENDING'
-                    ? { color: '#D97706' }
-                    : { color: '#DC2626' },
-                ]}
-              >
-                {carrierStatus === 'VERIFIED' ? 'Verified' : carrierStatus === 'PENDING' ? 'Pending' : 'Suspended'}
-              </Text>
-            </View>
           </TouchableOpacity>
 
-          {/* High-Visibility Solid Red Logout Button */}
-          <TouchableOpacity
-            style={styles.headerLogoutBtn}
-            onPress={onLogout}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.headerLogoutBtnText}>🚪 Logout</Text>
+          <TouchableOpacity style={styles.headerLogoutBtn} onPress={onLogout}>
+            <Text style={styles.headerLogoutBtnText}>Logout</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Main Scrollable Content */}
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        
-        {/* Verification Status Guidance Banner (Only for Pending or Suspended) */}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0284C7']} />}
+      >
+        {/* Verification Alert Banner */}
         {carrierStatus === 'PENDING' && (
-          <View style={[styles.verificationBanner, { backgroundColor: '#FEF3C7', borderColor: '#FDE68A' }]}>
-            <Text style={styles.verificationIcon}>🟡</Text>
+          <View style={styles.verificationBanner}>
+            <Text style={styles.verificationIcon}>⏳</Text>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.verificationTitle, { color: '#78350F' }]}>Account Status: Pending Verification</Text>
-              <Text style={[styles.verificationSub, { color: '#92400E' }]}>
-                Your Insurance (GIT) and Roadworthiness (FTA) documents are currently under review by Platform Administrators.
+              <Text style={styles.verificationTitle}>Carrier Verification Pending</Text>
+              <Text style={styles.verificationSub}>
+                Your commercial transport license and GIT insurance are currently under review by Platform Compliance. You can browse corridor loads while review is underway.
               </Text>
             </View>
           </View>
         )}
 
-        {carrierStatus === 'SUSPENDED' && (
-          <View style={[styles.verificationBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
-            <Text style={styles.verificationIcon}>🔴</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.verificationTitle, { color: '#991B1B' }]}>Account Status: Suspended</Text>
-              <Text style={[styles.verificationSub, { color: '#B91C1C' }]}>
-                Your account is currently suspended by Compliance. All bidding and dispatch operations are blocked.
-              </Text>
-            </View>
-          </View>
+        {/* 1. OVERVIEW TAB */}
+        {activeTab === 'overview' && (
+          <OverviewTab
+            fleetList={fleetList}
+            driversList={driversList}
+            loadsList={loadsList}
+            submittedBids={submittedBids}
+            setActiveTab={setActiveTab}
+            openAddTruckModal={() => setShowAddTruck(true)}
+            openAddDriverModal={() => setShowAddDriver(true)}
+          />
         )}
 
-        {/* 1. FLEET & DRIVERS MANAGEMENT */}
+        {/* 2. FLEET & DRIVERS TAB */}
         {activeTab === 'fleet' && (
-          <View style={styles.sectionContainer}>
-            {/* Top Sub-Tab Switcher: Vehicles vs Drivers */}
-            <View style={styles.fleetSubTabRow}>
-              <TouchableOpacity
-                style={[styles.fleetSubTab, fleetSubTab === 'vehicles' && styles.fleetSubTabActive]}
-                onPress={() => setFleetSubTab('vehicles')}
-              >
-                <Text style={[styles.fleetSubTabText, fleetSubTab === 'vehicles' && styles.fleetSubTabTextActive]}>
-                  🚛 Fleet Vehicles ({fleetList.length})
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.fleetSubTab, fleetSubTab === 'drivers' && styles.fleetSubTabActive]}
-                onPress={() => setFleetSubTab('drivers')}
-              >
-                <Text style={[styles.fleetSubTabText, fleetSubTab === 'drivers' && styles.fleetSubTabTextActive]}>
-                  👨‍✈️ Fleet Drivers ({driversList.length})
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* ====== SUB-TAB 1: VEHICLES ====== */}
-            {fleetSubTab === 'vehicles' && (
-              <>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={styles.sectionTitle}>Registered Fleet Vehicles</Text>
-                  <TouchableOpacity
-                    style={styles.addBtn}
-                    onPress={() => setShowAddTruck(!showAddTruck)}
-                  >
-                    <Text style={styles.addBtnText}>
-                      {showAddTruck ? 'Cancel' : '+ Add Vehicle'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-
-                {/* Add Truck Form */}
-                {showAddTruck && (
-                  <View style={styles.card}>
-                    <Text style={styles.cardTitle}>
-                      Register New Fleet Vehicle
-                    </Text>
-
-                    {/* Plate & Model */}
-                    <Text style={styles.fieldLabel}>License Plate Number</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="e.g. ET-3-99410"
-                      value={newPlate}
-                      onChangeText={setNewPlate}
-                      autoCapitalize="characters"
-                    />
-
-                    <Text style={styles.fieldLabel}>Vehicle Model & Make</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="e.g. Volvo FH16 540 / Scania R500"
-                      value={newModel}
-                      onChangeText={setNewModel}
-                    />
-
-                    {/* Vehicle Type Selector (Flatbed, Box, Container, Tanker) */}
-                    <Text style={styles.fieldLabel}>Vehicle Body Type</Text>
-                    <View style={styles.typeSelectorRow}>
-                      {(['Container', 'Flatbed', 'Box', 'Tanker'] as const).map((t) => (
-                        <TouchableOpacity
-                          key={t}
-                          style={[styles.typeChip, newType === t && styles.typeChipActive]}
-                          onPress={() => setNewType(t)}
-                        >
-                          <Text style={[styles.typeChipText, newType === t && styles.typeChipTextActive]}>
-                            {t === 'Container' ? '📦 Container' : t === 'Flatbed' ? '🚛 Flatbed' : t === 'Box' ? '🚚 Box' : '🛢️ Tanker'}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-
-                    {/* Payload Capacity & Fuel Type */}
-                    <View style={{ flexDirection: 'row', gap: 10 }}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.fieldLabel}>Payload Capacity</Text>
-                        <TextInput
-                          style={styles.input}
-                          placeholder="e.g. 40 Tons (65 m³)"
-                          value={newPayload}
-                          onChangeText={setNewPayload}
-                        />
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.fieldLabel}>Fuel Type</Text>
-                        <TextInput
-                          style={styles.input}
-                          placeholder="e.g. Diesel"
-                          value={newFuel}
-                          onChangeText={(val) => setNewFuel(val as any)}
-                        />
-                      </View>
-                    </View>
-
-                    {/* Assigned Driver Selector from Transporter's Registered Drivers */}
-                    <Text style={styles.fieldLabel}>Assign Driver from Fleet</Text>
-                    {driversList.length > 0 ? (
-                      <View style={{ gap: 6, marginVertical: 4 }}>
-                        <View style={styles.typeSelectorRow}>
-                          <TouchableOpacity
-                            style={[styles.typeChip, !newDriver && styles.typeChipActive]}
-                            onPress={() => setNewDriver('')}
-                          >
-                            <Text style={[styles.typeChipText, !newDriver && styles.typeChipTextActive]}>
-                              Unassigned (Pool)
-                            </Text>
-                          </TouchableOpacity>
-                          {driversList.map((drv) => (
-                            <TouchableOpacity
-                              key={drv.id}
-                              style={[styles.typeChip, newDriver === drv.fullName && styles.typeChipActive]}
-                              onPress={() => setNewDriver(drv.fullName)}
-                            >
-                              <Text style={[styles.typeChipText, newDriver === drv.fullName && styles.typeChipTextActive]}>
-                                👨‍✈️ {drv.fullName}
-                              </Text>
-                            </TouchableOpacity>
-                          ))}
-                        </View>
-                      </View>
-                    ) : (
-                      <View style={{ backgroundColor: '#F8FAFC', padding: 10, borderRadius: 10, borderWidth: 1, borderColor: '#E2EAF2', marginVertical: 4 }}>
-                        <Text style={{ fontSize: 12, color: '#64748B' }}>
-                          ℹ️ No drivers registered yet. Save as Unassigned, or register a driver first from the "👨‍✈️ Fleet Drivers" tab.
-                        </Text>
-                      </View>
-                    )}
-
-                    <TouchableOpacity style={styles.submitBidBtn} onPress={handleAddTruck}>
-                      <Text style={styles.submitBidBtnText}>
-                        Save Vehicle to Fleet
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-
-                {/* Fleet List / Empty State */}
-                {fleetList.length === 0 && !showAddTruck ? (
-                  <View style={styles.emptyCard}>
-                    <Text style={styles.emptyIcon}>🚛</Text>
-                    <Text style={styles.emptyTitle}>
-                      No fleet vehicles registered yet
-                    </Text>
-                    <Text style={styles.emptySub}>
-                      Tap "+ Add Vehicle" above to register your trucks (Container, Flatbed, Box, Tanker).
-                    </Text>
-                  </View>
-                ) : (
-                  fleetList.map((truck) => (
-                    <View key={truck.id} style={styles.card}>
-                      <View style={styles.cardHeader}>
-                        <View>
-                          <Text style={styles.truckPlate}>{truck.plate}</Text>
-                          <Text style={styles.truckModel}>{truck.model} • {truck.type}</Text>
-                        </View>
-                        <View style={[styles.statusBadge, styles.statusAvailable]}>
-                          <Text style={styles.statusText}>{truck.status}</Text>
-                        </View>
-                      </View>
-                      <View style={styles.cardDivider} />
-                      
-                      <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Capacity & Fuel:</Text>
-                        <Text style={styles.infoValue}>{truck.payload} • {truck.fuelType}</Text>
-                      </View>
-
-                      <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Assigned Driver:</Text>
-                        <Text style={styles.infoValue}>{truck.driver}</Text>
-                      </View>
-                      
-                      <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Live Position:</Text>
-                        <Text style={[styles.infoValue, { color: '#0284C7' }]}>📍 {truck.location}</Text>
-                      </View>
-                    </View>
-                  ))
-                )}
-              </>
-            )}
-
-            {/* ====== SUB-TAB 2: DRIVERS ====== */}
-            {fleetSubTab === 'drivers' && (
-              <>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={styles.sectionTitle}>Transporter Fleet Drivers</Text>
-                  <TouchableOpacity
-                    style={styles.addBtn}
-                    onPress={() => setShowAddDriver(!showAddDriver)}
-                  >
-                    <Text style={styles.addBtnText}>
-                      {showAddDriver ? 'Cancel' : '+ Add Driver'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-
-                {/* Add Driver Form */}
-                {showAddDriver && (
-                  <View style={styles.card}>
-                    <Text style={styles.cardTitle}>
-                      Onboard New Heavy Truck Driver
-                    </Text>
-                    <Text style={styles.emptySub}>
-                      Register your driver and set their initial mobile login credentials.
-                    </Text>
-
-                    <Text style={styles.fieldLabel}>Driver Full Name *</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="e.g. Abebe Bikila"
-                      value={driverName}
-                      onChangeText={setDriverName}
-                    />
-
-                    <Text style={styles.fieldLabel}>Driver Mobile Phone Number *</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="e.g. +251 91 234 5678"
-                      value={driverPhone}
-                      onChangeText={setDriverPhone}
-                      keyboardType="phone-pad"
-                    />
-
-                    <Text style={styles.fieldLabel}>Driver License Number *</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="e.g. ET-DRV-994182"
-                      value={driverLicenseNo}
-                      onChangeText={setDriverLicenseNo}
-                    />
-
-                    <Text style={styles.fieldLabel}>License Category</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="e.g. Level 5 (Heavy Freight)"
-                      value={driverLicenseClass}
-                      onChangeText={setDriverLicenseClass}
-                    />
-
-                    <Text style={styles.fieldLabel}>Assigned Truck License Plate</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder={fleetList[0]?.plate || "e.g. ET-3-99410"}
-                      value={driverAssignedPlate}
-                      onChangeText={setDriverAssignedPlate}
-                    />
-
-                    <Text style={styles.fieldLabel}>Set Driver Login Password *</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Temporary password for driver login"
-                      value={driverPassword}
-                      onChangeText={setDriverPassword}
-                      secureTextEntry
-                    />
-
-                    <TouchableOpacity style={styles.submitBidBtn} onPress={handleAddDriver}>
-                      <Text style={styles.submitBidBtnText}>
-                        Create Driver Account
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-
-                {/* Drivers List */}
-                {driversList.length === 0 && !showAddDriver ? (
-                  <View style={styles.emptyCard}>
-                    <Text style={styles.emptyIcon}>👨‍✈️</Text>
-                    <Text style={styles.emptyTitle}>
-                      No drivers registered in your fleet yet
-                    </Text>
-                    <Text style={styles.emptySub}>
-                      Tap "+ Add Driver" above to register your heavy freight drivers and issue their mobile access.
-                    </Text>
-                  </View>
-                ) : (
-                  driversList.map((driver) => (
-                    <View key={driver.id} style={styles.card}>
-                      <View style={styles.cardHeader}>
-                        <View>
-                          <Text style={styles.truckPlate}>{driver.fullName}</Text>
-                          <Text style={styles.truckModel}>📞 {driver.phone}</Text>
-                        </View>
-                        <View style={[styles.statusBadge, styles.statusAvailable]}>
-                          <Text style={styles.statusText}>{driver.status}</Text>
-                        </View>
-                      </View>
-                      <View style={styles.cardDivider} />
-                      
-                      <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>License No & Grade:</Text>
-                        <Text style={styles.infoValue}>{driver.licenseNo} • {driver.licenseClass}</Text>
-                      </View>
-
-                      <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Assigned Vehicle:</Text>
-                        <Text style={[styles.infoValue, { color: '#0284C7' }]}>🚛 {driver.assignedPlate}</Text>
-                      </View>
-
-                      <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Account Status:</Text>
-                        <Text style={[styles.infoValue, { color: '#16A34A' }]}>✅ Authorized to Login</Text>
-                      </View>
-                    </View>
-                  ))
-                )}
-              </>
-            )}
-
-          </View>
+          <FleetTab
+            fleetList={fleetList}
+            driversList={driversList}
+            openAddTruckModal={() => setShowAddTruck(true)}
+            openAddDriverModal={() => setShowAddDriver(true)}
+          />
         )}
 
-        {/* 2. CORRIDOR LOAD BOARD (4.2.4) */}
+        {/* 3. CORRIDOR LOAD BOARD TAB */}
         {activeTab === 'loads' && (
-          <View style={styles.sectionContainer}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <View>
-                <Text style={styles.sectionTitle}>Corridor Load Board</Text>
-                <Text style={styles.sectionSubtitle}>Browse active freight consignments</Text>
-              </View>
-              <View style={[styles.statusBadge, styles.statusAvailable]}>
-                <Text style={styles.statusText}>{loadsList.length} Active Loads</Text>
-              </View>
-            </View>
-
-            {/* Load Board Cards List */}
-            {loadsList.map((item, idx) => (
-              <View key={item.id || idx} style={styles.card}>
-                
-                {/* Header */}
-                <View style={styles.cardHeader}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.truckPlate}>{item.title}</Text>
-                    <Text style={styles.infoLabel}>Ref: {item.id}</Text>
-                  </View>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={[styles.kpiValue, { fontSize: 15, color: '#0284C7' }]}>
-                      {item.budget}
-                    </Text>
-                    <Text style={{ fontSize: 9.5, color: '#64748B', fontWeight: '700' }}>Target Budget</Text>
-                  </View>
-                </View>
-
-                <View style={styles.cardDivider} />
-
-                {/* Route */}
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Corridor Route:</Text>
-                  <Text style={[styles.infoValue, { color: '#0F172A', fontWeight: '800' }]}>
-                    📍 {item.route}
-                  </Text>
-                </View>
-
-                {/* Cargo Specifications */}
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Payload Weight:</Text>
-                  <Text style={styles.infoValue}>⚖️ {item.weight}</Text>
-                </View>
-
-                {/* Handling Tags */}
-                <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
-                  <View style={styles.complianceBadge}>
-                    <Text style={styles.complianceText}>📦 40ft High-Cube</Text>
-                  </View>
-                  <View style={styles.complianceBadge}>
-                    <Text style={styles.complianceText}>🛡️ GIT Insured</Text>
-                  </View>
-                  <View style={[styles.complianceBadge, { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' }]}>
-                    <Text style={[styles.complianceText, { color: '#065F46' }]}>⚡ TeleBirr Escrow Ready</Text>
-                  </View>
-                </View>
-
-                {/* Bid Action Button */}
-                <TouchableOpacity
-                  style={[styles.submitBidBtn, { marginTop: 10 }]}
-                  onPress={() => {
-                    setSelectedLoadId(item.id);
-                    setBidPrice(item.budget.replace(/[^0-9]/g, ''));
-                    setActiveTab('bidding');
-                  }}
-                >
-                  <Text style={styles.submitBidBtnText}>
-                    ⚡ Place Competitive Quote ({item.id})
-                  </Text>
-                </TouchableOpacity>
-
-              </View>
-            ))}
-
-            {loadsList.length === 0 && (
-              <View style={styles.emptyCard}>
-                <Text style={styles.emptyIcon}>📦</Text>
-                <Text style={styles.emptyTitle}>Waiting for new load postings...</Text>
-                <Text style={styles.emptySub}>
-                  Shipper cargo postings along the corridor will appear here in real time.
-                </Text>
-              </View>
-            )}
-          </View>
+          <LoadsTab
+            loadsList={loadsList}
+            filteredLoads={filteredLoads}
+            directMatchRequests={directMatchRequests}
+            loadSearchQuery={loadSearchQuery}
+            setLoadSearchQuery={setLoadSearchQuery}
+            onSelectLoadForQuote={(item) => {
+              setSelectedLoadId(item.id);
+              setBidPrice(item.budget ? item.budget.replace(/[^0-9]/g, '') : '');
+              setBiddingSubTab('create');
+              setActiveTab('bidding');
+            }}
+            onRespondDirectOffer={handleRespondDirectOffer}
+          />
         )}
 
-        {/* 3. RFQ BIDDING MANAGEMENT (4.2.4) */}
+        {/* 4. BIDDING TAB */}
         {activeTab === 'bidding' && (
-          <View style={styles.sectionContainer}>
-            <View>
-              <Text style={styles.sectionTitle}>Submit Freight Quote</Text>
-              <Text style={styles.sectionSubtitle}>Place custom pricing and transit timeline for active loads</Text>
-            </View>
-            
-            {bidSuccess ? (
-              <View style={styles.successBox}>
-                <Text style={styles.successText}>✅ {bidSuccess}</Text>
-              </View>
-            ) : null}
-
-            <View style={styles.card}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Select Target Load Reference *</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g. TF-SH-8821"
-                  value={selectedLoadId || loadsList[0]?.id || 'TF-SH-8821'}
-                  onChangeText={setSelectedLoadId}
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Transporter Quote Price (ETB) *</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g. 178000"
-                  value={bidPrice}
-                  onChangeText={setBidPrice}
-                  keyboardType="number-pad"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Estimated Corridor Transit Hours *</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="18 Hours"
-                  value={transitHours}
-                  onChangeText={setTransitHours}
-                  keyboardType="number-pad"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Carrier Commitment Notes:</Text>
-                <TextInput
-                  style={[styles.input, { height: 60, textAlignVertical: 'top' }]}
-                  placeholder="e.g. Volvo FH16 available immediately at Kaliti terminal with satellite GPS telematics."
-                  value={bidNotes}
-                  onChangeText={setBidNotes}
-                  multiline
-                />
-              </View>
-
-              <TouchableOpacity style={styles.submitBidBtn} onPress={handleSubmitBid}>
-                <Text style={styles.submitBidBtnText}>Submit Competitive RFQ Bid</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Submitted Bids History */}
-            <View style={{ gap: 8, marginTop: 6 }}>
-              <Text style={styles.sectionTitle}>
-                Transporter Bid History & Active Quotes
-              </Text>
-
-              {submittedBids.length === 0 ? (
-                <View style={[styles.card, { alignItems: 'center', padding: 20 }]}>
-                  <Text style={{ fontSize: 11, color: '#64748B' }}>No custom bids submitted yet.</Text>
-                </View>
-              ) : (
-                submittedBids.map((b) => (
-                  <View key={b.id} style={styles.card}>
-                    <View style={styles.cardHeader}>
-                      <View>
-                        <Text style={styles.truckPlate}>{b.loadId}</Text>
-                        <Text style={styles.infoLabel}>Transit: {b.hours} • Submitted at {b.submittedAt}</Text>
-                      </View>
-                      <View style={{ alignItems: 'flex-end' }}>
-                        <Text style={[styles.kpiValue, { fontSize: 14, color: '#0284C7' }]}>{b.price}</Text>
-                        <View style={[styles.statusBadge, styles.statusAvailable, { marginTop: 3 }]}>
-                          <Text style={styles.statusText}>PENDING REVIEW</Text>
-                        </View>
-                      </View>
-                    </View>
-                  </View>
-                ))
-              )}
-            </View>
-          </View>
+          <BiddingTab
+            loadsList={loadsList}
+            selectedLoadId={selectedLoadId}
+            setSelectedLoadId={setSelectedLoadId}
+            bidPrice={bidPrice}
+            setBidPrice={setBidPrice}
+            transitHours={transitHours}
+            setTransitHours={setTransitHours}
+            bidNotes={bidNotes}
+            setBidNotes={setBidNotes}
+            bidValidityHours={bidValidityHours}
+            setBidValidityHours={setBidValidityHours}
+            bidSuccess={bidSuccess}
+            submittedBids={submittedBids}
+            biddingSubTab={biddingSubTab}
+            setBiddingSubTab={setBiddingSubTab}
+            onSubmitBid={handleSubmitBid}
+            onOpenDispatchModal={(bid) => {
+              setSelectedAcceptedBid(bid);
+              setShowDispatchModal(true);
+            }}
+          />
         )}
 
-        {/* 4. EARNINGS & FUEL SUMMARY */}
-        {activeTab === 'earnings' && (
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Earnings & Payouts</Text>
-
-            <View style={styles.kpiGrid}>
-              <View style={styles.kpiCard}>
-                <Text style={styles.kpiLabel}>Total Payouts</Text>
-                <Text style={styles.kpiValue}>0 ETB</Text>
-              </View>
-
-              <View style={styles.kpiCard}>
-                <Text style={styles.kpiLabel}>Completed Trips</Text>
-                <Text style={[styles.kpiValue, { color: '#0284C7' }]}>0</Text>
-              </View>
-            </View>
-
-            {/* Carrier Rating & Marketplace Reviews (4.1.3) */}
-            <View style={styles.card}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <View>
-                  <Text style={styles.cardTitle}>⭐ Carrier Performance & Rating</Text>
-                  <Text style={styles.emptySub}>Bidirectional shipper reviews score</Text>
-                </View>
-                <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={{ fontSize: 20, fontWeight: '900', color: '#D97706' }}>⭐ 4.9</Text>
-                  <Text style={{ fontSize: 10, color: '#64748B' }}>42 verified trips</Text>
-                </View>
-              </View>
-
-              <View style={styles.cardDivider} />
-
-              <Text style={{ fontSize: 11, fontWeight: '800', color: '#1E293B', marginTop: 2 }}>
-                Recent Shipper Feedback:
-              </Text>
-
-              <View style={{ backgroundColor: '#F8FAFC', borderRadius: 12, padding: 10, borderWidth: 1, borderColor: '#E2E8F0', gap: 4 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#0F172A' }}>Ethio Coffee Exporters PLC</Text>
-                  <Text style={{ fontSize: 10, color: '#D97706', fontWeight: '800' }}>⭐⭐⭐⭐⭐ 5.0</Text>
-                </View>
-                <Text style={{ fontSize: 10.5, color: '#64748B', fontStyle: 'italic' }}>
-                  "Volvo FH16 arrived on schedule at Mojo Dry Port. Excellent GPS telematics updates."
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>⛽ Fuel Efficiency & Telematics</Text>
-              <Text style={styles.emptySub}>
-                Live fuel consumption data and TeleBirr automated escrow payouts record here as trip milestones are delivered.
-              </Text>
-            </View>
-          </View>
-        )}
-
+        {/* 5. EARNINGS TAB */}
+        {activeTab === 'earnings' && <EarningsTab />}
       </ScrollView>
 
-      {/* FIXED BOTTOM NAVIGATION BAR */}
+      {/* Bottom Tab Navigation Bar */}
       <View style={styles.bottomNavContainer}>
+        <TouchableOpacity
+          style={styles.navTab}
+          onPress={() => setActiveTab('overview')}
+        >
+          <Ionicons
+            name={activeTab === 'overview' ? 'grid' : 'grid-outline'}
+            size={20}
+            color={activeTab === 'overview' ? '#0284C7' : '#94A3B8'}
+          />
+          <Text style={[styles.navLabel, activeTab === 'overview' && styles.navLabelActive]}>
+            Overview
+          </Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.navTab}
           onPress={() => setActiveTab('fleet')}
         >
-          <Text style={[styles.navIcon, activeTab === 'fleet' && styles.navIconActive]}>🚛</Text>
-          <Text style={[styles.navLabel, activeTab === 'fleet' && styles.navLabelActive]}>Fleet</Text>
+          <Ionicons
+            name={activeTab === 'fleet' ? 'car' : 'car-outline'}
+            size={20}
+            color={activeTab === 'fleet' ? '#0284C7' : '#94A3B8'}
+          />
+          <Text style={[styles.navLabel, activeTab === 'fleet' && styles.navLabelActive]}>
+            Fleet
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.navTab}
           onPress={() => setActiveTab('loads')}
         >
-          <Text style={[styles.navIcon, activeTab === 'loads' && styles.navIconActive]}>📦</Text>
-          <Text style={[styles.navLabel, activeTab === 'loads' && styles.navLabelActive]}>Loads</Text>
+          <Ionicons
+            name={activeTab === 'loads' ? 'cube' : 'cube-outline'}
+            size={20}
+            color={activeTab === 'loads' ? '#0284C7' : '#94A3B8'}
+          />
+          <Text style={[styles.navLabel, activeTab === 'loads' && styles.navLabelActive]}>
+            Loads
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.navTab}
           onPress={() => setActiveTab('bidding')}
         >
-          <Text style={[styles.navIcon, activeTab === 'bidding' && styles.navIconActive]}>⚖️</Text>
-          <Text style={[styles.navLabel, activeTab === 'bidding' && styles.navLabelActive]}>Bidding</Text>
+          <Ionicons
+            name={activeTab === 'bidding' ? 'pricetag' : 'pricetag-outline'}
+            size={20}
+            color={activeTab === 'bidding' ? '#0284C7' : '#94A3B8'}
+          />
+          <Text style={[styles.navLabel, activeTab === 'bidding' && styles.navLabelActive]}>
+            Bidding
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.navTab}
           onPress={() => setActiveTab('earnings')}
         >
-          <Text style={[styles.navIcon, activeTab === 'earnings' && styles.navIconActive]}>💰</Text>
-          <Text style={[styles.navLabel, activeTab === 'earnings' && styles.navLabelActive]}>Payouts</Text>
+          <Ionicons
+            name={activeTab === 'earnings' ? 'wallet' : 'wallet-outline'}
+            size={20}
+            color={activeTab === 'earnings' ? '#0284C7' : '#94A3B8'}
+          />
+          <Text style={[styles.navLabel, activeTab === 'earnings' && styles.navLabelActive]}>
+            Earnings
+          </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Profile & Account Settings Modal */}
-      <Modal
+      {/* MODAL 1: Add Vehicle Modal */}
+      <AddTruckModal
+        visible={showAddTruck}
+        onClose={() => setShowAddTruck(false)}
+        truckPlate={truckPlate}
+        setTruckPlate={setTruckPlate}
+        truckType={truckType}
+        setTruckType={setTruckType}
+        truckCapacity={truckCapacity}
+        setTruckCapacity={setTruckCapacity}
+        truckDriver={truckDriver}
+        setTruckDriver={setTruckDriver}
+        insuranceDoc={insuranceDoc}
+        setInsuranceDoc={setInsuranceDoc}
+        roadworthinessDoc={roadworthinessDoc}
+        setRoadworthinessDoc={setRoadworthinessDoc}
+        driversList={driversList}
+        showDriverDropdown={showDriverDropdown}
+        setShowDriverDropdown={setShowDriverDropdown}
+        onSubmit={handleAddTruck}
+      />
+
+      {/* MODAL 2: Add Driver Modal */}
+      <AddDriverModal
+        visible={showAddDriver}
+        onClose={() => setShowAddDriver(false)}
+        driverFullName={driverFullName}
+        setDriverFullName={setDriverFullName}
+        driverPhone={driverPhone}
+        setDriverPhone={setDriverPhone}
+        driverLicense={driverLicense}
+        setDriverLicense={setDriverLicense}
+        driverCategory={driverCategory}
+        setDriverCategory={setDriverCategory}
+        driverExperience={driverExperience}
+        setDriverExperience={setDriverExperience}
+        driverAssignedPlate={driverAssignedPlate}
+        setDriverAssignedPlate={setDriverAssignedPlate}
+        availableTrucksForDriver={availableTrucksForDriver}
+        showTruckDropdown={showTruckDropdown}
+        setShowTruckDropdown={setShowTruckDropdown}
+        onSubmit={handleAddDriver}
+      />
+
+      {/* MODAL 3: Post-Acceptance Dispatch Modal */}
+      <DispatchModal
+        visible={showDispatchModal}
+        onClose={() => setShowDispatchModal(false)}
+        selectedBid={selectedAcceptedBid}
+        fleetList={fleetList}
+        driversList={driversList}
+        dispatchTruck={dispatchTruck}
+        setDispatchTruck={setDispatchTruck}
+        dispatchDriver={dispatchDriver}
+        setDispatchDriver={setDispatchDriver}
+        onConfirmDispatch={handleConfirmDispatch}
+      />
+
+      {/* MODAL 4: Profile Modal */}
+      <ProfileModal
         visible={showProfileModal}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowProfileModal(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.profileModalCard}>
-            <View style={styles.modalHeaderRow}>
-              <Text style={styles.modalTitle}>Transporter Account Profile</Text>
-              <TouchableOpacity
-                style={styles.closeBtn}
-                onPress={() => setShowProfileModal(false)}
-              >
-                <Text style={styles.closeBtnText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingVertical: 12 }}>
-              {/* Profile Card Summary */}
-              <View style={styles.profileCardSummary}>
-                <View style={styles.profileModalAvatar}>
-                  <Text style={styles.profileModalAvatarText}>
-                    {(user?.companyName || user?.fullName || 'T').charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.profileCompanyName}>
-                    {user?.companyName || user?.fullName || 'Carrier Logistics'}
-                  </Text>
-                  <Text style={styles.profileOwnerName}>
-                    Managing Director: {user?.fullName || 'Transport Partner'}
-                  </Text>
-                  <View
-                    style={[
-                      styles.profileBadge,
-                      carrierStatus === 'VERIFIED'
-                        ? { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' }
-                        : carrierStatus === 'PENDING'
-                        ? { backgroundColor: '#FEF3C7', borderColor: '#FDE68A' }
-                        : { backgroundColor: '#FEF2F2', borderColor: '#FECACA' },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.profileBadgeText,
-                        carrierStatus === 'VERIFIED'
-                          ? { color: '#047857' }
-                          : carrierStatus === 'PENDING'
-                          ? { color: '#92400E' }
-                          : { color: '#B91C1C' },
-                      ]}
-                    >
-                      {carrierStatus === 'VERIFIED'
-                        ? '🟢 Verified Legal Carrier'
-                        : carrierStatus === 'PENDING'
-                        ? '🟡 Verification Pending'
-                        : '🔴 Suspended'}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* Account Details List */}
-              <View style={styles.settingsGroup}>
-                <Text style={styles.settingsGroupTitle}>Business & Tax Credentials</Text>
-
-                <View style={styles.settingItem}>
-                  <Text style={styles.settingItemLabel}>Email</Text>
-                  <Text style={styles.settingItemValue}>{user?.email || 'transporter@tradeflow.et'}</Text>
-                </View>
-
-                <View style={styles.settingItem}>
-                  <Text style={styles.settingItemLabel}>Phone Number</Text>
-                  <Text style={styles.settingItemValue}>{user?.phone || '+251 91 123 4567'}</Text>
-                </View>
-
-                <View style={styles.settingItem}>
-                  <Text style={styles.settingItemLabel}>Tax Identification Number (TIN)</Text>
-                  <Text style={styles.settingItemValue}>{user?.tin || '0049281729'}</Text>
-                </View>
-
-                <View style={styles.settingItem}>
-                  <Text style={styles.settingItemLabel}>Commercial Trade License</Text>
-                  <Text style={styles.settingItemValue}>{user?.tradeLicenseNo || 'ET-MOTI-2024-8841'}</Text>
-                </View>
-
-                <View style={styles.settingItem}>
-                  <Text style={styles.settingItemLabel}>GIT Cargo Insurance</Text>
-                  <Text style={[styles.settingItemValue, { color: '#059669', fontWeight: '700' }]}>
-                    ✓ Active & Verified
-                  </Text>
-                </View>
-
-                <View style={styles.settingItem}>
-                  <Text style={styles.settingItemLabel}>FTA Roadworthiness</Text>
-                  <Text style={[styles.settingItemValue, { color: '#059669', fontWeight: '700' }]}>
-                    ✓ Certified
-                  </Text>
-                </View>
-              </View>
-
-              {/* Preferences & Actions */}
-              <View style={styles.settingsGroup}>
-                <Text style={styles.settingsGroupTitle}>Preferences & Session</Text>
-
-                <TouchableOpacity style={styles.actionBtnRow} onPress={toggleLanguage}>
-                  <Text style={styles.actionBtnLabel}>🌐 Language / ቋንቋ</Text>
-                  <Text style={styles.actionBtnValue}>
-                    {language === 'en' ? 'English (አማርኛ ቀይር)' : 'አማርኛ (Switch to EN)'}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.actionBtnRow, { borderColor: '#FECACA', backgroundColor: '#FEF2F2' }]}
-                  onPress={() => {
-                    setShowProfileModal(false);
-                    onLogout();
-                  }}
-                >
-                  <Text style={[styles.actionBtnLabel, { color: '#DC2626', fontWeight: '700' }]}>
-                    🚪 Logout of Account
-                  </Text>
-                  <Text style={[styles.actionBtnValue, { color: '#DC2626' }]}>Exit</Text>
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
+        onClose={() => setShowProfileModal(false)}
+        user={user}
+        carrierStatus={carrierStatus}
+        language={language}
+        toggleLanguage={toggleLanguage}
+        onLogout={onLogout}
+      />
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F4F9FD',
-  },
-  topHeader: {
-    backgroundColor: '#0F172A',
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: '#1E293B',
-  },
-  brandTitle: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    letterSpacing: -0.5,
-  },
-  companySub: {
-    fontSize: 11,
-    color: '#38BDF8',
-    fontWeight: '700',
-    marginTop: 2,
-  },
-  profileHeaderContainer: {
-    alignItems: 'center',
-    gap: 4,
-  },
-  profileAvatarBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#0284C7',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-    borderWidth: 2,
-    borderColor: '#38BDF8',
-  },
-  profileAvatarLetter: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '900',
-  },
-  avatarStatusDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    position: 'absolute',
-    bottom: -1,
-    right: -1,
-    borderWidth: 2,
-    borderColor: '#0F172A',
-  },
-  headerVerifiedChip: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  chipVerified: {
-    backgroundColor: '#ECFDF5',
-  },
-  chipPending: {
-    backgroundColor: '#FEF3C7',
-  },
-  chipSuspended: {
-    backgroundColor: '#FEF2F2',
-  },
-  headerVerifiedText: {
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.75)',
-    justifyContent: 'flex-end',
-  },
-  profileModalCard: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 36,
-    maxHeight: '85%',
-  },
-  modalHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2EAF2',
-    paddingBottom: 14,
-  },
-  modalTitle: {
-    fontSize: 17,
-    fontWeight: '900',
-    color: '#0F172A',
-  },
-  closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeBtnText: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#64748B',
-  },
-  profileCardSummary: {
-    flexDirection: 'row',
-    gap: 14,
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 18,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#E2EAF2',
-  },
-  profileModalAvatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#0284C7',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  profileModalAvatarText: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: '#FFFFFF',
-  },
-  profileCompanyName: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: '#0F172A',
-  },
-  profileOwnerName: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 2,
-  },
-  profileBadge: {
-    marginTop: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignSelf: 'flex-start',
-  },
-  profileBadgeText: {
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  settingsGroup: {
-    gap: 8,
-  },
-  settingsGroupTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#64748B',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  settingItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#E2EAF2',
-  },
-  settingItemLabel: {
-    fontSize: 13,
-    color: '#64748B',
-    fontWeight: '600',
-  },
-  settingItemValue: {
-    fontSize: 13,
-    color: '#0F172A',
-    fontWeight: '700',
-  },
-  actionBtnRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#E2EAF2',
-  },
-  actionBtnLabel: {
-    fontSize: 13,
-    color: '#0F172A',
-    fontWeight: '700',
-  },
-  actionBtnValue: {
-    fontSize: 12,
-    color: '#0284C7',
-    fontWeight: '700',
-  },
-  langBtn: {
-    backgroundColor: '#1E293B',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  langBtnText: {
-    fontSize: 11,
-    color: '#E2E8F0',
-    fontWeight: '700',
-  },
-  headerLogoutBtn: {
-    backgroundColor: '#EF4444',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 10,
-    elevation: 3,
-    shadowColor: '#EF4444',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 3,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerLogoutBtnText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '900',
-  },
-  logoutBtn: {
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.3)',
-  },
-  logoutText: {
-    fontSize: 11,
-    color: '#F87171',
-    fontWeight: '700',
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 90,
-    gap: 14,
-  },
-  verificationBanner: {
-    flexDirection: 'row',
-    backgroundColor: '#FEF3C7',
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-    borderRadius: 16,
-    padding: 12,
-    gap: 10,
-    alignItems: 'flex-start',
-  },
-  verificationIcon: {
-    fontSize: 18,
-    marginTop: 1,
-  },
-  verificationTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#92400E',
-    marginBottom: 2,
-  },
-  verificationSub: {
-    fontSize: 10.5,
-    color: '#B45309',
-    lineHeight: 15,
-  },
-  sectionContainer: {
-    gap: 14,
-  },
-  fleetSubTabRow: {
-    flexDirection: 'row',
-    backgroundColor: '#E2E8F0',
-    borderRadius: 14,
-    padding: 4,
-    gap: 4,
-  },
-  fleetSubTab: {
-    flex: 1,
-    paddingVertical: 8,
-    alignItems: 'center',
-    borderRadius: 10,
-  },
-  fleetSubTabActive: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  fleetSubTabText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: '#64748B',
-  },
-  fleetSubTabTextActive: {
-    color: '#0284C7',
-    fontWeight: '800',
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  sectionSubtitle: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: -8,
-  },
-  addBtn: {
-    backgroundColor: '#0284C7',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-  },
-  addBtnText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E2EAF2',
-    gap: 10,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  truckPlate: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  truckModel: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 2,
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  statusAvailable: {
-    backgroundColor: '#DCFCE7',
-  },
-  statusText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#166534',
-  },
-  cardDivider: {
-    height: 1,
-    backgroundColor: '#F1F5F9',
-    marginVertical: 4,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  infoLabel: {
-    fontSize: 12,
-    color: '#64748B',
-  },
-  infoValue: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  emptyCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#E2EAF2',
-    borderStyle: 'dashed',
-    gap: 8,
-  },
-  emptyIcon: {
-    fontSize: 32,
-    marginBottom: 4,
-  },
-  emptyTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  emptySub: {
-    fontSize: 11,
-    color: '#64748B',
-    textAlign: 'center',
-    lineHeight: 16,
-  },
-  cardTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 4,
-  },
-  fieldLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#475569',
-    marginTop: 6,
-    marginBottom: 2,
-  },
-  typeSelectorRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginBottom: 4,
-  },
-  typeChip: {
-    backgroundColor: '#F1F5F9',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  typeChipActive: {
-    backgroundColor: '#E0F2FE',
-    borderColor: '#0284C7',
-  },
-  typeChipText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#64748B',
-  },
-  typeChipTextActive: {
-    color: '#0284C7',
-  },
-  docUploadSection: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 14,
-    padding: 10,
-    gap: 8,
-    marginTop: 6,
-  },
-  docSectionTitle: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#334155',
-  },
-  docUploadBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 10,
-    padding: 8,
-    gap: 8,
-  },
-  docUploadBoxActive: {
-    borderColor: '#22C55E',
-    backgroundColor: '#F0FDF4',
-  },
-  docUploadIcon: {
-    fontSize: 16,
-  },
-  docUploadLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#1E293B',
-  },
-  docUploadStatus: {
-    fontSize: 9.5,
-    color: '#64748B',
-    marginTop: 1,
-  },
-  complianceRow: {
-    flexDirection: 'row',
-    gap: 6,
-    marginTop: 4,
-  },
-  complianceBadge: {
-    backgroundColor: '#F1F5F9',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  complianceText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#334155',
-  },
-  input: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 12,
-    color: '#0F172A',
-  },
-  inputGroup: {
-    gap: 4,
-  },
-  inputLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#475569',
-  },
-  submitBidBtn: {
-    backgroundColor: '#0284C7',
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  submitBidBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  successBox: {
-    backgroundColor: '#DCFCE7',
-    borderWidth: 1,
-    borderColor: '#86EFAC',
-    borderRadius: 12,
-    padding: 12,
-    alignItems: 'center',
-  },
-  successText: {
-    color: '#166534',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  kpiGrid: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  kpiCard: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#E2EAF2',
-    gap: 4,
-  },
-  kpiLabel: {
-    fontSize: 11,
-    color: '#64748B',
-    fontWeight: '600',
-  },
-  kpiValue: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#0F172A',
-  },
-  bottomNavContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 72,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E2EAF2',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingBottom: 10,
-    elevation: 8,
-  },
-  navTab: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-    flex: 1,
-  },
-  navIcon: {
-    fontSize: 20,
-    opacity: 0.5,
-  },
-  navIconActive: {
-    opacity: 1,
-  },
-  navLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#94A3B8',
-  },
-  navLabelActive: {
-    color: '#0284C7',
-  },
-});

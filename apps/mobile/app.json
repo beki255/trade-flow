@@ -13,6 +13,7 @@
     },
     "android": {
       "package": "com.tradeflow.mobile",
+      "usesCleartextTraffic": true,
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",

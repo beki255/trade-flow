@@ -12,6 +12,11 @@ import {
   createVehicle,
   getDrivers,
   createDriver,
+  createBid,
+  getBids,
+  respondToBid,
+  dispatchShipment,
+  getDriverActiveTrip,
 } from '../controllers/portal.controller';
 
 const router = Router();
@@ -38,5 +43,14 @@ router.post('/vehicles', createVehicle);
 // Drivers Management
 router.get('/drivers', getDrivers);
 router.post('/drivers', createDriver);
+
+// Bidding & RFQ Management
+router.get('/bids', getBids);
+router.post('/bids', createBid);
+router.post('/bids/respond', respondToBid);
+
+// Fleet Dispatch & Driver Telematics
+router.post('/dispatch', dispatchShipment);
+router.get('/driver/active-trip', getDriverActiveTrip);
 
 export default router;

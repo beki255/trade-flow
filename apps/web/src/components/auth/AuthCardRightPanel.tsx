@@ -9,6 +9,7 @@ import {
   Eye,
   EyeOff,
   Zap,
+  Shield,
 } from 'lucide-react';
 
 interface AuthCardRightPanelProps {
@@ -436,8 +437,8 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
           {/* ON LOGIN: One-Click Demo Accounts */}
           {mode === 'login' && (
             <div className="pt-2 border-t border-slate-100">
-              <div className="text-[10px] font-bold text-slate-400 uppercase mb-2 text-center">
-                ⚡ Quick 1-Click Demo Accounts:
+              <div className="text-[10px] font-bold text-slate-400 uppercase mb-2 text-center flex items-center justify-center gap-1">
+                <Zap className="w-3 h-3 text-amber-500" /> Quick 1-Click Demo Accounts:
               </div>
               <div className="grid grid-cols-2 gap-1.5">
                 <button
@@ -449,8 +450,9 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
                       : 'bg-blue-50/80 hover:bg-blue-100 text-blue-900 border-blue-200/60'
                   }`}
                 >
-                  <div className="text-[11px] font-extrabold flex items-center gap-1">
-                    <span>📦 Shipper</span>
+                  <div className="text-[11px] font-extrabold flex items-center gap-1.5">
+                    <Package className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Shipper</span>
                   </div>
                   <div className="text-[9px] text-blue-600 truncate">dawit@miaoda.com</div>
                 </button>
@@ -464,8 +466,9 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
                       : 'bg-purple-50/80 hover:bg-purple-100 text-purple-900 border-purple-200/60'
                   }`}
                 >
-                  <div className="text-[11px] font-extrabold flex items-center gap-1">
-                    <span>🏢 Forwarder</span>
+                  <div className="text-[11px] font-extrabold flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5 text-purple-600" />
+                    <span>Forwarder</span>
                   </div>
                   <div className="text-[9px] text-purple-600 truncate">sara@miaoda.com</div>
                 </button>
@@ -479,8 +482,9 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
                       : 'bg-emerald-50/80 hover:bg-emerald-100 text-emerald-900 border-emerald-200/60'
                   }`}
                 >
-                  <div className="text-[11px] font-extrabold flex items-center gap-1">
-                    <span>🛂 Customs</span>
+                  <div className="text-[11px] font-extrabold flex items-center gap-1.5">
+                    <FileCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Customs</span>
                   </div>
                   <div className="text-[9px] text-emerald-600 truncate">kebede@miaoda.com</div>
                 </button>
@@ -494,8 +498,9 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
                       : 'bg-rose-50/80 hover:bg-rose-100 text-rose-900 border-rose-200/60'
                   }`}
                 >
-                  <div className="text-[11px] font-extrabold flex items-center gap-1">
-                    <span>🛡️ Admin</span>
+                  <div className="text-[11px] font-extrabold flex items-center gap-1.5">
+                    <Shield className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Admin</span>
                   </div>
                   <div className="text-[9px] text-rose-600 truncate">admin@miaoda.com</div>
                 </button>

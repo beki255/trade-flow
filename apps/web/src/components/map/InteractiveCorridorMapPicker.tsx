@@ -57,10 +57,8 @@ const createMarkerIcon = (color: string, label: string) => {
           align-items: center;
           justify-content: center;
           color: white;
-          font-weight: bold;
-          font-size: 12px;
         ">
-          📍
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
         </div>
         <div style="
           width: 3px;
@@ -513,7 +511,7 @@ export const InteractiveCorridorMapPicker: React.FC<InteractiveCorridorMapPicker
             <Marker position={[origin.lat, origin.lng]} icon={originIcon}>
               <Popup>
                 <div className="p-1 space-y-1">
-                  <div className="font-bold text-xs text-emerald-800">📍 Origin (Pickup Point)</div>
+                  <div className="font-bold text-xs text-emerald-800">Origin (Pickup Point)</div>
                   <div className="text-[11px] text-slate-700">{origin.address}</div>
                   <div className="text-[10px] font-mono text-slate-500">
                     GPS: {origin.lat.toFixed(5)}°N, {origin.lng.toFixed(5)}°E
@@ -526,7 +524,7 @@ export const InteractiveCorridorMapPicker: React.FC<InteractiveCorridorMapPicker
             <Marker position={[destination.lat, destination.lng]} icon={destinationIcon}>
               <Popup>
                 <div className="p-1 space-y-1">
-                  <div className="font-bold text-xs text-sky-800">🎯 Destination (Delivery Point)</div>
+                  <div className="font-bold text-xs text-sky-800">Destination (Delivery Point)</div>
                   <div className="text-[11px] text-slate-700">{destination.address}</div>
                   <div className="text-[10px] font-mono text-slate-500">
                     GPS: {destination.lat.toFixed(5)}°N, {destination.lng.toFixed(5)}°E

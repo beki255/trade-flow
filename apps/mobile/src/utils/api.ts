@@ -1,43 +1,43 @@
-import { Platform, NativeModules } from 'react-native';
+import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
 /**
- * Dynamically and reliably resolves the TradeFlow Backend API URL:
- * 1. process.env.EXPO_PUBLIC_API_URL
- * 2. NativeModules.SourceCode.scriptURL (React Native's native Metro bundle host IP on physical mobile/emulator)
- * 3. window.location.hostname (Web browser)
- * 4. 10.0.2.2:5000 (Android Emulator fallback)
- * 5. localhost:5000 (Default)
+ * Universal API Base URL Resolver
+ * Works seamlessly across:
+ * 1. Mobile Web in desktop/phone browser (http://${hostname}:5000)
+ * 2. Mobile Expo Go on physical iOS & Android devices over Wi-Fi (extracts computer LAN IP)
+ * 3. Android / iOS Emulators
  */
 export const getApiBaseUrl = (): string => {
-  // 1. Explicit env override
+  // 1. Explicit environment variable if configured
   if (process.env.EXPO_PUBLIC_API_URL) {
     return process.env.EXPO_PUBLIC_API_URL;
   }
 
-  // 2. React Native NativeModules bundle scriptURL (Extracts the real host machine LAN IP on Expo Go / Phone)
-  try {
-    const scriptURL = NativeModules?.SourceCode?.scriptURL;
-    if (scriptURL && typeof scriptURL === 'string') {
-      const match = scriptURL.match(/^https?:\/\/([^:\/]+)/);
-      if (match && match[1] && match[1] !== 'localhost' && match[1] !== '127.0.0.1') {
-        return `http://${match[1]}:5000`;
-      }
-    }
-  } catch (e) {
-    // ignore
-  }
-
-  // 3. Web browser environment
-  if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location) {
-    const host = window.location.hostname || 'localhost';
+  // 2. Web browser (matches current URL hostname dynamically)
+  if (Platform.OS === 'web' && typeof window !== 'undefined' && window?.location?.hostname) {
+    const host = window.location.hostname;
     return `http://${host}:5000`;
   }
 
-  // 4. Android Emulator loopback
+  // 3. Expo Go on Physical Phone or Simulator: Extract host machine LAN IP
+  const hostUri =
+    Constants.expoConfig?.hostUri ||
+    (Constants as any)?.manifest2?.extra?.expoClient?.hostUri ||
+    (Constants as any)?.manifest?.debuggerHost;
+
+  if (hostUri) {
+    const ip = hostUri.split(':')[0];
+    if (ip && ip !== 'localhost' && ip !== '127.0.0.1') {
+      return `http://${ip}:5000`;
+    }
+  }
+
+  // 4. Android Emulator fallback
   if (Platform.OS === 'android') {
     return 'http://10.0.2.2:5000';
   }
 
-  // 5. Default fallback
+  // 5. Default local fallback
   return 'http://localhost:5000';
 };

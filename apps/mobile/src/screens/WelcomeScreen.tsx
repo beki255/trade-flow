@@ -12,6 +12,7 @@ import {
   NativeScrollEvent,
 } from 'react-native';
 import { useLanguage } from '../context/LanguageContext';
+import { Ionicons } from '@expo/vector-icons';
 import { CorridorIsometricIllustration } from '../components/CorridorIsometricIllustration';
 import { CorridorRouteMapIllustration } from '../components/CorridorRouteMapIllustration';
 import { CorridorHighwayIllustration } from '../components/CorridorHighwayIllustration';
@@ -32,8 +33,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   const { width } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
 
-  // Full edge-to-edge slide width for zero border cutoffs
-  const slideWidth = width;
+  // Responsive slide width for identical rendering on both native mobile and web device frame
+  const slideWidth = Math.min(width, 412);
 
   const slideData = [
     {
@@ -170,7 +171,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
             onPress={onFastDemoLogin}
             activeOpacity={0.7}
           >
-            <Text style={styles.fastDemoLabel}>⚡ Fast Demo Driver</Text>
+            <Ionicons name="flash-outline" size={13} color="#0284C7" style={{ marginRight: 4 }} />
+            <Text style={styles.fastDemoLabel}>Fast Demo Driver</Text>
           </TouchableOpacity>
 
         </View>
@@ -321,7 +323,9 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   fastDemoWrapper: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 4,
   },
   fastDemoLabel: {
