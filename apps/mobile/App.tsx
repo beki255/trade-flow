@@ -13,9 +13,16 @@ import { LoginScreen } from './src/screens/LoginScreen';
 import { RegisterScreen } from './src/screens/RegisterScreen';
 import { TransporterPortalScreen } from './src/screens/transporter/TransporterPortalScreen';
 import { DriverPortalScreen } from './src/screens/driver/DriverPortalScreen';
+import { useFonts } from 'expo-font';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LanguageProvider } from './src/context/LanguageContext';
+import { getApiBaseUrl } from './src/utils/api';
 
 function MainApp() {
+  const [fontsLoaded] = useFonts({
+    ...Ionicons.font,
+    ...MaterialCommunityIcons.font,
+  });
   const [currentScreen, setCurrentScreen] = useState<'welcome' | 'login' | 'register' | 'active_home'>('welcome');
   const [currentRole, setCurrentRole] = useState<'DRIVER' | 'TRANSPORTER'>('DRIVER');
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -93,7 +100,7 @@ function MainApp() {
             }
 
             // 3. Authenticate with backend API with strict mode check
-            const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000';
+            const apiUrl = getApiBaseUrl();
             const apiRes = await fetch(`${apiUrl}/api/auth/google`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -150,18 +157,12 @@ function MainApp() {
     setCurrentScreen('active_home');
   };
 
-  const handleFastDemoDriver = () => {
-    setCurrentRole('DRIVER');
-    setCurrentScreen('active_home');
-  };
-
   // 1. Welcome Screen
   if (currentScreen === 'welcome') {
     return (
       <WelcomeScreen
         onNavigateLogin={() => setCurrentScreen('login')}
         onNavigateRegister={() => setCurrentScreen('register')}
-        onFastDemoLogin={handleFastDemoDriver}
       />
     );
   }

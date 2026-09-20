@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   MapContainer,
   TileLayer,
@@ -19,6 +19,7 @@ import {
   Loader2,
   Compass,
 } from 'lucide-react';
+import { calculateCorridorRoadDistanceKm, getCorridorRoadPolyline } from '@tradeflow/shared';
 
 // Custom Leaflet DivIcon Generators (Clean, High-DPI SVGs)
 const createMarkerIcon = (color: string, label: string) => {
@@ -90,13 +91,31 @@ interface InteractiveCorridorMapPickerProps {
   onDestinationChange: (loc: LocationData) => void;
 }
 
-// Major Corridor Terminals (Djibouti–Addis Ababa Freight Route)
+// Major Corridor Terminals (Ethiopian Highway & Logistics Network)
 export const CORRIDOR_PRESET_HUBS: LocationData[] = [
   {
     hubName: 'Addis Ababa Kaliti Hub',
     address: 'Kaliti Inland Container Terminal, Addis Ababa, Ethiopia',
     lat: 8.9056,
     lng: 38.7612,
+  },
+  {
+    hubName: 'Debre Sina Transit Terminal',
+    address: 'Debre Sina Transit Terminal & Mountain Pass, Amhara, Ethiopia',
+    lat: 9.8505,
+    lng: 39.7635,
+  },
+  {
+    hubName: 'Debre Berhan Industrial Hub',
+    address: 'Debre Berhan Industrial Park & Depot, Amhara, Ethiopia',
+    lat: 9.6800,
+    lng: 39.5300,
+  },
+  {
+    hubName: 'Bishoftu Logistics Depot',
+    address: 'Bishoftu Automotive & Agro Logistics Depot, Oromia, Ethiopia',
+    lat: 8.7500,
+    lng: 38.9800,
   },
   {
     hubName: 'Mojo Multi-Modal Dry Port',
@@ -111,10 +130,94 @@ export const CORRIDOR_PRESET_HUBS: LocationData[] = [
     lng: 39.2689,
   },
   {
+    hubName: 'Hawassa Industrial Park',
+    address: 'Hawassa Industrial Park & Logistics Station, Sidama, Ethiopia',
+    lat: 7.0500,
+    lng: 38.4950,
+  },
+  {
+    hubName: 'Dilla Coffee Logistics Depot',
+    address: 'Dilla Coffee Logistics Depot, Gedeo, Ethiopia',
+    lat: 6.4100,
+    lng: 38.3100,
+  },
+  {
+    hubName: 'Wolayta Sodo Transport Hub',
+    address: 'Wolayta Sodo Central Transport Hub, South Ethiopia',
+    lat: 6.8600,
+    lng: 37.7600,
+  },
+  {
+    hubName: 'Arba Minch Freight Terminal',
+    address: 'Arba Minch Freight Terminal, Gamo, Ethiopia',
+    lat: 6.0333,
+    lng: 37.5500,
+  },
+  {
+    hubName: 'Jimma Agro-Export Hub',
+    address: 'Jimma Agro-Export Hub & Terminal, Oromia, Ethiopia',
+    lat: 7.6756,
+    lng: 36.8344,
+  },
+  {
+    hubName: 'Nekemte Western Logistics Depot',
+    address: 'Nekemte Western Logistics Depot, East Wollega, Ethiopia',
+    lat: 9.0833,
+    lng: 36.5500,
+  },
+  {
+    hubName: 'Bahir Dar Inland Freight Terminal',
+    address: 'Bahir Dar Inland Freight Terminal, Amhara, Ethiopia',
+    lat: 11.5936,
+    lng: 37.3908,
+  },
+  {
+    hubName: 'Gondar Commercial Terminal',
+    address: 'Gondar Commercial & Dry Port Terminal, Amhara, Ethiopia',
+    lat: 12.6000,
+    lng: 37.4667,
+  },
+  {
+    hubName: 'Dessie Mountain Logistics Hub',
+    address: 'Dessie Transit Hub & Inspection, Amhara, Ethiopia',
+    lat: 11.1300,
+    lng: 39.6300,
+  },
+  {
+    hubName: 'Kombolcha Dry Port',
+    address: 'Kombolcha Dry Port & Logistics Terminal, Amhara, Ethiopia',
+    lat: 11.0825,
+    lng: 39.7425,
+  },
+  {
+    hubName: 'Woldiya Crossroad Terminal',
+    address: 'Woldiya Freight Interchange, North Wollo, Ethiopia',
+    lat: 11.8300,
+    lng: 39.6000,
+  },
+  {
+    hubName: 'Mekelle Multi-Modal Dry Port',
+    address: 'Mekelle Dry Port & Logistics Hub, Tigray, Ethiopia',
+    lat: 13.4967,
+    lng: 39.4753,
+  },
+  {
     hubName: 'Dire Dawa Free Trade Zone',
     address: 'Dire Dawa Dry Port & Free Trade Zone, Dire Dawa, Ethiopia',
     lat: 9.6009,
     lng: 41.8501,
+  },
+  {
+    hubName: 'Harar Commercial Point',
+    address: 'Harar Commercial Freight Point, Harari, Ethiopia',
+    lat: 9.3100,
+    lng: 42.1200,
+  },
+  {
+    hubName: 'Jijiga Export Terminal',
+    address: 'Jijiga Export Freight Terminal, Somali, Ethiopia',
+    lat: 9.3500,
+    lng: 42.8000,
   },
   {
     hubName: 'Semera Logistics Center',
@@ -133,6 +236,24 @@ export const CORRIDOR_PRESET_HUBS: LocationData[] = [
     address: 'Société de Gestion du Terminal de Doraleh (SGTD), Djibouti',
     lat: 11.5950,
     lng: 43.1480,
+  },
+  {
+    hubName: 'Moyale Border Post',
+    address: 'Moyale Border Customs Terminal, Kenya Gateway, Ethiopia',
+    lat: 3.5300,
+    lng: 39.0500,
+  },
+  {
+    hubName: 'Asosa Logistics Terminal',
+    address: 'Asosa Regional Logistics Hub, Benishangul-Gumuz, Ethiopia',
+    lat: 10.0700,
+    lng: 34.5300,
+  },
+  {
+    hubName: 'Gambela Freight Terminal',
+    address: 'Gambela Port & Regional Freight Hub, Gambela, Ethiopia',
+    lat: 8.2500,
+    lng: 34.5800,
   },
 ];
 
@@ -322,9 +443,71 @@ export const InteractiveCorridorMapPicker: React.FC<InteractiveCorridorMapPicker
     }
   };
 
-  const distanceKm = calculateDistanceKm(origin.lat, origin.lng, destination.lat, destination.lng);
+  const distanceKm = calculateCorridorRoadDistanceKm(
+    origin.address || origin.hubName || '',
+    destination.address || destination.hubName || '',
+    origin.lat,
+    origin.lng,
+    destination.lat,
+    destination.lng
+  );
   const activeCenter: [number, number] =
     activeTarget === 'ORIGIN' ? [origin.lat, origin.lng] : [destination.lat, destination.lng];
+
+  // Live genuine OpenStreetMap / Google Maps road coordinates fetched via OSRM
+  const [liveOsmRoute, setLiveOsmRoute] = useState<[number, number][] | null>(null);
+
+  useEffect(() => {
+    if (!origin.lat || !destination.lat) return;
+    let isMounted = true;
+    const key = `${origin.lng.toFixed(4)},${origin.lat.toFixed(4)};${destination.lng.toFixed(4)},${destination.lat.toFixed(4)}`;
+    const url = `https://router.project-osrm.org/route/v1/driving/${key}?overview=full&geometries=geojson`;
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
+
+    fetch(url, { signal: controller.signal })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!isMounted || !data?.routes?.[0]?.geometry?.coordinates) return;
+        const rawCoords: [number, number][] = data.routes[0].geometry.coordinates;
+        const latLngs: [number, number][] = rawCoords.map(([lng, lat]) => [
+          Number(lat.toFixed(6)),
+          Number(lng.toFixed(6)),
+        ]);
+        if (latLngs.length >= 5) {
+          setLiveOsmRoute(latLngs);
+        }
+      })
+      .catch(() => {})
+      .finally(() => clearTimeout(timer));
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [origin.lat, origin.lng, destination.lat, destination.lng]);
+
+  const roadPositions: [number, number][] = useMemo(() => {
+    if (liveOsmRoute && liveOsmRoute.length >= 5) {
+      return liveOsmRoute;
+    }
+    const local = getCorridorRoadPolyline(
+      origin.address || origin.hubName || '',
+      destination.address || destination.hubName || '',
+      origin.lat,
+      origin.lng,
+      destination.lat,
+      destination.lng
+    );
+    if (local && local.length >= 2) {
+      return local.map((p) => [p.lat, p.lng]);
+    }
+    return [
+      [origin.lat, origin.lng],
+      [destination.lat, destination.lng],
+    ];
+  }, [liveOsmRoute, origin, destination]);
 
   return (
     <div className="space-y-4">
@@ -533,17 +716,25 @@ export const InteractiveCorridorMapPicker: React.FC<InteractiveCorridorMapPicker
               </Popup>
             </Marker>
 
-            {/* Polyline Route Connecting Origin and Destination */}
+            {/* Authentic Highway Navigation Route (Solid Google Maps Blue with Contrast Border) */}
             <Polyline
-              positions={[
-                [origin.lat, origin.lng],
-                [destination.lat, destination.lng],
-              ]}
+              positions={roadPositions}
               pathOptions={{
-                color: '#0284C7',
-                weight: 4,
-                dashArray: '8, 6',
+                color: '#1E3A8A',
+                weight: 7,
                 opacity: 0.85,
+                lineCap: 'round',
+                lineJoin: 'round',
+              }}
+            />
+            <Polyline
+              positions={roadPositions}
+              pathOptions={{
+                color: '#2563EB',
+                weight: 4.5,
+                opacity: 1.0,
+                lineCap: 'round',
+                lineJoin: 'round',
               }}
             />
           </MapContainer>

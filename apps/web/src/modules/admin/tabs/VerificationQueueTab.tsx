@@ -49,6 +49,52 @@ export const VerificationQueueTab: React.FC<VerificationQueueTabProps> = ({
   verifiedCount,
   suspendedCount,
 }) => {
+  const [isProvisionOpen, setIsProvisionOpen] = React.useState(false);
+  const [officerName, setOfficerName] = React.useState('');
+  const [officerEmail, setOfficerEmail] = React.useState('');
+  const [officerStation, setOfficerStation] = React.useState('Galafi Border Checkpoint');
+  const [officerBadge, setOfficerBadge] = React.useState('ECC-OFFICER-' + Math.floor(1000 + Math.random() * 9000));
+  const [officerPassword, setOfficerPassword] = React.useState('Customs2026!');
+  const [provisioning, setProvisioning] = React.useState(false);
+  const [provisionError, setProvisionError] = React.useState('');
+  const [provisionNotice, setProvisionNotice] = React.useState('');
+
+  const handleProvisionInspector = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setProvisioning(true);
+    setProvisionError('');
+    try {
+      const res = await fetch('/api/portal/provision-customs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: officerName,
+          email: officerEmail,
+          password: officerPassword,
+          station: officerStation,
+          badgeId: officerBadge,
+          adminId: 'Platform Super-Admin',
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to provision inspector');
+      }
+
+      setIsProvisionOpen(false);
+      setOfficerName('');
+      setOfficerEmail('');
+      setProvisionNotice(`🎉 Official Customs Inspector commissioned for ${officerStation}!`);
+      setTimeout(() => setProvisionNotice(''), 5000);
+      onRefresh();
+    } catch (err: any) {
+      setProvisionError(err.message || 'Provisioning failed');
+    } finally {
+      setProvisioning(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header Banner */}
@@ -74,10 +120,10 @@ export const VerificationQueueTab: React.FC<VerificationQueueTabProps> = ({
       <AdminKpiCards stats={stats} />
 
       {/* Action Feedback Banner */}
-      {actionSuccess && (
+      {(actionSuccess || provisionNotice) && (
         <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
           <CheckCircle className="w-4 h-4 text-emerald-600" />
-          <span>{actionSuccess}</span>
+          <span>{actionSuccess || provisionNotice}</span>
         </div>
       )}
 
@@ -93,12 +139,20 @@ export const VerificationQueueTab: React.FC<VerificationQueueTabProps> = ({
               Review legal identities, trade licenses, and insurance certificates
             </p>
           </div>
-          <button
-            onClick={onRefresh}
-            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all self-start sm:self-auto shadow-sm"
-          >
-            Refresh Queue
-          </button>
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <button
+              onClick={() => setIsProvisionOpen(true)}
+              className="px-3.5 py-2 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>+ Commission Customs Inspector</span>
+            </button>
+            <button
+              onClick={onRefresh}
+              className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all shadow-sm cursor-pointer"
+            >
+              Refresh Queue
+            </button>
+          </div>
         </div>
 
         {/* Advanced Filter Bar (Status, Role & Search) */}
@@ -292,6 +346,129 @@ export const VerificationQueueTab: React.FC<VerificationQueueTabProps> = ({
           </div>
         )}
       </div>
+
+      {/* Official Customs Inspector Commissioning Modal */}
+      {isProvisionOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-lg w-full border border-slate-200 shadow-2xl p-6 sm:p-8 space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-teal-700 bg-teal-50 px-2 py-0.5 rounded">
+                  Regulatory Government Commission
+                </span>
+                <h3 className="text-lg font-black text-slate-900 mt-1">
+                  Commission Official Customs Inspector
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsProvisionOpen(false)}
+                className="text-slate-400 hover:text-slate-700 font-bold text-sm p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            {provisionError && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">
+                {provisionError}
+              </div>
+            )}
+
+            <form onSubmit={handleProvisionInspector} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Inspector Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Inspector Alula Haile"
+                  value={officerName}
+                  onChange={(e) => setOfficerName(e.target.value)}
+                  className="w-full px-3.5 py-2 text-xs font-medium rounded-xl border border-slate-300 focus:border-teal-600 outline-none text-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Official Government / Commission Email *
+                </label>
+                <input
+                  type="email"
+                  required
+                  placeholder="alula.haile@customs.gov.et"
+                  value={officerEmail}
+                  onChange={(e) => setOfficerEmail(e.target.value)}
+                  className="w-full px-3.5 py-2 text-xs font-medium rounded-xl border border-slate-300 focus:border-teal-600 outline-none text-slate-900 font-mono"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Assigned Station *
+                  </label>
+                  <select
+                    value={officerStation}
+                    onChange={(e) => setOfficerStation(e.target.value)}
+                    className="w-full px-3 py-2 text-xs font-bold rounded-xl border border-slate-300 bg-white focus:border-teal-600 outline-none text-slate-900"
+                  >
+                    <option value="Galafi Border Checkpoint">Galafi Border Checkpoint</option>
+                    <option value="Modjo Multimodal Dry Port">Modjo Multimodal Dry Port</option>
+                    <option value="Dire Dawa Dry Port Terminal">Dire Dawa Dry Port Terminal</option>
+                    <option value="Addis Ababa Kality Customs">Addis Ababa Kality Customs</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Badge / Officer ID *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={officerBadge}
+                    onChange={(e) => setOfficerBadge(e.target.value)}
+                    className="w-full px-3.5 py-2 text-xs font-mono font-bold rounded-xl border border-slate-300 focus:border-teal-600 outline-none text-slate-900"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Temporary Password *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={officerPassword}
+                  onChange={(e) => setOfficerPassword(e.target.value)}
+                  className="w-full px-3.5 py-2 text-xs font-mono rounded-xl border border-slate-300 focus:border-teal-600 outline-none text-slate-900"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsProvisionOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={provisioning}
+                  className="px-5 py-2 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  <ShieldCheck className="w-4 h-4 text-teal-300" />
+                  <span>{provisioning ? 'Commissioning...' : 'Commission Official Inspector'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

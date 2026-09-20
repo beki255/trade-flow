@@ -27,6 +27,10 @@ export interface ActiveTripDetails {
   weight?: string;
   origin?: string;
   destination?: string;
+  originLat?: number;
+  originLng?: number;
+  destLat?: number;
+  destLng?: number;
   route?: string;
   status?: string;
   assignedTruckPlate?: string;
@@ -35,10 +39,17 @@ export interface ActiveTripDetails {
   transporterName?: string;
   agreedRate?: string | number;
   speedKmh?: number;
+  heading?: number;
+  fuelLevelPct?: number;
+  totalDistanceKm?: number;
   remainingKm?: number;
+  isDriving?: boolean;
   estimatedEta?: string;
+  etaConfidenceText?: string;
   progressPercentage?: number;
   dispatchedAt?: string;
+  weatherNote?: string;
+  waypoints?: WaypointItem[];
 }
 
 export type DriverTabType = 'trip' | 'nav' | 'checkin' | 'incident' | 'pod';

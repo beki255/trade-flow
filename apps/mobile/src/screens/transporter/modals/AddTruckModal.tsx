@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { transporterStyles as styles } from '../transporterStyles';
 import { DriverItem } from '../types';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface AddTruckModalProps {
   visible: boolean;
@@ -18,6 +19,8 @@ interface AddTruckModalProps {
   setTruckPlate: (val: string) => void;
   truckType: string;
   setTruckType: (val: string) => void;
+  truckFuelType: string;
+  setTruckFuelType: (val: string) => void;
   truckCapacity: string;
   setTruckCapacity: (val: string) => void;
   truckDriver: string;
@@ -39,6 +42,8 @@ export const AddTruckModal: React.FC<AddTruckModalProps> = ({
   setTruckPlate,
   truckType,
   setTruckType,
+  truckFuelType,
+  setTruckFuelType,
   truckCapacity,
   setTruckCapacity,
   truckDriver,
@@ -95,6 +100,35 @@ export const AddTruckModal: React.FC<AddTruckModalProps> = ({
               ))}
             </View>
 
+            {/* Fuel Type Selector */}
+            <Text style={styles.fieldLabel}>Engine & Fuel Type</Text>
+            <View style={styles.typeSelectorRow}>
+              {[
+                { key: 'Diesel', label: 'Diesel (ዲዛል)', icon: 'gas-station' },
+                { key: 'Petrol', label: 'Petrol (ቤንዚን)', icon: 'car' },
+                { key: 'Electric', label: 'Electric (ኤሌክትሪክ)', icon: 'lightning-bolt' },
+              ].map((item) => (
+                <TouchableOpacity
+                  key={item.key}
+                  style={[
+                    styles.typeChip,
+                    { flexDirection: 'row', alignItems: 'center', gap: 4 },
+                    truckFuelType === item.key && styles.typeChipActive,
+                  ]}
+                  onPress={() => setTruckFuelType(item.key)}
+                >
+                  <MaterialCommunityIcons
+                    name={item.icon as any}
+                    size={13}
+                    color={truckFuelType === item.key ? '#FFFFFF' : '#0284C7'}
+                  />
+                  <Text style={[styles.typeChipText, truckFuelType === item.key && styles.typeChipTextActive]}>
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Payload Weight Capacity (Tons):</Text>
               <TextInput
@@ -114,9 +148,16 @@ export const AddTruckModal: React.FC<AddTruckModalProps> = ({
                 style={styles.dropdownBtn}
                 onPress={() => setShowDriverDropdown(!showDriverDropdown)}
               >
-                <Text style={styles.dropdownBtnText}>
-                  {truckDriver ? `👤 ${truckDriver}` : 'Unassigned (Select Driver)'}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  {truckDriver ? (
+                    <Ionicons name="person" size={14} color="#0284C7" />
+                  ) : (
+                    <Ionicons name="person-outline" size={14} color="#64748B" />
+                  )}
+                  <Text style={styles.dropdownBtnText}>
+                    {truckDriver || 'Unassigned (Select Driver)'}
+                  </Text>
+                </View>
                 <Text style={{ fontSize: 12, color: '#64748B' }}>{showDriverDropdown ? '▲' : '▼'}</Text>
               </TouchableOpacity>
 
@@ -158,15 +199,18 @@ export const AddTruckModal: React.FC<AddTruckModalProps> = ({
                           setShowDriverDropdown(false);
                         }}
                       >
-                        <Text
-                          style={[
-                            styles.dropdownItemText,
-                            truckDriver === drv.fullName && styles.dropdownItemTextActive,
-                            isAlreadyAssigned && { color: '#94A3B8' },
-                          ]}
-                        >
-                          👤 {drv.fullName} {isAlreadyAssigned ? `(Assigned: ${drv.assignedTruckPlate})` : `(${drv.phone})`}
-                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Ionicons name="person" size={13} color="#0284C7" />
+                          <Text
+                            style={[
+                              styles.dropdownItemText,
+                              truckDriver === drv.fullName && styles.dropdownItemTextActive,
+                              isAlreadyAssigned && { color: '#94A3B8' },
+                            ]}
+                          >
+                            {drv.fullName} {isAlreadyAssigned ? `(Assigned: ${drv.assignedTruckPlate})` : `(${drv.phone})`}
+                          </Text>
+                        </View>
                       </TouchableOpacity>
                     );
                   })}
@@ -185,7 +229,12 @@ export const AddTruckModal: React.FC<AddTruckModalProps> = ({
                   Alert.alert('Document Attached', 'Goods-in-Transit (GIT) Cargo Insurance Certificate uploaded.');
                 }}
               >
-                <Text style={styles.docUploadIcon}>{insuranceDoc ? '✅' : '📄'}</Text>
+                <Ionicons
+                  name={insuranceDoc ? "checkmark-circle" : "document-text-outline"}
+                  size={24}
+                  color={insuranceDoc ? "#10B981" : "#0284C7"}
+                  style={{ marginRight: 6 }}
+                />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.docUploadLabel}>Goods-in-Transit (GIT) Cargo Insurance</Text>
                   <Text style={styles.docUploadStatus}>
@@ -201,7 +250,12 @@ export const AddTruckModal: React.FC<AddTruckModalProps> = ({
                   Alert.alert('Document Attached', 'FTA Annual Roadworthiness Certificate uploaded.');
                 }}
               >
-                <Text style={styles.docUploadIcon}>{roadworthinessDoc ? '✅' : '📄'}</Text>
+                <Ionicons
+                  name={roadworthinessDoc ? "checkmark-circle" : "document-text-outline"}
+                  size={24}
+                  color={roadworthinessDoc ? "#10B981" : "#0284C7"}
+                  style={{ marginRight: 6 }}
+                />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.docUploadLabel}>FTA Annual Roadworthiness Certificate</Text>
                   <Text style={styles.docUploadStatus}>

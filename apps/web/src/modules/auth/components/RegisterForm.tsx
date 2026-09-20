@@ -56,14 +56,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onAuthSuccess }) => 
     {
       key: 'FORWARDER',
       label: 'Freight Forwarder',
-      sub: 'Logistics Partner',
+      sub: 'Licensed Logistics Partner',
       icon: Building2,
-    },
-    {
-      key: 'CUSTOMS',
-      label: 'Customs Authority',
-      sub: 'Inspector / Officer',
-      icon: FileCheck,
     },
   ];
 
@@ -150,7 +144,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onAuthSuccess }) => 
           <div className="text-[11px] font-semibold text-slate-500 mb-2">
             Select Account Role:
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-3">
             {webRoles.map((r) => {
               const IconComp = r.icon;
               const isSelected = selectedRole === r.key;
@@ -159,22 +153,38 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onAuthSuccess }) => 
                   key={r.key}
                   type="button"
                   onClick={() => setSelectedRole(r.key)}
-                  className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-center transition-all ${
+                  className={`flex flex-col items-center justify-center p-3.5 rounded-2xl border text-center transition-all ${
                     isSelected
                       ? 'border-[#0284C7] bg-[#E0F2FE] shadow-sm text-[#0284C7]'
                       : 'border-slate-200 hover:border-slate-300 bg-white text-slate-600'
                   }`}
                 >
                   <IconComp className={`w-6 h-6 mb-1.5 ${isSelected ? 'text-[#0284C7]' : 'text-slate-500'}`} />
-                  <span className="text-[11px] font-bold leading-tight">
+                  <span className="text-xs font-bold leading-tight">
                     {r.label}
                   </span>
-                  <span className="text-[9px] text-slate-400 mt-0.5">
+                  <span className="text-[10px] text-slate-400 mt-0.5">
                     {r.sub}
                   </span>
                 </button>
               );
             })}
+          </div>
+
+          {/* Government & Regulatory Notice */}
+          <div className="mt-3 p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-start gap-2.5 text-[11px] text-slate-600">
+            <Shield className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+            <div className="space-y-0.5">
+              <span className="font-bold text-slate-800">
+                Government Officials (Ethiopian Customs Commission / ECC):
+              </span>
+              <p className="text-[10px] text-slate-500 leading-normal">
+                Customs Inspector accounts are institutional and provisioned directly by Platform Administration.{' '}
+                <Link to="/login" className="text-emerald-700 font-bold hover:underline">
+                  Sign In with Official Credentials ➔
+                </Link>
+              </p>
+            </div>
           </div>
         </div>
 
@@ -231,13 +241,15 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onAuthSuccess }) => 
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Trade License No *
+                {selectedRole === 'FORWARDER'
+                  ? 'EMA Freight Forwarding License No *'
+                  : 'Trade License / Reg No *'}
               </label>
               <input
                 type="text"
                 value={licenseNo}
                 onChange={(e) => setLicenseNo(e.target.value)}
-                placeholder="ETH-MOTI-2026-99"
+                placeholder={selectedRole === 'FORWARDER' ? 'EMA-FF-2026-08' : 'ETH-MOTI-2026-99'}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#0284C7] outline-none text-xs font-medium text-slate-900"
               />
             </div>

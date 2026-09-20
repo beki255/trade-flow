@@ -1,10 +1,10 @@
 import { Platform, NativeModules } from 'react-native';
 import Constants from 'expo-constants';
 
-let customServerIp: string | null = null;
+let customServerIp: string | null = '10.18.93.34';
 
 export const setCustomServerIp = (ip: string) => {
-  customServerIp = ip.trim();
+  customServerIp = ip.trim() || null;
 };
 
 export const getCustomServerIp = (): string | null => customServerIp;
@@ -12,27 +12,28 @@ export const getCustomServerIp = (): string | null => customServerIp;
 /**
  * Universal & Bulletproof API Base URL Resolver
  * Automatically detects the current computer LAN IP in real-time, even when Wi-Fi changes daily:
- * 1. Custom IP Override if manually set
- * 2. NativeModules.SourceCode.scriptURL (Exact IP from which the JS bundle was downloaded on physical phone)
- * 3. Expo Constants (hostUri, debuggerHost, linkingUri)
- * 4. Mobile Web (window.location.hostname)
- * 5. Android Emulator (10.0.2.2)
- * 6. Localhost fallback (127.0.0.1:5000)
+ * 1. Custom IP Override if manually set / default LAN IP (10.18.93.34)
+ * 2. Explicit environment variable (EXPO_PUBLIC_API_URL)
+ * 3. NativeModules.SourceCode.scriptURL (Exact IP from which the JS bundle was downloaded on physical phone)
+ * 4. Expo Constants (hostUri, debuggerHost, linkingUri)
+ * 5. Web browser fallback (http://localhost:5000)
+ * 6. Android Emulator (10.0.2.2)
+ * 7. Localhost fallback (127.0.0.1:5000)
  */
 export const getApiBaseUrl = (): string => {
-  // 1. Web browser: Always use localhost:5000 directly (eliminates all stale LAN IP timeouts)
-  if (Platform.OS === 'web') {
-    return 'http://localhost:5000';
-  }
-
-  // 2. Custom override if manually set by user on native phone
+  // 1. Custom override if manually set or default LAN IP
   if (customServerIp) {
     return customServerIp.startsWith('http') ? customServerIp : `http://${customServerIp}:5000`;
   }
 
-  // 3. Explicit environment variable if configured
+  // 2. Explicit environment variable if configured
   if (process.env.EXPO_PUBLIC_API_URL) {
     return process.env.EXPO_PUBLIC_API_URL;
+  }
+
+  // 3. Web browser: Always use localhost:5000 directly if no custom IP
+  if (Platform.OS === 'web') {
+    return 'http://localhost:5000';
   }
 
   // 4. React Native SourceCode scriptURL (Most accurate on physical phone / Expo Go)
@@ -116,9 +117,16 @@ export const apiFetch = async (
       } catch (fallbackErr) {}
     }
 
+    // Fallback strategy 2: If on Android physical phone / Expo Go, try computer's active Wi-Fi LAN IP
+    if (Platform.OS === 'android') {
+      try {
+        const lanRes = await fetch(`http://10.18.93.34:5000${cleanEndpoint}`, {
+          ...options,
+        });
+        return lanRes;
+      } catch (lanErr) {}
+    }
+
     throw err;
   }
 };
-
-
-

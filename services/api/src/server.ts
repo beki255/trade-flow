@@ -6,6 +6,13 @@ import { Server as SocketIOServer } from 'socket.io';
 import authRoutes from './routes/auth.routes';
 import portalRoutes from './routes/portal.routes';
 import matchingRoutes from './routes/matching.routes';
+import trackingRoutes from './routes/tracking.routes';
+import pricingRoutes from './routes/pricing.routes';
+import optimizationRoutes from './routes/optimization.routes';
+import customsRoutes from './routes/customs.routes';
+import analyticsRoutes from './routes/analytics.routes';
+import paymentRoutes from './routes/payment.routes';
+import forwarderRoutes from './routes/forwarder.routes';
 import { swaggerDocsHandler, swaggerJsonHandler } from './docs/swagger';
 
 dotenv.config();
@@ -45,6 +52,13 @@ app.get('/api/docs/json', swaggerJsonHandler);
 app.use('/api/auth', authRoutes);
 app.use('/api/portal', portalRoutes);
 app.use('/api/matching', matchingRoutes);
+app.use('/api/tracking', trackingRoutes);
+app.use('/api/pricing', pricingRoutes);
+app.use('/api/optimization', optimizationRoutes);
+app.use('/api/customs', customsRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/forwarder', forwarderRoutes);
 
 // Socket.io Real-Time Telematics Channel
 io.on('connection', (socket) => {

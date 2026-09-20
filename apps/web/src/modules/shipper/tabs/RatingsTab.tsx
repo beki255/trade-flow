@@ -54,17 +54,16 @@ export const RatingsTab: React.FC<RatingsTabProps> = ({
         <form onSubmit={onSubmitRating} className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Select Transporter & Trip
+              Transporter / Carrier Name *
             </label>
-            <select
+            <input
+              type="text"
+              required
+              placeholder="e.g. Mulugeta Heavy Logistics & Fleet or Driver Name"
               value={ratingTargetTransporter}
               onChange={(e) => setRatingTargetTransporter(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-sky-600 outline-none text-xs font-medium text-slate-900"
-            >
-              <option value="Red Sea Freight Logistics">Red Sea Freight Logistics — TF-SH-8821 (Djibouti ➔ Mojo)</option>
-              <option value="Abyssinia Cargo Express">Abyssinia Cargo Express — TF-SH-9140 (Galafi ➔ Addis Ababa)</option>
-              <option value="Horn of Africa Fleet">Horn of Africa Fleet — TF-SH-7712 (Modjo ➔ Kaliti)</option>
-            </select>
+            />
           </div>
 
           {/* 1-5 Interactive Star Selector */}

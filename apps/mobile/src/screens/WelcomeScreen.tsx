@@ -10,6 +10,7 @@ import {
   useWindowDimensions,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  Platform,
 } from 'react-native';
 import { useLanguage } from '../context/LanguageContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,13 +21,11 @@ import { CorridorHighwayIllustration } from '../components/CorridorHighwayIllust
 interface WelcomeScreenProps {
   onNavigateLogin?: () => void;
   onNavigateRegister?: () => void;
-  onFastDemoLogin?: () => void;
 }
 
 export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   onNavigateLogin,
   onNavigateRegister,
-  onFastDemoLogin,
 }) => {
   const [activeDot, setActiveDot] = useState(0);
   const { toggleLanguage } = useLanguage();
@@ -164,17 +163,6 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           >
             <Text style={styles.registerButtonText}>Create Account</Text>
           </TouchableOpacity>
-
-          {/* Fast Demo One-Click Fill */}
-          <TouchableOpacity
-            style={styles.fastDemoWrapper}
-            onPress={onFastDemoLogin}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="flash-outline" size={13} color="#0284C7" style={{ marginRight: 4 }} />
-            <Text style={styles.fastDemoLabel}>Fast Demo Driver</Text>
-          </TouchableOpacity>
-
         </View>
 
       </View>
@@ -298,11 +286,18 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 16,
     alignItems: 'center',
-    shadowColor: '#0284C7',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 4px 8px rgba(2, 132, 199, 0.25)',
+      } as any,
+      default: {
+        shadowColor: '#0284C7',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+        elevation: 4,
+      },
+    }),
   },
   loginButtonText: {
     color: '#FFFFFF',

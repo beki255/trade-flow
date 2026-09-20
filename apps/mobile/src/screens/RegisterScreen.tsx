@@ -395,11 +395,18 @@ const styles = StyleSheet.create({
     padding: 20,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 4px 10px rgba(15, 23, 42, 0.04)',
+      } as any,
+      default: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.04,
+        shadowRadius: 10,
+        elevation: 2,
+      },
+    }),
     gap: 12,
   },
   screenHeading: {
@@ -410,8 +417,9 @@ const styles = StyleSheet.create({
   screenSubtitle: {
     fontSize: 12,
     color: '#64748B',
-    marginTop: -8,
-    marginBottom: 4,
+    marginTop: 4,
+    marginBottom: 6,
+    lineHeight: 16,
   },
   driverNoticeBox: {
     flexDirection: 'row',
@@ -485,7 +493,8 @@ const styles = StyleSheet.create({
   docsSectionSub: {
     fontSize: 10,
     color: '#64748B',
-    marginTop: -8,
+    marginTop: 2,
+    lineHeight: 14,
   },
   uploadCard: {
     flexDirection: 'row',
@@ -533,11 +542,18 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     alignItems: 'center',
     marginTop: 6,
-    shadowColor: '#0284C7',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 4px 8px rgba(2, 132, 199, 0.25)',
+      } as any,
+      default: {
+        shadowColor: '#0284C7',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+        elevation: 4,
+      },
+    }),
   },
   primaryRegisterBtnText: {
     color: '#FFFFFF',

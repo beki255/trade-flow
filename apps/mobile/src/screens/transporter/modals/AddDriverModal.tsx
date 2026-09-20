@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { transporterStyles as styles } from '../transporterStyles';
 import { TruckItem } from '../types';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface AddDriverModalProps {
   visible: boolean;
@@ -72,7 +73,7 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({
               <Text style={styles.inputLabel}>Driver Full Legal Name:</Text>
               <TextInput
                 style={styles.input}
-                placeholder="e.g. Dawit Hailemariam"
+                placeholder="Enter driver's full name"
                 placeholderTextColor="#94A3B8"
                 value={driverFullName}
                 onChangeText={setDriverFullName}
@@ -136,9 +137,12 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({
                 style={styles.dropdownBtn}
                 onPress={() => setShowTruckDropdown(!showTruckDropdown)}
               >
-                <Text style={styles.dropdownBtnText}>
-                  {driverAssignedPlate ? `🚛 ${driverAssignedPlate}` : 'Unassigned (Select Truck)'}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <MaterialCommunityIcons name="truck-outline" size={14} color="#0284C7" />
+                  <Text style={styles.dropdownBtnText}>
+                    {driverAssignedPlate || 'Unassigned (Select Truck)'}
+                  </Text>
+                </View>
                 <Text style={{ fontSize: 12, color: '#64748B' }}>{showTruckDropdown ? '▲' : '▼'}</Text>
               </TouchableOpacity>
 
@@ -164,9 +168,12 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({
                         setShowTruckDropdown(false);
                       }}
                     >
-                      <Text style={[styles.dropdownItemText, driverAssignedPlate === trk.plate && styles.dropdownItemTextActive]}>
-                        🚛 {trk.plate} ({trk.type})
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <MaterialCommunityIcons name="truck" size={13} color="#0284C7" />
+                        <Text style={[styles.dropdownItemText, driverAssignedPlate === trk.plate && styles.dropdownItemTextActive]}>
+                          {trk.plate} ({trk.type})
+                        </Text>
+                      </View>
                     </TouchableOpacity>
                   ))}
                 </View>

@@ -1,10 +1,11 @@
-import React from 'react';
 import {
   PlusCircle,
   Package,
   Inbox,
   Clock,
   ShieldCheck,
+  Trash2,
+  ExternalLink,
 } from 'lucide-react';
 import { ShipmentItem, BidItem } from '../types';
 
@@ -13,6 +14,10 @@ interface DashboardTabProps {
   shipments: ShipmentItem[];
   bids: BidItem[];
   onNavigatePostLoad: () => void;
+  onNavigateConsignments?: () => void;
+  onNavigateBids?: () => void;
+  onDeleteLoad?: (rawLoadId: string) => void;
+  deleteLoadingId?: string | null;
 }
 
 export const DashboardTab: React.FC<DashboardTabProps> = ({
@@ -20,6 +25,10 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
   shipments,
   bids,
   onNavigatePostLoad,
+  onNavigateConsignments,
+  onNavigateBids,
+  onDeleteLoad,
+  deleteLoadingId,
 }) => {
   return (
     <div className="space-y-6">
@@ -143,6 +152,15 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
             <Package className="w-4 h-4 text-sky-600" />
             <span>Shipment Register</span>
           </div>
+          {onNavigateConsignments && (
+            <button
+              type="button"
+              onClick={onNavigateConsignments}
+              className="text-xs font-bold text-sky-600 hover:text-sky-700 flex items-center gap-1 cursor-pointer transition-colors"
+            >
+              <span>View All Consignments ➔</span>
+            </button>
+          )}
         </div>
 
         {shipments.length === 0 ? (
@@ -156,29 +174,59 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
             </p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {shipments.map((s) => (
               <div
                 key={s.id}
-                className="p-4 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between gap-4"
+                className="p-4 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-white hover:border-slate-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs"
               >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
+                <div className="space-y-1 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-mono text-[10px] font-extrabold text-slate-500 bg-slate-200/70 px-1.5 py-0.5 rounded">
+                      {s.id}
+                    </span>
                     <span className="text-xs font-black text-slate-900">{s.title}</span>
                     <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-sky-100 text-sky-800">
                       {s.type}
                     </span>
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-800">
+                      {s.status}
+                    </span>
                   </div>
-                  <div className="text-xs text-slate-500">
-                    {s.route} • {s.weight}
+                  <div className="text-xs text-slate-600 font-medium">
+                    📍 {s.route} • <span className="text-sky-700 font-bold">{s.weight}</span>
                   </div>
                 </div>
 
-                <div className="text-right space-y-1">
-                  <div className="text-xs font-black text-slate-900">{s.budget}</div>
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-800">
-                    {s.status}
-                  </span>
+                <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200/60">
+                  <div className="text-left sm:text-right space-y-0.5">
+                    <div className="text-xs font-black text-slate-900">{s.budget}</div>
+                    {s.bidsCount && s.bidsCount > 0 ? (
+                      <button
+                        onClick={onNavigateBids}
+                        className="text-[10px] font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
+                      >
+                        <span>{s.bidsCount} Quotes</span>
+                        <ExternalLink className="w-2.5 h-2.5" />
+                      </button>
+                    ) : (
+                      <div className="text-[10px] text-slate-400">0 Quotes yet</div>
+                    )}
+                  </div>
+
+                  {onDeleteLoad && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteLoad(s.rawId);
+                      }}
+                      disabled={deleteLoadingId === s.rawId}
+                      className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors border border-transparent hover:border-rose-200"
+                      title="Delete / Cancel Consignment"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

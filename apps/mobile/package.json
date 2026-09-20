@@ -12,6 +12,7 @@
   "dependencies": {
     "@tradeflow/shared": "*",
     "expo": "~52.0.37",
+    "@expo/vector-icons": "^14.0.4",
     "expo-asset": "~11.0.4",
     "expo-document-picker": "^57.0.1",
     "expo-font": "~13.0.4",

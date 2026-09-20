@@ -35,6 +35,8 @@ export const DispatchModal: React.FC<DispatchModalProps> = ({
   setDispatchDriver,
   onConfirmDispatch,
 }) => {
+  const isAlreadyDispatched = Boolean(selectedBid?.dispatchedTruck && selectedBid?.dispatchedDriver);
+
   return (
     <Modal
       visible={visible}
@@ -66,6 +68,21 @@ export const DispatchModal: React.FC<DispatchModalProps> = ({
               </Text>
             </View>
 
+            {/* Already Dispatched Warning */}
+            {isAlreadyDispatched && (
+              <View style={{ backgroundColor: '#FEF2F2', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#FECACA', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="lock-closed" size={18} color="#DC2626" />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 11.5, fontWeight: '800', color: '#DC2626' }}>
+                    Consignment Already Dispatched
+                  </Text>
+                  <Text style={{ fontSize: 10.5, color: '#B91C1C', marginTop: 2 }}>
+                    This load is already assigned to {selectedBid?.dispatchedTruck} • {selectedBid?.dispatchedDriver}. 1 load cannot be dispatched multiple times.
+                  </Text>
+                </View>
+              </View>
+            )}
+
             {/* Step 1: Select Fleet Vehicle */}
             <View style={{ gap: 6 }}>
               <Text style={{ fontSize: 11.5, fontWeight: '800', color: '#1E293B' }}>
@@ -77,23 +94,37 @@ export const DispatchModal: React.FC<DispatchModalProps> = ({
                 </Text>
               ) : (
                 <View style={styles.typeSelectorRow}>
-                  {fleetList.map((trk) => (
-                    <TouchableOpacity
-                      key={trk.id}
-                      style={[styles.typeChip, dispatchTruck === trk.plate && styles.typeChipActive]}
-                      onPress={() => setDispatchTruck(trk.plate)}
-                    >
-                      <MaterialCommunityIcons
-                        name="truck"
-                        size={14}
-                        color={dispatchTruck === trk.plate ? '#0284C7' : '#64748B'}
-                        style={{ marginRight: 4 }}
-                      />
-                      <Text style={[styles.typeChipText, dispatchTruck === trk.plate && styles.typeChipTextActive]}>
-                        {trk.plate} ({trk.type})
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                  {fleetList.map((trk) => {
+                    const isBusy = trk.status === 'IN_TRANSIT';
+                    return (
+                      <TouchableOpacity
+                        key={trk.id}
+                        disabled={isBusy || isAlreadyDispatched}
+                        style={[
+                          styles.typeChip,
+                          dispatchTruck === trk.plate && styles.typeChipActive,
+                          isBusy && { opacity: 0.45, backgroundColor: '#F1F5F9' },
+                        ]}
+                        onPress={() => !isBusy && setDispatchTruck(trk.plate)}
+                      >
+                        <MaterialCommunityIcons
+                          name="truck"
+                          size={14}
+                          color={dispatchTruck === trk.plate ? '#0284C7' : isBusy ? '#94A3B8' : '#64748B'}
+                          style={{ marginRight: 4 }}
+                        />
+                        <Text
+                          style={[
+                            styles.typeChipText,
+                            dispatchTruck === trk.plate && styles.typeChipTextActive,
+                            isBusy && { color: '#94A3B8' },
+                          ]}
+                        >
+                          {trk.plate} ({trk.type}) {isBusy ? '• In Transit' : ''}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               )}
             </View>
@@ -109,23 +140,37 @@ export const DispatchModal: React.FC<DispatchModalProps> = ({
                 </Text>
               ) : (
                 <View style={styles.typeSelectorRow}>
-                  {driversList.map((drv) => (
-                    <TouchableOpacity
-                      key={drv.id}
-                      style={[styles.typeChip, dispatchDriver === drv.fullName && styles.typeChipActive]}
-                      onPress={() => setDispatchDriver(drv.fullName)}
-                    >
-                      <Ionicons
-                        name="person-outline"
-                        size={13}
-                        color={dispatchDriver === drv.fullName ? '#0284C7' : '#64748B'}
-                        style={{ marginRight: 4 }}
-                      />
-                      <Text style={[styles.typeChipText, dispatchDriver === drv.fullName && styles.typeChipTextActive]}>
-                        {drv.fullName} ({drv.phone})
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                  {driversList.map((drv) => {
+                    const isBusy = drv.status === 'IN_TRANSIT' || drv.status === 'ON_TRIP';
+                    return (
+                      <TouchableOpacity
+                        key={drv.id}
+                        disabled={isBusy || isAlreadyDispatched}
+                        style={[
+                          styles.typeChip,
+                          dispatchDriver === drv.fullName && styles.typeChipActive,
+                          isBusy && { opacity: 0.45, backgroundColor: '#F1F5F9' },
+                        ]}
+                        onPress={() => !isBusy && setDispatchDriver(drv.fullName)}
+                      >
+                        <Ionicons
+                          name="person-outline"
+                          size={13}
+                          color={dispatchDriver === drv.fullName ? '#0284C7' : isBusy ? '#94A3B8' : '#64748B'}
+                          style={{ marginRight: 4 }}
+                        />
+                        <Text
+                          style={[
+                            styles.typeChipText,
+                            dispatchDriver === drv.fullName && styles.typeChipTextActive,
+                            isBusy && { color: '#94A3B8' },
+                          ]}
+                        >
+                          {drv.fullName} ({drv.phone}) {isBusy ? '• On Trip' : ''}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               )}
             </View>
@@ -135,12 +180,14 @@ export const DispatchModal: React.FC<DispatchModalProps> = ({
               style={[
                 styles.submitBidBtn,
                 { backgroundColor: '#16A34A', marginTop: 10 },
-                (!dispatchTruck || !dispatchDriver) && { opacity: 0.5 },
+                (!dispatchTruck || !dispatchDriver || isAlreadyDispatched) && { opacity: 0.5 },
               ]}
               onPress={onConfirmDispatch}
-              disabled={!dispatchTruck || !dispatchDriver}
+              disabled={!dispatchTruck || !dispatchDriver || isAlreadyDispatched}
             >
-              <Text style={styles.submitBidBtnText}>Confirm Fleet Dispatch & Start GPS</Text>
+              <Text style={styles.submitBidBtnText}>
+                {isAlreadyDispatched ? 'Consignment Already Dispatched' : 'Confirm Fleet Dispatch & Start GPS'}
+              </Text>
             </TouchableOpacity>
           </ScrollView>
         </View>

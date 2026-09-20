@@ -1,17 +1,19 @@
 import React from 'react';
-import { Gavel, CreditCard, CheckCircle } from 'lucide-react';
+import { Gavel, CheckCircle } from 'lucide-react';
 import { BidItem } from '../types';
 
 interface BidsTabProps {
   bids: BidItem[];
   onAcceptBid: (bid: BidItem) => void;
   onRejectBid: (bidId: string) => void;
+  acceptedBidNotification?: string;
 }
 
 export const BidsTab: React.FC<BidsTabProps> = ({
   bids,
   onAcceptBid,
   onRejectBid,
+  acceptedBidNotification,
 }) => {
   return (
     <div className="space-y-4">
@@ -21,10 +23,17 @@ export const BidsTab: React.FC<BidsTabProps> = ({
             Bid Management & Quotes Comparison
           </h2>
           <p className="text-xs text-slate-500">
-            Compare incoming transporter quotes, evaluate driver ratings & transit timelines, and lock TeleBirr smart escrow.
+            Compare incoming transporter quotes, evaluate driver ratings & transit timelines, and accept bids.
           </p>
         </div>
       </div>
+
+      {acceptedBidNotification && (
+        <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 shadow-sm">
+          <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span>{acceptedBidNotification}</span>
+        </div>
+      )}
 
       {bids.length === 0 ? (
         <div className="p-8 text-center rounded-3xl bg-white border border-slate-200 space-y-2">
@@ -33,7 +42,7 @@ export const BidsTab: React.FC<BidsTabProps> = ({
             No transporter bids received yet
           </div>
           <p className="text-[11px] text-slate-500">
-            When transporters place quotes for your active loads, they will appear here for review and TeleBirr escrow lock.
+            When transporters place quotes for your active loads, they will appear here for review and acceptance.
           </p>
         </div>
       ) : (
@@ -97,8 +106,8 @@ export const BidsTab: React.FC<BidsTabProps> = ({
                       onClick={() => onAcceptBid(b)}
                       className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
                     >
-                      <CreditCard className="w-3.5 h-3.5" />
-                      <span>Accept & Lock Escrow</span>
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      <span>Accept Bid</span>
                     </button>
                     <button
                       onClick={() => onRejectBid(b.id)}
@@ -112,7 +121,7 @@ export const BidsTab: React.FC<BidsTabProps> = ({
                 {isAccepted && (
                   <div className="w-full py-2 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-bold text-center flex items-center justify-center gap-1.5">
                     <CheckCircle className="w-3.5 h-3.5" />
-                    <span>Accepted • TeleBirr Escrow Funded</span>
+                    <span>Accepted • Transporter Assigned</span>
                   </div>
                 )}
 

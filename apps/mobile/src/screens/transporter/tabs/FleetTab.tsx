@@ -38,19 +38,38 @@ export const FleetTab: React.FC<FleetTabProps> = ({
       {/* Sub-tab Navigation */}
       <View style={styles.fleetSubTabRow}>
         <TouchableOpacity
-          style={[styles.fleetSubTab, fleetSubTab === 'vehicles' && styles.fleetSubTabActive]}
+          style={[
+            styles.fleetSubTab,
+            { flexDirection: 'row', justifyContent: 'center', gap: 6 },
+            fleetSubTab === 'vehicles' && styles.fleetSubTabActive,
+          ]}
           onPress={() => setFleetSubTab('vehicles')}
         >
+          <MaterialCommunityIcons
+            name="truck-outline"
+            size={16}
+            color={fleetSubTab === 'vehicles' ? '#0284C7' : '#64748B'}
+          />
           <Text style={[styles.fleetSubTabText, fleetSubTab === 'vehicles' && styles.fleetSubTabTextActive]}>
-            🚛 Fleet Vehicles ({fleetList.length})
+            Fleet Vehicles ({fleetList.length})
           </Text>
         </TouchableOpacity>
+
         <TouchableOpacity
-          style={[styles.fleetSubTab, fleetSubTab === 'drivers' && styles.fleetSubTabActive]}
+          style={[
+            styles.fleetSubTab,
+            { flexDirection: 'row', justifyContent: 'center', gap: 6 },
+            fleetSubTab === 'drivers' && styles.fleetSubTabActive,
+          ]}
           onPress={() => setFleetSubTab('drivers')}
         >
+          <Ionicons
+            name="people-outline"
+            size={16}
+            color={fleetSubTab === 'drivers' ? '#0284C7' : '#64748B'}
+          />
           <Text style={[styles.fleetSubTabText, fleetSubTab === 'drivers' && styles.fleetSubTabTextActive]}>
-            👤 Authorized Drivers ({driversList.length})
+            Authorized Drivers ({driversList.length})
           </Text>
         </TouchableOpacity>
       </View>
@@ -90,7 +109,12 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.truckPlate}>{trk.plate}</Text>
-                        <Text style={styles.truckModel}>{trk.type} • {trk.capacity}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2, flexWrap: 'wrap' }}>
+                          <Text style={styles.truckModel}>{trk.type} • {trk.capacity}</Text>
+                          <Text style={styles.truckModel}>•</Text>
+                          <MaterialCommunityIcons name="gas-station" size={11} color="#0284C7" />
+                          <Text style={styles.truckModel}>{trk.fuelType || 'DIESEL'}</Text>
+                        </View>
                       </View>
                     </View>
 
@@ -124,9 +148,20 @@ export const FleetTab: React.FC<FleetTabProps> = ({
 
                   {!isExpanded && (
                     <View style={styles.collapsedPreviewRow}>
-                      <Text style={styles.collapsedPreviewText} numberOfLines={1}>
-                        Driver: {trk.driver || 'Unassigned'} • GPS: {trk.gpsEnabled ? 'Online' : 'Disabled'}
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1 }}>
+                        <Ionicons name="person-outline" size={12} color="#64748B" />
+                        <Text style={styles.collapsedPreviewText} numberOfLines={1}>
+                          {trk.driver || 'Unassigned'} • Fuel: {trk.fuelType || 'DIESEL'} •
+                        </Text>
+                        <Ionicons
+                          name={trk.gpsEnabled ? "radio-button-on" : "radio-button-off"}
+                          size={9}
+                          color={trk.gpsEnabled ? "#10B981" : "#94A3B8"}
+                        />
+                        <Text style={[styles.collapsedPreviewText, { color: trk.gpsEnabled ? '#059669' : '#64748B' }]}>
+                          {trk.gpsEnabled ? 'Online' : 'Off'}
+                        </Text>
+                      </View>
                       <Text style={styles.tapDetailsHint}>Details ▾</Text>
                     </View>
                   )}
@@ -135,20 +170,42 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                     <View style={{ gap: 8, marginTop: 4 }}>
                       <View style={styles.cardDivider} />
                       <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>Engine / Fuel Type:</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <MaterialCommunityIcons name="gas-station" size={14} color="#0284C7" />
+                          <Text style={[styles.infoValue, { color: '#0284C7', fontWeight: '700' }]}>
+                            {trk.fuelType || 'DIESEL'}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.infoRow}>
                         <Text style={styles.infoLabel}>Assigned Driver:</Text>
-                        <Text style={styles.infoValue}>{trk.driver || 'Unassigned'}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <Ionicons name="person-outline" size={14} color="#64748B" />
+                          <Text style={styles.infoValue}>{trk.driver || 'Unassigned'}</Text>
+                        </View>
                       </View>
                       <View style={styles.infoRow}>
                         <Text style={styles.infoLabel}>Telematics / GPS:</Text>
-                        <Text style={[styles.infoValue, { color: trk.gpsEnabled ? '#059669' : '#DC2626' }]}>
-                          {trk.gpsEnabled ? '🟢 Live Telematics Streaming' : '🔴 Inactive'}
-                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                          <Ionicons
+                            name={trk.gpsEnabled ? "radio-button-on" : "radio-button-off"}
+                            size={12}
+                            color={trk.gpsEnabled ? '#059669' : '#DC2626'}
+                          />
+                          <Text style={[styles.infoValue, { color: trk.gpsEnabled ? '#059669' : '#DC2626' }]}>
+                            {trk.gpsEnabled ? 'Live Telematics Streaming' : 'Inactive'}
+                          </Text>
+                        </View>
                       </View>
                       <View style={styles.infoRow}>
                         <Text style={styles.infoLabel}>GIT Cargo Insurance:</Text>
-                        <Text style={[styles.infoValue, { color: '#059669' }]}>
-                          {trk.insuranceStatus}
-                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <Ionicons name="shield-checkmark-outline" size={14} color="#059669" />
+                          <Text style={[styles.infoValue, { color: '#059669' }]}>
+                            {trk.insuranceStatus}
+                          </Text>
+                        </View>
                       </View>
                     </View>
                   )}
@@ -194,7 +251,12 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.truckPlate}>{drv.fullName}</Text>
-                        <Text style={styles.truckModel}>{drv.licenseCategory} • {drv.phone}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2, flexWrap: 'wrap' }}>
+                          <Text style={styles.truckModel}>{drv.licenseCategory}</Text>
+                          <Text style={styles.truckModel}>•</Text>
+                          <Ionicons name="call-outline" size={11} color="#64748B" />
+                          <Text style={styles.truckModel}>{drv.phone}</Text>
+                        </View>
                       </View>
                     </View>
 
@@ -228,9 +290,16 @@ export const FleetTab: React.FC<FleetTabProps> = ({
 
                   {!isExpanded && (
                     <View style={styles.collapsedPreviewRow}>
-                      <Text style={styles.collapsedPreviewText} numberOfLines={1}>
-                        License: {drv.licenseNumber} • Truck: {drv.assignedTruckPlate || 'Unassigned'}
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1 }}>
+                        <Ionicons name="card-outline" size={12} color="#64748B" />
+                        <Text style={styles.collapsedPreviewText} numberOfLines={1}>
+                          Lic: {drv.licenseNumber} •
+                        </Text>
+                        <MaterialCommunityIcons name="truck-outline" size={12} color="#0284C7" />
+                        <Text style={[styles.collapsedPreviewText, { color: drv.assignedTruckPlate ? '#0284C7' : '#64748B' }]}>
+                          {drv.assignedTruckPlate || 'Unassigned'}
+                        </Text>
+                      </View>
                       <Text style={styles.tapDetailsHint}>Details ▾</Text>
                     </View>
                   )}
@@ -240,17 +309,26 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                       <View style={styles.cardDivider} />
                       <View style={styles.infoRow}>
                         <Text style={styles.infoLabel}>Driving License Number:</Text>
-                        <Text style={styles.infoValue}>{drv.licenseNumber}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <Ionicons name="card-outline" size={14} color="#64748B" />
+                          <Text style={styles.infoValue}>{drv.licenseNumber}</Text>
+                        </View>
                       </View>
                       <View style={styles.infoRow}>
                         <Text style={styles.infoLabel}>Corridor Experience:</Text>
-                        <Text style={styles.infoValue}>{drv.experienceYears} Years</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <Ionicons name="ribbon-outline" size={14} color="#64748B" />
+                          <Text style={styles.infoValue}>{drv.experienceYears} Years</Text>
+                        </View>
                       </View>
                       <View style={styles.infoRow}>
                         <Text style={styles.infoLabel}>Assigned Truck:</Text>
-                        <Text style={[styles.infoValue, { color: '#0284C7' }]}>
-                          {drv.assignedTruckPlate || 'Unassigned'}
-                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <MaterialCommunityIcons name="truck" size={14} color="#0284C7" />
+                          <Text style={[styles.infoValue, { color: '#0284C7', fontWeight: '700' }]}>
+                            {drv.assignedTruckPlate || 'Unassigned'}
+                          </Text>
+                        </View>
                       </View>
                     </View>
                   )}

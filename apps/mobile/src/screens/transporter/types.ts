@@ -15,6 +15,7 @@ export interface TruckItem {
   id: string;
   plate: string;
   type: string;
+  fuelType?: string;
   capacity: string;
   status: 'AVAILABLE' | 'IN_TRANSIT' | 'MAINTENANCE';
   insuranceStatus: 'VERIFIED' | 'PENDING' | 'EXPIRED';
@@ -46,6 +47,9 @@ export interface LoadItem {
   weight: string;
   budget: string;
   status: string;
+  isDispatched?: boolean;
+  dispatchedTruck?: string;
+  dispatchedDriver?: string;
 }
 
 export interface BidItem {
@@ -62,6 +66,7 @@ export interface BidItem {
   submittedAt: string;
   dispatchedTruck?: string;
   dispatchedDriver?: string;
+  isDispatched?: boolean;
 }
 
 export type TransporterTabType = 'overview' | 'fleet' | 'loads' | 'bidding' | 'earnings';

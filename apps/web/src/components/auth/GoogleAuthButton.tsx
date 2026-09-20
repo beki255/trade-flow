@@ -13,7 +13,7 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({ mode, select
   const handleGoogleRedirect = () => {
     setLoading(true);
 
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '1029384756-tradeflow.apps.googleusercontent.com';
+    const clientId = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID || '1029384756-tradeflow.apps.googleusercontent.com';
     const redirectUri = `${window.location.origin}/auth/callback`;
     const scope = encodeURIComponent('openid email profile');
     const state = encodeURIComponent(JSON.stringify({ mode, role: selectedRole }));

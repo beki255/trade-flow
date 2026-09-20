@@ -3,6 +3,7 @@ import {
   getPortalStats,
   getLoads,
   createLoad,
+  deleteLoad,
   getVerifications,
   verifyUser,
   getAuditLogs,
@@ -15,8 +16,13 @@ import {
   createBid,
   getBids,
   respondToBid,
+  deleteBid,
   dispatchShipment,
   getDriverActiveTrip,
+  startDriverTrip,
+  toggleDriverDrivingState,
+  arriveDestinationTrip,
+  provisionCustomsOfficer,
 } from '../controllers/portal.controller';
 
 const router = Router();
@@ -25,6 +31,7 @@ const router = Router();
 router.get('/stats', getPortalStats);
 router.get('/loads', getLoads);
 router.post('/loads', createLoad);
+router.delete('/loads/:id', deleteLoad);
 
 // Verification Queue & Admin Actions
 router.get('/verifications', getVerifications);
@@ -48,9 +55,16 @@ router.post('/drivers', createDriver);
 router.get('/bids', getBids);
 router.post('/bids', createBid);
 router.post('/bids/respond', respondToBid);
+router.delete('/bids/:id', deleteBid);
 
 // Fleet Dispatch & Driver Telematics
 router.post('/dispatch', dispatchShipment);
 router.get('/driver/active-trip', getDriverActiveTrip);
+router.post('/driver/start-trip', startDriverTrip);
+router.post('/driver/toggle-driving', toggleDriverDrivingState);
+router.post('/driver/arrive-destination', arriveDestinationTrip);
+
+// Institutional Customs Officer Provisioning (Admin only)
+router.post('/provision-customs', provisionCustomsOfficer);
 
 export default router;

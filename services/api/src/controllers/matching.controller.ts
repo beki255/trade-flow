@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient, UserRole, LoadStatus, ShipmentStatus, CargoType } from '@prisma/client';
+import { resolveCorridorCoordinates, calculateCorridorRoadDistanceKm } from '@tradeflow/shared';
 
 const prisma = new PrismaClient();
 
@@ -175,6 +176,8 @@ const mapCargoType = (type?: string): CargoType => {
 export const postLoadWithBookingOption = async (req: Request, res: Response): Promise<void> => {
   try {
     const {
+      shipperId,
+      shipperEmail,
       title,
       originAddress,
       originGps,
@@ -195,8 +198,19 @@ export const postLoadWithBookingOption = async (req: Request, res: Response): Pr
       spotRateEtb,
     } = req.body;
 
-    let shipper = await prisma.user.findFirst({ where: { role: UserRole.SHIPPER } });
-    if (!shipper) shipper = await prisma.user.findFirst();
+    let shipper = null;
+    if (shipperId && typeof shipperId === 'string' && shipperId.trim().length > 0) {
+      shipper = await prisma.user.findUnique({ where: { id: shipperId.trim() } });
+    }
+    if (!shipper && shipperEmail && typeof shipperEmail === 'string' && shipperEmail.trim().length > 0) {
+      shipper = await prisma.user.findUnique({ where: { email: shipperEmail.trim().toLowerCase() } });
+    }
+    if (!shipper) {
+      shipper = await prisma.user.findFirst({ where: { role: UserRole.SHIPPER } });
+    }
+    if (!shipper) {
+      shipper = await prisma.user.findFirst();
+    }
 
     if (!shipper) {
       res.status(400).json({ error: 'No active shipper account found.' });
@@ -205,28 +219,44 @@ export const postLoadWithBookingOption = async (req: Request, res: Response): Pr
 
     const weightVal = parseFloat(weightTons) || 28.0;
     const volumeVal = parseFloat(volumeM3) || 40.0;
-    const originLatVal = originGps?.lat ? parseFloat(originGps.lat) : 8.9056;
-    const originLngVal = originGps?.lng ? parseFloat(originGps.lng) : 38.7612;
-    const destLatVal = destinationGps?.lat ? parseFloat(destinationGps.lat) : 11.5950;
-    const destLngVal = destinationGps?.lng ? parseFloat(destinationGps.lng) : 43.1480;
+
+    // Resolve real-world GPS coordinates from location address or picker inputs
+    const resolvedOrigin = resolveCorridorCoordinates(originAddress, originGps?.lat, originGps?.lng);
+    const resolvedDest = resolveCorridorCoordinates(destinationAddress, destinationGps?.lat, destinationGps?.lng);
+
+    const originLatVal = resolvedOrigin.lat;
+    const originLngVal = resolvedOrigin.lng;
+    const destLatVal = resolvedDest.lat;
+    const destLngVal = resolvedDest.lng;
+
+    // Real highway road distance in kilometers based on official ERA corridor data
+    const realDistanceKm = calculateCorridorRoadDistanceKm(
+      originAddress || resolvedOrigin.resolvedName,
+      destinationAddress || resolvedDest.resolvedName,
+      originLatVal,
+      originLngVal,
+      destLatVal,
+      destLngVal
+    );
     
     // For Option B (Competitive Bidding), no target price is set by the shipper (pure RFQ)
     const isOptionB = bookingOption === 'COMPETITIVE_BIDDING';
     const parsedTargetBudget = isOptionB ? null : (targetBudgetEtb ? parseFloat(targetBudgetEtb) : null);
-    const spotBenchmark = parseFloat(spotRateEtb) || parsedTargetBudget || Math.round(weightVal * 6500);
+    const calculatedSpot = Math.round(realDistanceKm * (weightVal / 30.0) * 6.8 * 100);
+    const spotBenchmark = parseFloat(spotRateEtb) || parsedTargetBudget || calculatedSpot;
 
     const newLoad = await prisma.load.create({
       data: {
         shipperId: shipper.id,
         title: title || `${cargoCategory || cargoType || 'Corridor Freight'} Consignment`,
         cargoType: mapCargoType(cargoCategory || cargoType),
-        cargoDescription: cargoDescription || 'Heavy freight along corridor',
+        cargoDescription: cargoDescription || `Corridor freight route (${realDistanceKm} km)`,
         weightTons: weightVal,
         volumeCbm: volumeVal,
-        originName: originAddress || 'Addis Ababa Kaliti Logistics Hub',
+        originName: originAddress || resolvedOrigin.resolvedName || 'Addis Ababa Kaliti Logistics Hub',
         originLat: originLatVal,
         originLng: originLngVal,
-        destName: destinationAddress || 'Djibouti Doraleh Container Port',
+        destName: destinationAddress || resolvedDest.resolvedName || 'Djibouti Doraleh Container Port',
         destLat: destLatVal,
         destLng: destLngVal,
         pickupWindowStart: pickupWindowStart ? new Date(pickupWindowStart) : new Date(),
@@ -286,8 +316,12 @@ export const postLoadWithBookingOption = async (req: Request, res: Response): Pr
         bookingOption === 'INSTANT_MATCH'
           ? 'Direct AI Instant Match request sent to the selected transporter!'
           : 'Load published to Corridor Load Board for open competitive bidding!',
-      load: newLoad,
+      load: {
+        ...newLoad,
+        distanceKm: realDistanceKm,
+      },
       bookingOption,
+      distanceKm: realDistanceKm,
     });
   } catch (error: any) {
     console.error('Error posting load with booking options:', error);

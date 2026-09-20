@@ -26,12 +26,14 @@ export const transporterStyles = StyleSheet.create({
     fontWeight: '900',
     color: '#FFFFFF',
     letterSpacing: -0.5,
+    lineHeight: 24,
   },
   companySub: {
     fontSize: 11,
     color: '#38BDF8',
     fontWeight: '700',
-    marginTop: 2,
+    marginTop: 3,
+    lineHeight: 16,
   },
   profileHeaderContainer: {
     alignItems: 'center',
@@ -234,11 +236,18 @@ export const transporterStyles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 10,
-    elevation: 3,
-    shadowColor: '#EF4444',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 3,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 2px 4px rgba(239, 68, 68, 0.4)',
+      } as any,
+      default: {
+        elevation: 3,
+        shadowColor: '#EF4444',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.4,
+        shadowRadius: 3,
+      },
+    }),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -308,11 +317,18 @@ export const transporterStyles = StyleSheet.create({
   },
   fleetSubTabActive: {
     backgroundColor: '#FFFFFF',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 2px 4px rgba(15, 23, 42, 0.08)',
+      } as any,
+      default: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 4,
+        elevation: 2,
+      },
+    }),
   },
   fleetSubTabText: {
     fontSize: 11.5,
@@ -327,11 +343,13 @@ export const transporterStyles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     color: '#0F172A',
+    lineHeight: 22,
   },
   sectionSubtitle: {
     fontSize: 12,
     color: '#64748B',
-    marginTop: -8,
+    marginTop: 4,
+    lineHeight: 17,
   },
   addBtn: {
     backgroundColor: '#0284C7',
@@ -355,11 +373,18 @@ export const transporterStyles = StyleSheet.create({
   cardExpanded: {
     borderColor: '#BAE6FD',
     backgroundColor: '#FBFDFF',
-    shadowColor: '#0284C7',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 4px 8px rgba(2, 132, 199, 0.08)',
+      } as any,
+      default: {
+        shadowColor: '#0284C7',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 3,
+      },
+    }),
   },
   vehicleIconBox: {
     width: 36,
@@ -417,11 +442,13 @@ export const transporterStyles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
     color: '#0F172A',
+    lineHeight: 20,
   },
   truckModel: {
     fontSize: 12,
     color: '#64748B',
-    marginTop: 2,
+    marginTop: 3,
+    lineHeight: 16,
   },
   statusBadge: {
     paddingHorizontal: 10,
@@ -449,11 +476,13 @@ export const transporterStyles = StyleSheet.create({
   infoLabel: {
     fontSize: 12,
     color: '#64748B',
+    lineHeight: 16,
   },
   infoValue: {
     fontSize: 12,
     fontWeight: '700',
     color: '#0F172A',
+    lineHeight: 16,
   },
   emptyCard: {
     backgroundColor: '#FFFFFF',
@@ -612,11 +641,18 @@ export const transporterStyles = StyleSheet.create({
     borderRadius: 12,
     marginTop: 4,
     overflow: 'hidden',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 4px 6px rgba(15, 23, 42, 0.1)',
+      } as any,
+      default: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 6,
+        elevation: 4,
+      },
+    }),
   },
   dropdownItem: {
     flexDirection: 'row',
@@ -639,13 +675,56 @@ export const transporterStyles = StyleSheet.create({
     color: '#0284C7',
     fontWeight: '800',
   },
+  loadPreviewBox: {
+    backgroundColor: '#F0F9FF',
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    borderRadius: 14,
+    padding: 12,
+    marginVertical: 10,
+    gap: 6,
+  },
+  loadPreviewTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0369A1',
+    lineHeight: 18,
+  },
+  loadPreviewRoute: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#0F172A',
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  loadPreviewFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: '#E0F2FE',
+    marginTop: 4,
+  },
+  loadPreviewWeight: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0284C7',
+  },
+  loadPreviewBudget: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#0369A1',
+  },
   inputGroup: {
     gap: 4,
+    marginVertical: 4,
   },
   inputLabel: {
     fontSize: 11,
     fontWeight: '700',
     color: '#475569',
+    lineHeight: 15,
   },
   submitBidBtn: {
     backgroundColor: '#0284C7',

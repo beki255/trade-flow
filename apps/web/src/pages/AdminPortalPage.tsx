@@ -7,6 +7,8 @@ import {
   DocumentPreviewData,
   AuditLogItem,
   AdminStats,
+  DisputeTicketItem,
+  DisputeStats,
 } from '../modules/admin/types';
 
 // Modular Tabs
@@ -53,6 +55,18 @@ export const AdminPortalPage: React.FC = () => {
     fraudAlerts: 0,
   });
 
+  const [disputeTickets, setDisputeTickets] = useState<DisputeTicketItem[]>([]);
+  const [disputeStats, setDisputeStats] = useState<DisputeStats>({
+    totalDisputes: 0,
+    openCases: 0,
+    resolvedCases: 0,
+    refundedCases: 0,
+    totalFrozenAmountEtb: 0,
+    mediationSuccessRatePct: 100,
+    averageResolutionHours: 18,
+  });
+  const [disputesLoading, setDisputesLoading] = useState<boolean>(false);
+
   const fetchVerifications = async () => {
     try {
       const res = await fetch('/api/portal/verifications');
@@ -90,13 +104,62 @@ export const AdminPortalPage: React.FC = () => {
     }
   };
 
+  const fetchDisputes = async () => {
+    try {
+      setDisputesLoading(true);
+      const res = await fetch('/api/payments/disputes');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.tickets) {
+          setDisputeTickets(data.tickets);
+        }
+        if (data.stats) {
+          setDisputeStats(data.stats);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch dispute tickets:', err);
+    } finally {
+      setDisputesLoading(false);
+    }
+  };
+
+  const handleArbitrate = async (
+    paymentId: string,
+    verdict: 'REFUND_SHIPPER' | 'RELEASE_TRANSPORTER' | 'PARTIAL_SPLIT',
+    refundAmountEtb: number,
+    transporterPayoutEtb: number,
+    adminResolutionNotes: string
+  ) => {
+    const res = await fetch(`/api/payments/disputes/${paymentId}/arbitrate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        verdict,
+        refundAmountEtb,
+        transporterPayoutEtb,
+        adminResolutionNotes,
+        mediatorAdminId: user?.email || 'ADMIN-SUPERVISOR-01',
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to execute arbitration');
+    }
+    await fetchDisputes();
+    await fetchAuditLogs();
+  };
+
   useEffect(() => {
     fetchVerifications();
     fetchAuditLogs();
+    fetchDisputes();
 
     const interval = setInterval(() => {
       fetchVerifications();
       fetchAuditLogs();
+      fetchDisputes();
     }, 4000);
 
     return () => clearInterval(interval);
@@ -181,7 +244,15 @@ export const AdminPortalPage: React.FC = () => {
         )}
 
         {/* 2. DISPUTE RESOLUTION */}
-        {activeTab === 'disputes' && <DisputesTab />}
+        {activeTab === 'disputes' && (
+          <DisputesTab
+            tickets={disputeTickets}
+            stats={disputeStats}
+            loading={disputesLoading}
+            onRefresh={fetchDisputes}
+            onArbitrate={handleArbitrate}
+          />
+        )}
 
         {/* 3. SYSTEM HEALTH */}
         {activeTab === 'system-health' && <SystemHealthTab />}

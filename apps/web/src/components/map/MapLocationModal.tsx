@@ -19,6 +19,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { LocationData, CORRIDOR_PRESET_HUBS } from './InteractiveCorridorMapPicker';
+import { resolveCorridorCoordinates } from '@tradeflow/shared';
 
 // Custom Pin Icon for Modal
 const createPickerIcon = (color: string, title: string) => {
@@ -151,12 +152,18 @@ export const MapLocationModal: React.FC<MapLocationModalProps> = ({
       ? [currentLocation.lat, currentLocation.lng]
       : [9.02, 38.74]; // Addis Ababa default view
 
-  // Search input with live Nominatim geocoding & preset terminals
+  // Search input with live geocoding & preset terminals
   const handleSearchChange = async (query: string) => {
     setSearchQuery(query);
+
+    // Fast coordinate resolution from official corridor directory
+    const resolvedHub = resolveCorridorCoordinates(query);
     setCurrentLocation((prev) => ({
       ...prev,
       address: query,
+      lat: resolvedHub.lat,
+      lng: resolvedHub.lng,
+      hubName: resolvedHub.resolvedName,
     }));
 
     if (!query || query.trim().length < 2) {
@@ -270,11 +277,22 @@ export const MapLocationModal: React.FC<MapLocationModalProps> = ({
   };
 
   const handleSave = () => {
+    const rawAddr = searchQuery || currentLocation.address || 'Selected Location';
+    let lat = currentLocation.lat;
+    let lng = currentLocation.lng;
+
+    // Guarantee exact coordinate resolution from official corridor network if missing
+    if (!lat || !lng || (lat === 9.02 && lng === 38.74 && !rawAddr.toLowerCase().includes('addis'))) {
+      const resolved = resolveCorridorCoordinates(rawAddr);
+      lat = resolved.lat;
+      lng = resolved.lng;
+    }
+
     const finalLoc: LocationData = {
-      address: searchQuery || currentLocation.address || 'Selected Location',
-      lat: currentLocation.lat || 9.02,
-      lng: currentLocation.lng || 38.74,
-      hubName: currentLocation.hubName || searchQuery,
+      address: rawAddr,
+      lat,
+      lng,
+      hubName: currentLocation.hubName || rawAddr,
     };
     onConfirm(finalLoc);
     onClose();

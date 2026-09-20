@@ -63,7 +63,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.kpiCard} onPress={() => setActiveTab('bidding')}>
-          <Text style={styles.kpiLabel}>Submitted Bids</Text>
+          <Text style={styles.kpiLabel}>My Bids</Text>
           <Text style={[styles.kpiValue, { color: '#7C3AED' }]}>{submittedBids.length}</Text>
           <Text style={{ fontSize: 10, color: '#6D28D9', fontWeight: '700' }}>
             {submittedBids.filter((b) => b.status === 'ACCEPTED').length} Won & Dispatched

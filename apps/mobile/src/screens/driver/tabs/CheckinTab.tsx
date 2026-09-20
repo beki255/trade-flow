@@ -4,23 +4,56 @@ import {
   Text,
   TouchableOpacity,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { driverStyles as styles } from '../driverStyles';
-import { CheckinRecord } from '../types';
+import { CheckinRecord, ActiveTripDetails } from '../types';
 
 interface CheckinTabProps {
   checkedInSuccess: string;
   checkinHistory: CheckinRecord[];
   onCheckin: () => void;
+  activeTrip?: ActiveTripDetails | null;
+  activeWaypoint?: any;
+  realGpsLocation?: any;
 }
 
 export const CheckinTab: React.FC<CheckinTabProps> = ({
   checkedInSuccess,
   checkinHistory,
   onCheckin,
+  activeTrip,
+  activeWaypoint,
+  realGpsLocation,
 }) => {
+  const hasTrip = !!activeTrip;
+
+  // Resolve current coordinates dynamically from actual trip or live device GPS
+  const currentLat =
+    realGpsLocation?.latitude ??
+    activeWaypoint?.latitude ??
+    activeWaypoint?.lat ??
+    activeTrip?.originLat;
+
+  const currentLng =
+    realGpsLocation?.longitude ??
+    activeWaypoint?.longitude ??
+    activeWaypoint?.lng ??
+    activeTrip?.originLng;
+
+  const checkpointName =
+    activeWaypoint?.name ||
+    (activeTrip ? (activeTrip.route || `${activeTrip.origin} ➔ ${activeTrip.destination}`) : null);
+
+  const checkpointAmharic = activeWaypoint?.nameAm;
+
+  const coordsDisplay =
+    currentLat !== undefined && currentLng !== undefined
+      ? `${Number(currentLat).toFixed(4)}° N, ${Number(currentLng).toFixed(4)}° E`
+      : null;
+
   return (
     <View style={styles.sectionContainer}>
-      <Text style={styles.sectionTitle}>Offline GPS Waypoint Check-in</Text>
+      <Text style={styles.sectionTitle}>Corridor Waypoint GPS Check-in</Text>
 
       {checkedInSuccess ? (
         <View style={styles.successBox}>
@@ -28,19 +61,59 @@ export const CheckinTab: React.FC<CheckinTabProps> = ({
         </View>
       ) : null}
 
-      <View style={styles.card}>
-        <Text style={styles.infoLabel}>GPS Status:</Text>
-        <Text style={styles.coordsText}>11.758° N, 41.834° E (Awash Arba)</Text>
+      {hasTrip ? (
+        <View style={styles.card}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={styles.infoLabel}>Current Checkpoint / ጣቢያ:</Text>
+            <View style={{ backgroundColor: '#E0F2FE', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 }}>
+              <Text style={{ fontSize: 9.5, fontWeight: '800', color: '#0284C7' }}>
+                {activeWaypoint?.type || 'CORRIDOR CHECKPOINT'}
+              </Text>
+            </View>
+          </View>
 
-        <TouchableOpacity style={styles.checkinBtn} onPress={onCheckin}>
-          <Text style={styles.checkinBtnText}>Confirm GPS Check-In</Text>
-        </TouchableOpacity>
-      </View>
+          <View style={{ backgroundColor: '#F8FAFC', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0', gap: 4 }}>
+            <Text style={{ fontSize: 13, fontWeight: '900', color: '#0F172A' }}>
+              📍 {checkpointName}
+            </Text>
+            {checkpointAmharic ? (
+              <Text style={{ fontSize: 11, fontWeight: '700', color: '#475569' }}>
+                {checkpointAmharic}
+              </Text>
+            ) : null}
+            {coordsDisplay ? (
+              <Text style={[styles.coordsText, { marginTop: 4, fontFamily: 'monospace' }]}>
+                {coordsDisplay} {realGpsLocation ? '• (Phone GPS)' : '• (Corridor GPS)'}
+              </Text>
+            ) : null}
+          </View>
+
+          <TouchableOpacity
+            style={styles.checkinBtn}
+            onPress={onCheckin}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.checkinBtnText}>
+              Confirm Check-In at {checkpointName || 'Checkpoint'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={[styles.card, { alignItems: 'center', paddingVertical: 24, gap: 8 }]}>
+          <Ionicons name="location-outline" size={36} color="#94A3B8" />
+          <Text style={{ fontSize: 13, fontWeight: '800', color: '#334155' }}>
+            No Active Trip Assigned (ምንም የተመደበ ጉዞ የለም)
+          </Text>
+          <Text style={{ fontSize: 11, color: '#64748B', textAlign: 'center', maxWidth: 280, lineHeight: 16 }}>
+            የጭነት ጉዞ ለተሽከርካሪዎ ሲመደብ የኮሪደሩ የፍተሻ ጣቢያዎችና ትክክለኛ መገኛዎች እዚህ ይታያሉ።
+          </Text>
+        </View>
+      )}
 
       {/* Checkin History */}
       {checkinHistory.length > 0 && (
         <View style={{ gap: 8, marginTop: 10 }}>
-          <Text style={styles.sectionTitle}>Confirmed Check-ins</Text>
+          <Text style={styles.sectionTitle}>Confirmed Check-ins ({checkinHistory.length})</Text>
           {checkinHistory.map((chk) => (
             <View key={chk.id} style={styles.historyCard}>
               <Text style={styles.historyId}>{chk.id} • {chk.time}</Text>

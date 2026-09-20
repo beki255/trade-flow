@@ -71,8 +71,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     switch (portalRole) {
       case 'SHIPPER':
         return [
-          { id: 'dashboard', label: 'Dashboard', icon: Package },
+          { id: 'dashboard', label: 'Dashboard', icon: Layers },
           { id: 'post-load', label: 'Load Posting', icon: PlusCircle },
+          { id: 'consignments', label: 'My Consignments', icon: Package },
           { id: 'bids', label: 'Bid Management', icon: Gavel },
           { id: 'tracking', label: 'Live Tracking Map', icon: Navigation },
           { id: 'documents', label: 'Customs Documents', icon: FileText },

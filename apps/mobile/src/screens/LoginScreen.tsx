@@ -36,13 +36,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(false);
   const [showIpModal, setShowIpModal] = useState(false);
-  const [customIpInput, setCustomIpInput] = useState(getCustomServerIp() || '');
+  const [customIpInput, setCustomIpInput] = useState(getCustomServerIp() || '10.18.93.34');
 
   const handleAutoFillDriver = () => {
-    setIdentifier(DEMO_ACCOUNTS.DRIVER.email);
-    setPassword(DEMO_ACCOUNTS.DRIVER.password);
+    setIdentifier('0925537199');
+    setPassword('Driver@123');
     setErrorMsg('');
-    setNotice('Driver demo credentials filled!');
+    setNotice('Driver demo credentials filled (0925537199)!');
     setTimeout(() => setNotice(''), 2000);
   };
 
@@ -63,16 +63,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     setLoading(true);
     setErrorMsg('');
 
-    const trimmedId = identifier.toLowerCase().trim();
-
-    // Check standard demo accounts
-    let matchedDemo: any = null;
-    if (trimmedId === DEMO_ACCOUNTS.DRIVER.email.toLowerCase() && password === DEMO_ACCOUNTS.DRIVER.password) {
-      matchedDemo = { role: 'DRIVER', user: DEMO_ACCOUNTS.DRIVER };
-    } else if (trimmedId === DEMO_ACCOUNTS.TRANSPORTER.email.toLowerCase() && password === DEMO_ACCOUNTS.TRANSPORTER.password) {
-      matchedDemo = { role: 'TRANSPORTER', user: DEMO_ACCOUNTS.TRANSPORTER };
-    }
-
     try {
       // Direct PostgreSQL database login via API
       const res = await apiFetch('/api/auth/login', {
@@ -88,18 +78,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         return;
       }
 
-      if (matchedDemo) {
-        onLoginSuccess(matchedDemo.role, matchedDemo.user);
-        return;
-      }
-
+      // Strictly enforce database response — if deleted, deny access!
       setErrorMsg(data.error || 'User not found. Please check your credentials or register.');
     } catch (err) {
       setLoading(false);
-      if (matchedDemo) {
-        onLoginSuccess(matchedDemo.role, matchedDemo.user);
-        return;
-      }
       setErrorMsg('Cannot connect to backend API server. Please ensure the server is running or register.');
     }
   };
@@ -238,7 +220,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 activeOpacity={0.8}
               >
                 <Ionicons name="person-outline" size={13} color="#0284C7" style={{ marginRight: 4 }} />
-                <Text style={styles.demoChipText}>Driver Demo</Text>
+                <Text style={styles.demoChipText}>Driver Demo (0925537199)</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.demoChip}
@@ -279,7 +261,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           style={styles.serverPill}
           onPress={() => {
             const current = getApiBaseUrl().replace('http://', '').replace(':5000', '');
-            setCustomIpInput(getCustomServerIp() || current);
+            setCustomIpInput(getCustomServerIp() || current || '10.18.93.34');
             setShowIpModal(true);
           }}
           activeOpacity={0.8}
@@ -305,7 +287,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               style={[styles.textInput, { borderWidth: 1, borderColor: '#CBD5E1', marginBottom: 12 }]}
               value={customIpInput}
               onChangeText={setCustomIpInput}
-              placeholder="e.g. 192.168.1.5 or 10.189.78.14"
+              placeholder="e.g. 10.18.93.34"
               placeholderTextColor="#94A3B8"
               autoCapitalize="none"
               autoCorrect={false}
@@ -386,11 +368,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+      } as any,
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 3,
+      },
+    }),
     borderWidth: 1,
     borderColor: '#E6EFF7',
   },
@@ -513,11 +502,18 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 3,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 4px 6px rgba(37, 99, 235, 0.25)',
+      } as any,
+      default: {
+        shadowColor: '#2563EB',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 6,
+        elevation: 3,
+      },
+    }),
   },
   primaryLoginBtnText: {
     color: '#FFFFFF',
@@ -644,11 +640,18 @@ const styles = StyleSheet.create({
     padding: 20,
     width: '100%',
     maxWidth: 360,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 8,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 4px 10px rgba(0, 0, 0, 0.15)',
+      } as any,
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 10,
+        elevation: 8,
+      },
+    }),
   },
   modalTitle: {
     fontSize: 16,

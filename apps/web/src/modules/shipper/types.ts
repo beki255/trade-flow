@@ -8,10 +8,21 @@ export interface ShipmentItem {
   title: string;
   type: string;
   weight: string;
+  weightTons?: number;
   route: string;
+  originName?: string;
+  destName?: string;
+  originLat?: number;
+  originLng?: number;
+  destLat?: number;
+  destLng?: number;
+  distanceKm?: number;
   budget: string;
+  targetBudgetEtb?: number | null;
   status: string;
   createdAt: string;
+  bidsCount?: number;
+  cargoDescription?: string;
 }
 
 export interface BidItem {

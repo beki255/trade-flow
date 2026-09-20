@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { TabIcon } from '../../components/TabIcon';
 import { useLanguage } from '../../context/LanguageContext';
 import { transporterStyles as styles } from './transporterStyles';
 import { UserProfile, TruckItem, DriverItem, LoadItem, BidItem, TransporterTabType } from './types';
@@ -69,6 +70,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
   // Add Truck Form State
   const [truckPlate, setTruckPlate] = useState('');
   const [truckType, setTruckType] = useState('Flatbed');
+  const [truckFuelType, setTruckFuelType] = useState('Diesel');
   const [truckCapacity, setTruckCapacity] = useState('28.0');
   const [truckDriver, setTruckDriver] = useState('');
   const [insuranceDoc, setInsuranceDoc] = useState(true);
@@ -93,8 +95,10 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
   const [bidSuccess, setBidSuccess] = useState('');
   const [biddingSubTab, setBiddingSubTab] = useState<'create' | 'history'>('create');
 
-  // Load Search State
+  // Load Search & Filter State (SRS 4.2.4)
   const [loadSearchQuery, setLoadSearchQuery] = useState('');
+  const [selectedCargoFilter, setSelectedCargoFilter] = useState('ALL');
+  const [selectedRouteFilter, setSelectedRouteFilter] = useState('ALL');
 
   // Dispatch Assignment State
   const [dispatchTruck, setDispatchTruck] = useState('');
@@ -120,6 +124,13 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
               weight: `${l.weightTons || 28.0} Tons`,
               budget: l.targetBudgetEtb ? `${Number(l.targetBudgetEtb).toLocaleString()} ETB` : '',
               status: l.status || 'OPEN',
+              isDispatched:
+                Boolean(l.shipment?.vehicle?.plateNumber && l.shipment?.driver?.user?.fullName) &&
+                (l.status === 'IN_TRANSIT' ||
+                  l.status === 'COMPLETED' ||
+                  (l.shipment && (l.shipment.status === 'DISPATCHED' || l.shipment.status === 'IN_TRANSIT'))),
+              dispatchedTruck: l.shipment?.vehicle?.plateNumber || '',
+              dispatchedDriver: l.shipment?.driver?.user?.fullName || '',
             }))
           );
         }
@@ -135,12 +146,13 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
           const mappedVehicles = data.vehicles.map((v: any) => ({
             id: v.id,
             rawId: v.id,
-            plate: v.plateNumber || 'ET-3-88412',
-            type: v.model || 'Heavy Flatbed',
-            capacity: `${v.capacityTons || 32.0} Tons`,
+            plate: v.plateNumber || 'No Plate',
+            type: v.model || v.type || v.vehicleType || 'Commercial Freight',
+            fuelType: v.fuelType || 'DIESEL',
+            capacity: v.capacityTons ? `${v.capacityTons} Tons` : '',
             status: v.status === 'IN_TRANSIT' ? 'IN_TRANSIT' : 'AVAILABLE',
-            insuranceStatus: 'VERIFIED',
-            driver: v.driver?.fullName || 'Unassigned',
+            insuranceStatus: v.insurancePolicyNo ? 'VERIFIED' : 'PENDING',
+            driver: v.drivers?.[0]?.user?.fullName || v.driver?.fullName || 'Unassigned',
             gpsEnabled: true,
           }));
           setFleetList(mappedVehicles);
@@ -157,15 +169,15 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
         const data = await driversRes.json();
         if (data.drivers && data.drivers.length > 0) {
           const mappedDrivers = data.drivers.map((d: any) => ({
-            id: d.id,
-            rawId: d.id,
-            fullName: d.fullName || 'Dawit Hailemariam',
-            phone: d.phone || '+251 91 123 4567',
-            licenseNumber: d.driverProfile?.driverLicenseNo || d.licenseNumber || 'ETH-DL-984218',
-            licenseCategory: d.driverProfile?.licenseClass || 'Grade 5 Heavy',
-            experienceYears: `${d.driverProfile?.experienceYears || d.experienceYears || 8}`,
-            status: 'ACTIVE',
-            assignedTruckPlate: d.driverProfile?.assignedVehicle?.plateNumber || d.assignedVehiclePlate || '',
+            id: d.id || d.rawId || `DRV-${Date.now()}`,
+            rawId: d.id || d.profileId || d.userId,
+            fullName: d.fullName || d.user?.fullName || 'Authorized Driver',
+            phone: d.phone || d.user?.phone || '',
+            licenseNumber: d.licenseNumber || d.driverLicenseNo || d.driverProfile?.driverLicenseNo || 'Unspecified',
+            licenseCategory: d.licenseCategory || d.licenseClass || d.driverProfile?.licenseClass || 'Grade 5 Heavy',
+            experienceYears: `${d.experienceYears || d.driverProfile?.experienceYears || 4}`,
+            status: d.status || 'ACTIVE',
+            assignedTruckPlate: d.assignedTruckPlate || d.assignedVehicle?.plateNumber || d.driverProfile?.assignedVehicle?.plateNumber || '',
           }));
           setDriversList(mappedDrivers);
         } else {
@@ -180,19 +192,46 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
       if (bidsRes.ok) {
         const data = await bidsRes.json();
         if (data.bids && data.bids.length > 0) {
-          const mappedBids = data.bids.map((b: any) => ({
-            id: `BID-${b.id.slice(-4).toUpperCase()}`,
-            rawId: b.id,
-            loadId: b.loadId ? `LD-${b.loadId.slice(-4).toUpperCase()}` : 'LD-9901',
-            loadTitle: b.load?.title || 'Corridor Freight Consignment',
-            route: b.load?.originName ? `${b.load.originName} ➔ ${b.load.destName}` : 'Addis Ababa ➔ Djibouti Port',
-            weight: `${b.load?.weightTons || 28.0} Tons`,
-            price: `${Number(b.proposedRateEtb).toLocaleString()} ETB`,
-            hours: `${b.pickupEstimatedHours || 18} Hours Transit`,
-            notes: b.proposalNotes || '',
-            status: b.status || 'PENDING',
-            submittedAt: new Date(b.createdAt).toLocaleTimeString(),
-          }));
+          const mappedBids = data.bids.map((b: any) => {
+            const truck =
+              b.dispatchedTruck ||
+              b.load?.shipment?.vehicle?.plateNumber ||
+              (b.proposalNotes?.match(/Vehicle:\s*([^\s•]+)/)?.[1]) ||
+              '';
+
+            const driver =
+              b.dispatchedDriver ||
+              b.load?.shipment?.driver?.user?.fullName ||
+              (b.proposalNotes?.match(/Driver:\s*([^•\n]+)/)?.[1]?.trim()) ||
+              '';
+
+            const isDispatched = Boolean(
+              truck &&
+              driver &&
+              (b.isDispatched ||
+                b.load?.status === 'IN_TRANSIT' ||
+                (b.load?.shipment &&
+                  (b.load.shipment.status === 'DISPATCHED' || b.load.shipment.status === 'IN_TRANSIT')) ||
+                (b.proposalNotes && b.proposalNotes.includes('Dispatched')))
+            );
+
+            return {
+              id: `BID-${b.id.slice(-4).toUpperCase()}`,
+              rawId: b.id,
+              loadId: b.loadId ? `LD-${b.loadId.slice(-4).toUpperCase()}` : 'LD-9901',
+              loadTitle: b.load?.title || 'Corridor Freight Consignment',
+              route: b.load?.originName ? `${b.load.originName} ➔ ${b.load.destName}` : 'Addis Ababa ➔ Djibouti Port',
+              weight: `${b.load?.weightTons || 28.0} Tons`,
+              price: `${Number(b.proposedRateEtb).toLocaleString()} ETB`,
+              hours: `${b.pickupEstimatedHours || 18} Hours Transit`,
+              notes: b.proposalNotes || '',
+              status: b.status || 'PENDING',
+              submittedAt: new Date(b.createdAt).toLocaleTimeString(),
+              dispatchedTruck: truck,
+              dispatchedDriver: driver,
+              isDispatched,
+            };
+          });
           setSubmittedBids(mappedBids);
         }
       }
@@ -203,6 +242,8 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
 
   useEffect(() => {
     refreshAllData();
+    const interval = setInterval(refreshAllData, 3500);
+    return () => clearInterval(interval);
   }, [user?.id]);
 
   const onRefresh = async () => {
@@ -211,7 +252,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
     setRefreshing(false);
   };
 
-  // Filtered Loads for Load Board
+  // Filtered Loads for Load Board (Search by keyword, route, consignment ID, or cargo type)
   const filteredLoads = loadsList.filter((load) => {
     const q = loadSearchQuery.toLowerCase().trim();
     if (!q) return true;
@@ -243,6 +284,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
       id: `TRK-${Date.now().toString().slice(-4)}`,
       plate: truckPlate.trim().toUpperCase(),
       type: truckType,
+      fuelType: truckFuelType,
       capacity: `${truckCapacity} Tons`,
       status: 'AVAILABLE',
       insuranceStatus: 'VERIFIED',
@@ -258,7 +300,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
     }
 
     try {
-      await apiFetch('/api/portal/vehicles', {
+      const res = await apiFetch('/api/portal/vehicles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -266,15 +308,41 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
           transporterEmail: user?.email,
           plateNumber: newTruck.plate,
           vehicleType: newTruck.type,
+          fuelType: truckFuelType,
           capacityTons: parseFloat(truckCapacity) || 30.0,
           driverName: truckDriver,
         }),
       });
+      if (res.ok) {
+        const result = await res.json();
+        if (result.vehicle) {
+          const v = result.vehicle;
+          const mappedSaved: TruckItem = {
+            id: v.id,
+            rawId: v.id,
+            plate: v.plateNumber || newTruck.plate,
+            type: v.vehicleType || newTruck.type,
+            fuelType: v.fuelType || newTruck.fuelType || 'DIESEL',
+            capacity: v.capacityTons ? `${v.capacityTons} Tons` : newTruck.capacity,
+            status: 'AVAILABLE',
+            insuranceStatus: 'VERIFIED',
+            driver: truckDriver || 'Unassigned',
+            gpsEnabled: true,
+          };
+          setFleetList((prev) => [mappedSaved, ...prev.filter((trk) => trk.plate !== newTruck.plate && trk.id !== mappedSaved.id)]);
+        }
+        await refreshAllData();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        console.warn('Vehicle save warning:', errData);
+      }
     } catch (err) {
       console.warn('Vehicle save error:', err);
     }
 
     setTruckPlate('');
+    setTruckType('Flatbed');
+    setTruckFuelType('Diesel');
     setTruckDriver('');
     setShowAddTruck(false);
     Alert.alert('Success', `Vehicle ${newTruck.plate} registered successfully!`);
@@ -290,7 +358,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
       id: `DRV-${Date.now().toString().slice(-4)}`,
       fullName: driverFullName.trim(),
       phone: driverPhone.trim(),
-      licenseNumber: driverLicense || `ETH-DL-${Math.floor(100000 + Math.random() * 900000)}`,
+      licenseNumber: driverLicense.trim() || `ETH-DL-${Math.floor(100000 + Math.random() * 900000)}`,
       licenseCategory: driverCategory,
       experienceYears: driverExperience || '5',
       status: 'ACTIVE',
@@ -298,14 +366,8 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
     };
     setDriversList((prev) => [newDriver, ...prev]);
 
-    if (driverAssignedPlate) {
-      setFleetList((prev) =>
-        prev.map((t) => (t.plate === driverAssignedPlate ? { ...t, driver: newDriver.fullName } : t))
-      );
-    }
-
     try {
-      await apiFetch('/api/portal/drivers', {
+      const res = await apiFetch('/api/portal/drivers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -314,10 +376,30 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
           fullName: newDriver.fullName,
           phone: newDriver.phone,
           licenseNo: newDriver.licenseNumber,
+          licenseClass: newDriver.licenseCategory,
           experienceYears: parseInt(driverExperience) || 5,
           assignedVehiclePlate: driverAssignedPlate,
         }),
       });
+      if (res.ok) {
+        const result = await res.json();
+        if (result.driver) {
+          const saved = result.driver;
+          const mappedSaved: DriverItem = {
+            id: saved.id || saved.rawId,
+            rawId: saved.id || saved.rawId,
+            fullName: saved.fullName || saved.user?.fullName || newDriver.fullName,
+            phone: saved.phone || saved.user?.phone || newDriver.phone,
+            licenseNumber: saved.licenseNumber || saved.driverLicenseNo || newDriver.licenseNumber,
+            licenseCategory: saved.licenseCategory || saved.licenseClass || newDriver.licenseCategory,
+            experienceYears: `${saved.experienceYears || newDriver.experienceYears}`,
+            status: 'ACTIVE',
+            assignedTruckPlate: saved.assignedTruckPlate || saved.assignedVehicle?.plateNumber || newDriver.assignedTruckPlate || '',
+          };
+          setDriversList((prev) => [mappedSaved, ...prev.filter((d) => d.id !== newDriver.id && d.id !== mappedSaved.id)]);
+        }
+        await refreshAllData();
+      }
     } catch (err) {
       console.warn('Driver save error:', err);
     }
@@ -346,6 +428,15 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
     }
 
     const selectedLoadObj = loadsList.find((l) => l.id === selectedLoadId || l.rawId === selectedLoadId);
+
+    // Guard: Prevent bidding if consignment is already booked or dispatched
+    if (selectedLoadObj?.isDispatched || selectedLoadObj?.status === 'BOOKED' || selectedLoadObj?.status === 'IN_TRANSIT') {
+      Alert.alert(
+        'Consignment Already Booked',
+        'This consignment has already been assigned and dispatched. A load cannot accept duplicate bids or duplicate assignments.'
+      );
+      return;
+    }
 
     // Prevent duplicate bid submissions on the same load
     const isAlreadyBid = submittedBids.some(
@@ -412,6 +503,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
     setBidPrice('');
     setTransitHours('');
     setBidNotes('');
+    setSelectedLoadId('');
   };
 
   // Respond to Direct Match Offer
@@ -442,6 +534,67 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
     }
   };
 
+  // Delete / Withdraw Bid (Transporter Action - SRS 4.2.4)
+  const handleDeleteBid = (bid: BidItem) => {
+    const executeWithdraw = async () => {
+      const targetId = bid.rawId || bid.id;
+      // 1. Optimistically update local state immediately
+      setSubmittedBids((prev) =>
+        prev.filter((b) => b.id !== bid.id && b.rawId !== targetId)
+      );
+
+      try {
+        const queryParams = bid.loadId ? `?loadId=${encodeURIComponent(bid.loadId)}` : '';
+        const res = await apiFetch(`/api/portal/bids/${targetId}${queryParams}`, {
+          method: 'DELETE',
+        });
+
+        if (res.ok) {
+          if (Platform.OS === 'web' && typeof window !== 'undefined') {
+            console.log('Quotation successfully withdrawn.');
+          } else {
+            Alert.alert('Bid Withdrawn', 'Your quotation has been successfully removed from the consignment.');
+          }
+          await refreshAllData();
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          console.warn('Withdraw error response:', errData);
+          if (Platform.OS === 'web' && typeof window !== 'undefined') {
+            window.alert(errData.error || 'Failed to withdraw bid.');
+          } else {
+            Alert.alert('Cannot Withdraw Bid', errData.error || 'Failed to withdraw bid.');
+          }
+          await refreshAllData();
+        }
+      } catch (err) {
+        console.warn('Network error while withdrawing bid:', err);
+        await refreshAllData();
+      }
+    };
+
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && typeof window.confirm === 'function') {
+      const confirmed = window.confirm(
+        `Withdraw Quotation?\n\nAre you sure you want to withdraw your quote of ${bid.price} for "${bid.loadTitle}"? You can re-submit another quote before the bidding window closes.`
+      );
+      if (confirmed) {
+        executeWithdraw();
+      }
+    } else {
+      Alert.alert(
+        'Withdraw Quotation?',
+        `Are you sure you want to withdraw your quote of ${bid.price} for "${bid.loadTitle}"? You can re-submit another quote before the bidding window closes.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Withdraw Bid',
+            style: 'destructive',
+            onPress: executeWithdraw,
+          },
+        ]
+      );
+    }
+  };
+
   // Post-Acceptance Dispatch Assignment
   const handleConfirmDispatch = async () => {
     if (!dispatchTruck || !dispatchDriver) {
@@ -449,11 +602,56 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
       return;
     }
 
+    // Strict Guard: 1 load cannot be dispatched more than once
+    if (selectedAcceptedBid?.dispatchedTruck && selectedAcceptedBid?.dispatchedDriver) {
+      Alert.alert(
+        '⚠️ Already Dispatched',
+        'This consignment has already been assigned and dispatched. A load cannot be assigned or dispatched multiple times.'
+      );
+      setShowDispatchModal(false);
+      return;
+    }
+
+    // Strict Guard: Vehicle must not be on another active trip
+    const vehicleObj = fleetList.find((t) => t.plate === dispatchTruck);
+    if (vehicleObj && vehicleObj.status === 'IN_TRANSIT') {
+      Alert.alert(
+        'Vehicle Busy',
+        `Vehicle ${dispatchTruck} is currently on an active corridor shipment and cannot be double-booked.`
+      );
+      return;
+    }
+
+    // Strict Guard: Driver must not be on another active trip
+    const driverObj = driversList.find((d) => d.fullName === dispatchDriver);
+    if (driverObj && (driverObj.status === 'IN_TRANSIT' || driverObj.status === 'ON_TRIP')) {
+      Alert.alert(
+        'Driver Busy',
+        `Driver ${dispatchDriver} is currently on an active corridor shipment and cannot be double-booked.`
+      );
+      return;
+    }
+
     setSubmittedBids((prev) =>
       prev.map((b) =>
-        b.id === selectedAcceptedBid?.id
-          ? { ...b, dispatchedTruck: dispatchTruck, dispatchedDriver: dispatchDriver }
+        b.id === selectedAcceptedBid?.id || b.rawId === selectedAcceptedBid?.rawId
+          ? { ...b, dispatchedTruck: dispatchTruck, dispatchedDriver: dispatchDriver, isDispatched: true }
           : b
+      )
+    );
+
+    // Also update load state immediately to lock it
+    setLoadsList((prev) =>
+      prev.map((l) =>
+        l.id === selectedAcceptedBid?.loadId || l.title === selectedAcceptedBid?.loadTitle
+          ? {
+              ...l,
+              status: 'BOOKED',
+              isDispatched: true,
+              dispatchedTruck: dispatchTruck,
+              dispatchedDriver: dispatchDriver,
+            }
+          : l
       )
     );
 
@@ -474,7 +672,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
     const targetLoadId = selectedAcceptedBid?.loadId || '';
 
     try {
-      await apiFetch('/api/portal/dispatch', {
+      const res = await apiFetch('/api/portal/dispatch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -486,18 +684,31 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
           driverName: dispatchDriver,
         }),
       });
-    } catch (err) {
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        console.warn('Dispatch API returned error:', errData);
+        Alert.alert('Dispatch Error', errData.error || 'Failed to dispatch shipment. Please try again.');
+        await refreshAllData();
+        return;
+      }
+
+      setShowDispatchModal(false);
+      setDispatchTruck('');
+      setDispatchDriver('');
+
+      Alert.alert(
+        '🚀 Fleet Dispatched!',
+        `Vehicle ${dispatchTruck} and Driver ${dispatchDriver} have been officially assigned and dispatched for shipment ${targetLoadId}. TeleBirr escrow is locked and live GPS tracking is now streaming!`
+      );
+
+      // Refresh data so database values sync
+      await refreshAllData();
+    } catch (err: any) {
       console.warn('Dispatch sync error:', err);
+      Alert.alert('Dispatch Network Error', err?.message || 'Unable to connect to server. Please check your network.');
+      await refreshAllData();
     }
-
-    setShowDispatchModal(false);
-    setDispatchTruck('');
-    setDispatchDriver('');
-
-    Alert.alert(
-      '🚀 Fleet Dispatched!',
-      `Vehicle ${dispatchTruck} and Driver ${dispatchDriver} have been officially assigned and dispatched for shipment ${targetLoadId}. TeleBirr escrow is locked and live GPS tracking is now streaming!`
-    );
   };
 
   const availableTrucksForDriver = fleetList.filter((t) => !t.driver || t.driver === 'Unassigned');
@@ -508,9 +719,9 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
 
       {/* Top Header */}
       <View style={styles.topHeader}>
-        <View>
+        <View style={{ flex: 1, marginRight: 12 }}>
           <Text style={styles.brandTitle}>TradeFlow Carrier</Text>
-          <Text style={styles.companySub}>
+          <Text style={styles.companySub} numberOfLines={1}>
             {user?.companyName || 'Mulugeta Cross-Border Freight'}
           </Text>
         </View>
@@ -590,19 +801,24 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
             loadsList={loadsList}
             filteredLoads={filteredLoads}
             directMatchRequests={directMatchRequests}
+            submittedBids={submittedBids}
             loadSearchQuery={loadSearchQuery}
             setLoadSearchQuery={setLoadSearchQuery}
             onSelectLoadForQuote={(item) => {
               setSelectedLoadId(item.id);
               setBidPrice(item.budget ? item.budget.replace(/[^0-9]/g, '') : '');
-              setBiddingSubTab('create');
               setActiveTab('bidding');
             }}
             onRespondDirectOffer={handleRespondDirectOffer}
+            onDeleteBid={handleDeleteBid}
+            onViewBidInMyBids={(bid) => {
+              setSelectedLoadId('');
+              setActiveTab('bidding');
+            }}
           />
         )}
 
-        {/* 4. BIDDING TAB */}
+        {/* 4. MY BIDS TAB */}
         {activeTab === 'bidding' && (
           <BiddingTab
             loadsList={loadsList}
@@ -618,18 +834,30 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
             setBidValidityHours={setBidValidityHours}
             bidSuccess={bidSuccess}
             submittedBids={submittedBids}
-            biddingSubTab={biddingSubTab}
-            setBiddingSubTab={setBiddingSubTab}
             onSubmitBid={handleSubmitBid}
             onOpenDispatchModal={(bid) => {
+              if (bid.dispatchedTruck && bid.dispatchedDriver) {
+                Alert.alert(
+                  'Consignment Dispatched',
+                  'This consignment has already been assigned and dispatched. A load cannot be dispatched multiple times.'
+                );
+                return;
+              }
               setSelectedAcceptedBid(bid);
               setShowDispatchModal(true);
+            }}
+            onDeleteBid={handleDeleteBid}
+            onNavigateToLoads={() => {
+              setSelectedLoadId('');
+              setActiveTab('loads');
             }}
           />
         )}
 
         {/* 5. EARNINGS TAB */}
-        {activeTab === 'earnings' && <EarningsTab />}
+        {activeTab === 'earnings' && (
+          <EarningsTab user={user} submittedBids={submittedBids} />
+        )}
       </ScrollView>
 
       {/* Bottom Tab Navigation Bar */}
@@ -638,9 +866,10 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
           style={styles.navTab}
           onPress={() => setActiveTab('overview')}
         >
-          <Ionicons
-            name={activeTab === 'overview' ? 'grid' : 'grid-outline'}
-            size={20}
+          <TabIcon
+            name="overview"
+            active={activeTab === 'overview'}
+            size={22}
             color={activeTab === 'overview' ? '#0284C7' : '#94A3B8'}
           />
           <Text style={[styles.navLabel, activeTab === 'overview' && styles.navLabelActive]}>
@@ -652,9 +881,10 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
           style={styles.navTab}
           onPress={() => setActiveTab('fleet')}
         >
-          <Ionicons
-            name={activeTab === 'fleet' ? 'car' : 'car-outline'}
-            size={20}
+          <TabIcon
+            name="fleet"
+            active={activeTab === 'fleet'}
+            size={22}
             color={activeTab === 'fleet' ? '#0284C7' : '#94A3B8'}
           />
           <Text style={[styles.navLabel, activeTab === 'fleet' && styles.navLabelActive]}>
@@ -666,9 +896,10 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
           style={styles.navTab}
           onPress={() => setActiveTab('loads')}
         >
-          <Ionicons
-            name={activeTab === 'loads' ? 'cube' : 'cube-outline'}
-            size={20}
+          <TabIcon
+            name="loads"
+            active={activeTab === 'loads'}
+            size={22}
             color={activeTab === 'loads' ? '#0284C7' : '#94A3B8'}
           />
           <Text style={[styles.navLabel, activeTab === 'loads' && styles.navLabelActive]}>
@@ -678,15 +909,41 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
 
         <TouchableOpacity
           style={styles.navTab}
-          onPress={() => setActiveTab('bidding')}
+          onPress={() => {
+            setSelectedLoadId('');
+            setActiveTab('bidding');
+          }}
         >
-          <Ionicons
-            name={activeTab === 'bidding' ? 'pricetag' : 'pricetag-outline'}
-            size={20}
-            color={activeTab === 'bidding' ? '#0284C7' : '#94A3B8'}
-          />
+          <View style={{ position: 'relative' }}>
+            <TabIcon
+              name="bidding"
+              active={activeTab === 'bidding'}
+              size={22}
+              color={activeTab === 'bidding' ? '#0284C7' : '#94A3B8'}
+            />
+            {submittedBids.length > 0 && (
+              <View
+                style={{
+                  position: 'absolute',
+                  top: -4,
+                  right: -8,
+                  backgroundColor: '#0284C7',
+                  borderRadius: 10,
+                  minWidth: 16,
+                  height: 16,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  paddingHorizontal: 3,
+                }}
+              >
+                <Text style={{ fontSize: 9, color: '#FFFFFF', fontWeight: '800' }}>
+                  {submittedBids.length}
+                </Text>
+              </View>
+            )}
+          </View>
           <Text style={[styles.navLabel, activeTab === 'bidding' && styles.navLabelActive]}>
-            Bidding
+            {language === 'AM' ? 'የኔ ዋጋዎች' : 'My Bids'}
           </Text>
         </TouchableOpacity>
 
@@ -694,9 +951,10 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
           style={styles.navTab}
           onPress={() => setActiveTab('earnings')}
         >
-          <Ionicons
-            name={activeTab === 'earnings' ? 'wallet' : 'wallet-outline'}
-            size={20}
+          <TabIcon
+            name="earnings"
+            active={activeTab === 'earnings'}
+            size={22}
             color={activeTab === 'earnings' ? '#0284C7' : '#94A3B8'}
           />
           <Text style={[styles.navLabel, activeTab === 'earnings' && styles.navLabelActive]}>
@@ -713,6 +971,8 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
         setTruckPlate={setTruckPlate}
         truckType={truckType}
         setTruckType={setTruckType}
+        truckFuelType={truckFuelType}
+        setTruckFuelType={setTruckFuelType}
         truckCapacity={truckCapacity}
         setTruckCapacity={setTruckCapacity}
         truckDriver={truckDriver}

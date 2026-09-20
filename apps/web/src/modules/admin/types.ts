@@ -42,3 +42,42 @@ export interface AdminStats {
   systemHealth: string;
   fraudAlerts: number;
 }
+
+export interface DisputeTicketItem {
+  id: string;
+  paymentId: string;
+  shipmentId: string;
+  ticketNumber: string;
+  loadCode: string;
+  title: string;
+  cargoType: string;
+  weightTons: number;
+  route: string;
+  grossAmountEtb: number;
+  platformCommissionEtb: number;
+  netTransporterPayoutEtb: number;
+  claimedAmountEtb: number;
+  status: 'PENDING' | 'HELD_IN_ESCROW' | 'CONFIRMED' | 'DISPUTED' | 'SETTLED' | 'REFUNDED';
+  disputeReason: string;
+  disputeNotes: string | null;
+  shipperName: string;
+  shipperCompany: string;
+  shipperPhone: string;
+  shipperTin: string;
+  transporterName: string;
+  transporterPhone: string;
+  driverName: string;
+  truckPlate: string;
+  filedAt: string;
+  settledAt: string | null;
+}
+
+export interface DisputeStats {
+  totalDisputes: number;
+  openCases: number;
+  resolvedCases: number;
+  refundedCases: number;
+  totalFrozenAmountEtb: number;
+  mediationSuccessRatePct: number;
+  averageResolutionHours: number;
+}
