@@ -123,12 +123,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             <View style={styles.settingsGroup}>
               <Text style={styles.settingsGroupTitle}>Preferences & Session</Text>
 
-              <TouchableOpacity style={styles.actionBtnRow} onPress={toggleLanguage}>
-                <Text style={styles.actionBtnLabel}>Language / ቋንቋ</Text>
-                <Text style={styles.actionBtnValue}>
-                  {language === 'en' ? 'English (አማርኛ ቀይር)' : 'አማርኛ (Switch to EN)'}
-                </Text>
-              </TouchableOpacity>
+              <View style={styles.actionBtnRow}>
+                <Text style={styles.actionBtnLabel}>Language</Text>
+                <Text style={styles.actionBtnValue}>English</Text>
+              </View>
 
               <TouchableOpacity
                 style={[styles.actionBtnRow, { borderColor: '#FECACA', backgroundColor: '#FEF2F2' }]}

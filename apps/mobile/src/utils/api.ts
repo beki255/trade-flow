@@ -1,7 +1,7 @@
 import { Platform, NativeModules } from 'react-native';
 import Constants from 'expo-constants';
 
-let customServerIp: string | null = '10.18.93.34';
+let customServerIp: string | null = null;
 
 export const setCustomServerIp = (ip: string) => {
   customServerIp = ip.trim() || null;

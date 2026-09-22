@@ -211,6 +211,14 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     const normalizedEmail = email.toLowerCase().trim();
     const mappedPrismaRole = mapToPrismaRole(role);
 
+    // Institutional Security Guard: Prevent public self-registration of Customs or Admin accounts
+    if (mappedPrismaRole === UserRole.CUSTOMS_OFFICER || mappedPrismaRole === UserRole.ADMIN) {
+      res.status(403).json({
+        error: 'Institutional and regulatory accounts (Customs Officer / System Admin) cannot self-register publicly. Please contact platform administration.',
+      });
+      return;
+    }
+
     // Check if user already exists in database
     const existing = await prisma.user.findFirst({
       where: {

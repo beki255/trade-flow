@@ -32,6 +32,10 @@ import { CheckinTab } from './tabs/CheckinTab';
 import { IncidentTab } from './tabs/IncidentTab';
 import { PodTab } from './tabs/PodTab';
 
+// Modular Screen Components
+import { DriverTopHeader } from './components/DriverTopHeader';
+import { DriverBottomNavBar } from './components/DriverBottomNavBar';
+
 interface DriverPortalScreenProps {
   onLogout: () => void;
   user?: any;
@@ -73,15 +77,15 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
           setRealGpsLocation(updatedLoc);
         });
         Alert.alert(
-          '🟢 GPS Location Active! / ጂፒኤስ በርቷል!',
-          'የመሳሪያህ ጂፒኤስ በተሳካ ሁኔታ በርቷል፤ ትክክለኛው መገኛህ በቅጽበት ወደ ካርታው ይተላለፋል።',
-          [{ text: 'እሺ (OK)' }]
+          '🟢 GPS Location Active!',
+          'Device GPS is active; live telemetry will now broadcast along the corridor route.',
+          [{ text: 'OK' }]
         );
       } else {
         Alert.alert(
-          '⚠️ Location Denied / ጂፒኤስ አልፈቀደም',
-          'እባክህ በመሳሪያህ Settings ውስጥ Location ፍቃድ አብራ፤ ካልበራ የቀጥታ መገኛህ ለ Shipper አይታይም።',
-          [{ text: 'እሺ (OK)' }]
+          '⚠️ Location Permission Required',
+          'Please enable Location Services in device Settings to stream live GPS telemetry to the shipper.',
+          [{ text: 'OK' }]
         );
       }
     } catch (e) {
@@ -256,9 +260,9 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
           source: 'DRIVER_DEPART_ORIGIN',
         });
         Alert.alert(
-          '🚀 Trip Started! / ጉዞ ተጀምሯል!',
-          'ጉዞህ በተሳካ ሁኔታ ተጀምሯል፤ የቀጥታ ጂፒኤስ ካርታው ለ Shipper በቅጽበት ተከፍቷል።',
-          [{ text: 'እሺ (OK)' }]
+          '🚀 Trip Started!',
+          'Your corridor trip has commenced. Live GPS telemetry is now broadcasting to the shipper.',
+          [{ text: 'OK' }]
         );
       }
     } catch (e) {
@@ -458,11 +462,11 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
 
   const handleSignPOD = async () => {
     if (!recipientName) {
-      Alert.alert('⚠️ ስም ያስፈልጋል', 'እባክህ የተረካቢውን ሙሉ ስም አስገባ።');
+      Alert.alert('⚠️ Name Required', 'Please enter the full name of the receiving consignee.');
       return;
     }
     if (!signedPOD) {
-      Alert.alert('⚠️ ፊርማ ያስፈልጋል', 'እባክህ የተረካቢውን ፊርማ ሳጥኑ ላይ በመንካት አረጋግጥ።');
+      Alert.alert('⚠️ Signature Required', 'Please capture or confirm the consignee signature.');
       return;
     }
 
@@ -500,20 +504,20 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
         setActiveTrip(null);
         await fetchActiveTrip();
         Alert.alert(
-          '🎉 Delivery Confirmed! / ርክክብ ተጠናቋል!',
-          'ዲጂታል e-POD በመረጃ ቋቱ (Database) ውስጥ ተመዝግቧል፤ የ TeleBirr ክፍያው ለትራንስፖርተር ተለቋል። ለ Shipper ወዲያውኑ ማሳወቂያ ደርሶታል።',
-          [{ text: 'እሺ (OK)' }]
+          '🎉 Delivery Confirmed!',
+          'Digital e-POD has been permanently recorded. TeleBirr escrow payment has been released to the transporter, and the shipper notified.',
+          [{ text: 'OK' }]
         );
       } else {
         const errJson = await res.json().catch(() => ({}));
         Alert.alert(
-          '⚠️ e-POD ማረጋገጥ አልተቻለም',
-          errJson.error || 'በመረጃ ቋቱ ውስጥ የርክክብ መረጃውን ማስቀመጥ አልተቻለም። እባክዎ እንደገና ይሞክሩ።'
+          '⚠️ Unable to Confirm e-POD',
+          errJson.error || 'Failed to persist delivery record. Please retry.'
         );
       }
     } catch (e: any) {
       console.warn('e-POD payment settlement error:', e);
-      Alert.alert('⚠️ የግንኙነት ችግር', 'ከአገልጋዩ (Server) ጋር መገናኘት አልተቻለም። እባክዎ የበይነመረብ ግንኙነትዎን ያረጋግጡ።');
+      Alert.alert('⚠️ Connection Issue', 'Could not reach server. Please check your internet connection and retry.');
     } finally {
       setActionLoading(false);
     }
@@ -529,33 +533,13 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
 
-      {/* Top Mobile Header */}
-      <View style={styles.topHeader}>
-        <View>
-          <Text style={styles.brandTitle}>TradeFlow Driver</Text>
-          <Text style={styles.truckSub}>
-            {user?.fullName || 'Driver Operations'} • {user?.driverProfile?.assignedVehicle?.plateNumber || 'Fleet Vehicle'}
-          </Text>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <TouchableOpacity style={styles.logoutBtn} onPress={onLogout}>
-            <Ionicons name="log-out-outline" size={13} color="#FFFFFF" style={{ marginRight: 3 }} />
-            <Text style={styles.logoutText}>Logout</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Emergency SOS Banner Button */}
-      <TouchableOpacity
-        style={[styles.sosBanner, sosActive && styles.sosBannerActive]}
-        onPress={() => setSosActive(!sosActive)}
-        activeOpacity={0.85}
-      >
-        <Ionicons name="warning" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
-        <Text style={styles.sosText}>
-          {sosActive ? 'SOS EMERGENCY SIGNAL ACTIVE (BROADCASTING)' : 'EMERGENCY SOS ASSISTANCE'}
-        </Text>
-      </TouchableOpacity>
+      {/* Modular Top Mobile Header & Emergency SOS */}
+      <DriverTopHeader
+        user={user}
+        onLogout={onLogout}
+        sosActive={sosActive}
+        onToggleSos={() => setSosActive(!sosActive)}
+      />
 
       {/* Main Scrollable Content */}
       <ScrollView
@@ -629,73 +613,11 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
         )}
       </ScrollView>
 
-      {/* Bottom Navigation Bar */}
-      <View style={styles.bottomNavContainer}>
-        <TouchableOpacity
-          style={styles.navTab}
-          onPress={() => setActiveTab('trip')}
-        >
-          <TabIcon
-            name="trip"
-            active={activeTab === 'trip'}
-            size={22}
-            color={activeTab === 'trip' ? '#0284C7' : '#94A3B8'}
-          />
-          <Text style={[styles.navLabel, activeTab === 'trip' && styles.navLabelActive]}>Trip</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navTab}
-          onPress={() => setActiveTab('nav')}
-        >
-          <TabIcon
-            name="nav"
-            active={activeTab === 'nav'}
-            size={22}
-            color={activeTab === 'nav' ? '#0284C7' : '#94A3B8'}
-          />
-          <Text style={[styles.navLabel, activeTab === 'nav' && styles.navLabelActive]}>Route</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navTab}
-          onPress={() => setActiveTab('checkin')}
-        >
-          <TabIcon
-            name="checkin"
-            active={activeTab === 'checkin'}
-            size={22}
-            color={activeTab === 'checkin' ? '#0284C7' : '#94A3B8'}
-          />
-          <Text style={[styles.navLabel, activeTab === 'checkin' && styles.navLabelActive]}>Check-in</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navTab}
-          onPress={() => setActiveTab('incident')}
-        >
-          <TabIcon
-            name="incident"
-            active={activeTab === 'incident'}
-            size={22}
-            color={activeTab === 'incident' ? '#0284C7' : '#94A3B8'}
-          />
-          <Text style={[styles.navLabel, activeTab === 'incident' && styles.navLabelActive]}>Incident</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navTab}
-          onPress={() => setActiveTab('pod')}
-        >
-          <TabIcon
-            name="pod"
-            active={activeTab === 'pod'}
-            size={22}
-            color={activeTab === 'pod' ? '#0284C7' : '#94A3B8'}
-          />
-          <Text style={[styles.navLabel, activeTab === 'pod' && styles.navLabelActive]}>e-POD</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Modular Bottom Navigation Bar */}
+      <DriverBottomNavBar
+        activeTab={activeTab}
+        onSelectTab={(tab) => setActiveTab(tab)}
+      />
     </SafeAreaView>
   );
 };

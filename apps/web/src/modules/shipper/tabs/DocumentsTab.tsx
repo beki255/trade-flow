@@ -29,6 +29,7 @@ interface CustomsDoc {
 }
 
 import { useAuth } from '../../../context/AuthContext';
+import { UploadCustomsDocModal } from '../components/UploadCustomsDocModal';
 
 export const DocumentsTab: React.FC = () => {
   const { user } = useAuth();
@@ -363,103 +364,22 @@ export const DocumentsTab: React.FC = () => {
         </div>
       </div>
 
-      {/* Upload Document Modal */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-black text-slate-900">Upload International Trade Document</h3>
-              <button onClick={() => setModalOpen(false)} className="text-slate-400 hover:text-slate-600 text-sm font-bold">
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleUploadSubmit} className="space-y-3.5 text-xs">
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Document Category *</label>
-                <select
-                  value={docType}
-                  onChange={(e) => setDocType(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white font-bold text-slate-800 outline-none"
-                >
-                  <option value="COMMERCIAL_INVOICE">Commercial Invoice</option>
-                  <option value="PACKING_LIST">Packing List (Containerized)</option>
-                  <option value="BILL_OF_LADING">Bill of Lading (B/L)</option>
-                  <option value="CERTIFICATE_OF_ORIGIN">Certificate of Origin</option>
-                  <option value="TRANSIT_PERMIT">Galafi Customs Transit Permit</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Document Reference Number *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. INV-2026-9901 or BL-ETH-884"
-                  value={docNumber}
-                  onChange={(e) => setDocNumber(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-medium text-slate-900 outline-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Declared Weight (Tons) *</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    required
-                    value={weightTons}
-                    onChange={(e) => setWeightTons(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-medium text-slate-900 outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Declared Value (ETB)</label>
-                  <input
-                    type="number"
-                    value={declaredValue}
-                    onChange={(e) => setDeclaredValue(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-medium text-slate-900 outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Issuing Authority / Regulatory Body</label>
-                <input
-                  type="text"
-                  value={issuingAuthority}
-                  onChange={(e) => setIssuingAuthority(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-medium text-slate-900 outline-none"
-                />
-              </div>
-
-              <div className="p-4 rounded-2xl border-2 border-dashed border-slate-200 text-center space-y-1">
-                <UploadCloud className="w-6 h-6 text-slate-400 mx-auto" />
-                <div className="font-bold text-slate-700">Attach Document File (PDF, PNG, JPEG)</div>
-                <div className="text-[10px] text-slate-400">Maximum file size 15MB</div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md"
-                >
-                  Submit for Clearance
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Modular Upload Document Modal */}
+      <UploadCustomsDocModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSubmit={handleUploadSubmit}
+        docType={docType}
+        setDocType={setDocType}
+        docNumber={docNumber}
+        setDocNumber={setDocNumber}
+        weightTons={weightTons}
+        setWeightTons={setWeightTons}
+        declaredValue={declaredValue}
+        setDeclaredValue={setDeclaredValue}
+        issuingAuthority={issuingAuthority}
+        setIssuingAuthority={setIssuingAuthority}
+      />
 
     </div>
   );

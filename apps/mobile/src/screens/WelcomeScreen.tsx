@@ -74,13 +74,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
         <View style={styles.header}>
           <View style={styles.headerSpacer} />
           <Text style={styles.brandTitle}>TradeFlow</Text>
-          <TouchableOpacity
-            style={styles.langBtn}
-            onPress={toggleLanguage}
-            activeOpacity={0.8}
-          >
+          <View style={styles.langBtn}>
             <Text style={styles.langBtnText}>🌐 English</Text>
-          </TouchableOpacity>
+          </View>
         </View>
 
         {/* Center Illustration Area: Full Edge-to-Edge Cross-Platform Carousel */}

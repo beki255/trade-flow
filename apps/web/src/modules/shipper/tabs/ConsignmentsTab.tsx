@@ -86,7 +86,7 @@ export const ConsignmentsTab: React.FC<ConsignmentsTabProps> = ({
               <span>Shipper Freight Portfolio (SRS 4.2)</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              የተመዘገቡ ጭነቶች (My Consignments)
+              My Consignments
             </h1>
             <p className="text-sm text-slate-300 max-w-xl leading-relaxed font-medium">
               Monitor your corridor freight postings, inspect incoming carrier bidding proposals, and track dispatched shipments from Djibouti to inland hubs.
@@ -201,7 +201,7 @@ export const ConsignmentsTab: React.FC<ConsignmentsTabProps> = ({
             <h3 className="text-base font-black text-slate-900">
               {searchTerm || statusFilter !== 'ALL'
                 ? 'No matching freight consignments found'
-                : 'ምንም የተመዘገበ ጭነት የለም (No Posted Freight Consignments)'}
+                : 'No Posted Freight Consignments'}
             </h3>
             <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
               {searchTerm || statusFilter !== 'ALL'

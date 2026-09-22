@@ -515,7 +515,7 @@ export const ShipperPortalPage: React.FC = () => {
               </div>
               <div>
                 <p className="font-black text-emerald-300 text-sm flex items-center gap-2">
-                  <span>🎉 ጭነቱ በሰላም ደርሷል (Consignment Delivered & e-POD Signed)</span>
+                  <span>🎉 Consignment Delivered & e-POD Signed</span>
                   <span className="text-[10px] bg-emerald-500/30 text-emerald-200 px-2 py-0.5 rounded-full border border-emerald-400/40 uppercase font-mono">
                     Escrow Settled
                   </span>
@@ -534,14 +534,14 @@ export const ShipperPortalPage: React.FC = () => {
                   }}
                   className="text-emerald-300 hover:text-white text-xs font-bold px-2.5 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 rounded-lg transition border border-emerald-400/30 cursor-pointer"
                 >
-                  ዝርዝሩን እይ
+                  View Details
                 </button>
               )}
               <button
                 onClick={() => setDeliveryNotification('')}
                 className="text-white/60 hover:text-white text-xs font-bold px-2 py-1.5 hover:bg-white/10 rounded-lg transition cursor-pointer"
               >
-                ✕ ዝጋ (Dismiss)
+                ✕ Dismiss
               </button>
             </div>
           </div>

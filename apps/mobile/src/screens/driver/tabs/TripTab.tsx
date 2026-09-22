@@ -95,12 +95,12 @@ export const TripTab: React.FC<TripTabProps> = ({
             )}
           </View>
           <Text style={{ fontSize: 18, fontWeight: '900', color: '#0F172A', textAlign: 'center' }}>
-            {isDelivered ? 'ጉዞው ተጠናቋል (Trip Delivered)' : 'ምንም ንቁ ጉዞ የለም (No Active Trip)'}
+            {isDelivered ? 'Trip Delivered' : 'No Active Trip'}
           </Text>
           <Text style={{ textAlign: 'center', marginTop: 8, lineHeight: 20, fontSize: 12.5, color: '#64748B', maxWidth: 300 }}>
             {isDelivered
-              ? 'ጭነቱ መድረሻው ደርሶ በኤሌክትሮኒክ ፊርማ (e-POD) ተረክቧል። የቴሌብር ክፍያው ለትራንስፖርተር ተለቋል። አዲስ ጭነት እስኪመደብልህ ድረስ በዝግጁነት ላይ ነህ።'
-              : 'የተመደበ ንቁ የኮሪደር ጭነት የለም። የፍሊት አስተዳዳሪህ (Fleet Transporter) አዲስ ጭነት ሲመድብልህ እዚህ ላይ ይደርስሃል።'}
+              ? 'The consignment has safely reached its destination and electronic delivery (e-POD) is confirmed. Escrow payment has been released to the transporter.'
+              : 'No active corridor trip is currently assigned to this vehicle. Once your fleet transporter assigns a load, trip details will appear here.'}
           </Text>
 
           {onNavigateToPod && (
@@ -122,7 +122,7 @@ export const TripTab: React.FC<TripTabProps> = ({
             >
               <Ionicons name="receipt-outline" size={16} color={isDelivered ? '#34D399' : '#38BDF8'} />
               <Text style={{ fontSize: 12.5, fontWeight: '800', color: '#FFFFFF' }}>
-                {isDelivered ? 'View Digital e-POD Receipt (ደረሰኝ ይመልከቱ)' : 'Digital e-POD Tab'}
+                {isDelivered ? 'View Digital e-POD Receipt' : 'Digital e-POD Tab'}
               </Text>
             </TouchableOpacity>
           )}
@@ -166,7 +166,7 @@ export const TripTab: React.FC<TripTabProps> = ({
           >
             {isInTransit
               ? (isMoving ? `GPS Live: Driving (${activeTrip?.speedKmh || 0} km/h)` : 'GPS Live: Stationary / Rest Stop (0 km/h)')
-              : (isDispatched ? 'Trip Dispatched • Ready at Origin (ለመነሳት ዝግጁ)' : 'Standby Mode')}
+              : (isDispatched ? 'Trip Dispatched • Ready at Origin' : 'Standby Mode')}
           </Text>
         </View>
         <Text style={{ fontSize: 10, fontWeight: '700', color: '#64748B' }}>
@@ -191,7 +191,7 @@ export const TripTab: React.FC<TripTabProps> = ({
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Ionicons name="flag" size={18} color="#10B981" />
               <Text style={{ fontSize: 13, fontWeight: '900', color: '#FFFFFF' }}>
-                Consignment Ready • ለመነሳት ዝግጁ
+                Consignment Ready for Departure
               </Text>
             </View>
             <View style={{ backgroundColor: '#065F46', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: '#10B981' }}>
@@ -199,7 +199,7 @@ export const TripTab: React.FC<TripTabProps> = ({
             </View>
           </View>
           <Text style={{ fontSize: 11.5, color: '#94A3B8', lineHeight: 17 }}>
-            የተመደበው ጭነት ከመነሻ <Text style={{ color: '#F1F5F9', fontWeight: 'bold' }}>{activeTrip.origin}</Text> ወደ መድረሻ <Text style={{ color: '#F1F5F9', fontWeight: 'bold' }}>{activeTrip.destination}</Text> ({totalKm} km) ነው። ጉዞ ስትጀምር ከታች ያለውን አረንጓዴ ቁልፍ ንካ፤ ለ Shipper ወዲያውኑ የቀጥታ ካርታው ይከፈታል።
+            Assigned load corridor from <Text style={{ color: '#F1F5F9', fontWeight: 'bold' }}>{activeTrip.origin}</Text> to <Text style={{ color: '#F1F5F9', fontWeight: 'bold' }}>{activeTrip.destination}</Text> ({totalKm} km). Press the button below to commence the trip and broadcast live GPS telemetry to the shipper.
           </Text>
           <TouchableOpacity
             onPress={onStartTrip}
@@ -223,7 +223,7 @@ export const TripTab: React.FC<TripTabProps> = ({
               <>
                 <Ionicons name="play" size={18} color="#FFFFFF" />
                 <Text style={{ fontSize: 14, fontWeight: '900', color: '#FFFFFF', letterSpacing: 0.3 }}>
-                  🚀 Start Trip / ጉዞ ጀምር (ማሳወቅ)
+                  🚀 Start Trip
                 </Text>
               </>
             )}
@@ -254,7 +254,7 @@ export const TripTab: React.FC<TripTabProps> = ({
                 }}
               />
               <Text style={{ fontSize: 12, fontWeight: '900', color: '#FFFFFF' }}>
-                {isDriving ? 'Vehicle In Motion (Driving) • ጉዞ ላይ' : 'Vehicle Stopped / Rest Area • መኪናው ቆሟል'}
+                {isDriving ? 'Vehicle In Motion (Driving)' : 'Vehicle Stopped / Rest Area'}
               </Text>
             </View>
             <Text style={{ fontSize: 11, fontWeight: '800', color: '#38BDF8' }}>
@@ -286,7 +286,7 @@ export const TripTab: React.FC<TripTabProps> = ({
                 <>
                   <Ionicons name="pause" size={14} color="#FFFFFF" />
                   <Text style={{ fontSize: 11, fontWeight: '800', color: '#FFFFFF' }}>
-                    Stop / Rest (ማቆም)
+                    Stop / Rest
                   </Text>
                 </>
               )}
@@ -315,7 +315,7 @@ export const TripTab: React.FC<TripTabProps> = ({
                 <>
                   <Ionicons name="play" size={14} color="#FFFFFF" />
                   <Text style={{ fontSize: 11, fontWeight: '800', color: '#FFFFFF' }}>
-                    Resume Drive (ጉዞ ቀጥል)
+                    Resume Drive
                   </Text>
                 </>
               )}
@@ -342,7 +342,7 @@ export const TripTab: React.FC<TripTabProps> = ({
           >
             <Ionicons name="checkmark-done-circle" size={19} color="#FFFFFF" />
             <Text style={{ fontSize: 13, fontWeight: '900', color: '#FFFFFF', letterSpacing: 0.3 }}>
-              🏁 Arrived at Destination • Mark as Delivered (እቃ አስረክብ)
+              🏁 Arrived at Destination • Mark as Delivered
             </Text>
           </TouchableOpacity>
         </View>

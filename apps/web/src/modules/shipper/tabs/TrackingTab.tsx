@@ -24,6 +24,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { CorridorLiveMap, PostedLoadItem } from '../components/CorridorLiveMap';
+import { DeliveredHandoverCard } from '../components/DeliveredHandoverCard';
+import { TrackingConsignmentCard } from '../components/TrackingConsignmentCard';
 import { calculateCorridorRoadDistanceKm, resolveCorridorCoordinates } from '@tradeflow/shared';
 
 interface TrackingTabProps {
@@ -315,13 +317,13 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
             </div>
             <h4 className="text-sm font-black text-slate-800">
               {filterMode === 'ACTIVE'
-                ? 'በአሁኑ ሰዓት በጉዞ ላይ ያለ ንቁ ጭነት የለም (No Active Shipments in Transit)'
-                : 'ምንም የተጠናቀቀ ጭነት የለም (No Delivered Consignments)'}
+                ? 'No Active Shipments in Transit'
+                : 'No Delivered Consignments'}
             </h4>
             <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
               {filterMode === 'ACTIVE'
-                ? 'ሁሉም የተመዘገቡ ጭነቶችዎ መድረሻቸው ደርሰው የ e-POD ርክክብ ተፈጽሟል። የቀጥታ ጂፒኤስ ክትትል የሚሰራው በጉዞ ላይ ላሉ ንቁ ጭነቶች ብቻ ነው።'
-                : 'እስካሁን ድረስ መድረሻው ደርሶ የ e-POD ርክክብ የተፈጸመበት ጭነት የለም።'}
+                ? 'All of your registered consignments have safely arrived at their destination and completed e-POD delivery confirmation. Live GPS tracking operates only for active in-transit shipments.'
+                : 'No consignments have reached delivery confirmation yet.'}
             </p>
             <div className="flex items-center justify-center gap-3 pt-2">
               {filterMode === 'ACTIVE' && counts.delivered > 0 && (
@@ -365,97 +367,21 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
                 (load.status === 'DISPATCHED' || load.status === 'BOOKED' || load.status === 'ASSIGNED');
 
               return (
-                <div
+                <TrackingConsignmentCard
                   key={load.id}
-                  onClick={() => {
+                  load={load}
+                  isSelected={isSelected}
+                  isLoadDelivered={isLoadDelivered}
+                  isLoadInTransit={isLoadInTransit}
+                  isLoadDispatched={isLoadDispatched}
+                  onSelect={() => {
                     if (isSelected) {
-                      setSelectedLoad(null); // Click active card to deselect / close view
+                      setSelectedLoad(null);
                     } else {
-                      setSelectedLoad(load); // Select this specific load
+                      setSelectedLoad(load);
                     }
                   }}
-                  className={`p-4 rounded-2xl border transition-all cursor-pointer relative overflow-hidden ${
-                    isSelected
-                      ? isLoadDelivered
-                        ? 'bg-purple-50/90 border-purple-500 ring-2 ring-purple-500/30 shadow-md transform -translate-y-0.5'
-                        : 'bg-sky-50/90 border-sky-500 ring-2 ring-sky-500/30 shadow-md transform -translate-y-0.5'
-                      : 'bg-white border-slate-200 hover:border-sky-300 hover:shadow-sm'
-                  }`}
-                >
-                  {/* Active Indicator Border Pill */}
-                  {isSelected && (
-                    <div
-                      className={`absolute top-0 right-0 text-white text-[9px] font-black uppercase px-2.5 py-0.5 rounded-bl-lg shadow-sm ${
-                        isLoadDelivered ? 'bg-purple-600' : 'bg-sky-600'
-                      }`}
-                    >
-                      {isLoadDelivered ? '✓ Delivered & Completed' : isLoadInTransit ? 'Live Tracking Active' : 'Consignment Selected'}
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between gap-2 pr-14">
-                    <span className="text-xs font-mono font-extrabold text-sky-800 bg-sky-100/80 px-2 py-0.5 rounded border border-sky-200">
-                      {load.loadCode}
-                    </span>
-                    <span
-                      className={`text-[9.5px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${
-                        isLoadDelivered
-                          ? 'bg-purple-50 text-purple-700 border-purple-200'
-                          : isLoadInTransit
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                          : isLoadDispatched
-                          ? 'bg-sky-50 text-sky-700 border-sky-200'
-                          : 'bg-amber-50 text-amber-700 border-amber-200'
-                      }`}
-                    >
-                      {isLoadDelivered ? '✓ DELIVERED' : isLoadInTransit ? '🟢 IN TRANSIT' : isLoadDispatched ? 'DISPATCHED' : load.status}
-                    </span>
-                  </div>
-
-                  <div className="text-sm font-black text-slate-900 mt-2 line-clamp-1">
-                    {load.title}
-                  </div>
-
-                  {/* Origin ➔ Destination Route */}
-                  <div className="mt-2.5 space-y-1 text-xs">
-                    <div className="flex items-center gap-1.5 text-slate-600">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                      <span className="line-clamp-1 font-medium">{load.origin}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-slate-600">
-                      <div className="w-2 h-2 rounded-full bg-sky-500 shrink-0" />
-                      <span className="line-clamp-1 font-medium">{load.destination}</span>
-                    </div>
-                  </div>
-
-                  {/* Weight, Distance & Action Footer */}
-                  <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] font-bold">
-                    <span className="text-slate-500">
-                      Gross: {load.weightTons} Tons {load.distanceKm ? `• ${load.distanceKm} km` : ''}
-                    </span>
-                    <span
-                      className={`flex items-center gap-1 ${
-                        isSelected
-                          ? isLoadDelivered ? 'text-purple-700 font-black' : 'text-sky-700 font-black'
-                          : isLoadDelivered
-                          ? 'text-purple-700 font-bold'
-                          : isLoadInTransit
-                          ? 'text-emerald-700 font-bold'
-                          : 'text-sky-600'
-                      }`}
-                    >
-                      {isSelected
-                        ? isLoadDelivered ? 'Viewing e-POD ✓' : isLoadInTransit ? 'Viewing Live Map ✓' : 'Viewing Status ✓'
-                        : isLoadDelivered
-                        ? 'Delivered & Settled ✓'
-                        : isLoadInTransit
-                        ? 'Live GPS Active ➔'
-                        : isLoadDispatched
-                        ? 'Awaiting Start Trip ⏳'
-                        : 'Awaiting Bids ➔'}
-                    </span>
-                  </div>
-                </div>
+                />
               );
             })}
           </div>
@@ -528,146 +454,14 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
               </button>
             </div>
 
-            {/* A. CASE 1: TRIP IS DELIVERED -> SHOW COMPLETED SUMMARY (NO FAKE MOVING MAP) */}
+            {/* A. CASE 1: TRIP IS DELIVERED -> MODULAR COMPLETED SUMMARY */}
             {isTripDelivered ? (
-              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-purple-200 shadow-md space-y-6">
-                {/* Header Badge */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-purple-100">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-purple-100 border border-purple-200 flex items-center justify-center text-purple-700 shrink-0 shadow-sm">
-                      <CheckCircle2 className="w-8 h-8 text-purple-700" />
-                    </div>
-                    <div>
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[10px] font-black uppercase tracking-wider border border-purple-200">
-                        <CheckCircle className="w-3 h-3 text-purple-600" />
-                        <span>Delivery Completed • Live GPS Closed</span>
-                      </div>
-                      <h3 className="text-xl font-black text-slate-900 mt-1">
-                        የጭነት ርክክብ ተጠናቋል (Consignment Delivered & Verified)
-                      </h3>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        ዕቃው መድረሻ ቦታው ደርሶ በዲጂታል ፊርማ (e-POD) ተረክቧል፤ የቀጥታ ጂፒኤስ ክትትል ስራውን በስኬት አጠናቋል።
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="text-right sm:border-l sm:border-slate-200 sm:pl-6">
-                    <div className="text-[10px] font-bold uppercase text-slate-400">Total Route Covered</div>
-                    <div className="text-base font-black text-purple-900">
-                      {selectedLoad.distanceKm || '--'} km Corridor Completed
-                    </div>
-                  </div>
-                </div>
-
-                {/* Verified e-POD & TeleBirr Escrow Card */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Proof of Delivery Details */}
-                  <div className="p-5 rounded-2xl bg-purple-50/70 border border-purple-200/80 space-y-3">
-                    <div className="flex items-center gap-2 text-purple-800 font-extrabold text-xs">
-                      <FileCheck className="w-4 h-4 text-purple-700" />
-                      <span>Electronic Proof of Delivery (e-POD)</span>
-                    </div>
-
-                    <div className="space-y-2 text-xs">
-                      <div className="flex justify-between border-b border-purple-200/40 pb-1.5">
-                        <span className="text-slate-500">Confirmed Recipient:</span>
-                        <span className="font-bold text-slate-900">
-                          {selectedLoad.podRecipientName || 'Verified Consignee Recipient'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between border-b border-purple-200/40 pb-1.5">
-                        <span className="text-slate-500">Digital Signature:</span>
-                        <span className="font-bold text-purple-700 font-mono text-[11px]">
-                          {selectedLoad.podSignatureUrl || '✓ [Cryptographically Verified]'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between border-b border-purple-200/40 pb-1.5">
-                        <span className="text-slate-500">Delivery Destination:</span>
-                        <span className="font-bold text-slate-900">{selectedLoad.destination}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Handover Timestamp:</span>
-                        <span className="font-semibold text-slate-700">
-                          {selectedLoad.podDeliveredAt
-                            ? new Date(selectedLoad.podDeliveredAt).toLocaleString()
-                            : `${new Date().toLocaleTimeString()} • ${new Date().toLocaleDateString()}`}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* TeleBirr Escrow Settlement Details */}
-                  <div className="p-5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 space-y-3">
-                    <div className="flex items-center gap-2 text-emerald-800 font-extrabold text-xs">
-                      <CreditCard className="w-4 h-4 text-emerald-700" />
-                      <span>TeleBirr Smart Escrow Settlement</span>
-                    </div>
-
-                    <div className="space-y-2 text-xs">
-                      <div className="flex justify-between border-b border-emerald-200/40 pb-1.5">
-                        <span className="text-slate-500">Escrow Status:</span>
-                        <span className="font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded text-[10px]">
-                          RELEASED & SETTLED
-                        </span>
-                      </div>
-                      <div className="flex justify-between border-b border-emerald-200/40 pb-1.5">
-                        <span className="text-slate-500">Payment Release Trigger:</span>
-                        <span className="font-bold text-slate-900">Automated upon e-POD Handover</span>
-                      </div>
-                      <div className="flex justify-between border-b border-emerald-200/40 pb-1.5">
-                        <span className="text-slate-500">Assigned Transporter:</span>
-                        <span className="font-bold text-slate-900">
-                          {selectedLoad.driverName || 'Verified Fleet Carrier'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Assigned Vehicle:</span>
-                        <span className="font-bold text-slate-900 font-mono">
-                          🚛 {selectedLoad.truckPlate || 'Heavy Freight Carrier'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Logistics Explanation Notice */}
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-600 leading-relaxed flex items-start gap-3">
-                  <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-extrabold text-slate-900">
-                      የቀጥታ ጂፒኤስ ክትትል ማስታወሻ (Live Telematics Note):{' '}
-                    </span>
-                    ጭነቱ መድረሻው ደርሶ ርክክቡ በስኬት ስለተጠናቀቀ የተሽከርካሪው የቀጥታ ጂፒኤስ ክትትል (Live GPS Stream) ቆሟል። የተሟላ የክፍያ ደረሰኝ በ <strong>"Payments"</strong> ገጽ ላይ፣ እንዲሁም የጭነት ማህደር በ <strong>"My Consignments"</strong> ገጽ ላይ ማየት ይችላሉ።
-                  </div>
-                </div>
-
-                {/* Quick Action Navigation Buttons */}
-                <div className="flex flex-wrap items-center gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={handlePaymentsRedirect}
-                    className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer"
-                  >
-                    <CreditCard className="w-4 h-4" /> View Payment Receipt (ክፍያውን ተመልከት)
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleConsignmentsRedirect}
-                    className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer"
-                  >
-                    <Package className="w-4 h-4" /> View in My Consignments (የተመዘገቡ ጭነቶች)
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handlePostLoadRedirect}
-                    className="px-5 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer"
-                  >
-                    <PlusCircle className="w-4 h-4 text-sky-600" /> Post Another Load
-                  </button>
-                </div>
-              </div>
+              <DeliveredHandoverCard
+                selectedLoad={selectedLoad}
+                onPaymentsRedirect={handlePaymentsRedirect}
+                onConsignmentsRedirect={handleConsignmentsRedirect}
+                onPostLoadRedirect={handlePostLoadRedirect}
+              />
             ) : isTripInTransit ? (
               /* B. CASE 2: TRIP IS IN TRANSIT -> SHOW REAL LIVE GPS MAP */
               <div className="space-y-4">
@@ -675,9 +469,9 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
                   <Radio className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5 animate-pulse" />
                   <div className="text-xs leading-relaxed">
                     <span className="font-extrabold text-emerald-800">
-                      🟢 የቀጥታ ጂፒኤስ ጉዞ በሂደት ላይ ነው (Live GPS Tracking Stream Active).{' '}
+                      🟢 Live GPS Tracking Stream Active.{' '}
                     </span>
-                    ሹፌሩ ጉዞ ጀምሯል፤ የተሽከርካሪው ፍጥነት (0 km/h ቆሞ ሲያርፍ)፣ የመንገዱ ርቀት እና የደረሰበት ቦታ በቅጽበት ከሹፌሩ ሞባይል አፕ ጋር ተገናኝቶ እየተላለፈ ነው። ({selectedLoad.distanceKm} km Corridor)
+                    The assigned driver has commenced transit. Speed, corridor road distance, and real-time GPS telemetry are streaming directly from the driver mobile app ({selectedLoad.distanceKm} km Corridor).
                   </div>
                 </div>
 
@@ -742,7 +536,7 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
                     </div>
                     <div>
                       <div className="text-[10px] font-black uppercase tracking-wider text-emerald-800">
-                        Origin (መነሻ ቦታ)
+                        Origin
                       </div>
                       <div className="text-xs font-bold text-slate-900">{selectedLoad.origin}</div>
                     </div>
@@ -754,7 +548,7 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
                     </div>
                     <div>
                       <div className="text-[10px] font-black uppercase tracking-wider text-sky-800">
-                        Destination (መድረሻ ቦታ)
+                        Destination
                       </div>
                       <div className="text-xs font-bold text-slate-900">{selectedLoad.destination}</div>
                     </div>
@@ -784,7 +578,7 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
                     <div>
                       <span className="text-[10px] font-bold text-sky-700 uppercase">Departure Status</span>
                       <div className="text-xs font-black text-amber-700 mt-0.5">
-                        ⏳ Ready at Origin (ጉዞ አልተጀመረም)
+                        ⏳ Ready at Origin (Trip Not Started)
                       </div>
                     </div>
                   </div>
@@ -794,17 +588,17 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
                 <div className="p-6 rounded-2xl bg-gradient-to-r from-amber-500/10 via-sky-500/10 to-indigo-500/10 border border-amber-300/80 text-center space-y-3">
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-black border border-amber-200">
                     <Radio className="w-3.5 h-3.5 text-amber-600 animate-ping" />
-                    የቀጥታ ጂፒኤስ ክትትል ቆሟል (Live Tracking Locked)
+                    Live Tracking Locked (Awaiting Departure)
                   </div>
                   <h4 className="text-base font-black text-slate-900">
-                    ሹፌሩ ጉዞ ሲጀምር የቀጥታ ካርታው ወዲያውኑ እዚህ ላይ ይከፈታል
+                    Live GPS map will open as soon as the driver starts the trip
                   </h4>
                   <p className="text-xs text-slate-600 max-w-xl mx-auto leading-relaxed">
-                    ተሽከርካሪው መነሻ ቦታ (<strong>{selectedLoad.origin}</strong>) ላይ ይገኛል። ሹፌሩ በሞባይል አፑ ላይ <strong>"Start Trip / ጉዞ ጀምር"</strong> የሚለውን ቁልፍ ሲነካ፣ ካርታው ያለምንም ሪፍሬሽ በቅጽበት ተከፍቶ የቀጥታ ጉዞውን ማሳየት ይጀምራል።
+                    The vehicle is currently at origin (<strong>{selectedLoad.origin}</strong>). Once the driver taps <strong>"Start Trip"</strong> on their mobile app, this map will immediately update and stream live corridor telemetry.
                   </p>
                   <div className="pt-2 flex items-center justify-center gap-2 text-[11px] font-bold text-slate-500">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>Real-Time Listener Active (በየ 2.5 ሰከንዱ ያዳምጣል)</span>
+                    <span>Real-Time Telematics Listener Active</span>
                   </div>
                 </div>
               </div>

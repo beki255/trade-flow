@@ -104,9 +104,9 @@ export const AddTruckModal: React.FC<AddTruckModalProps> = ({
             <Text style={styles.fieldLabel}>Engine & Fuel Type</Text>
             <View style={styles.typeSelectorRow}>
               {[
-                { key: 'Diesel', label: 'Diesel (ዲዛል)', icon: 'gas-station' },
-                { key: 'Petrol', label: 'Petrol (ቤንዚን)', icon: 'car' },
-                { key: 'Electric', label: 'Electric (ኤሌክትሪክ)', icon: 'lightning-bolt' },
+                { key: 'Diesel', label: 'Diesel', icon: 'gas-station' },
+                { key: 'Petrol', label: 'Petrol', icon: 'car' },
+                { key: 'Electric', label: 'Electric', icon: 'lightning-bolt' },
               ].map((item) => (
                 <TouchableOpacity
                   key={item.key}

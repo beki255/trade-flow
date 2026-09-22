@@ -50,7 +50,7 @@ export const MultiShipperTab: React.FC<MultiShipperTabProps> = ({
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-[10.5px] font-extrabold uppercase tracking-widest">
             <Users className="w-3.5 h-3.5" />
-            <span>Freight Forwarder Operations • የጭነት አስተላላፊዎች ማዕከል</span>
+            <span>Freight Forwarder Operations • Hub</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
             Multi-Shipper Cargo Portfolio

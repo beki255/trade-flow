@@ -44,8 +44,6 @@ export const CheckinTab: React.FC<CheckinTabProps> = ({
     activeWaypoint?.name ||
     (activeTrip ? (activeTrip.route || `${activeTrip.origin} ➔ ${activeTrip.destination}`) : null);
 
-  const checkpointAmharic = activeWaypoint?.nameAm;
-
   const coordsDisplay =
     currentLat !== undefined && currentLng !== undefined
       ? `${Number(currentLat).toFixed(4)}° N, ${Number(currentLng).toFixed(4)}° E`
@@ -64,7 +62,7 @@ export const CheckinTab: React.FC<CheckinTabProps> = ({
       {hasTrip ? (
         <View style={styles.card}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={styles.infoLabel}>Current Checkpoint / ጣቢያ:</Text>
+            <Text style={styles.infoLabel}>Current Checkpoint:</Text>
             <View style={{ backgroundColor: '#E0F2FE', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 }}>
               <Text style={{ fontSize: 9.5, fontWeight: '800', color: '#0284C7' }}>
                 {activeWaypoint?.type || 'CORRIDOR CHECKPOINT'}
@@ -76,11 +74,6 @@ export const CheckinTab: React.FC<CheckinTabProps> = ({
             <Text style={{ fontSize: 13, fontWeight: '900', color: '#0F172A' }}>
               📍 {checkpointName}
             </Text>
-            {checkpointAmharic ? (
-              <Text style={{ fontSize: 11, fontWeight: '700', color: '#475569' }}>
-                {checkpointAmharic}
-              </Text>
-            ) : null}
             {coordsDisplay ? (
               <Text style={[styles.coordsText, { marginTop: 4, fontFamily: 'monospace' }]}>
                 {coordsDisplay} {realGpsLocation ? '• (Phone GPS)' : '• (Corridor GPS)'}
@@ -102,10 +95,10 @@ export const CheckinTab: React.FC<CheckinTabProps> = ({
         <View style={[styles.card, { alignItems: 'center', paddingVertical: 24, gap: 8 }]}>
           <Ionicons name="location-outline" size={36} color="#94A3B8" />
           <Text style={{ fontSize: 13, fontWeight: '800', color: '#334155' }}>
-            No Active Trip Assigned (ምንም የተመደበ ጉዞ የለም)
+            No Active Trip Assigned
           </Text>
           <Text style={{ fontSize: 11, color: '#64748B', textAlign: 'center', maxWidth: 280, lineHeight: 16 }}>
-            የጭነት ጉዞ ለተሽከርካሪዎ ሲመደብ የኮሪደሩ የፍተሻ ጣቢያዎችና ትክክለኛ መገኛዎች እዚህ ይታያሉ።
+            When a consignment trip is assigned to your vehicle, corridor checkpoints and telemetry locations will appear here.
           </Text>
         </View>
       )}

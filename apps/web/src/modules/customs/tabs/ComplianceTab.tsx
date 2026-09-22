@@ -5,18 +5,12 @@ import {
   AlertTriangle,
   XCircle,
   FileText,
-  ShieldCheck,
-  Building,
-  Truck,
   Eye,
   Stamp,
-  Printer,
-  ChevronDown,
-  ArrowRight,
-  Clock,
-  Download
 } from 'lucide-react';
 import { CustomsDossierItem, CustomsDocItem } from '../types';
+import { ComplianceMatrixTable } from '../components/ComplianceMatrixTable';
+import { DocumentPaperPreview } from '../components/DocumentPaperPreview';
 
 interface ComplianceTabProps {
   dossiers: CustomsDossierItem[];
@@ -195,117 +189,19 @@ export const ComplianceTab: React.FC<ComplianceTabProps> = ({
         </div>
       </div>
 
-      {/* 3. Automated Consistency Comparison Matrix Table */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
-          <div>
-            <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <span>Cross-Document Validation Matrix (ECC Single Window Verification)</span>
-            </h4>
-            <p className="text-[11px] text-slate-500 mt-0.5">
-              Automated pre-clearance checks verifying data alignment across all four international trade documents.
-            </p>
-          </div>
-          <span className="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-            {hasWeightDiscrepancy ? '⚠️ 1 Discrepancy Found' : '✓ 100% Cross-Check Passed'}
-          </span>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="bg-slate-50 text-[10.5px] font-extrabold uppercase text-slate-500 border-b border-slate-200/80">
-                <th className="py-3 px-4">Verification Checkpoint</th>
-                <th className="py-3 px-4">Commercial Invoice</th>
-                <th className="py-3 px-4">Packing List</th>
-                <th className="py-3 px-4">Bill of Lading (B/L)</th>
-                <th className="py-3 px-4">Origin Certificate</th>
-                <th className="py-3 px-4 text-center">Compliance Result</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-              {/* Row 1: Document Reference Numbers */}
-              <tr className="hover:bg-slate-50/70 transition-colors">
-                <td className="py-3 px-4 font-bold text-slate-900">Document Reference #</td>
-                <td className="py-3 px-4 font-mono text-slate-800 font-semibold">{invoiceNo}</td>
-                <td className="py-3 px-4 font-mono text-slate-800 font-semibold">{packingNo}</td>
-                <td className="py-3 px-4 font-mono text-slate-800 font-semibold">{bolNo}</td>
-                <td className="py-3 px-4 font-mono text-slate-800 font-semibold">{originNo}</td>
-                <td className="py-3 px-4 text-center">
-                  <span className="inline-flex items-center gap-1 text-[10.5px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Validated
-                  </span>
-                </td>
-              </tr>
-
-              {/* Row 2: Declared Gross Weight */}
-              <tr className="hover:bg-slate-50/70 transition-colors">
-                <td className="py-3 px-4 font-bold text-slate-900">Gross Cargo Weight</td>
-                <td className="py-3 px-4">{invoiceWeight} Tons</td>
-                <td className="py-3 px-4">{packingWeight} Tons</td>
-                <td className="py-3 px-4">{bolWeight} Tons</td>
-                <td className="py-3 px-4">{targetWeight} Tons</td>
-                <td className="py-3 px-4 text-center">
-                  {hasWeightDiscrepancy ? (
-                    <span className="inline-flex items-center gap-1 text-[10.5px] font-black text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full">
-                      <AlertTriangle className="w-3.5 h-3.5" /> Mismatch
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-[10.5px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Exact Match (0.0T Delta)
-                    </span>
-                  )}
-                </td>
-              </tr>
-
-              {/* Row 3: Declared Value vs Tariff Benchmark */}
-              <tr className="hover:bg-slate-50/70 transition-colors">
-                <td className="py-3 px-4 font-bold text-slate-900">Declared Value (ETB)</td>
-                <td className="py-3 px-4 font-mono font-bold text-emerald-700">
-                  {Number(activeDossier.declaredValueEtb).toLocaleString()} ETB
-                </td>
-                <td className="py-3 px-4 text-slate-400">N/A (Tonnage only)</td>
-                <td className="py-3 px-4 text-slate-400">Carrier Haulage Only</td>
-                <td className="py-3 px-4 text-slate-400">Preferential Duty Valid</td>
-                <td className="py-3 px-4 text-center">
-                  <span className="inline-flex items-center gap-1 text-[10.5px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Market Tariff In-Bounds
-                  </span>
-                </td>
-              </tr>
-
-              {/* Row 4: Consignee & Route Alignment */}
-              <tr className="hover:bg-slate-50/70 transition-colors">
-                <td className="py-3 px-4 font-bold text-slate-900">Corridor Route Alignment</td>
-                <td className="py-3 px-4">{activeDossier.origin} ➔ {activeDossier.destination}</td>
-                <td className="py-3 px-4">{activeDossier.origin} ➔ {activeDossier.destination}</td>
-                <td className="py-3 px-4">{activeDossier.origin} ➔ {activeDossier.destination}</td>
-                <td className="py-3 px-4">Federal Democratic Republic of Ethiopia</td>
-                <td className="py-3 px-4 text-center">
-                  <span className="inline-flex items-center gap-1 text-[10.5px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Corridor Transit Clear
-                  </span>
-                </td>
-              </tr>
-
-              {/* Row 5: Ministry of Trade Digital Seal */}
-              <tr className="hover:bg-slate-50/70 transition-colors">
-                <td className="py-3 px-4 font-bold text-slate-900">Export Seal & Origin Cert</td>
-                <td className="py-3 px-4 text-slate-400">Commercial Seal</td>
-                <td className="py-3 px-4 text-slate-400">Warehouse Seal</td>
-                <td className="py-3 px-4 text-slate-400">Carrier Manifest Seal</td>
-                <td className="py-3 px-4 text-emerald-700 font-bold">✓ MoT Certified (Galafi Registered)</td>
-                <td className="py-3 px-4 text-center">
-                  <span className="inline-flex items-center gap-1 text-[10.5px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Certified
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {/* 3. Modular Consistency Comparison Matrix Table */}
+      <ComplianceMatrixTable
+        activeDossier={activeDossier}
+        invoiceNo={invoiceNo}
+        packingNo={packingNo}
+        bolNo={bolNo}
+        originNo={originNo}
+        invoiceWeight={invoiceWeight}
+        packingWeight={packingWeight}
+        bolWeight={bolWeight}
+        targetWeight={targetWeight}
+        hasWeightDiscrepancy={hasWeightDiscrepancy}
+      />
 
       {/* 4. Interactive Document Dossier Drawer & Preview Cards */}
       <div className="space-y-3">
@@ -345,84 +241,13 @@ export const ComplianceTab: React.FC<ComplianceTabProps> = ({
         </div>
       </div>
 
-      {/* 5. Document Inspection Preview Modal / Panel */}
+      {/* 5. Modular Document Inspection Preview Modal / Panel */}
       {selectedDocPreview && (
-        <div className="p-6 rounded-3xl bg-slate-50 border border-slate-300 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-            <div className="flex items-center gap-2.5">
-              <FileText className="w-5 h-5 text-emerald-600" />
-              <div>
-                <h4 className="text-sm font-black text-slate-900">
-                  Document Preview: {selectedDocPreview.docType.replace('_', ' ')} ({selectedDocPreview.docNumber})
-                </h4>
-                <p className="text-[11px] text-slate-500">
-                  Issuing Authority: {selectedDocPreview.issuingAuthority} • Uploaded:{' '}
-                  {new Date(selectedDocPreview.uploadedAt).toLocaleString()}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setSelectedDocPreview(null)}
-              className="text-xs font-bold text-slate-500 hover:text-slate-800 px-2 py-1 rounded-lg hover:bg-slate-200"
-            >
-              ✕ Close Preview
-            </button>
-          </div>
-
-          {/* Simulated Official Document Sheet */}
-          <div className="p-8 rounded-2xl bg-white border border-slate-200 max-w-2xl mx-auto shadow-sm space-y-4">
-            <div className="text-center border-b border-slate-100 pb-4 space-y-1">
-              <div className="text-xs font-black text-slate-900 tracking-widest uppercase">
-                FEDERAL DEMOCRATIC REPUBLIC OF ETHIOPIA
-              </div>
-              <div className="text-sm font-black text-emerald-800">
-                {selectedDocPreview.issuingAuthority.toUpperCase()}
-              </div>
-              <div className="text-[10px] text-slate-400 uppercase tracking-wider font-mono">
-                DOCUMENT REF: {selectedDocPreview.docNumber}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 text-xs">
-              <div>
-                <span className="text-slate-400 text-[10px] uppercase font-bold">Consignor (Shipper)</span>
-                <div className="font-bold text-slate-800">{activeDossier.shipperCompany}</div>
-                <div className="text-slate-500 font-mono text-[11px]">TIN: {activeDossier.shipperTin}</div>
-              </div>
-              <div>
-                <span className="text-slate-400 text-[10px] uppercase font-bold">Destination & Port</span>
-                <div className="font-bold text-slate-800">{activeDossier.destination}</div>
-                <div className="text-slate-500 text-[11px]">Route: {activeDossier.origin}</div>
-              </div>
-              <div>
-                <span className="text-slate-400 text-[10px] uppercase font-bold">Cargo Description</span>
-                <div className="font-bold text-slate-800">{activeDossier.title} ({activeDossier.cargoType})</div>
-                <div className="text-slate-500 text-[11px]">Declared Weight: {activeDossier.weightTons} Tons</div>
-              </div>
-              <div>
-                <span className="text-slate-400 text-[10px] uppercase font-bold">Declared Customs Value</span>
-                <div className="font-bold text-emerald-700 font-mono text-sm">
-                  {Number(selectedDocPreview.declaredValueEtb || activeDossier.declaredValueEtb).toLocaleString()} ETB
-                </div>
-              </div>
-            </div>
-
-            {/* Official Digital Stamp Box */}
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-              <div className="text-[10px] text-slate-400">
-                Verification Hash:{' '}
-                <span className="font-mono text-slate-600">
-                  0x{selectedDocPreview.id.replace(/-/g, '').slice(0, 16)}
-                </span>
-              </div>
-              <div className="px-3 py-1 rounded-md border border-emerald-600 text-emerald-700 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                <Stamp className="w-3.5 h-3.5 text-emerald-600" />
-                <span>ECC OFFICIAL STAMP VALID</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <DocumentPaperPreview
+          selectedDocPreview={selectedDocPreview}
+          activeDossier={activeDossier}
+          onClose={() => setSelectedDocPreview(null)}
+        />
       )}
 
       {/* 6. Officer Action Decision Panel */}
@@ -431,7 +256,7 @@ export const ComplianceTab: React.FC<ComplianceTabProps> = ({
           <div>
             <h4 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
               <Stamp className="w-4 h-4 text-emerald-600" />
-              <span>Customs Officer Clearance Action & Digital Release (የጉምሩክ ውሳኔ መስጫ)</span>
+              <span>Customs Officer Clearance Action & Digital Release</span>
             </h4>
             <p className="text-xs text-slate-500 mt-0.5">
               Select clearing station and issue official Green Line Release stamp or request document revisions.
@@ -478,7 +303,7 @@ export const ComplianceTab: React.FC<ComplianceTabProps> = ({
               className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-50"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>{submittingAction ? 'Processing Clearance...' : '✓ Approve Green Line Clearance (አጽድቅ)'}</span>
+              <span>Issue Green Line Release</span>
             </button>
 
             <button
@@ -488,7 +313,7 @@ export const ComplianceTab: React.FC<ComplianceTabProps> = ({
               className="px-4 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer disabled:opacity-50"
             >
               <AlertTriangle className="w-4 h-4" />
-              <span>Request Revision (ማሻሻያ ጠይቅ)</span>
+              <span>Request Revision</span>
             </button>
 
             <button
@@ -498,7 +323,7 @@ export const ComplianceTab: React.FC<ComplianceTabProps> = ({
               className="px-4 py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer disabled:opacity-50"
             >
               <XCircle className="w-4 h-4" />
-              <span>Reject Clearance (ውድቅ አድርግ)</span>
+              <span>Reject Clearance</span>
             </button>
           </div>
 

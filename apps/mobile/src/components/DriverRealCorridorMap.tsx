@@ -1044,16 +1044,16 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
                 <Text style={s.badgeLiveTxt}>AWAITING DISPATCH</Text>
               </View>
             </View>
-            <Text style={s.sub}>የተመደበ ንቁ ጉዞ የለም · No active trip assigned</Text>
+            <Text style={s.sub}>No active trip assigned</Text>
           </View>
         </View>
         <View style={{ height: 160, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0B1120', borderRadius: 12, marginVertical: 8, padding: 16 }}>
           <Text style={{ fontSize: 32, marginBottom: 8 }}>🚚</Text>
           <Text style={{ color: '#F9FAFB', fontSize: 14, fontWeight: '700', textAlign: 'center' }}>
-            No Active Trip Dispatched / የተመደበ ንቁ ጉዞ የለም
+            No Active Trip Dispatched
           </Text>
           <Text style={{ color: '#9CA3AF', fontSize: 12, textAlign: 'center', marginTop: 4 }}>
-            አጓጓዡ (Transporter) ጉዞ ሲመድብልህ የቀጥታ የካርታ አቅጣጫዎች እና ኬላዎች እዚህ በቅጽበት ይወጣሉ።
+            Turn-by-turn navigation, checkpoints, and real-time corridor directions will appear here once assigned.
           </Text>
         </View>
       </View>
@@ -1378,7 +1378,7 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
           activeOpacity={0.7}
         >
           <Text style={[s.cleanActionPillTxt, isFollowTruck && s.cleanActionPillTxtActive]}>
-            🎯 Follow Truck (ተከተል)
+            🎯 Follow Truck
           </Text>
         </TouchableOpacity>
 
@@ -1388,7 +1388,7 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
           activeOpacity={0.7}
         >
           <Text style={s.cleanActionPillTxt}>
-            🗺️ Route Overview (ሙሉ መንገድ)
+            🗺️ Route Overview
           </Text>
         </TouchableOpacity>
       </View>
@@ -1429,7 +1429,7 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
             activeOpacity={0.85}
           >
             <Text style={s.startTripMapTxt}>
-              {actionLoading ? 'Starting Trip / በመጀመር ላይ...' : '🚀 Start Trip / ጉዞ ጀምር'}
+              {actionLoading ? 'Starting Trip...' : '🚀 Start Trip'}
             </Text>
           </TouchableOpacity>
         )}
@@ -1827,7 +1827,7 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
                     {actionLoading ? (
                       <ActivityIndicator size="small" color="#FFFFFF" />
                     ) : (
-                      <Text style={s.navStartTripBtnTxt}>🚀 Start Trip / ጉዞ ጀምር</Text>
+                      <Text style={s.navStartTripBtnTxt}>🚀 Start Trip</Text>
                     )}
                   </TouchableOpacity>
                 )}

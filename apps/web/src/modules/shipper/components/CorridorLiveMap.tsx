@@ -1099,7 +1099,6 @@ export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, 
                     <Popup>
                       <div className="p-1.5 space-y-1 min-w-[190px]">
                         <div className="font-extrabold text-xs text-slate-900">{wp.name}</div>
-                        <div className="text-[10px] text-slate-500">{wp.nameAmharic}</div>
                         <div className="border-t border-slate-100 pt-1 space-y-0.5 text-[10px]">
                           {wp.isCustomsCheckpoint && <div className="text-sky-700 font-bold">🛂 Customs Checkpoint</div>}
                           {wp.isDryPort && <div className="text-slate-700 font-bold">🏢 Dry Port Terminal</div>}
@@ -1325,7 +1324,7 @@ export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, 
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-bold text-slate-900 line-clamp-1">{wp.name}</div>
-                      <div className="text-[11px] text-slate-500 line-clamp-1">{wp.description || wp.nameAmharic}</div>
+                      <div className="text-[11px] text-slate-500 line-clamp-1">{wp.description || wp.name}</div>
                       <div className="flex items-center gap-1.5 mt-1">
                         <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
                           {wp.time}

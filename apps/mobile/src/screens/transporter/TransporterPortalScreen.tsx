@@ -30,6 +30,10 @@ import { AddDriverModal } from './modals/AddDriverModal';
 import { DispatchModal } from './modals/DispatchModal';
 import { ProfileModal } from './modals/ProfileModal';
 
+// Modular Screen Components
+import { TransporterHeader } from './components/TransporterHeader';
+import { TransporterBottomNavBar } from './components/TransporterBottomNavBar';
+
 interface TransporterPortalScreenProps {
   onLogout: () => void;
   user?: UserProfile;
@@ -717,42 +721,13 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
 
-      {/* Top Header */}
-      <View style={styles.topHeader}>
-        <View style={{ flex: 1, marginRight: 12 }}>
-          <Text style={styles.brandTitle}>TradeFlow Carrier</Text>
-          <Text style={styles.companySub} numberOfLines={1}>
-            {user?.companyName || 'Mulugeta Cross-Border Freight'}
-          </Text>
-        </View>
-
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <TouchableOpacity
-            style={styles.profileHeaderContainer}
-            onPress={() => setShowProfileModal(true)}
-          >
-            <View style={styles.profileAvatarBox}>
-              <Text style={styles.profileAvatarLetter}>
-                {user?.companyName ? user.companyName.charAt(0).toUpperCase() : 'T'}
-              </Text>
-              <View
-                style={[
-                  styles.avatarStatusDot,
-                  carrierStatus === 'VERIFIED'
-                    ? { backgroundColor: '#22C55E' }
-                    : carrierStatus === 'PENDING'
-                    ? { backgroundColor: '#F59E0B' }
-                    : { backgroundColor: '#EF4444' },
-                ]}
-              />
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.headerLogoutBtn} onPress={onLogout}>
-            <Text style={styles.headerLogoutBtnText}>Logout</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      {/* Modular Top Header */}
+      <TransporterHeader
+        user={user}
+        carrierStatus={carrierStatus}
+        onOpenProfile={() => setShowProfileModal(true)}
+        onLogout={onLogout}
+      />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -860,108 +835,17 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
         )}
       </ScrollView>
 
-      {/* Bottom Tab Navigation Bar */}
-      <View style={styles.bottomNavContainer}>
-        <TouchableOpacity
-          style={styles.navTab}
-          onPress={() => setActiveTab('overview')}
-        >
-          <TabIcon
-            name="overview"
-            active={activeTab === 'overview'}
-            size={22}
-            color={activeTab === 'overview' ? '#0284C7' : '#94A3B8'}
-          />
-          <Text style={[styles.navLabel, activeTab === 'overview' && styles.navLabelActive]}>
-            Overview
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navTab}
-          onPress={() => setActiveTab('fleet')}
-        >
-          <TabIcon
-            name="fleet"
-            active={activeTab === 'fleet'}
-            size={22}
-            color={activeTab === 'fleet' ? '#0284C7' : '#94A3B8'}
-          />
-          <Text style={[styles.navLabel, activeTab === 'fleet' && styles.navLabelActive]}>
-            Fleet
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navTab}
-          onPress={() => setActiveTab('loads')}
-        >
-          <TabIcon
-            name="loads"
-            active={activeTab === 'loads'}
-            size={22}
-            color={activeTab === 'loads' ? '#0284C7' : '#94A3B8'}
-          />
-          <Text style={[styles.navLabel, activeTab === 'loads' && styles.navLabelActive]}>
-            Loads
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navTab}
-          onPress={() => {
-            setSelectedLoadId('');
-            setActiveTab('bidding');
-          }}
-        >
-          <View style={{ position: 'relative' }}>
-            <TabIcon
-              name="bidding"
-              active={activeTab === 'bidding'}
-              size={22}
-              color={activeTab === 'bidding' ? '#0284C7' : '#94A3B8'}
-            />
-            {submittedBids.length > 0 && (
-              <View
-                style={{
-                  position: 'absolute',
-                  top: -4,
-                  right: -8,
-                  backgroundColor: '#0284C7',
-                  borderRadius: 10,
-                  minWidth: 16,
-                  height: 16,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  paddingHorizontal: 3,
-                }}
-              >
-                <Text style={{ fontSize: 9, color: '#FFFFFF', fontWeight: '800' }}>
-                  {submittedBids.length}
-                </Text>
-              </View>
-            )}
-          </View>
-          <Text style={[styles.navLabel, activeTab === 'bidding' && styles.navLabelActive]}>
-            {language === 'AM' ? 'የኔ ዋጋዎች' : 'My Bids'}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navTab}
-          onPress={() => setActiveTab('earnings')}
-        >
-          <TabIcon
-            name="earnings"
-            active={activeTab === 'earnings'}
-            size={22}
-            color={activeTab === 'earnings' ? '#0284C7' : '#94A3B8'}
-          />
-          <Text style={[styles.navLabel, activeTab === 'earnings' && styles.navLabelActive]}>
-            Earnings
-          </Text>
-        </TouchableOpacity>
-      </View>
+      {/* Modular Bottom Tab Navigation Bar */}
+      <TransporterBottomNavBar
+        activeTab={activeTab}
+        onSelectTab={(tab) => setActiveTab(tab)}
+        submittedBids={submittedBids}
+        language={language}
+        onSelectBidsTab={() => {
+          setSelectedLoadId('');
+          setActiveTab('bidding');
+        }}
+      />
 
       {/* MODAL 1: Add Vehicle Modal */}
       <AddTruckModal

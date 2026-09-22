@@ -37,9 +37,9 @@ export const PodTab: React.FC<PodTabProps> = ({
       <View style={styles.sectionContainer}>
         <View style={[styles.emptyCard, { paddingVertical: 40 }]}>
           <Ionicons name="document-text-outline" size={44} color="#94A3B8" />
-          <Text style={[styles.emptyTitle, { marginTop: 12 }]}>ምንም የ e-POD ርክክብ የለም (No e-POD Available)</Text>
+          <Text style={[styles.emptyTitle, { marginTop: 12 }]}>No e-POD Available</Text>
           <Text style={[styles.emptySub, { textAlign: 'center', maxWidth: 300 }]}>
-            በመረጃ ቋቱ (Database) ውስጥ ንቁ ወይም የተጠናቀቀ ጭነት የለም። አዲስ ጭነት ሲመደብ እና መድረሻው ሲደርስ የ e-POD ርክክብ እዚህ ላይ ይከፈታል።
+            There are no active or completed consignments in the database. When a new shipment is assigned and arrives at its destination, electronic proof of delivery will be unlocked here.
           </Text>
         </View>
       </View>

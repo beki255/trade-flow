@@ -85,7 +85,7 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
         <div className="relative z-10 space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-[10.5px] font-extrabold uppercase tracking-widest">
             <Stamp className="w-3.5 h-3.5" />
-            <span>Ethiopian Customs Commission (ECC) • የኢትዮጵያ ጉምሩክ ኮሚሽን</span>
+            <span>Ethiopian Customs Commission (ECC)</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
             Customs Document Review Queue (FR-06)
@@ -361,7 +361,7 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
                       onClick={() => onSelectDossierForCompliance(dossier)}
                       className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer w-full"
                     >
-                      <span>Inspect Dossier (መርምር)</span>
+                      <span>Inspect Dossier</span>
                       <ChevronRight className="w-3.5 h-3.5" />
                     </button>
 
