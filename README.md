@@ -77,6 +77,54 @@ tradeflow-v2/ (Turborepo / npm Workspaces Monorepo)
 
 ---
 
+## 📱 TradeFlow Mobile App (Driver & Transporter App — Expo SDK 52)
+
+The TradeFlow Mobile Application (`apps/mobile`) is built on **React Native & Expo SDK 52**, designed specifically for heavy freight fleet operators and commercial truck drivers traversing the Ethiopia-Djibouti corridor.
+
+### 🌟 Key Mobile Features & Workflows:
+
+#### 1. 🚚 Transporter Fleet Portal:
+- **Corridor Fleet Registration**: Onboard commercial heavy trucks with license plate, payload tonnage (15T-40T), fuel type, **Goods in Transit (GIT) Cargo Insurance**, and **Federal Transport Authority (FTA) Roadworthiness** certification.
+- **Commercial Driver Management**: Register qualified drivers with Commercial Driver's License (CDL Grade 5/4), mobile contact, and assigned truck.
+- **Mandatory Admin Verification Gate**: Newly added drivers immediately display an informative `⏳ PENDING` badge and are locked from dispatch until verified by the System Administrator in the Web Console.
+- **Freight Exchange & Spot Bidding**: Inspect available cargo consignments from Addis Ababa, Modjo, and Djibouti, and submit competitive bids.
+- **Corridor Dispatch Engine**: Assign verified vehicles and verified drivers to awarded consignments, instantly triggering live telematics tracking.
+
+#### 2. 🚛 Commercial Driver Portal:
+- **Active Journey Tracking**: Real-time corridor milestone tracking across key waypoints (*Addis Ababa ➔ Modjo Dry Port ➔ Awash Arba ➔ Semera Logistics Hub ➔ Galafi Border ➔ Port of Doraleh*).
+- **Driver Duty Cycle Controller**: Drivers toggle between **"Start Trip"**, **"Driving / Resting"** (for mandatory rest periods, border queues, and weighbridge delays), and **"Arrive Destination"**.
+- **Digital Proof of Delivery (POD)**: Capture recipient name and digital signature upon cargo delivery, triggering instant escrow settlement via Telebirr.
+- **Offline-First Telematics Buffer**: Automatically queues GPS telemetry pings when traversing remote low-connectivity desert sections of the Afar corridor, synchronizing immediately when cellular connection is restored.
+
+#### 3. 🌐 100% Bilingual Localization (ቋንቋ መምረጫ):
+- Instant in-app toggle between **Pure Amharic (አማርኛ 🇪🇹)** and **English (🌐)** across all screens, modals, badges, and validation alerts.
+
+---
+
+### 📲 How to Run and Test the Mobile App:
+
+#### Method A: Web Browser Preview (Zero Setup / Instant)
+You do not need a physical phone or emulator to test the mobile app:
+```powershell
+npm run dev:mobile
+```
+*Once Metro Bundler starts, press **`w`** in the terminal to launch the mobile app in your web browser at [http://localhost:8081](http://localhost:8081).*
+
+#### Method B: Physical Android / iOS Phone (Expo Go)
+1. Download and install **Expo Go** from the **Google Play Store** or **Apple App Store**.
+2. Connect your phone to the same local Wi-Fi network as your computer.
+3. Start the bundler: `npm run dev:mobile`.
+4. Scan the terminal's **QR Code** using your phone camera (iOS) or the Expo Go app (Android).
+
+#### Method C: Remote Mobile Testing via Tunnel (Ethio Telecom / Safaricom)
+If your phone is on cellular data or a different Wi-Fi network:
+```powershell
+npm run dev:mobile:tunnel
+```
+*Tunneling creates a secure cloud URL via ngrok/expo, allowing testing on physical phones anywhere across Ethiopia.*
+
+---
+
 ## 🎭 User Personas & Dedicated Portals
 
 | Role | Portal Path | Platform | Primary Capabilities |
@@ -90,68 +138,67 @@ tradeflow-v2/ (Turborepo / npm Workspaces Monorepo)
 
 ---
 
-## ⚡ Quick Start & Development Setup
+## ⚡ Quick Start & Development Setup (Docker-Powered)
+
+Follow these quick steps to get TradeFlow up and running in minutes using **Docker Desktop**:
 
 ### 1. Prerequisites
 - **Node.js**: `v18.0+` or `v20.0+`
 - **npm**: `v9.0+`
-- **PostgreSQL Database** running locally on port `5432`
+- **Docker Desktop**: Installed and running locally
 
-### 2. Environment Configuration
+---
 
-#### Backend (`services/api/.env`):
-```env
-PORT=5000
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/tradeflow?schema=public"
-JWT_SECRET="tradeflow_secret_key_2026"
-GOOGLE_CLIENT_ID="your-google-client-id.apps.googleusercontent.com"
-GOOGLE_CLIENT_SECRET="your-google-client-secret"
+### 2. Install Dependencies & Launch Docker Infrastructure
+
+```powershell
+# 1. Install all monorepo dependencies
+npm install
+
+# 2. Spin up PostgreSQL 16 (PostGIS), Redis 7.2, MinIO S3, and Adminer
+npm run docker:up
 ```
+> 💡 *This starts the dedicated `tradeflow_postgres` database on port 5432 with pre-configured PostGIS corridor geospatial support. To stop containers later, simply run `npm run docker:down`.*
 
-#### Web Frontend (`apps/web/.env`):
-```env
-VITE_API_URL="http://localhost:5000/api"
-VITE_GOOGLE_CLIENT_ID="your-google-client-id.apps.googleusercontent.com"
+---
+
+### 3. Initialize Database & Seed Demo Accounts
+
+Once Docker is up, push the Prisma schema and seed the baseline accounts:
+```powershell
+# Push Prisma schema to PostgreSQL
+npm run prisma:push
+
+# Seed official System Admin and Customs Officer accounts
+npm run prisma:seed
 ```
 
 ---
 
-## 🚀 Running the Project
+### 4. Launch the Applications
 
-### Option A: Launch All Services (Recommended)
-From the project root:
+#### Option A: Launch All Services Simultaneously (Recommended)
 ```powershell
 npm run dev:all
 ```
-*Launches Backend API, Web Portal, and Mobile App simultaneously with unified logs.*
+*Spins up Backend API, Web Portal, and Mobile Bundler in a single unified terminal.*
+
+#### Option B: Launch in Separate Terminal Windows
+* **Terminal 1 (Backend API)**: `npm run dev:api` ➔ [http://localhost:5000](http://localhost:5000)
+* **Terminal 2 (Web Portal)**: `npm run dev:web` ➔ [http://localhost:3000](http://localhost:3000)
+* **Terminal 3 (Mobile App)**: `npm run dev:mobile` ➔ [http://localhost:8081](http://localhost:8081)
 
 ---
 
-### Option B: Launch in Separate Terminal Windows
+### 5. Access Points & Portals
 
-#### Terminal 1 — Backend REST & WebSocket API:
-```powershell
-npm run dev:api
-```
-- **API Server**: [http://localhost:5000](http://localhost:5000)
-- **Interactive Swagger Docs**: [http://localhost:5000/api/docs](http://localhost:5000/api/docs)
-- **Health Check**: [http://localhost:5000/api/health](http://localhost:5000/api/health)
-
-#### Terminal 2 — Enterprise Web Portal:
-```powershell
-npm run dev:web
-```
-- **Web App**: [http://localhost:3000](http://localhost:3000)
-- **Admin Console**: [http://localhost:3000/admin](http://localhost:3000/admin)
-- **Shipper Portal**: [http://localhost:3000/shipper](http://localhost:3000/shipper)
-- **Customs Portal**: [http://localhost:3000/customs](http://localhost:3000/customs)
-
-#### Terminal 3 — Driver & Transporter Mobile App:
-```powershell
-npm run dev:mobile
-```
-- **Expo Metro Bundler**: [http://localhost:8081](http://localhost:8081)
-- Press `w` to open in browser, or scan QR code via **Expo Go** on Android / iOS.
+| Platform | Local URL | Primary Features |
+| :--- | :--- | :--- |
+| 🌐 **Enterprise Web Portal** | [http://localhost:3000](http://localhost:3000) | Landing page, Corridor Topo Map, Shipper, Forwarder, Customs, Admin |
+| 📑 **Interactive Swagger API** | [http://localhost:5000/api/docs](http://localhost:5000/api/docs) | Complete 11-module OpenAPI 3.0 specification with live *Try-It-Out* |
+| 📱 **Driver & Transporter App** | [http://localhost:8081](http://localhost:8081) | Expo Metro Bundler (Press `w` for web preview or scan QR in Expo Go) |
+| 🖥️ **Adminer Database Console** | [http://localhost:8080](http://localhost:8080) | Visual PostgreSQL database table explorer (System: `PostgreSQL`, DB: `tradeflow_db`) |
+| 🗄️ **Prisma Studio Explorer** | [http://localhost:5555](http://localhost:5555) | Run `npm run prisma:studio` for visual Prisma schema & record browsing |
 
 ---
 

@@ -10,6 +10,7 @@
   ],
   "scripts": {
     "dev": "npx concurrently -k -n \"API,WEB\" -c \"bgBlue.bold,bgCyan.bold\" \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:all": "npx concurrently -k -n \"API,WEB,MOBILE\" -c \"bgBlue.bold,bgCyan.bold,bgMagenta.bold\" \"npm run dev:api\" \"npm run dev:web\" \"npm run dev:mobile\"",
     "dev:api": "npm run dev --workspace=services/api",
     "dev:web": "npm run dev --workspace=apps/web",
     "dev:mobile": "npm run start --workspace=apps/mobile",
