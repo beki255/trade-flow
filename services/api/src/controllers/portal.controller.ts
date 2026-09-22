@@ -400,7 +400,7 @@ export const verifyUser = async (req: Request, res: Response): Promise<void> => 
       targetName: updatedUser.companyName || updatedUser.fullName,
       previousStatus,
       newStatus: status,
-      performedByAdminId: adminId || 'admin@tradeflow.et',
+      performedByAdminId: adminId || 'admin@miaoda.com',
       timestamp: new Date().toISOString(),
       notes: notes || `Administrator updated status from ${previousStatus} to ${status}.`,
     });

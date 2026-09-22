@@ -40,16 +40,16 @@ Designed for the Ethiopia-Djibouti Trade Corridor (Lake Abbe âž” Mojo Dry Port â
         type: 'object',
         properties: {
           id: { type: 'string', example: 'usr_98a7sd6f54' },
-          email: { type: 'string', example: 'dawit@mojofreight.et' },
-          name: { type: 'string', example: 'Dawit Tadesse' },
+          email: { type: 'string', example: 'admin@miaoda.com' },
+          name: { type: 'string', example: 'TradeFlow System Administrator' },
           role: {
             type: 'string',
             enum: ['SHIPPER', 'FREIGHT_FORWARDER', 'CUSTOMS_OFFICER', 'TRANSPORTER', 'DRIVER', 'ADMIN'],
-            example: 'FREIGHT_FORWARDER',
+            example: 'ADMIN',
           },
-          companyName: { type: 'string', example: 'Mojo Freight PLC' },
-          tinNumber: { type: 'string', example: '0049281745' },
-          phoneNumber: { type: 'string', example: '+251911223344' },
+          companyName: { type: 'string', example: 'TradeFlow Platform Management' },
+          tinNumber: { type: 'string', example: 'TF-ADMIN-0001' },
+          phoneNumber: { type: 'string', example: '+251900000001' },
           verificationStatus: {
             type: 'string',
             enum: ['PENDING', 'VERIFIED', 'REJECTED'],
@@ -61,8 +61,8 @@ Designed for the Ethiopia-Djibouti Trade Corridor (Lake Abbe âž” Mojo Dry Port â
         type: 'object',
         required: ['email', 'password'],
         properties: {
-          email: { type: 'string', example: 'dawit@mojofreight.et' },
-          password: { type: 'string', example: 'Password123!' },
+          email: { type: 'string', example: 'admin@miaoda.com' },
+          password: { type: 'string', example: 'Admin2024!' },
         },
       },
       RegisterRequest: {

@@ -189,16 +189,17 @@ npm run prisma:seed
 
 ---
 
-## 🔒 Demo Credentials for Fast Evaluation
+## 🔒 Seeded System Credentials (from `prisma/seed.ts`)
 
-| Persona | Email / Identifier | Password | Role |
-| :--- | :--- | :--- | :--- |
-| **Platform Administrator** | `admin@tradeflow.et` | `password123` | `ADMIN` |
-| **Shipper** | `abebe@ethiopiancoffee.et` | `password123` | `SHIPPER` |
-| **Freight Forwarder** | `dawit@mojofreight.et` | `password123` | `FORWARDER` |
-| **Customs Inspector** | `customs.officer@erca.gov.et` | `password123` | `CUSTOMS_OFFICER` |
-| **Transporter (Carrier)** | `mulugeta@miaoda.com` | `password123` | `TRANSPORTER` |
-| **Commercial Driver** | `0999999999` | `Driver@123` | `DRIVER` |
+The database seeding script (`npm run prisma:seed`) initializes the official administrative and regulatory oversight authorities:
+
+| Persona | Email / Identifier | Password | Role | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **System Administrator** | `admin@miaoda.com` | `Admin2024!` | `ADMIN` | TradeFlow Platform Management & User KYC Verification Console |
+| **Customs Officer** | `kebede@miaoda.com` | `Demo1234!` | `CUSTOMS_OFFICER` | Inspector Kebede Worku (Ethiopian Customs Commission ECC) |
+
+> 💡 **Commercial Roles (Shipper, Transporter, Forwarder, Driver):**  
+> Per system specification, commercial actors register directly via the **Registration Page** or **Mobile App**. Newly registered organizations and drivers enter the **Admin Verification Queue** (`/admin`) as `PENDING` and are verified in real time by the System Administrator upon reviewing their TIN, Trade License, GIT Insurance, Roadworthiness, or Commercial Driver's License (CDL).
 
 ---
 
