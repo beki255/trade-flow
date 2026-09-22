@@ -202,7 +202,8 @@ export const AdminPortalPage: React.FC = () => {
       item.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.tin?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.phone?.includes(searchQuery) ||
-      item.email?.toLowerCase().includes(searchQuery.toLowerCase());
+      item.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.driverProfile?.driverLicenseNo?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesStatus && matchesRole && matchesSearch;
   });
 

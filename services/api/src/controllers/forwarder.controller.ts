@@ -8,59 +8,7 @@ const isValidUUID = (str: any): boolean => {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str.trim());
 };
 
-const DEMO_LTL_PARCELS = [
-  {
-    id: 'LTL-DEMO-01',
-    loadCode: 'TF-LTL-HWS01',
-    title: 'Hawassa Export Finished Apparel Garments (Batch A)',
-    cargoType: 'TEXTILES_GARMENTS',
-    weightTons: 11.5,
-    volumeCbm: 32.0,
-    origin: 'Hawassa Industrial Park',
-    destination: 'Djibouti Port Red Sea Terminal',
-    targetBudgetEtb: 75000,
-    shipperName: 'Hawassa Garment Manufacturing SC',
-    shipperCompany: 'Hawassa Garment Manufacturing SC',
-    shipperTin: '0049281726',
-    status: 'OPEN',
-    pickupWindowStart: new Date().toISOString().split('T')[0],
-    isEligibleForConsolidation: true,
-  },
-  {
-    id: 'LTL-DEMO-02',
-    loadCode: 'TF-LTL-COF02',
-    title: 'Grade 1 Yirgacheffe Specialty Export Coffee (Palletized)',
-    cargoType: 'AGRICULTURAL_COFFEE',
-    weightTons: 9.0,
-    volumeCbm: 21.0,
-    origin: 'Modjo Dry Port Multimodal Terminal',
-    destination: 'Djibouti Port Red Sea Terminal',
-    targetBudgetEtb: 62000,
-    shipperName: 'Dawit Tadesse (Ethio Coffee Exporters)',
-    shipperCompany: 'Ethio Coffee Exporters PLC',
-    shipperTin: '0012938475',
-    status: 'OPEN',
-    pickupWindowStart: new Date().toISOString().split('T')[0],
-    isEligibleForConsolidation: true,
-  },
-  {
-    id: 'LTL-DEMO-03',
-    loadCode: 'TF-LTL-DRD03',
-    title: 'Dire Dawa Spun Cotton & Leather Goods Export Bundles',
-    cargoType: 'GENERAL_MERCHANDISE',
-    weightTons: 7.5,
-    volumeCbm: 18.5,
-    origin: 'Dire Dawa Free Trade Zone',
-    destination: 'Djibouti Port Red Sea Terminal',
-    targetBudgetEtb: 48000,
-    shipperName: 'Eastern Corridor Trading SC',
-    shipperCompany: 'Eastern Corridor Trading SC',
-    shipperTin: '0039481928',
-    status: 'OPEN',
-    pickupWindowStart: new Date().toISOString().split('T')[0],
-    isEligibleForConsolidation: true,
-  },
-];
+
 
 /**
  * 1. Multi-Shipper Client Portfolio & Overview
@@ -171,8 +119,7 @@ export const getLtlLoads = async (req: Request, res: Response): Promise<void> =>
       };
     });
 
-    // Provide rich sample LTL parcels if queue is small
-    const ltlQueue = dbQueue.length >= 2 ? dbQueue : [...dbQueue, ...DEMO_LTL_PARCELS];
+    const ltlQueue = dbQueue;
 
     res.json({ ltlQueue });
   } catch (error: any) {
@@ -206,40 +153,22 @@ export const consolidateLtlLoads = async (req: Request, res: Response): Promise<
       include: { shipper: true },
     });
 
-    let totalWeightTons = 0;
-    let totalVolumeCbm = 0;
-    let separateShipmentCost = 0;
-    let subConsignments: any[] = [];
-    let primaryShipperId: string | null = null;
-
-    if (selectedDbLoads.length >= 2) {
-      primaryShipperId = selectedDbLoads[0].shipperId;
-      totalWeightTons = selectedDbLoads.reduce((sum, l) => sum + (l.weightTons || 8.0), 0);
-      totalVolumeCbm = selectedDbLoads.reduce((sum, l) => sum + (l.volumeCbm || 15.0), 0);
-      separateShipmentCost = selectedDbLoads.reduce((sum, l) => sum + (l.targetBudgetEtb || l.spotEstimatedPriceEtb || 65000), 0);
-      subConsignments = selectedDbLoads.map((l) => ({
-        id: l.id,
-        code: `TF-LTL-${l.id.slice(0, 6).toUpperCase()}`,
-        shipperCompany: l.shipper?.companyName || l.shipper?.fullName || 'Consignor',
-        cargo: l.title,
-        weightTons: l.weightTons,
-      }));
-    } else {
-      // Demo parcels bundling
-      const demoMatches = DEMO_LTL_PARCELS.filter((d) => loadIds.includes(d.id));
-      const firstUser = await prisma.user.findFirst({ where: { role: UserRole.SHIPPER } });
-      primaryShipperId = firstUser?.id || null;
-      totalWeightTons = demoMatches.reduce((sum, d) => sum + d.weightTons, 0) || 28.0;
-      totalVolumeCbm = demoMatches.reduce((sum, d) => sum + d.volumeCbm, 0) || 71.5;
-      separateShipmentCost = demoMatches.reduce((sum, d) => sum + d.targetBudgetEtb, 0) || 185000;
-      subConsignments = demoMatches.map((d) => ({
-        id: d.id,
-        code: d.loadCode,
-        shipperCompany: d.shipperCompany,
-        cargo: d.title,
-        weightTons: d.weightTons,
-      }));
+    if (selectedDbLoads.length < 2) {
+      res.status(404).json({ error: 'Could not find the specified LTL consignments in the database' });
+      return;
     }
+
+    const primaryShipperId = selectedDbLoads[0].shipperId;
+    const totalWeightTons = selectedDbLoads.reduce((sum, l) => sum + (l.weightTons || 8.0), 0);
+    const totalVolumeCbm = selectedDbLoads.reduce((sum, l) => sum + (l.volumeCbm || 15.0), 0);
+    const separateShipmentCost = selectedDbLoads.reduce((sum, l) => sum + (l.targetBudgetEtb || l.spotEstimatedPriceEtb || 65000), 0);
+    const subConsignments = selectedDbLoads.map((l) => ({
+      id: l.id,
+      code: `TF-LTL-${l.id.slice(0, 6).toUpperCase()}`,
+      shipperCompany: l.shipper?.companyName || l.shipper?.fullName || 'Consignor',
+      cargo: l.title,
+      weightTons: l.weightTons,
+    }));
 
     // Max capacity for 40ft High Cube is 30 Tons, 76.2 Cbm
     const maxCapacityTons = containerType.includes('20FT') ? 24.0 : 30.0;

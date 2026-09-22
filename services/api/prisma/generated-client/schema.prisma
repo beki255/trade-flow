@@ -1,0 +1,435 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated-client"
+}
+
+enum UserRole {
+  SHIPPER
+  TRANSPORTER
+  DRIVER
+  FREIGHT_FORWARDER
+  CUSTOMS_OFFICER
+  ADMIN
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  SUSPENDED
+  REJECTED
+}
+
+enum VehicleType {
+  FLATBED
+  CONTAINER_CARRIER
+  BOX_TRUCK
+  TANKER
+  REFRIGERATED
+  LOWBED
+}
+
+enum FuelType {
+  DIESEL
+  PETROL
+  ELECTRIC
+}
+
+enum LoadStatus {
+  OPEN
+  BIDDING
+  MATCHED
+  BOOKED
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+}
+
+enum CargoType {
+  CONTAINERIZED
+  AGRICULTURAL_COFFEE
+  GRAIN_BULK
+  INDUSTRIAL_MACHINERY
+  TEXTILES_GARMENTS
+  CONSTRUCTION_MATERIALS
+  PETROLEUM_FUEL
+  PHARMACEUTICALS
+  GENERAL_MERCHANDISE
+}
+
+enum BidStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum ShipmentStatus {
+  ASSIGNED
+  DISPATCHED
+  AT_ORIGIN
+  IN_TRANSIT
+  AT_CUSTOMS
+  CUSTOMS_CLEARED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum CustomsDocType {
+  COMMERCIAL_INVOICE
+  PACKING_LIST
+  BILL_OF_LADING
+  CERTIFICATE_OF_ORIGIN
+  CUSTOMS_DECLARATION
+  INSURANCE_CERTIFICATE
+}
+
+enum CustomsClearanceStatus {
+  NOT_SUBMITTED
+  SUBMITTED
+  UNDER_REVIEW
+  CLEARED
+  REJECTED
+  REVISION_REQUESTED
+}
+
+enum PaymentMethod {
+  TELEBIRR
+  CBE_BIRR
+  BANK_TRANSFER
+  ESCROW
+}
+
+enum PaymentStatus {
+  PENDING
+  HELD_IN_ESCROW
+  CONFIRMED
+  DISPUTED
+  SETTLED
+  REFUNDED
+}
+
+enum IncidentCategory {
+  ACCIDENT
+  ROAD_BLOCKAGE
+  CHECKPOINT_DELAY
+  FUEL_OUTAGE
+  SECURITY_CONCERN
+  MECHANICAL_BREAKDOWN
+  SEVERE_WEATHER
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// 1. User & Auth Model
+model User {
+  id                 String             @id @default(uuid())
+  email              String             @unique
+  username           String             @unique
+  passwordHash       String
+  fullName           String
+  phone              String
+  role               UserRole
+  companyName        String?
+  tin                String? // Tax Identification Number
+  tradeLicenseNo     String? // Trade License Number
+  tradeLicenseDoc    String? // Uploaded Trade License Document Name / URL
+  insuranceDoc       String? // Goods in Transit (GIT) Insurance Document / URL
+  roadworthinessDoc  String? // FTA Roadworthiness Certificate Document / URL
+  verificationStatus VerificationStatus @default(PENDING)
+  verificationNotes  String?
+  ratingAvg          Float              @default(5.0)
+  totalRatingsCount  Int                @default(0)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  shipperLoads        Load[]           @relation("ShipperLoads")
+  transporterBids     Bid[]            @relation("TransporterBids")
+  vehicles            Vehicle[]
+  driverProfile       DriverProfile?
+  givenRatings        Rating[]         @relation("GivenRatings")
+  receivedRatings     Rating[]         @relation("ReceivedRatings")
+  incidentReports     IncidentReport[]
+  shipperPayments     Payment[]        @relation("ShipperPayments")
+  transporterPayments Payment[]        @relation("TransporterPayments")
+}
+
+// 2. Vehicle Model
+model Vehicle {
+  id                         String      @id @default(uuid())
+  transporterId              String
+  transporter                User        @relation(fields: [transporterId], references: [id], onDelete: Cascade)
+  plateNumber                String      @unique
+  vehicleType                VehicleType
+  capacityTons               Float
+  capacityVolumeCbm          Float
+  fuelType                   FuelType    @default(DIESEL)
+  fuelEfficiencyBenchmarkKmL Float       @default(3.5)
+  insurancePolicyNo          String?
+  insuranceDocUrl            String?
+  roadworthinessCertUrl      String?
+  telematicsDeviceId         String?
+  isAvailable                Boolean     @default(true)
+  currentLat                 Float?
+  currentLng                 Float?
+  createdAt                  DateTime    @default(now())
+
+  drivers   DriverProfile[]
+  shipments Shipment[]
+}
+
+// 3. Driver Profile Model
+model DriverProfile {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignedVehicleId String?
+  assignedVehicle   Vehicle? @relation(fields: [assignedVehicleId], references: [id])
+  driverLicenseNo   String   @unique
+  licenseClass      String
+  experienceYears   Int      @default(3)
+  safetyScore       Float    @default(95.0)
+  isOnline          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+
+  shipments Shipment[]
+}
+
+// 4. Load Posting Model
+model Load {
+  id                    String     @id @default(uuid())
+  shipperId             String
+  shipper               User       @relation("ShipperLoads", fields: [shipperId], references: [id], onDelete: Cascade)
+  title                 String
+  cargoType             CargoType
+  cargoDescription      String
+  weightTons            Float
+  volumeCbm             Float
+  originName            String
+  originLat             Float
+  originLng             Float
+  destName              String
+  destLat               Float
+  destLng               Float
+  pickupWindowStart     DateTime
+  pickupWindowEnd       DateTime
+  deliveryDeadline      DateTime?
+  specialHandling       String[]
+  spotEstimatedPriceEtb Float
+  targetBudgetEtb       Float?
+  status                LoadStatus @default(OPEN)
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  bids     Bid[]
+  shipment Shipment?
+}
+
+// 5. Transporter Bid Model
+model Bid {
+  id                    String    @id @default(uuid())
+  loadId                String
+  load                  Load      @relation(fields: [loadId], references: [id], onDelete: Cascade)
+  transporterId         String
+  transporter           User      @relation("TransporterBids", fields: [transporterId], references: [id], onDelete: Cascade)
+  proposedRateEtb       Float
+  pickupEstimatedTime   DateTime
+  deliveryEstimatedTime DateTime
+  validityHours         Int       @default(24)
+  proposalNotes         String?
+  status                BidStatus @default(PENDING)
+  createdAt             DateTime  @default(now())
+  expiresAt             DateTime
+}
+
+// 6. Live Shipment Model
+model Shipment {
+  id            String                 @id @default(uuid())
+  loadId        String                 @unique
+  load          Load                   @relation(fields: [loadId], references: [id])
+  transporterId String
+  driverId      String
+  driver        DriverProfile          @relation(fields: [driverId], references: [id])
+  vehicleId     String
+  vehicle       Vehicle                @relation(fields: [vehicleId], references: [id])
+  agreedRateEtb Float
+  status        ShipmentStatus         @default(ASSIGNED)
+  customsStatus CustomsClearanceStatus @default(NOT_SUBMITTED)
+
+  currentLat             Float
+  currentLng             Float
+  currentSpeedKmh        Float    @default(0.0)
+  currentHeading         Float    @default(0.0)
+  fuelLevelPct           Float    @default(100.0)
+  lastGpsUpdateTimestamp DateTime @default(now())
+
+  initialEtaTimestamp     DateTime
+  currentPredictedEta     DateTime
+  etaConfidenceMarginMins Int      @default(20)
+  progressPercentage      Float    @default(0.0)
+
+  departedOriginAt     DateTime?
+  arrivedModjoAt       DateTime?
+  customsClearedAt     DateTime?
+  arrivedDestinationAt DateTime?
+
+  podSignatureUrl  String?
+  podPhotoUrl      String?
+  podRecipientName String?
+  podDeliveredAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  trackingEvents   TrackingEvent[]
+  customsDocuments CustomsDocument[]
+  payment          Payment?
+  ratings          Rating[]
+  incidentReports  IncidentReport[]
+}
+
+// 7. Tracking Event Model
+model TrackingEvent {
+  id           String   @id @default(uuid())
+  shipmentId   String
+  shipment     Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  latitude     Float
+  longitude    Float
+  speedKmh     Float
+  heading      Float
+  fuelLevelPct Float
+  timestamp    DateTime @default(now())
+  source       String   @default("DRIVER_APP")
+}
+
+// 8. Corridor Waypoints Model
+model RouteWaypoint {
+  id                     String  @id @default(uuid())
+  name                   String
+  nameAmharic            String
+  lat                    Float
+  lng                    Float
+  sequenceOrder          Int
+  isCustomsCheckpoint    Boolean @default(false)
+  isDryPort              Boolean @default(false)
+  isFuelStation          Boolean @default(false)
+  fuelAvailable          Boolean @default(true)
+  dieselPricePerLiter    Float?
+  congestionDelayMinutes Int     @default(0)
+}
+
+// 9. Digital Customs Document Model
+model CustomsDocument {
+  id                  String                 @id @default(uuid())
+  shipmentId          String
+  shipment            Shipment               @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  docType             CustomsDocType
+  docNumber           String
+  fileUrl             String
+  fileName            String
+  fileSizeKb          Int
+  declaredValueEtb    Float?
+  issuingAuthority    String?
+  issueDate           DateTime?
+  validationPassed    Boolean                @default(false)
+  validationErrors    String[]
+  clearanceStatus     CustomsClearanceStatus @default(SUBMITTED)
+  officerNotes        String?
+  reviewedByOfficerId String?
+  reviewedAt          DateTime?
+  uploadedAt          DateTime               @default(now())
+}
+
+// 10. Payment & TeleBirr Model
+model Payment {
+  id                        String        @id @default(uuid())
+  shipmentId                String        @unique
+  shipment                  Shipment      @relation(fields: [shipmentId], references: [id])
+  shipperId                 String
+  shipper                   User          @relation("ShipperPayments", fields: [shipperId], references: [id])
+  transporterId             String
+  transporter               User          @relation("TransporterPayments", fields: [transporterId], references: [id])
+  grossAmountEtb            Float
+  platformCommissionRatePct Float         @default(5.0)
+  platformCommissionEtb     Float
+  netTransporterPayoutEtb   Float
+  paymentMethod             PaymentMethod @default(TELEBIRR)
+  telebirrTransactionNo     String?
+  telebirrPhone             String?
+  status                    PaymentStatus @default(PENDING)
+  disputeNotes              String?
+  paidAt                    DateTime?
+  settledAt                 DateTime?
+  createdAt                 DateTime      @default(now())
+}
+
+// 11. Incident Report Model
+model IncidentReport {
+  id                    String           @id @default(uuid())
+  reporterDriverId      String
+  reporter              User             @relation(fields: [reporterDriverId], references: [id])
+  shipmentId            String?
+  shipment              Shipment?        @relation(fields: [shipmentId], references: [id])
+  category              IncidentCategory
+  severity              RiskLevel        @default(MEDIUM)
+  description           String
+  latitude              Float
+  longitude             Float
+  locationName          String
+  photoUrl              String?
+  isVerifiedByAuthority Boolean          @default(false)
+  createdAt             DateTime         @default(now())
+}
+
+// 12. Rating Model
+model Rating {
+  id         String   @id @default(uuid())
+  shipmentId String
+  shipment   Shipment @relation(fields: [shipmentId], references: [id])
+  fromUserId String
+  fromUser   User     @relation("GivenRatings", fields: [fromUserId], references: [id])
+  toUserId   String
+  toUser     User     @relation("ReceivedRatings", fields: [toUserId], references: [id])
+  scoreStars Int      @default(5)
+  reviewText String?
+  createdAt  DateTime @default(now())
+}
+
+// 13. Pricing Audit Log Model
+model PricingLog {
+  id                     String   @id @default(uuid())
+  corridorName           String
+  baseDistanceKm         Float
+  baseCorridorRateEtb    Float
+  demandRatio            Float
+  fuelCostIndex          Float
+  congestionSurchargeEtb Float
+  calculatedSpotRateEtb  Float
+  floorBoundEtb          Float
+  ceilingBoundEtb        Float
+  finalRateEtb           Float
+  timestamp              DateTime @default(now())
+}
+
+// 14. Risk Zone Model
+model RiskZone {
+  id          String    @id @default(uuid())
+  name        String
+  description String
+  severity    RiskLevel
+  centerLat   Float
+  centerLng   Float
+  radiusKm    Float
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+}

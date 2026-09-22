@@ -5,6 +5,7 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
+  output   = "./generated-client"
 }
 
 enum UserRole {
@@ -142,6 +143,9 @@ model User {
   companyName        String?
   tin                String?            // Tax Identification Number
   tradeLicenseNo     String?            // Trade License Number
+  tradeLicenseDoc    String?            // Uploaded Trade License Document Name / URL
+  insuranceDoc       String?            // Goods in Transit (GIT) Insurance Document / URL
+  roadworthinessDoc  String?            // FTA Roadworthiness Certificate Document / URL
   verificationStatus VerificationStatus @default(PENDING)
   verificationNotes  String?
   ratingAvg          Float              @default(5.0)

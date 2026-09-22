@@ -83,7 +83,7 @@ export const ConsignmentsTab: React.FC<ConsignmentsTabProps> = ({
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-sky-500/20 border border-sky-400/30 text-sky-300 text-xs font-bold tracking-wider uppercase">
               <Package className="w-3.5 h-3.5" />
-              <span>Shipper Freight Portfolio (SRS 4.2)</span>
+              <span>Shipper Freight Portfolio</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
               My Consignments

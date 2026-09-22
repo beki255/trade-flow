@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { DEMO_ACCOUNTS } from '@tradeflow/shared';
+
 import { GoogleAuthButton } from './GoogleAuthButton';
 import {
   Package,
@@ -25,7 +25,6 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
 
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
   const [selectedRole, setSelectedRole] = useState<string>('SHIPPER');
-  const [selectedDemoRole, setSelectedDemoRole] = useState<string>('SHIPPER');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [rememberMe, setRememberMe] = useState<boolean>(true);
 
@@ -79,16 +78,7 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
     },
   ];
 
-  // Demo Accounts Quick Select Handler
-  const handleSelectDemo = (demoKey: 'SHIPPER' | 'FORWARDER' | 'CUSTOMS' | 'ADMIN') => {
-    setSelectedDemoRole(demoKey);
-    const demo = DEMO_ACCOUNTS[demoKey];
-    setEmail(demo.email);
-    setPassword(demo.password);
-    setErrorMsg('');
-    setNotice(`${demo.fullName} demo credentials filled!`);
-    setTimeout(() => setNotice(''), 2500);
-  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,9 +108,9 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
         setLoading(false);
         onAuthSuccess(res?.user?.role || selectedRole);
       } else {
-        const res = await loginUser(email, password, selectedDemoRole);
+        const res = await loginUser(email, password);
         setLoading(false);
-        const resolvedRole = res?.user?.role || selectedDemoRole;
+        const resolvedRole = res?.user?.role || 'SHIPPER';
         onAuthSuccess(resolvedRole);
       }
     } catch (err: any) {
@@ -434,79 +424,7 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
             )}
           </button>
 
-          {/* ON LOGIN: One-Click Demo Accounts */}
-          {mode === 'login' && (
-            <div className="pt-2 border-t border-slate-100">
-              <div className="text-[10px] font-bold text-slate-400 uppercase mb-2 text-center flex items-center justify-center gap-1">
-                <Zap className="w-3 h-3 text-amber-500" /> Quick 1-Click Demo Accounts:
-              </div>
-              <div className="grid grid-cols-2 gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => handleSelectDemo('SHIPPER')}
-                  className={`p-2 rounded-xl border text-left transition-colors ${
-                    selectedDemoRole === 'SHIPPER' && email === DEMO_ACCOUNTS.SHIPPER.email
-                      ? 'bg-blue-100 border-blue-500 text-blue-900 font-bold'
-                      : 'bg-blue-50/80 hover:bg-blue-100 text-blue-900 border-blue-200/60'
-                  }`}
-                >
-                  <div className="text-[11px] font-extrabold flex items-center gap-1.5">
-                    <Package className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Shipper</span>
-                  </div>
-                  <div className="text-[9px] text-blue-600 truncate">dawit@miaoda.com</div>
-                </button>
 
-                <button
-                  type="button"
-                  onClick={() => handleSelectDemo('FORWARDER')}
-                  className={`p-2 rounded-xl border text-left transition-colors ${
-                    selectedDemoRole === 'FORWARDER' && email === DEMO_ACCOUNTS.FORWARDER.email
-                      ? 'bg-purple-100 border-purple-500 text-purple-900 font-bold'
-                      : 'bg-purple-50/80 hover:bg-purple-100 text-purple-900 border-purple-200/60'
-                  }`}
-                >
-                  <div className="text-[11px] font-extrabold flex items-center gap-1.5">
-                    <Building2 className="w-3.5 h-3.5 text-purple-600" />
-                    <span>Forwarder</span>
-                  </div>
-                  <div className="text-[9px] text-purple-600 truncate">sara@miaoda.com</div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleSelectDemo('CUSTOMS')}
-                  className={`p-2 rounded-xl border text-left transition-colors ${
-                    selectedDemoRole === 'CUSTOMS' && email === DEMO_ACCOUNTS.CUSTOMS.email
-                      ? 'bg-emerald-100 border-emerald-500 text-emerald-900 font-bold'
-                      : 'bg-emerald-50/80 hover:bg-emerald-100 text-emerald-900 border-emerald-200/60'
-                  }`}
-                >
-                  <div className="text-[11px] font-extrabold flex items-center gap-1.5">
-                    <FileCheck className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Customs</span>
-                  </div>
-                  <div className="text-[9px] text-emerald-600 truncate">kebede@miaoda.com</div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleSelectDemo('ADMIN')}
-                  className={`p-2 rounded-xl border text-left transition-colors ${
-                    selectedDemoRole === 'ADMIN' && email === DEMO_ACCOUNTS.ADMIN.email
-                      ? 'bg-rose-100 border-rose-500 text-rose-900 font-bold'
-                      : 'bg-rose-50/80 hover:bg-rose-100 text-rose-900 border-rose-200/60'
-                  }`}
-                >
-                  <div className="text-[11px] font-extrabold flex items-center gap-1.5">
-                    <Shield className="w-3.5 h-3.5 text-rose-600" />
-                    <span>Admin</span>
-                  </div>
-                  <div className="text-[9px] text-rose-600 truncate">admin@miaoda.com</div>
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* Switch Mode Prompt */}
           <div className="text-center text-xs text-slate-500 pt-0.5">
@@ -541,17 +459,21 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
             )}
           </div>
 
-          {/* Divider */}
-          <div className="relative flex py-1 items-center">
-            <div className="flex-grow border-t border-slate-200"></div>
-            <span className="flex-shrink mx-3 text-[11px] text-slate-400 uppercase font-bold">
-              or
-            </span>
-            <div className="flex-grow border-t border-slate-200"></div>
-          </div>
+          {/* Google Authentication (Login Only) */}
+          {mode === 'login' && (
+            <>
+              {/* Divider */}
+              <div className="relative flex py-1 items-center">
+                <div className="flex-grow border-t border-slate-200"></div>
+                <span className="flex-shrink mx-3 text-[11px] text-slate-400 uppercase font-bold">
+                  or
+                </span>
+                <div className="flex-grow border-t border-slate-200"></div>
+              </div>
 
-          {/* Google Authentication */}
-          <GoogleAuthButton mode={mode} selectedRole={selectedRole} onSuccess={handleGoogleSuccess} />
+              <GoogleAuthButton mode="login" selectedRole={selectedRole} onSuccess={handleGoogleSuccess} />
+            </>
+          )}
 
         </form>
 

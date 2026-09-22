@@ -63,7 +63,7 @@ export const ClearanceTab: React.FC<ClearanceTabProps> = ({
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-[10.5px] font-extrabold uppercase tracking-widest">
             <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Digital Clearance Registry (SRS 4.6.3)</span>
+            <span>Digital Clearance Registry</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
             Customs Electronic Release Clearances (Ledger)

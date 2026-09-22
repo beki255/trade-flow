@@ -43,7 +43,7 @@ export const CustomsCoordinationTab: React.FC<CustomsCoordinationTabProps> = ({
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/20 border border-teal-400/30 text-teal-300 text-[10.5px] font-extrabold uppercase tracking-widest">
             <FileCheck2 className="w-3.5 h-3.5" />
-            <span>Customs Coordination (SRS 3.1 & 4.6)</span>
+            <span>Customs Coordination</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
             Batch Customs Document Filing & Single Window Clearance

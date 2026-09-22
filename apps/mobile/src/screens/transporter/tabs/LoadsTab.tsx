@@ -127,7 +127,7 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
         </View>
       )}
 
-      {/* Interactive Search Bar (SRS 4.2.4) */}
+      {/* Interactive Search Bar */}
       <View style={[styles.searchBarContainer, { marginTop: 4, marginBottom: 6 }]}>
         <Ionicons name="search-outline" size={18} color="#64748B" style={{ marginLeft: 4 }} />
         <TextInput
@@ -211,7 +211,7 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
             </View>
           </View>
 
-          {/* Bid Action or Existing Bid Status (SRS 4.2.4) */}
+          {/* Bid Action or Existing Bid Status */}
           {(() => {
             const existingBid = submittedBids.find(
               (b) =>

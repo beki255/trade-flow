@@ -6,6 +6,7 @@ import {
   deleteLoad,
   getVerifications,
   verifyUser,
+  getUserStatus,
   getAuditLogs,
   submitRating,
   getRatings,
@@ -36,6 +37,7 @@ router.delete('/loads/:id', deleteLoad);
 // Verification Queue & Admin Actions
 router.get('/verifications', getVerifications);
 router.post('/verify-user', verifyUser);
+router.get('/user-status', getUserStatus);
 router.get('/audit-logs', getAuditLogs);
 
 // Ratings & Reviews

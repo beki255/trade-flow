@@ -94,7 +94,7 @@ export const PostLoadTab: React.FC<PostLoadTabProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
           <div>
             <span className="text-[10px] font-bold uppercase tracking-widest text-sky-700 bg-sky-50 px-2.5 py-1 rounded-lg border border-sky-200">
-              Freight Consignment Posting (SRS 4.2)
+              Freight Consignment Posting
             </span>
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-2">
               Post New Freight Consignment

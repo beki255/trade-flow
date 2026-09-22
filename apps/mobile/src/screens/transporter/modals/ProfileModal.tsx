@@ -136,7 +136,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 }}
               >
                 <Text style={[styles.actionBtnLabel, { color: '#DC2626', fontWeight: '700' }]}>
-                  Logout of Account
+                  Logout
                 </Text>
                 <Text style={[styles.actionBtnValue, { color: '#DC2626' }]}>Exit</Text>
               </TouchableOpacity>

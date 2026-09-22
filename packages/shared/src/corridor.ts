@@ -2112,36 +2112,9 @@ export function calculateCorridorRoadDistanceKm(
 }
 
 /**
- * Standard Demo Accounts with database-matched passwords
+ * System Core Accounts with database-matched credentials
  */
 export const DEMO_ACCOUNTS = {
-  SHIPPER: {
-    email: 'dawit@miaoda.com',
-    password: 'Demo1234!',
-    username: 'dawit',
-    fullName: 'Dawit Tadesse (Ethio Coffee Exporters)',
-    role: 'SHIPPER',
-    tin: '0012938475',
-    tradeLicenseNo: 'TL-AA-2024-8841',
-  },
-  TRANSPORTER: {
-    email: 'mulugeta@miaoda.com',
-    password: 'Demo1234!',
-    username: 'mulugeta',
-    fullName: 'Mulugeta Freight Transport PLC',
-    role: 'TRANSPORTER',
-    tin: '0098473621',
-    tradeLicenseNo: 'TL-OR-2023-5512',
-  },
-  FORWARDER: {
-    email: 'sara@miaoda.com',
-    password: 'Demo1234!',
-    username: 'sara',
-    fullName: 'Sara Haile (Red Sea Forwarding)',
-    role: 'FREIGHT_FORWARDER',
-    tin: '0047281934',
-    tradeLicenseNo: 'TL-AA-2022-9901',
-  },
   CUSTOMS: {
     email: 'kebede@miaoda.com',
     password: 'Demo1234!',
@@ -2159,15 +2132,5 @@ export const DEMO_ACCOUNTS = {
     role: 'ADMIN',
     tin: 'TF-ADMIN-0001',
     tradeLicenseNo: 'TF-HQ-2026',
-  },
-  DRIVER: {
-    email: '0925537199',
-    phone: '0925537199',
-    password: 'Driver@123',
-    username: 'driver',
-    fullName: 'Abebe Bikila (Senior Heavy Truck Driver)',
-    role: 'DRIVER',
-    tin: 'DRV-ETH-9921',
-    tradeLicenseNo: 'LIC-CAT-5-8832',
   },
 };

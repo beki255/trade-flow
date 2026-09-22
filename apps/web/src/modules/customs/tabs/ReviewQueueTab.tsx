@@ -88,7 +88,7 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
             <span>Ethiopian Customs Commission (ECC)</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-            Customs Document Review Queue (FR-06)
+            Customs Document Review Queue
           </h1>
           <p className="text-xs text-slate-300 max-w-2xl leading-relaxed font-medium">
             Inspect international trade documents (Commercial Invoice, Packing List, Bill of Lading, Certificate of Origin) for Djibouti–Addis Ababa corridor consignments, conduct automated compliance cross-checks, and issue single-window Green Line electronic releases.

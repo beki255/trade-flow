@@ -16,6 +16,7 @@ const RegisterSchema = z.object({
   companyName: z.string().optional(),
   tin: z.string().optional(),
   tradeLicenseNo: z.string().optional(),
+  tradeLicenseDoc: z.string().optional(),
   insuranceDoc: z.string().optional(),
   roadworthinessDoc: z.string().optional(),
 });
@@ -70,27 +71,13 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       },
     });
 
-    // Support Driver phone 0925537199 / password Driver@123
-    if (!user && (cleanDigits === '0925537199' || cleanDigits.slice(-8) === '25537199')) {
-      const existingDriver = await prisma.user.findFirst({
-        where: { role: UserRole.DRIVER },
-      });
-      if (existingDriver) {
-        user = await prisma.user.update({
-          where: { id: existingDriver.id },
-          data: { phone: '0925537199', passwordHash: 'Driver@123' },
-        });
-      }
-    }
-
     if (!user) {
       res.status(401).json({ error: 'User not found. Please check your phone number or credentials.' });
       return;
     }
 
-    // Check password
-    const isDemoPass = ['Demo1234!', 'Transporter@123', 'Driver@123', 'Shipper@123', 'Password@123', 'password123'].includes(password.trim());
-    const passMatches = (user.passwordHash || '').trim() === password.trim() || isDemoPass;
+    // Verify password against database record
+    const passMatches = (user.passwordHash || '').trim() === password.trim();
 
     if (!passMatches) {
       res.status(401).json({ error: 'Incorrect password. Please try again.' });
@@ -206,6 +193,9 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       companyName,
       tin,
       tradeLicenseNo,
+      tradeLicenseDoc,
+      insuranceDoc,
+      roadworthinessDoc,
     } = parseResult.data;
 
     const normalizedEmail = email.toLowerCase().trim();
@@ -246,6 +236,9 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         phone: phone ? phone.trim() : '+251900000000',
         tin: tin ? tin.trim() : null,
         tradeLicenseNo: tradeLicenseNo ? tradeLicenseNo.trim() : null,
+        tradeLicenseDoc: tradeLicenseDoc ? tradeLicenseDoc.trim() : null,
+        insuranceDoc: insuranceDoc ? insuranceDoc.trim() : null,
+        roadworthinessDoc: roadworthinessDoc ? roadworthinessDoc.trim() : null,
         role: mappedPrismaRole,
         passwordHash: password,
         verificationStatus: VerificationStatus.PENDING, // Enters Admin Verification Queue
@@ -317,28 +310,12 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
       where: { email: normalizedEmail },
     });
 
-    // STRICT CHECK: If user is attempting to LOGIN with Google but does not exist in DB, REJECT
-    if (!user && mode === 'login') {
+    // STRICT CHECK: Google self-registration is disabled. All organizations must register via the official form.
+    if (!user) {
       res.status(404).json({
-        error: 'No account found with this Google email. Please register/create an account first.',
+        error: 'No registered enterprise account found for this Google email. Please register first using the official registration form with your business details, TIN, and trade license.',
       });
       return;
-    }
-
-    // Only create a new account in PostgreSQL if user is explicitly REGISTERING (mode === 'register')
-    if (!user) {
-      user = await prisma.user.create({
-        data: {
-          fullName: verifiedName,
-          companyName: verifiedName,
-          email: normalizedEmail,
-          username: normalizedEmail.split('@')[0] + Math.floor(Math.random() * 1000),
-          phone: '+251911000000',
-          role: mappedPrismaRole,
-          passwordHash: 'GOOGLE_OAUTH_VERIFIED_USER',
-          verificationStatus: VerificationStatus.VERIFIED, // Google accounts get verified status
-        },
-      });
     }
 
     const token = jwt.sign(

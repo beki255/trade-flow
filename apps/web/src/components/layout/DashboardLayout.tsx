@@ -220,7 +220,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             title="Logout"
           >
             <LogOut className="w-4 h-4 flex-shrink-0" />
-            {sidebarOpen && <span>Logout Session</span>}
+            {sidebarOpen && <span>Logout</span>}
           </button>
         </div>
       </aside>

@@ -266,16 +266,22 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                           styles.statusBadge,
                           drv.status === 'ACTIVE'
                             ? styles.statusAvailable
+                            : drv.status === 'PENDING'
+                            ? { backgroundColor: '#FEF3C7' }
                             : { backgroundColor: '#E0F2FE' },
                         ]}
                       >
                         <Text
                           style={[
                             styles.statusText,
-                            drv.status === 'ACTIVE' ? {} : { color: '#0369A1' },
+                            drv.status === 'ACTIVE'
+                              ? {}
+                              : drv.status === 'PENDING'
+                              ? { color: '#B45309', fontWeight: '800' }
+                              : { color: '#0369A1' },
                           ]}
                         >
-                          {drv.status}
+                          {drv.status === 'PENDING' ? '⏳ PENDING' : drv.status}
                         </Text>
                       </View>
                       <View style={styles.chevronCircle}>
@@ -307,6 +313,14 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                   {isExpanded && (
                     <View style={{ gap: 8, marginTop: 4 }}>
                       <View style={styles.cardDivider} />
+                      {drv.status === 'PENDING' && (
+                        <View style={{ backgroundColor: '#FEF3C7', padding: 8, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Ionicons name="time-outline" size={14} color="#B45309" />
+                          <Text style={{ fontSize: 11, color: '#B45309', fontWeight: '700', flex: 1 }}>
+                            Awaiting Platform Admin Verification. Credentials submitted to Admin Queue.
+                          </Text>
+                        </View>
+                      )}
                       <View style={styles.infoRow}>
                         <Text style={styles.infoLabel}>Driving License Number:</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>

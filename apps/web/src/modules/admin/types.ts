@@ -7,10 +7,24 @@ export interface VerificationUser {
   role: string;
   tin: string | null;
   tradeLicenseNo: string | null;
+  tradeLicenseDoc?: string | null;
+  insuranceDoc?: string | null;
+  roadworthinessDoc?: string | null;
   verificationStatus: 'PENDING' | 'VERIFIED' | 'SUSPENDED' | 'REJECTED';
   verificationNotes: string | null;
   createdAt: string;
   vehicles?: any[];
+  driverProfile?: {
+    id: string;
+    driverLicenseNo: string;
+    licenseClass: string;
+    experienceYears: number;
+    assignedVehicle?: {
+      id?: string;
+      plateNumber?: string;
+      vehicleType?: string;
+    } | null;
+  } | null;
 }
 
 export interface DocumentPreviewData {
@@ -19,6 +33,7 @@ export interface DocumentPreviewData {
   docNumber: string;
   issuer: string;
   fileName: string;
+  fileUrl?: string;
   status: string;
   issuedDate: string;
   ownerName: string;

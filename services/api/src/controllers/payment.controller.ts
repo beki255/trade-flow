@@ -55,86 +55,10 @@ export const initiatePayment = async (req: Request, res: Response): Promise<void
       });
 
       if (!targetShipment) {
-        // Find driver and vehicle for this transporter
-        let vehicle = await prisma.vehicle.findFirst({
-          where: { transporterId: bid.transporterId },
+        res.status(404).json({
+          error: 'No active shipment found for this bid. The shipment must be accepted and assigned to a registered transporter and driver first.',
         });
-        if (!vehicle) {
-          vehicle = await prisma.vehicle.findFirst();
-        }
-        if (!vehicle) {
-          vehicle = await prisma.vehicle.create({
-            data: {
-              transporterId: bid.transporterId,
-              plateNumber: `3-${Math.floor(10000 + Math.random() * 90000)} ET`,
-              vehicleType: 'DRY_VAN_30T',
-              capacityTons: 30,
-              capacityVolumeCbm: 75,
-              currentLat: bid.load?.originLat || 8.8950,
-              currentLng: bid.load?.originLng || 38.7650,
-            },
-          });
-        }
-
-        let driver = await prisma.driverProfile.findFirst({
-          where: {
-            assignedVehicle: {
-              transporterId: bid.transporterId,
-            },
-          },
-          include: { user: true },
-        });
-        if (!driver) {
-          driver = await prisma.driverProfile.findFirst({
-            include: { user: true },
-          });
-        }
-        if (!driver) {
-          let driverUser = await prisma.user.findFirst({ where: { role: 'DRIVER' } });
-          if (!driverUser) {
-            driverUser = await prisma.user.create({
-              data: {
-                fullName: 'Bekele Tadesse (Fleet Driver)',
-                email: `driver_${Date.now()}@tradeflow.et`,
-                username: `driver_${Date.now().toString().slice(-6)}`,
-                phone: '+251911223344',
-                role: 'DRIVER',
-                passwordHash: 'Driver@123',
-                verificationStatus: 'VERIFIED',
-              },
-            });
-          }
-          driver = await prisma.driverProfile.create({
-            data: {
-              userId: driverUser.id,
-              assignedVehicleId: vehicle.id,
-              driverLicenseNo: `ETH-DL-${Date.now().toString().slice(-6)}`,
-              licenseClass: 'Grade 5 Heavy',
-              experienceYears: 5,
-            },
-            include: { user: true },
-          });
-        }
-
-        targetShipment = await prisma.shipment.create({
-          data: {
-            loadId: bid.loadId,
-            transporterId: bid.transporterId,
-            driverId: driver.id,
-            vehicleId: vehicle.id,
-            agreedRateEtb: resolvedGross,
-            status: ShipmentStatus.ASSIGNED,
-            currentLat: bid.load.originLat || 8.8950,
-            currentLng: bid.load.originLng || 38.7650,
-            currentSpeedKmh: 0,
-            currentHeading: 68.0,
-            fuelLevelPct: 100.0,
-            initialEtaTimestamp: new Date(Date.now() + 24 * 3600 * 1000),
-            currentPredictedEta: new Date(Date.now() + 24 * 3600 * 1000),
-            progressPercentage: 0,
-          },
-          include: { load: true },
-        });
+        return;
       }
 
       // Update Bid to ACCEPTED & reject others
@@ -177,80 +101,10 @@ export const initiatePayment = async (req: Request, res: Response): Promise<void
       });
 
       if (!targetShipment) {
-        const users = await prisma.user.findMany({ where: { role: 'TRANSPORTER' }, take: 1 });
-        const assignedTransporterId = targetTransporterId || users[0]?.id || load.shipperId;
-
-        let vehicle = await prisma.vehicle.findFirst({
-          where: { transporterId: assignedTransporterId },
+        res.status(404).json({
+          error: 'No active shipment found for this load. The load must be assigned to a transporter and driver first.',
         });
-        if (!vehicle) vehicle = await prisma.vehicle.findFirst();
-        if (!vehicle) {
-          vehicle = await prisma.vehicle.create({
-            data: {
-              transporterId: assignedTransporterId,
-              plateNumber: `3-${Math.floor(10000 + Math.random() * 90000)} ET`,
-              vehicleType: 'DRY_VAN_30T',
-              capacityTons: 30,
-              capacityVolumeCbm: 75,
-              currentLat: load.originLat || 8.8950,
-              currentLng: load.originLng || 38.7650,
-            },
-          });
-        }
-
-        let driver = await prisma.driverProfile.findFirst({
-          where: {
-            assignedVehicle: {
-              transporterId: assignedTransporterId,
-            },
-          },
-          include: { user: true },
-        });
-        if (!driver) driver = await prisma.driverProfile.findFirst({ include: { user: true } });
-
-        if (!driver) {
-          let driverUser = await prisma.user.findFirst({ where: { role: 'DRIVER' } });
-          if (!driverUser) {
-            driverUser = await prisma.user.create({
-              data: {
-                fullName: 'Bekele Tadesse (Fleet Driver)',
-                email: `driver_${Date.now()}@tradeflow.et`,
-                username: `driver_${Date.now().toString().slice(-6)}`,
-                phone: '+251911223344',
-                role: 'DRIVER',
-                passwordHash: 'Driver@123',
-                verificationStatus: 'VERIFIED',
-              },
-            });
-          }
-          driver = await prisma.driverProfile.create({
-            data: {
-              userId: driverUser.id,
-              assignedVehicleId: vehicle.id,
-              driverLicenseNo: `ETH-DL-${Date.now().toString().slice(-6)}`,
-              licenseClass: 'Grade 5 Heavy',
-              experienceYears: 5,
-            },
-            include: { user: true },
-          });
-        }
-
-        targetShipment = await prisma.shipment.create({
-          data: {
-            loadId: load.id,
-            transporterId: assignedTransporterId,
-            driverId: driver.id,
-            vehicleId: vehicle.id,
-            agreedRateEtb: resolvedGross,
-            status: ShipmentStatus.ASSIGNED,
-            currentLat: load.originLat || 8.8950,
-            currentLng: load.originLng || 38.7650,
-            initialEtaTimestamp: new Date(Date.now() + 24 * 3600 * 1000),
-            currentPredictedEta: new Date(Date.now() + 24 * 3600 * 1000),
-            progressPercentage: 0,
-          },
-          include: { load: true },
-        });
+        return;
       }
 
       // Update Load to BOOKED

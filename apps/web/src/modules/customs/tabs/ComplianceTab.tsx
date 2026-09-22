@@ -107,7 +107,7 @@ export const ComplianceTab: React.FC<ComplianceTabProps> = ({
         <div className="space-y-1">
           <div className="inline-flex items-center gap-2 text-emerald-800 font-extrabold text-[10.5px] uppercase tracking-wider">
             <FileCheck2 className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Side-by-Side Compliance Verification Workbench (SRS 4.6.2)</span>
+            <span>Side-by-Side Compliance Verification Workbench</span>
           </div>
           <h2 className="text-xl font-black text-slate-900 tracking-tight">
             Cross-Document Consistency Inspector

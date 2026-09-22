@@ -10,7 +10,7 @@ const isValidUUID = (str?: any): boolean => {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str.trim());
 };
 
-// Audit Trail in-memory & persistent log entries (FR-01 / 4.1.2)
+// Audit Trail in-memory & persistent log entries
 interface AuditEntry {
   id: string;
   action: string;
@@ -300,10 +300,24 @@ export const deleteLoad = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
-// 4. Get Verification Queue (FR-01 / 4.1.2)
+// 4. Get Verification Queue
 export const getVerifications = async (req: Request, res: Response): Promise<void> => {
   try {
     const users = await prisma.user.findMany({
+      where: {
+        role: {
+          notIn: [UserRole.ADMIN, UserRole.CUSTOMS_OFFICER],
+        },
+        OR: [
+          { verificationStatus: VerificationStatus.PENDING },
+          { tin: { not: null } },
+          { tradeLicenseNo: { not: null } },
+          { tradeLicenseDoc: { not: null } },
+          { insuranceDoc: { not: null } },
+          { roadworthinessDoc: { not: null } },
+          { role: UserRole.DRIVER },
+        ],
+      },
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
@@ -314,10 +328,28 @@ export const getVerifications = async (req: Request, res: Response): Promise<voi
         role: true,
         tin: true,
         tradeLicenseNo: true,
+        tradeLicenseDoc: true,
+        insuranceDoc: true,
+        roadworthinessDoc: true,
         verificationStatus: true,
         verificationNotes: true,
         createdAt: true,
         updatedAt: true,
+        driverProfile: {
+          select: {
+            id: true,
+            driverLicenseNo: true,
+            licenseClass: true,
+            experienceYears: true,
+            assignedVehicle: {
+              select: {
+                id: true,
+                plateNumber: true,
+                vehicleType: true,
+              },
+            },
+          },
+        },
         vehicles: {
           select: {
             id: true,
@@ -373,6 +405,22 @@ export const verifyUser = async (req: Request, res: Response): Promise<void> => 
       notes: notes || `Administrator updated status from ${previousStatus} to ${status}.`,
     });
 
+    // Real-Time WebSocket Broadcast to Mobile App and Web Portals
+    const io = req.app?.get('io');
+    if (io) {
+      io.emit('user:verification-updated', {
+        userId: updatedUser.id,
+        email: updatedUser.email,
+        verificationStatus: status,
+        notes: notes || null,
+      });
+      io.emit(`user:${updatedUser.id}:verified`, {
+        userId: updatedUser.id,
+        verificationStatus: status,
+      });
+      io.emit('portal:refresh', { type: 'VERIFICATION', userId: updatedUser.id });
+    }
+
     res.json({
       message: `User verification status updated to ${status}`,
       user: updatedUser,
@@ -380,6 +428,54 @@ export const verifyUser = async (req: Request, res: Response): Promise<void> => 
   } catch (error: any) {
     console.error('Error verifying user:', error);
     res.status(500).json({ error: 'Failed to update verification status' });
+  }
+};
+
+// 5.1 Real-Time Live User Verification Status Check
+export const getUserStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { userId, email } = req.query;
+    if (!userId && !email) {
+      res.status(400).json({ error: 'userId or email parameter is required' });
+      return;
+    }
+
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          ...(userId && typeof userId === 'string' && isValidUUID(userId) ? [{ id: userId.trim() }] : []),
+          ...(email && typeof email === 'string' && email.trim().length > 0 ? [{ email: email.trim().toLowerCase() }] : []),
+        ],
+      },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        companyName: true,
+        verificationStatus: true,
+        verificationNotes: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: 'User not found in system' });
+      return;
+    }
+
+    res.json({
+      userId: user.id,
+      email: user.email,
+      fullName: user.fullName,
+      companyName: user.companyName,
+      verificationStatus: user.verificationStatus,
+      isVerified: user.verificationStatus === 'VERIFIED',
+      verificationNotes: user.verificationNotes,
+      updatedAt: user.updatedAt,
+    });
+  } catch (error: any) {
+    console.error('Error fetching user status:', error);
+    res.status(500).json({ error: 'Failed to fetch user status' });
   }
 };
 
@@ -591,12 +687,7 @@ export const createVehicle = async (req: Request, res: Response): Promise<void> 
     if (!owner && transporterEmail && typeof transporterEmail === 'string' && transporterEmail.trim().length > 0) {
       const emailStr = transporterEmail.toLowerCase().trim();
       owner = await prisma.user.findFirst({
-        where: {
-          OR: [
-            { email: emailStr },
-            ...(emailStr.includes('mulugeta') ? [{ email: 'mulugeta@miaoda.com' }, { email: 'mulugeta@tradeflow.et' }] : []),
-          ],
-        },
+        where: { email: emailStr },
       });
     }
     if (!owner) {
@@ -788,8 +879,6 @@ export const getDrivers = async (req: Request, res: Response): Promise<void> => 
           user: { companyName: { contains: targetTransporter.companyName, mode: 'insensitive' } },
         });
       }
-      orConditions.push({ user: { email: { contains: 'mulugeta', mode: 'insensitive' } } });
-      orConditions.push({ user: { verificationNotes: { contains: 'mulugeta' } } });
 
       whereClause = { OR: orConditions };
     }
@@ -804,6 +893,7 @@ export const getDrivers = async (req: Request, res: Response): Promise<void> => 
             phone: true,
             email: true,
             companyName: true,
+            verificationStatus: true,
             verificationNotes: true,
           },
         },
@@ -829,6 +919,7 @@ export const getDrivers = async (req: Request, res: Response): Promise<void> => 
               phone: true,
               email: true,
               companyName: true,
+              verificationStatus: true,
               verificationNotes: true,
             },
           },
@@ -845,24 +936,28 @@ export const getDrivers = async (req: Request, res: Response): Promise<void> => 
     }
 
     // Map into normalized format containing both root and nested properties
-    const mappedDrivers = drivers.map((d) => ({
-      id: d.id,
-      rawId: d.id,
-      userId: d.userId,
-      fullName: d.user?.fullName || 'Authorized Driver',
-      phone: d.user?.phone || '',
-      email: d.user?.email || '',
-      licenseNumber: d.driverLicenseNo,
-      driverLicenseNo: d.driverLicenseNo,
-      licenseCategory: d.licenseClass,
-      licenseClass: d.licenseClass,
-      experienceYears: d.experienceYears,
-      status: d.isOnline ? 'ACTIVE' : 'AVAILABLE',
-      assignedTruckPlate: d.assignedVehicle?.plateNumber || '',
-      assignedVehicle: d.assignedVehicle,
-      user: d.user,
-      driverProfile: d,
-    }));
+    const mappedDrivers = drivers.map((d) => {
+      const isPending = d.user?.verificationStatus === VerificationStatus.PENDING;
+      return {
+        id: d.id,
+        rawId: d.id,
+        userId: d.userId,
+        fullName: d.user?.fullName || 'Authorized Driver',
+        phone: d.user?.phone || '',
+        email: d.user?.email || '',
+        licenseNumber: d.driverLicenseNo,
+        driverLicenseNo: d.driverLicenseNo,
+        licenseCategory: d.licenseClass,
+        licenseClass: d.licenseClass,
+        experienceYears: d.experienceYears,
+        status: isPending ? 'PENDING' : (d.isOnline ? 'ACTIVE' : 'AVAILABLE'),
+        verificationStatus: d.user?.verificationStatus || 'PENDING',
+        assignedTruckPlate: d.assignedVehicle?.plateNumber || '',
+        assignedVehicle: d.assignedVehicle,
+        user: d.user,
+        driverProfile: d,
+      };
+    });
 
     res.json({ drivers: mappedDrivers });
   } catch (error: any) {
@@ -923,12 +1018,14 @@ export const createDriver = async (req: Request, res: Response): Promise<void> =
       : null;
 
     const transporterTag = transporter ? transporter.id.slice(-6) : 'fleet';
-    const transporterNote = transporter ? `transporter:${transporter.id}` : 'transporter:demo';
-    const company = transporter?.companyName || 'Mulugeta Heavy Logistics & Fleet';
+    const transporterNote = transporter
+      ? `transporter:${transporter.id}|company:${transporter.companyName || 'Transporter Fleet'}`
+      : 'transporter:direct';
+    const company = transporter?.companyName || 'Freight Logistics & Fleet';
 
     const cleanPhoneDigits = phone.replace(/[^0-9]/g, '');
 
-    // Upsert or Create Driver User by phone or email
+    // Upsert or Create Driver User by phone or email - Always set PENDING for admin verification
     const existingDriver = await prisma.user.findFirst({
       where: {
         OR: [
@@ -951,7 +1048,7 @@ export const createDriver = async (req: Request, res: Response): Promise<void> =
           companyName: company,
           verificationNotes: transporterNote,
           passwordHash: (password || 'Driver@123').trim(),
-          verificationStatus: VerificationStatus.VERIFIED,
+          verificationStatus: VerificationStatus.PENDING,
         },
       });
     } else {
@@ -964,7 +1061,7 @@ export const createDriver = async (req: Request, res: Response): Promise<void> =
           verificationNotes: transporterNote,
           passwordHash: (password || 'Driver@123').trim(),
           role: UserRole.DRIVER,
-          verificationStatus: VerificationStatus.VERIFIED,
+          verificationStatus: VerificationStatus.PENDING,
         },
       });
     }
@@ -991,8 +1088,21 @@ export const createDriver = async (req: Request, res: Response): Promise<void> =
       },
     });
 
+    // Real-Time Socket Broadcast to Admin Verification Queue
+    const io = req.app?.get('io');
+    if (io) {
+      io.emit('portal:refresh', { type: 'DRIVER_VERIFICATION', userId: driverUser.id });
+      io.emit('user:verification-updated', {
+        userId: driverUser.id,
+        email: driverUser.email,
+        verificationStatus: VerificationStatus.PENDING,
+        role: UserRole.DRIVER,
+      });
+      io.emit('verifications:updated');
+    }
+
     res.status(201).json({
-      message: 'Driver profile successfully registered and saved into database!',
+      message: 'Driver profile registered and submitted to Administrator for verification!',
       driver: {
         id: profile.id,
         rawId: profile.id,
@@ -1005,7 +1115,8 @@ export const createDriver = async (req: Request, res: Response): Promise<void> =
         licenseCategory: profile.licenseClass,
         licenseClass: profile.licenseClass,
         experienceYears: profile.experienceYears,
-        status: 'ACTIVE',
+        status: 'PENDING',
+        verificationStatus: 'PENDING',
         assignedTruckPlate: vehicle ? vehicle.plateNumber : '',
         assignedVehicle: vehicle,
         user: driverUser,
@@ -1185,12 +1296,7 @@ export const getBids = async (req: Request, res: Response): Promise<void> => {
     } else if (transporterEmail && typeof transporterEmail === 'string' && transporterEmail.trim().length > 0) {
       const emailStr = transporterEmail.toLowerCase().trim();
       const trans = await prisma.user.findFirst({
-        where: {
-          OR: [
-            { email: emailStr },
-            ...(emailStr.includes('mulugeta') ? [{ email: 'mulugeta@miaoda.com' }, { email: 'mulugeta@tradeflow.et' }] : []),
-          ],
-        },
+        where: { email: emailStr },
       });
       if (trans) targetTransporterId = trans.id;
     }
@@ -1546,13 +1652,7 @@ export const dispatchShipment = async (req: Request, res: Response): Promise<voi
     }
     if (!transporter && transporterEmail) {
       transporter = await prisma.user.findFirst({
-        where: {
-          OR: [
-            { email: String(transporterEmail).toLowerCase().trim() },
-            { email: 'mulugeta@tradeflow.et' },
-            { email: 'mulugeta@miaoda.com' },
-          ],
-        },
+        where: { email: String(transporterEmail).toLowerCase().trim() },
       });
     }
     if (!transporter) {
@@ -1636,31 +1736,8 @@ export const dispatchShipment = async (req: Request, res: Response): Promise<voi
     }
 
     if (!driverProfile) {
-      const cleanPhone = (driverPhone || '+251911000000').trim();
-      let driverUser = await prisma.user.findFirst({ where: { phone: cleanPhone } });
-      if (!driverUser) {
-        driverUser = await prisma.user.create({
-          data: {
-            fullName: driverName || 'Assigned Driver',
-            email: `driver_${Date.now()}@tradeflow.et`,
-            username: `driver_${Date.now().toString().slice(-6)}`,
-            phone: cleanPhone,
-            role: UserRole.DRIVER,
-            passwordHash: 'Driver@123',
-            verificationStatus: VerificationStatus.VERIFIED,
-          },
-        });
-      }
-      driverProfile = await prisma.driverProfile.create({
-        data: {
-          userId: driverUser.id,
-          assignedVehicleId: vehicle.id,
-          driverLicenseNo: `ETH-DL-${Date.now().toString().slice(-6)}`,
-          licenseClass: 'Grade 5 Heavy',
-          experienceYears: 5,
-        },
-        include: { user: true },
-      });
+      res.status(400).json({ error: 'Please select an active registered driver to dispatch this shipment' });
+      return;
     }
 
     // Check if the selected vehicle is already on another active shipment

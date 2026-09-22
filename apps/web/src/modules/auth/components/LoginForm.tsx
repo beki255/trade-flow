@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
-import { DEMO_ACCOUNTS } from '@tradeflow/shared';
 import { GoogleAuthButton } from '../../../components/auth/GoogleAuthButton';
-import { Eye, EyeOff, Zap } from 'lucide-react';
+import { Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 
 interface LoginFormProps {
   onAuthSuccess: (role: string) => void;
@@ -12,7 +11,6 @@ interface LoginFormProps {
 export const LoginForm: React.FC<LoginFormProps> = ({ onAuthSuccess }) => {
   const { loginUser, googleAuthUser } = useAuth();
 
-  const [selectedDemoRole, setSelectedDemoRole] = useState<string>('SHIPPER');
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -20,16 +18,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onAuthSuccess }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [notice, setNotice] = useState<string>('');
-
-  const handleSelectDemo = (demoKey: 'SHIPPER' | 'FORWARDER' | 'CUSTOMS' | 'ADMIN') => {
-    setSelectedDemoRole(demoKey);
-    const demo = DEMO_ACCOUNTS[demoKey];
-    setEmail(demo.email);
-    setPassword(demo.password);
-    setErrorMsg('');
-    setNotice(`${demo.fullName} demo credentials filled!`);
-    setTimeout(() => setNotice(''), 2500);
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,9 +30,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onAuthSuccess }) => {
     setErrorMsg('');
 
     try {
-      const res = await loginUser(email, password, selectedDemoRole);
+      const res = await loginUser(email, password);
       setLoading(false);
-      const resolvedRole = res?.user?.role || selectedDemoRole;
+      const resolvedRole = res?.user?.role || 'SHIPPER';
       onAuthSuccess(resolvedRole);
     } catch (err: any) {
       setLoading(false);
@@ -107,7 +95,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onAuthSuccess }) => {
 
         {notice ? (
           <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold flex items-center gap-1.5">
-            <Zap className="w-3.5 h-3.5 text-emerald-600" />
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
             <span>{notice}</span>
           </div>
         ) : null}
@@ -187,67 +175,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onAuthSuccess }) => {
         {/* Google Authentication */}
         <GoogleAuthButton
           mode="login"
-          selectedRole={selectedDemoRole}
+          selectedRole="SHIPPER"
           onSuccess={handleGoogleSuccess}
         />
-
-        {/* 1-Click Demo Accounts Selector */}
-        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">
-              Quick 1-Click Demo Access
-            </span>
-            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
-              Fast Preview
-            </span>
-          </div>
-          <div className="grid grid-cols-2 gap-1.5">
-            <button
-              type="button"
-              onClick={() => handleSelectDemo('SHIPPER')}
-              className={`p-2 rounded-xl text-left border text-[11px] font-bold transition-all ${
-                selectedDemoRole === 'SHIPPER'
-                  ? 'border-[#0284C7] bg-[#E0F2FE] text-[#0284C7]'
-                  : 'border-slate-200 bg-white hover:bg-slate-100 text-slate-700'
-              }`}
-            >
-              📦 Shipper
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSelectDemo('FORWARDER')}
-              className={`p-2 rounded-xl text-left border text-[11px] font-bold transition-all ${
-                selectedDemoRole === 'FORWARDER'
-                  ? 'border-[#0284C7] bg-[#E0F2FE] text-[#0284C7]'
-                  : 'border-slate-200 bg-white hover:bg-slate-100 text-slate-700'
-              }`}
-            >
-              🚢 Forwarder
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSelectDemo('CUSTOMS')}
-              className={`p-2 rounded-xl text-left border text-[11px] font-bold transition-all ${
-                selectedDemoRole === 'CUSTOMS'
-                  ? 'border-[#0284C7] bg-[#E0F2FE] text-[#0284C7]'
-                  : 'border-slate-200 bg-white hover:bg-slate-100 text-slate-700'
-              }`}
-            >
-              🏛️ Customs
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSelectDemo('ADMIN')}
-              className={`p-2 rounded-xl text-left border text-[11px] font-bold transition-all ${
-                selectedDemoRole === 'ADMIN'
-                  ? 'border-[#0284C7] bg-[#E0F2FE] text-[#0284C7]'
-                  : 'border-slate-200 bg-white hover:bg-slate-100 text-slate-700'
-              }`}
-            >
-              🛡️ Admin
-            </button>
-          </div>
-        </div>
 
         {/* Footer Link to Register */}
         <div className="text-center text-xs text-slate-500">

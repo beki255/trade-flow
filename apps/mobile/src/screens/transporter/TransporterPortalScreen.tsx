@@ -47,8 +47,8 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
   const [activeTab, setActiveTab] = useState<TransporterTabType>('overview');
   const [refreshing, setRefreshing] = useState(false);
 
-  // Verification Status
-  const [carrierStatus] = useState<'PENDING' | 'VERIFIED' | 'SUSPENDED'>(
+  // Verification Status (Live Reactive State)
+  const [carrierStatus, setCarrierStatus] = useState<'PENDING' | 'VERIFIED' | 'SUSPENDED'>(
     user?.isVerified
       ? 'VERIFIED'
       : user?.verificationStatus === 'PENDING'
@@ -57,6 +57,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
       ? 'SUSPENDED'
       : 'VERIFIED'
   );
+  const [showApprovalNotice, setShowApprovalNotice] = useState(false);
 
   // Data Collections
   const [fleetList, setFleetList] = useState<TruckItem[]>([]);
@@ -99,7 +100,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
   const [bidSuccess, setBidSuccess] = useState('');
   const [biddingSubTab, setBiddingSubTab] = useState<'create' | 'history'>('create');
 
-  // Load Search & Filter State (SRS 4.2.4)
+  // Load Search & Filter State
   const [loadSearchQuery, setLoadSearchQuery] = useState('');
   const [selectedCargoFilter, setSelectedCargoFilter] = useState('ALL');
   const [selectedRouteFilter, setSelectedRouteFilter] = useState('ALL');
@@ -244,15 +245,50 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
     }
   };
 
+  // Real-Time Live Carrier Verification Sync
+  const checkLiveVerificationStatus = async () => {
+    if (!user?.id && !user?.email) return;
+    try {
+      const q = user?.id ? `userId=${encodeURIComponent(user.id)}` : `email=${encodeURIComponent(user?.email || '')}`;
+      const res = await apiFetch(`/api/portal/user-status?${q}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.verificationStatus && data.verificationStatus !== carrierStatus) {
+          const oldStatus = carrierStatus;
+          setCarrierStatus(data.verificationStatus);
+          if (user) {
+            user.verificationStatus = data.verificationStatus;
+            user.isVerified = data.verificationStatus === 'VERIFIED';
+          }
+          if (oldStatus === 'PENDING' && data.verificationStatus === 'VERIFIED') {
+            setShowApprovalNotice(true);
+            setTimeout(() => setShowApprovalNotice(false), 8000);
+          }
+        }
+      }
+    } catch (e) {
+      // ignore transient network hiccup
+    }
+  };
+
   useEffect(() => {
     refreshAllData();
     const interval = setInterval(refreshAllData, 3500);
     return () => clearInterval(interval);
   }, [user?.id]);
 
+  // High-Frequency Real-Time Poller while account is PENDING
+  useEffect(() => {
+    checkLiveVerificationStatus();
+    if (carrierStatus === 'PENDING') {
+      const liveTimer = setInterval(checkLiveVerificationStatus, 1500);
+      return () => clearInterval(liveTimer);
+    }
+  }, [carrierStatus, user?.id, user?.email]);
+
   const onRefresh = async () => {
     setRefreshing(true);
-    await refreshAllData();
+    await Promise.all([checkLiveVerificationStatus(), refreshAllData()]);
     setRefreshing(false);
   };
 
@@ -365,7 +401,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
       licenseNumber: driverLicense.trim() || `ETH-DL-${Math.floor(100000 + Math.random() * 900000)}`,
       licenseCategory: driverCategory,
       experienceYears: driverExperience || '5',
-      status: 'ACTIVE',
+      status: 'PENDING',
       assignedTruckPlate: driverAssignedPlate,
     };
     setDriversList((prev) => [newDriver, ...prev]);
@@ -397,7 +433,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
             licenseNumber: saved.licenseNumber || saved.driverLicenseNo || newDriver.licenseNumber,
             licenseCategory: saved.licenseCategory || saved.licenseClass || newDriver.licenseCategory,
             experienceYears: `${saved.experienceYears || newDriver.experienceYears}`,
-            status: 'ACTIVE',
+            status: saved.status || (saved.user?.verificationStatus === 'VERIFIED' ? 'ACTIVE' : 'PENDING'),
             assignedTruckPlate: saved.assignedTruckPlate || saved.assignedVehicle?.plateNumber || newDriver.assignedTruckPlate || '',
           };
           setDriversList((prev) => [mappedSaved, ...prev.filter((d) => d.id !== newDriver.id && d.id !== mappedSaved.id)]);
@@ -413,7 +449,10 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
     setDriverLicense('');
     setDriverAssignedPlate('');
     setShowAddDriver(false);
-    Alert.alert('Success', `Driver ${newDriver.fullName} registered successfully!`);
+    Alert.alert(
+      '⏳ Driver Verification Pending',
+      `Driver ${newDriver.fullName} registered and submitted for Administrator verification. The admin will review their commercial driving credentials.`
+    );
   };
 
   // Submit Bid Handler
@@ -538,7 +577,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
     }
   };
 
-  // Delete / Withdraw Bid (Transporter Action - SRS 4.2.4)
+  // Delete / Withdraw Bid
   const handleDeleteBid = (bid: BidItem) => {
     const executeWithdraw = async () => {
       const targetId = bid.rawId || bid.id;
@@ -626,8 +665,17 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
       return;
     }
 
-    // Strict Guard: Driver must not be on another active trip
+    // Strict Guard: Driver must be verified by Platform Admin
     const driverObj = driversList.find((d) => d.fullName === dispatchDriver);
+    if (driverObj && driverObj.status === 'PENDING') {
+      Alert.alert(
+        '⏳ Driver Not Verified',
+        `Driver ${dispatchDriver} is pending administrator verification and cannot be dispatched on corridor shipments until verified.`
+      );
+      return;
+    }
+
+    // Strict Guard: Driver must not be on another active trip
     if (driverObj && (driverObj.status === 'IN_TRANSIT' || driverObj.status === 'ON_TRIP')) {
       Alert.alert(
         'Driver Busy',
@@ -734,14 +782,39 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0284C7']} />}
       >
+        {/* Instant Real-Time Verification Celebration Banner */}
+        {showApprovalNotice && (
+          <View style={{
+            flexDirection: 'row',
+            backgroundColor: '#ECFDF5',
+            borderWidth: 1.5,
+            borderColor: '#86EFAC',
+            borderRadius: 16,
+            padding: 14,
+            gap: 12,
+            alignItems: 'center',
+            marginBottom: 10,
+          }}>
+            <Text style={{ fontSize: 24 }}>🎉</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, fontWeight: '900', color: '#065F46' }}>
+                Carrier Account Verified & Approved in Real Time!
+              </Text>
+              <Text style={{ fontSize: 11, color: '#047857', marginTop: 2, fontWeight: '600' }}>
+                Administrator has approved your compliance credentials. You can now submit quotes and bid on corridor consignments.
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Verification Alert Banner */}
         {carrierStatus === 'PENDING' && (
           <View style={styles.verificationBanner}>
             <Text style={styles.verificationIcon}>⏳</Text>
             <View style={{ flex: 1 }}>
-              <Text style={styles.verificationTitle}>Carrier Verification Pending</Text>
+              <Text style={styles.verificationTitle}>Carrier Verification Pending (Live Sync)</Text>
               <Text style={styles.verificationSub}>
-                Your commercial transport license and GIT insurance are currently under review by Platform Compliance. You can browse corridor loads while review is underway.
+                Your compliance credentials (GIT Insurance and FTA Roadworthiness) are currently under review. This page updates automatically in real time the moment an Administrator approves your account.
               </Text>
             </View>
           </View>

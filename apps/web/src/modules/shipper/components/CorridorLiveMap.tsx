@@ -1298,7 +1298,7 @@ export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, 
           <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Key Milestones (FR-03.4)
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Key Milestones
               </h3>
               <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
                 Checkpoint {waypoints.findIndex((w) => w.status === 'ACTIVE_NOW') + 1 || (simProgress >= 98 ? waypoints.length : 1)} of {waypoints.length}

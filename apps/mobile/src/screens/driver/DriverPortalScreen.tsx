@@ -52,7 +52,7 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
   const [activeTrip, setActiveTrip] = useState<ActiveTripDetails | null>(null);
   const [lastDeliveredTrip, setLastDeliveredTrip] = useState<ActiveTripDetails | null>(null);
 
-  // Offline Telemetry Queue Buffer (SRS 4.3.1)
+  // Offline Telemetry Queue Buffer
   const [offlineQueue, setOfflineQueue] = useState<any[]>([]);
   const [lastGpsSyncTime, setLastGpsSyncTime] = useState<string>('');
 
@@ -213,7 +213,7 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
 
   const [actionLoading, setActionLoading] = useState(false);
 
-  // 🚀 Start Trip Handler (SRS 4.3.4 Milestone 1: Departed Origin)
+  // 🚀 Start Trip Handler (Milestone 1: Departed Origin)
   const handleStartTrip = async () => {
     // If GPS is not yet granted, request GPS right before starting trip
     if (gpsStatus !== 'GRANTED') {

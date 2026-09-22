@@ -11,7 +11,6 @@ import {
   Linking,
   Platform,
 } from 'react-native';
-import { DEMO_ACCOUNTS } from '@tradeflow/shared';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../context/LanguageContext';
 import { getApiBaseUrl, setCustomServerIp, getCustomServerIp, apiFetch } from '../utils/api';
@@ -36,23 +35,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(false);
   const [showIpModal, setShowIpModal] = useState(false);
-  const [customIpInput, setCustomIpInput] = useState(getCustomServerIp() || '10.18.93.34');
-
-  const handleAutoFillDriver = () => {
-    setIdentifier('0925537199');
-    setPassword('Driver@123');
-    setErrorMsg('');
-    setNotice('Driver demo credentials filled (0925537199)!');
-    setTimeout(() => setNotice(''), 2000);
-  };
-
-  const handleAutoFillTransporter = () => {
-    setIdentifier(DEMO_ACCOUNTS.TRANSPORTER.email);
-    setPassword(DEMO_ACCOUNTS.TRANSPORTER.password);
-    setErrorMsg('');
-    setNotice('Transporter demo credentials filled!');
-    setTimeout(() => setNotice(''), 2000);
-  };
+  const [customIpInput, setCustomIpInput] = useState(getCustomServerIp() || '192.168.137.1');
 
   const handleSubmit = async () => {
     if (!identifier || !password) {
@@ -208,30 +191,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             </Text>
           </TouchableOpacity>
 
-          {/* Fast Demo One-Click Fill Buttons */}
-          <View style={styles.demoBar}>
-            <Text style={styles.demoTitle}>
-              Quick 1-Click Demo Accounts:
-            </Text>
-            <View style={styles.demoBtnRow}>
-              <TouchableOpacity
-                style={styles.demoChip}
-                onPress={handleAutoFillDriver}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="person-outline" size={13} color="#0284C7" style={{ marginRight: 4 }} />
-                <Text style={styles.demoChipText}>Driver Demo (0925537199)</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.demoChip}
-                onPress={handleAutoFillTransporter}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="business-outline" size={13} color="#0284C7" style={{ marginRight: 4 }} />
-                <Text style={styles.demoChipText}>Transporter Demo</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+
 
           {/* Divider */}
           <View style={styles.dividerRow}>
@@ -520,36 +480,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
-  demoBar: {
-    marginTop: 14,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-    alignItems: 'center',
-  },
-  demoTitle: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#64748B',
-    marginBottom: 8,
-  },
-  demoBtnRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  demoChip: {
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  demoChipText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#1E293B',
-  },
+
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',

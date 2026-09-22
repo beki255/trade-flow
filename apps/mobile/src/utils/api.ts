@@ -117,10 +117,11 @@ export const apiFetch = async (
       } catch (fallbackErr) {}
     }
 
-    // Fallback strategy 2: If on Android physical phone / Expo Go, try computer's active Wi-Fi LAN IP
+    // Fallback strategy 2: If on Android physical phone / Expo Go, try computer's active LAN / Hotspot IP
     if (Platform.OS === 'android') {
       try {
-        const lanRes = await fetch(`http://10.18.93.34:5000${cleanEndpoint}`, {
+        const fallbackHost = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.137.1:5000';
+        const lanRes = await fetch(`${fallbackHost}${cleanEndpoint}`, {
           ...options,
         });
         return lanRes;

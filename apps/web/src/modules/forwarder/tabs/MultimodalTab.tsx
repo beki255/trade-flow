@@ -32,7 +32,7 @@ export const MultimodalTab: React.FC<MultimodalTabProps> = ({
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/20 border border-sky-400/30 text-sky-300 text-[10.5px] font-extrabold uppercase tracking-widest">
             <GitMerge className="w-3.5 h-3.5" />
-            <span>Multi-Modal Corridor Tracking (SRS 3.1)</span>
+            <span>Multi-Modal Corridor Tracking</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
             Port to Dry Port to Regional Warehouse Tracking

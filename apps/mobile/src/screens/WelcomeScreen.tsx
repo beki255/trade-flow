@@ -313,15 +313,4 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
   },
-  fastDemoWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 4,
-  },
-  fastDemoLabel: {
-    fontSize: 11,
-    color: '#64748B',
-    fontWeight: '700',
-  },
 });

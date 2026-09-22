@@ -9,7 +9,7 @@ import {
   StatusBar,
   Platform,
 } from 'react-native';
-import { DEMO_ACCOUNTS } from '@tradeflow/shared';
+
 
 export const LandingScreen: React.FC = () => {
   const [selectedRole, setSelectedRole] = useState<string>('DRIVER');
@@ -86,7 +86,7 @@ export const LandingScreen: React.FC = () => {
             Turn-by-turn corridor navigation, GPS waypoint check-ins, geotagged incident reports & digital signature POD.
           </Text>
           <View style={styles.userRow}>
-            <Text style={styles.userEmail}>{DEMO_ACCOUNTS.DRIVER.email}</Text>
+            <Text style={styles.userEmail}>Driver Mode</Text>
             <Text style={styles.userStatus}>● Ready</Text>
           </View>
         </TouchableOpacity>
@@ -113,8 +113,8 @@ export const LandingScreen: React.FC = () => {
             Browse corridor loads, submit competitive bids, monitor fleet positions, and review fuel consumption analytics.
           </Text>
           <View style={styles.userRow}>
-            <Text style={styles.userEmail}>{DEMO_ACCOUNTS.TRANSPORTER.email}</Text>
-            <Text style={styles.userStatus}>● 3 Trucks</Text>
+            <Text style={styles.userEmail}>Transporter Mode</Text>
+            <Text style={styles.userStatus}>● Fleet Ready</Text>
           </View>
         </TouchableOpacity>
 

@@ -78,7 +78,7 @@ export const DisputesTab: React.FC<DisputesTabProps> = ({
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/30 text-amber-300 text-[10.5px] font-extrabold uppercase tracking-widest">
             <Scale className="w-3.5 h-3.5" />
-            <span>TeleBirr Smart Escrow Mediation Center (FR-10.4)</span>
+            <span>TeleBirr Smart Escrow Mediation Center</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
             Escrow Dispute Arbitration Workbench

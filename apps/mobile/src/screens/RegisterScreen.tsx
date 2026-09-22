@@ -38,15 +38,19 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
   const [tradeLicenseNo, setTradeLicenseNo] = useState('');
   const [password, setPassword] = useState('');
 
-  // Mandatory Document Uploads
+  // Mandatory Compliance Documents (The 2 Transporter Registration Documents)
   const [insuranceDocName, setInsuranceDocName] = useState('');
+  const [insuranceDocData, setInsuranceDocData] = useState('');
   const [roadworthinessDocName, setRoadworthinessDocName] = useState('');
+  const [roadworthinessDocData, setRoadworthinessDocData] = useState('');
 
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Real Native & Web Device File Explorer Picker
-  const handlePickInsurance = async () => {
+  // Real Native & Web Device File Explorer Picker with Data URL extraction
+  const pickDocument = async (
+    onSuccess: (name: string, dataUrl: string) => void
+  ) => {
     try {
       if (Platform.OS === 'web' && typeof document !== 'undefined') {
         const input = document.createElement('input');
@@ -55,7 +59,11 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
         input.onchange = (e: any) => {
           const file = e.target?.files?.[0];
           if (file) {
-            setInsuranceDocName(file.name);
+            const reader = new FileReader();
+            reader.onload = () => {
+              onSuccess(file.name, reader.result as string);
+            };
+            reader.readAsDataURL(file);
             setErrorMsg('');
           }
         };
@@ -66,7 +74,18 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
           copyToCacheDirectory: true,
         });
         if (!res.canceled && res.assets && res.assets.length > 0) {
-          setInsuranceDocName(res.assets[0].name);
+          const asset = res.assets[0];
+          try {
+            const resp = await fetch(asset.uri);
+            const blob = await resp.blob();
+            const reader = new FileReader();
+            reader.onload = () => {
+              onSuccess(asset.name, reader.result as string);
+            };
+            reader.readAsDataURL(blob);
+          } catch {
+            onSuccess(asset.name, asset.uri);
+          }
           setErrorMsg('');
         }
       }
@@ -75,33 +94,18 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
     }
   };
 
-  const handlePickRoadworthiness = async () => {
-    try {
-      if (Platform.OS === 'web' && typeof document !== 'undefined') {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'application/pdf,image/*';
-        input.onchange = (e: any) => {
-          const file = e.target?.files?.[0];
-          if (file) {
-            setRoadworthinessDocName(file.name);
-            setErrorMsg('');
-          }
-        };
-        input.click();
-      } else {
-        const res = await DocumentPicker.getDocumentAsync({
-          type: ['application/pdf', 'image/*'],
-          copyToCacheDirectory: true,
-        });
-        if (!res.canceled && res.assets && res.assets.length > 0) {
-          setRoadworthinessDocName(res.assets[0].name);
-          setErrorMsg('');
-        }
-      }
-    } catch (err) {
-      console.warn('Document picker error:', err);
-    }
+  const handlePickInsurance = () => {
+    pickDocument((name, data) => {
+      setInsuranceDocName(name);
+      setInsuranceDocData(data);
+    });
+  };
+
+  const handlePickRoadworthiness = () => {
+    pickDocument((name, data) => {
+      setRoadworthinessDocName(name);
+      setRoadworthinessDocData(data);
+    });
   };
 
   const handleRegister = async () => {
@@ -124,8 +128,12 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
       companyName: companyName.trim(),
       tin: tin.trim(),
       tradeLicenseNo: tradeLicenseNo ? tradeLicenseNo.trim() : null,
-      insuranceDoc: insuranceDocName || null,
-      roadworthinessDoc: roadworthinessDocName || null,
+      insuranceDoc: insuranceDocData
+        ? JSON.stringify({ name: insuranceDocName, data: insuranceDocData })
+        : (insuranceDocName || null),
+      roadworthinessDoc: roadworthinessDocData
+        ? JSON.stringify({ name: roadworthinessDocName, data: roadworthinessDocData })
+        : (roadworthinessDocName || null),
       password,
     };
 
@@ -182,17 +190,6 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
           
           <Text style={styles.screenHeading}>Transporter Registration</Text>
           <Text style={styles.screenSubtitle}>Register your freight transport company & fleet</Text>
-
-          {/* Driver Information Notice */}
-          <View style={styles.driverNoticeBox}>
-            <Ionicons name="information-circle" size={20} color="#0284C7" style={{ marginRight: 8, marginTop: 2 }} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.driverNoticeTitle}>Are you a Heavy Truck Driver?</Text>
-              <Text style={styles.driverNoticeText}>
-                Drivers do not register here. Your Transport Company registers you inside their Transporter Portal and issues your login credentials.
-              </Text>
-            </View>
-          </View>
 
           {/* Error Message */}
           {errorMsg ? (
@@ -275,9 +272,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
           {/* Mandatory Compliance Documents */}
           <View style={styles.docsContainer}>
             <Text style={styles.docsSectionHeader}>Company Verification Documents</Text>
-            <Text style={styles.docsSectionSub}>Upload PDF or high-resolution photo scans</Text>
-
-            {/* Insurance Documentation */}
+            {/* Insurance Documentation (GIT) */}
             <TouchableOpacity
               style={[styles.uploadCard, insuranceDocName ? styles.uploadCardDone : null]}
               onPress={handlePickInsurance}
@@ -420,31 +415,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 6,
     lineHeight: 16,
-  },
-  driverNoticeBox: {
-    flexDirection: 'row',
-    backgroundColor: '#F0F9FF',
-    borderWidth: 1,
-    borderColor: '#BAE6FD',
-    borderRadius: 14,
-    padding: 12,
-    gap: 10,
-    alignItems: 'flex-start',
-  },
-  driverNoticeIcon: {
-    fontSize: 16,
-    marginTop: 1,
-  },
-  driverNoticeTitle: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#0369A1',
-    marginBottom: 2,
-  },
-  driverNoticeText: {
-    fontSize: 10.5,
-    color: '#0C4A6E',
-    lineHeight: 15,
   },
   errorBox: {
     backgroundColor: '#FEF2F2',

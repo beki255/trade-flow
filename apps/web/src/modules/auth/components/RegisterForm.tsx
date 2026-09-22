@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
-import { GoogleAuthButton } from '../../../components/auth/GoogleAuthButton';
 import {
   Package,
   Building2,
@@ -16,7 +15,7 @@ interface RegisterFormProps {
 }
 
 export const RegisterForm: React.FC<RegisterFormProps> = ({ onAuthSuccess }) => {
-  const { registerUser, googleAuthUser } = useAuth();
+  const { registerUser } = useAuth();
 
   const [selectedRole, setSelectedRole] = useState<string>('SHIPPER');
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -28,6 +27,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onAuthSuccess }) => 
   const [tin, setTin] = useState<string>('');
   const [licenseNo, setLicenseNo] = useState<string>('');
   const [tradeLicenseDocName, setTradeLicenseDocName] = useState<string>('');
+  const [tradeLicenseDocData, setTradeLicenseDocData] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
@@ -39,8 +39,20 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onAuthSuccess }) => 
     input.onchange = (e: any) => {
       const file = e.target?.files?.[0];
       if (file) {
+        if (file.size > 15 * 1024 * 1024) {
+          setErrorMsg('Selected file is too large (maximum 15MB)');
+          return;
+        }
         setTradeLicenseDocName(file.name);
-        setErrorMsg('');
+        const reader = new FileReader();
+        reader.onload = () => {
+          setTradeLicenseDocData(reader.result as string);
+          setErrorMsg('');
+        };
+        reader.onerror = () => {
+          setErrorMsg('Could not read file. Please try again.');
+        };
+        reader.readAsDataURL(file);
       }
     };
     input.click();
@@ -80,7 +92,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onAuthSuccess }) => 
         physicalAddress: physicalAddress || 'Addis Ababa, Ethiopia',
         tin: tin || undefined,
         tradeLicenseNo: licenseNo || undefined,
-        tradeLicenseDoc: tradeLicenseDocName || undefined,
+        tradeLicenseDoc: tradeLicenseDocData
+          ? JSON.stringify({ name: tradeLicenseDocName, data: tradeLicenseDocData })
+          : (tradeLicenseDocName || undefined),
         role: selectedRole,
         password,
       };
@@ -90,25 +104,6 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onAuthSuccess }) => 
     } catch (err: any) {
       setLoading(false);
       setErrorMsg(err.message || 'Registration failed. Please check your details.');
-    }
-  };
-
-  const handleGoogleSuccess = async (googleData: { email: string; fullName: string; credential?: string }) => {
-    setLoading(true);
-    setErrorMsg('');
-    try {
-      const res = await googleAuthUser(
-        googleData.email,
-        googleData.fullName,
-        selectedRole,
-        'register'
-      );
-      setLoading(false);
-      const role = res?.user?.role || selectedRole;
-      onAuthSuccess(role);
-    } catch (err: any) {
-      setLoading(false);
-      setErrorMsg(err.message || 'Google Registration failed.');
     }
   };
 
@@ -170,22 +165,6 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onAuthSuccess }) => 
               );
             })}
           </div>
-
-          {/* Government & Regulatory Notice */}
-          <div className="mt-3 p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-start gap-2.5 text-[11px] text-slate-600">
-            <Shield className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-            <div className="space-y-0.5">
-              <span className="font-bold text-slate-800">
-                Government Officials (Ethiopian Customs Commission / ECC):
-              </span>
-              <p className="text-[10px] text-slate-500 leading-normal">
-                Customs Inspector accounts are institutional and provisioned directly by Platform Administration.{' '}
-                <Link to="/login" className="text-emerald-700 font-bold hover:underline">
-                  Sign In with Official Credentials ➔
-                </Link>
-              </p>
-            </div>
-          </div>
         </div>
 
         {/* Notifications */}
@@ -206,7 +185,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onAuthSuccess }) => 
               required
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="e.g. Dawit Tadesse"
+              placeholder="e.g. Full Name"
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#0284C7] outline-none text-xs font-medium text-slate-900"
             />
           </div>
@@ -220,7 +199,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onAuthSuccess }) => 
               required
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
-              placeholder="e.g. Ethio Coffee Exporters PLC"
+              placeholder="e.g. Enterprise or Company Legal Name"
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#0284C7] outline-none text-xs font-medium text-slate-900"
             />
           </div>
@@ -274,7 +253,10 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onAuthSuccess }) => 
               {tradeLicenseDocName && (
                 <button
                   type="button"
-                  onClick={() => setTradeLicenseDocName('')}
+                  onClick={() => {
+                    setTradeLicenseDocName('');
+                    setTradeLicenseDocData('');
+                  }}
                   className="text-rose-500 hover:text-rose-700 text-xs font-bold px-1"
                 >
                   ✕
@@ -358,22 +340,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onAuthSuccess }) => 
           </button>
         </form>
 
-        {/* Divider */}
-        <div className="flex items-center gap-3">
-          <div className="flex-1 h-[1px] bg-slate-200" />
-          <span className="text-[11px] font-bold text-slate-400 uppercase">Or Register With</span>
-          <div className="flex-1 h-[1px] bg-slate-200" />
-        </div>
-
-        {/* Google Authentication */}
-        <GoogleAuthButton
-          mode="register"
-          selectedRole={selectedRole}
-          onSuccess={handleGoogleSuccess}
-        />
-
         {/* Footer Link to Login */}
-        <div className="text-center text-xs text-slate-500">
+        <div className="text-center text-xs text-slate-500 pt-2 border-t border-slate-100">
           Already registered?{' '}
           <Link to="/login" className="font-bold text-[#0284C7] hover:underline">
             Log In

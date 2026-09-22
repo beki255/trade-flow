@@ -53,30 +53,70 @@ export const VerificationTable: React.FC<VerificationTableProps> = ({
               {/* User & Company */}
               <td className="py-4 px-4">
                 <div className="font-extrabold text-slate-900">
-                  {item.companyName || item.fullName}
+                  {item.role === 'DRIVER' ? item.fullName : (item.companyName || item.fullName)}
                 </div>
                 <div className="text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5">
-                  <span>👤 {item.fullName}</span>
-                  <span>•</span>
-                  <span>📞 {item.phone}</span>
+                  {item.role === 'DRIVER' ? (
+                    <>
+                      <span>🏢 Fleet: {item.companyName || 'Carrier Network'}</span>
+                      <span>•</span>
+                      <span>📞 {item.phone}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>👤 {item.fullName}</span>
+                      <span>•</span>
+                      <span>📞 {item.phone}</span>
+                    </>
+                  )}
                 </div>
               </td>
 
               {/* Role Badge */}
               <td className="py-4 px-4">
-                <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-blue-50 text-blue-700 border border-blue-200">
-                  {item.role}
+                <span
+                  className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-extrabold border ${
+                    item.role === 'DRIVER'
+                      ? 'bg-purple-50 text-purple-700 border-purple-200'
+                      : 'bg-blue-50 text-blue-700 border-blue-200'
+                  }`}
+                >
+                  {item.role === 'DRIVER' ? '🚚 DRIVER' : item.role}
                 </span>
               </td>
 
-              {/* TIN & License */}
+              {/* TIN & License / Driver License */}
               <td className="py-4 px-4 font-mono text-[11px] text-slate-700">
-                <div>
-                  TIN: <span className="font-bold text-slate-900">{item.tin || 'Pending'}</span>
-                </div>
-                <div className="text-[10px] text-slate-500">
-                  Lic: {item.tradeLicenseNo || 'Attached'}
-                </div>
+                {item.role === 'DRIVER' ? (
+                  <div>
+                    <div>
+                      DL: <span className="font-bold text-slate-900">{item.driverProfile?.driverLicenseNo || 'Pending'}</span>
+                    </div>
+                    <div className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-0.5">
+                      <span>{item.driverProfile?.licenseClass || 'Grade 5'}</span>
+                      {item.driverProfile?.assignedVehicle?.plateNumber && (
+                        <span>• 🚛 {item.driverProfile.assignedVehicle.plateNumber}</span>
+                      )}
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                        🪪 Driver License
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div>
+                      TIN: <span className="font-bold text-slate-900">{item.tin || 'None'}</span>
+                    </div>
+                    <div className="text-[10px] text-slate-500 flex items-center gap-1.5">
+                      <span>Lic: {item.tradeLicenseNo || 'None'}</span>
+                      {(item.tradeLicenseDoc || item.insuranceDoc || item.roadworthinessDoc) && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                          📄 Docs Attached
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </td>
 
               {/* Verification Status */}
@@ -114,7 +154,7 @@ export const VerificationTable: React.FC<VerificationTableProps> = ({
                       onClick={() => onUpdateStatus(item.id, 'VERIFIED')}
                       className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shadow-sm transition-all cursor-pointer"
                     >
-                      Approve
+                      {item.role === 'DRIVER' ? 'Approve Driver' : 'Approve'}
                     </button>
                   )}
                   {item.verificationStatus !== 'SUSPENDED' && (
