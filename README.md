@@ -157,20 +157,26 @@ npm run dev:mobile
 
 ## 📑 Interactive Swagger API Documentation
 
-TradeFlow comes pre-configured with full **OpenAPI 3.0** documentation and an interactive **Swagger UI**:
+TradeFlow comes equipped with a comprehensive **OpenAPI 3.0** specification and interactive **Swagger UI** with live *Try-It-Out* capabilities:
 
-- 🔗 **Swagger UI Console**: [http://localhost:5000/api/docs](http://localhost:5000/api/docs)
-- 🔗 **OpenAPI Schema (JSON)**: [http://localhost:5000/api/docs/json](http://localhost:5000/api/docs/json)
+- 🔗 **Interactive Swagger UI Console**: [http://localhost:5000/api/docs](http://localhost:5000/api/docs)
+- 🔗 **Raw OpenAPI Specification (JSON)**: [http://localhost:5000/api/docs/json](http://localhost:5000/api/docs/json)
 
-### Key Endpoints:
-- `POST /api/auth/register` — Register business identity with TIN & trade licenses.
-- `POST /api/auth/login` — Authenticate users with JWT session issuance.
-- `GET /api/portal/verifications` — Retrieve pending KYC queue for organizations and drivers.
-- `POST /api/portal/verify-user` — Update verification status (`VERIFIED`, `SUSPENDED`, `REJECTED`) with real-time socket emit.
-- `GET /api/portal/drivers` — Fetch scoped drivers with license details and verification status.
-- `POST /api/portal/drivers` — Register driver into PostgreSQL database in `PENDING` status.
-- `GET /api/portal/vehicles` — Query fleet vehicles with GIT insurance & roadworthiness certificates.
-- `POST /api/portal/dispatch` — Assign verified truck & verified driver to an accepted consignment.
+### Complete 11-Module API Coverage (48 Endpoints):
+
+| Module Tag | Path Prefix | Key Endpoints & Capabilities |
+| :--- | :--- | :--- |
+| **System** | `/api/health` | Service health, PostgreSQL connectivity, corridor status |
+| **Authentication** | `/api/auth` | Multi-persona registration, JWT login, Google OAuth 2.0, user directory |
+| **Portal & Marketplace** | `/api/portal` | Loads, competitive RFQ bids, fleet trucks, drivers, verifications, audit logs, ratings |
+| **AI Freight Matching** | `/api/matching` | Multi-attribute weighted utility ranking (Cost 35%, Rel 30%, Prox 20%, Fuel 15%) |
+| **Telematics & Live Tracking** | `/api/tracking` | GPS telemetry ingestion, corridor waypoint geofencing, route polylines, dynamic ETA |
+| **Dynamic Pricing** | `/api/pricing` | Itemized spot rates, fuel index surcharges, contract rate divergence monitor (>20%) |
+| **Corridor Optimization** | `/api/optimization` | Multi-criteria route planning (Highway A-1 vs Southern Bypass), road hazard alerts |
+| **Customs Clearance** | `/api/customs` | Automated pre-submission document validator, officer review queue, clearance ledger |
+| **Payments & Escrow** | `/api/payments` | TeleBirr / CBE Birr escrow deposit, 5% platform fee, driver settlement, dispute arbitration |
+| **Freight Forwarder** | `/api/forwarder` | Multi-shipper client portfolio, LTL cargo consolidation into 40ft containers, multimodal tracking |
+| **Analytics & KPIs** | `/api/analytics` | Fleet fuel efficiency benchmarking (km/L), corridor driver eco-scores, transporter rankings |
 
 ---
 

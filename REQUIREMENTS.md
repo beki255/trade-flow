@@ -83,16 +83,15 @@ Sections follow standard SRS structure: Overall Description (§2), Page & Module
 | **Customs Authority Staff**       | Web App (Desktop)          | Medium                | Review digital clearance queue, validate cross-document compliance, approve/reject clearances with official notes.                                  |
 | **Platform Administrator**        | Web App (Admin Console)    | High                  | Verify business licenses & TINs, mediate payment disputes, monitor system health, audit logs, fraud detection.                                      |
 
-### 2.2 Demo Accounts (Pre-configured for Testing & Evaluation)
+### 2.2 Seeded Administrative & Regulatory Accounts (from `seed.ts`)
 
-| Role                        | Email                   | Username     | Password       | Target Platform & Route              |
-| :-------------------------- | :---------------------- | :----------- | :------------- | :----------------------------------- |
-| **Shipper**           | `dawit@miaoda.com`    | `dawit`    | `Demo1234!`  | Web App (`/shipper/dashboard`)     |
-| **Freight Forwarder** | `sara@miaoda.com`     | `sara`     | `Demo1234!`  | Web App (`/forwarder/dashboard`)   |
-| **Customs Staff**     | `kebede@miaoda.com`   | `kebede`   | `Demo1234!`  | Web App (`/customs/dashboard`)     |
-| **Administrator**     | `admin@miaoda.com`    | `admin`    | `Admin2024!` | Web App (`/admin/dashboard`)       |
-| **Transporter**       | `mulugeta@miaoda.com` | `mulugeta` | `Demo1234!`  | Mobile App (`/transporter/home`)   |
-| **Driver**            | `driver@tradeflow.et` | `driver`   | `Demo1234!`  | Mobile App (`/driver/active-trip`) |
+| Role | Email | Username | Password | Target Platform & Route |
+| :--- | :--- | :--- | :--- | :--- |
+| **Platform Administrator** | `admin@miaoda.com` | `admin` | `Admin2024!` | Web App (`/admin`) |
+| **Customs Officer (ECC)** | `kebede@miaoda.com` | `kebede` | `Demo1234!` | Web App (`/customs`) |
+
+> **Note on Commercial Actors (Shippers, Transporters, Forwarders, Drivers):**  
+> Per system specification, commercial logistics participants register directly via the **Register Screen** (Web or Mobile), submitting their legal business identity (TIN, Trade License, GIT Insurance, Roadworthiness, or Driving License). They are verified dynamically by the System Administrator in the **Admin Verification Queue** (`/admin`).
 
 ---
 
