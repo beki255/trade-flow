@@ -16,7 +16,7 @@ export const CommissionCustomsModal: React.FC<CommissionCustomsModalProps> = ({
   const [officerEmail, setOfficerEmail] = useState('');
   const [officerStation, setOfficerStation] = useState('Galafi Border Checkpoint');
   const [officerBadge, setOfficerBadge] = useState('ECC-OFFICER-' + Math.floor(1000 + Math.random() * 9000));
-  const [officerPassword, setOfficerPassword] = useState('Customs2026!');
+  const [officerPassword, setOfficerPassword] = useState('');
   const [provisioning, setProvisioning] = useState(false);
   const [provisionError, setProvisionError] = useState('');
 
@@ -157,6 +157,7 @@ export const CommissionCustomsModal: React.FC<CommissionCustomsModalProps> = ({
               required
               value={officerPassword}
               onChange={(e) => setOfficerPassword(e.target.value)}
+              placeholder="Enter temporary password"
               className="w-full px-3.5 py-2 text-xs font-mono rounded-xl border border-slate-300 focus:border-teal-600 outline-none text-slate-900"
             />
           </div>

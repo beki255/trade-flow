@@ -378,7 +378,8 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="Enter password"
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                 className="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-slate-300 focus:border-[#0284C7] outline-none text-xs font-medium text-slate-900"
               />
               <button

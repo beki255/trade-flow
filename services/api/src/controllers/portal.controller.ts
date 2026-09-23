@@ -1133,7 +1133,7 @@ export const createDriver = async (req: Request, res: Response): Promise<void> =
           phone: phone.trim(),
           companyName: company,
           verificationNotes: null,
-          passwordHash: (password || 'Driver@123').trim(),
+          passwordHash: (password && password.trim().length > 0) ? password.trim() : existingDriver.passwordHash,
           role: UserRole.DRIVER,
           verificationStatus: VerificationStatus.PENDING,
         },

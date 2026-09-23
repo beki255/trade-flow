@@ -147,8 +147,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
-                placeholder="••••••••"
+                placeholder="Enter password"
                 placeholderTextColor="#94A3B8"
+                autoComplete="password"
               />
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
