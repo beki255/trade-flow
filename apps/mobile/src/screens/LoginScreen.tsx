@@ -143,7 +143,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             <Text style={styles.inputLabel}>{t('password')}</Text>
             <View style={styles.passwordWrapper}>
               <TextInput
-                style={[styles.textInput, { flex: 1, borderWidth: 0 }]}
+                style={[styles.textInput, { flex: 1, borderWidth: 0, backgroundColor: 'transparent' }]}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
@@ -153,11 +153,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
                 style={styles.eyeBtn}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                activeOpacity={0.7}
+                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
               >
                 <Ionicons
-                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                  size={18}
-                  color="#64748B"
+                  name={showPassword ? 'eye-off' : 'eye'}
+                  size={20}
+                  color={showPassword ? '#0284C7' : '#64748B'}
                 />
               </TouchableOpacity>
             </View>
@@ -410,10 +413,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#CBD5E1',
     borderRadius: 12,
-    paddingRight: 10,
+    paddingRight: 6,
   },
   eyeBtn: {
-    padding: 6,
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   eyeText: {
     fontSize: 16,

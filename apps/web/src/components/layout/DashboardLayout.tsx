@@ -372,13 +372,39 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             {portalRole !== 'ADMIN' && verificationStatus === 'PENDING' && (
               <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 flex items-start gap-3 text-amber-900 text-xs shadow-sm">
                 <Clock className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                <div className="space-y-0.5">
+                <div className="space-y-1 flex-1">
                   <span className="font-extrabold block">
                     Verification Status: Pending Administrative Review
                   </span>
                   <p className="text-amber-800">
                     Your trade license and TIN documents are currently being validated by platform administrators in the Verification Queue. Full bidding and dispatch features will unlock upon approval.
                   </p>
+                  {(user as any)?.verificationNotes && (
+                    <div className="mt-2 p-2.5 rounded-xl bg-amber-100/80 border border-amber-300 text-amber-950 font-medium flex items-start gap-2">
+                      <span className="font-black text-amber-900 shrink-0">📝 Admin Note:</span>
+                      <span>{(user as any).verificationNotes}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {portalRole !== 'ADMIN' && verificationStatus === 'SUSPENDED' && (
+              <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 flex items-start gap-3 text-rose-900 text-xs shadow-sm">
+                <AlertTriangle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
+                <div className="space-y-1 flex-1">
+                  <span className="font-extrabold block text-rose-950">
+                    Account Suspended: Compliance Review Required
+                  </span>
+                  <p className="text-rose-800">
+                    Your organization account has been temporarily restricted by corridor platform administration.
+                  </p>
+                  {(user as any)?.verificationNotes && (
+                    <div className="mt-2 p-2.5 rounded-xl bg-rose-100/90 border border-rose-300 text-rose-950 font-medium flex items-start gap-2">
+                      <span className="font-black text-rose-900 shrink-0">📝 Administrator Reason:</span>
+                      <span>{(user as any).verificationNotes}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

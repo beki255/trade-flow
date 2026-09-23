@@ -37,6 +37,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
   const [tin, setTin] = useState('');
   const [tradeLicenseNo, setTradeLicenseNo] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   // Mandatory Compliance Documents (The 2 Transporter Registration Documents)
   const [insuranceDocName, setInsuranceDocName] = useState('');
@@ -312,14 +313,29 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
           {/* Password */}
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Create Password *</Text>
-            <TextInput
-              style={styles.textInput}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              placeholder="Minimum 6 characters"
-              placeholderTextColor="#94A3B8"
-            />
+            <View style={styles.passwordWrapper}>
+              <TextInput
+                style={[styles.textInput, { flex: 1, borderWidth: 0, backgroundColor: 'transparent' }]}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                placeholder="Minimum 6 characters"
+                placeholderTextColor="#94A3B8"
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeBtn}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                activeOpacity={0.7}
+                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+              >
+                <Ionicons
+                  name={showPassword ? 'eye-off' : 'eye'}
+                  size={20}
+                  color={showPassword ? '#0284C7' : '#64748B'}
+                />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Submit Button */}
@@ -445,6 +461,20 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 13,
     color: '#0F172A',
+  },
+  passwordWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 12,
+    paddingRight: 6,
+  },
+  eyeBtn: {
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   docsContainer: {
     backgroundColor: '#F8FAFC',

@@ -89,6 +89,17 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             <View style={styles.settingsGroup}>
               <Text style={styles.settingsGroupTitle}>Compliance & Legal Identity</Text>
 
+              {user?.verificationNotes ? (
+                <View style={[styles.settingItem, { backgroundColor: '#F0F9FF', borderColor: '#BAE6FD', borderWidth: 1, borderRadius: 10, padding: 8, marginBottom: 6 }]}>
+                  <Text style={[styles.settingItemLabel, { color: '#0369A1', fontWeight: '800' }]}>
+                    📝 Admin Compliance Note
+                  </Text>
+                  <Text style={[styles.settingItemValue, { color: '#0F172A', fontSize: 11, fontWeight: '600', marginTop: 2 }]}>
+                    {user.verificationNotes}
+                  </Text>
+                </View>
+              ) : null}
+
               <View style={styles.settingItem}>
                 <Text style={styles.settingItemLabel}>Primary Contact Phone</Text>
                 <Text style={styles.settingItemValue}>{user?.phone || '+251 91 123 4567'}</Text>
