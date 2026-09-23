@@ -17,6 +17,8 @@ import { DisputesTab } from '../modules/admin/tabs/DisputesTab';
 import { SystemHealthTab } from '../modules/admin/tabs/SystemHealthTab';
 import { FraudDetectionTab } from '../modules/admin/tabs/FraudDetectionTab';
 import { AuditLogsTab } from '../modules/admin/tabs/AuditLogsTab';
+import { ReviewQueueTab } from '../modules/customs/tabs/ReviewQueueTab';
+import { CustomsStats, CustomsDossierItem } from '../modules/customs/types';
 
 // Modular Modals
 import { UserInspectionModal } from '../modules/admin/components/UserInspectionModal';
@@ -66,6 +68,34 @@ export const AdminPortalPage: React.FC = () => {
     averageResolutionHours: 18,
   });
   const [disputesLoading, setDisputesLoading] = useState<boolean>(false);
+
+  // Customs Oversight State
+  const [customsDossiers, setCustomsDossiers] = useState<CustomsDossierItem[]>([]);
+  const [customsStats, setCustomsStats] = useState<CustomsStats>({
+    totalDossiers: 0,
+    pendingReviews: 0,
+    greenLineCleared: 0,
+    revisionsRequested: 0,
+    inspectionRate: '100%',
+    averageProcessingMins: 14,
+  });
+  const [customsLoading, setCustomsLoading] = useState<boolean>(false);
+
+  const fetchCustomsData = async () => {
+    try {
+      setCustomsLoading(true);
+      const queueRes = await fetch('/api/customs/queue');
+      if (queueRes.ok) {
+        const queueData = await queueRes.json();
+        if (queueData.dossiers) setCustomsDossiers(queueData.dossiers);
+        if (queueData.stats) setCustomsStats(queueData.stats);
+      }
+    } catch (err) {
+      console.warn('Failed to fetch customs dossiers in admin:', err);
+    } finally {
+      setCustomsLoading(false);
+    }
+  };
 
   const fetchVerifications = async () => {
     try {
@@ -155,11 +185,13 @@ export const AdminPortalPage: React.FC = () => {
     fetchVerifications();
     fetchAuditLogs();
     fetchDisputes();
+    fetchCustomsData();
 
     const interval = setInterval(() => {
       fetchVerifications();
       fetchAuditLogs();
       fetchDisputes();
+      fetchCustomsData();
     }, 4000);
 
     return () => clearInterval(interval);
@@ -195,7 +227,13 @@ export const AdminPortalPage: React.FC = () => {
   // Filtered Users computation
   const filteredUsers = verificationList.filter((item) => {
     const matchesStatus = statusFilter === 'ALL' || item.verificationStatus === statusFilter;
-    const matchesRole = roleFilter === 'ALL' || item.role === roleFilter;
+    const matchesRole =
+      roleFilter === 'ALL' ||
+      item.role === roleFilter ||
+      (roleFilter === 'CUSTOMS' && (item.role === 'CUSTOMS_OFFICER' || item.role === 'CUSTOMS')) ||
+      (roleFilter === 'CUSTOMS_OFFICER' && (item.role === 'CUSTOMS_OFFICER' || item.role === 'CUSTOMS')) ||
+      (roleFilter === 'FORWARDER' && (item.role === 'FREIGHT_FORWARDER' || item.role === 'FORWARDER')) ||
+      (roleFilter === 'FREIGHT_FORWARDER' && (item.role === 'FREIGHT_FORWARDER' || item.role === 'FORWARDER'));
     const matchesSearch =
       !searchQuery ||
       item.companyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -242,6 +280,53 @@ export const AdminPortalPage: React.FC = () => {
             verifiedCount={verifiedCount}
             suspendedCount={suspendedCount}
           />
+        )}
+
+        {/* 1.1 CUSTOMS & BORDER OVERSIGHT */}
+        {activeTab === 'customs-oversight' && (
+          <div className="space-y-4">
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-xl">
+                  🏛️
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">
+                    Corridor Customs & Single-Window Oversight
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Live regulatory oversight of customs clearance dossiers, certificates, and border inspections across Ethiopian trade corridors.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <ReviewQueueTab
+              stats={customsStats}
+              dossiers={customsDossiers}
+              loading={customsLoading}
+              onRefresh={fetchCustomsData}
+              onSelectDossierForCompliance={() => {
+                navigate('/customs/compliance');
+              }}
+              onQuickApprove={async (shipmentId, station) => {
+                await fetch(`/api/customs/shipments/${shipmentId}/clearance`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    clearanceStatus: 'CLEARED',
+                    officerNotes: 'Super-Admin Expedited Green Line Clearance Approved',
+                    clearingStation: station,
+                    officerId: user?.email || 'ADMIN-SUPERVISOR',
+                  }),
+                });
+                fetchCustomsData();
+              }}
+              onViewCertificate={() => {
+                navigate('/customs/clearance');
+              }}
+            />
+          </div>
         )}
 
         {/* 2. DISPUTE RESOLUTION */}

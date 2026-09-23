@@ -17,7 +17,7 @@ import { swaggerDocsHandler, swaggerJsonHandler } from './docs/swagger';
 
 dotenv.config();
 
-// TradeFlow API Server - Initialized with complete OpenAPI 3.0 specs & real-time compliance
+// TradeFlow API Server - Initialized with complete OpenAPI 3.0 specs & real-time compliance (customs included)
 const app = express();
 const server = http.createServer(app);
 const io = new SocketIOServer(server, {

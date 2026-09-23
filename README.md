@@ -41,7 +41,7 @@ tradeflow-v2/ (Turborepo / npm Workspaces Monorepo)
 │       ├── src/screens/      # Onboarding Carousel, Login, Transporter Portal
 │       ├── src/tabs/         # Overview, Fleet Vehicles, Drivers, Loads, Bids
 │       ├── src/modals/       # Add Truck, Register Driver, Dispatch Modal
-│       └── src/context/      # LanguageContext (Pure Amharic 🇪🇹 & English 🌐)
+│       └── src/context/      # LanguageContext (Amharic & English Localization)
 │
 └── packages/
     └── shared/               # Shared TypeScript Types, Enums, Corridor Checkpoints
@@ -55,7 +55,7 @@ tradeflow-v2/ (Turborepo / npm Workspaces Monorepo)
 - **Interactive Topographic Corridor Route Map**: Live SVG visualization depicting the 900km primary multimodal freight corridor from Djibouti Container Terminals to Modjo Dry Port and Addis Ababa.
 - **Animated Glassmorphic Feature Cards**: High-performance Framer Motion cards with smooth hover lift (`-translate-y-2`), glowing ambient shadows, customized theme accents, and rich typography without clutter.
 - **Compliance Trust Cards**: Direct alignment with the **Ethiopian Customs Commission (ECC)** Single Window, **ESLSE Multi-Modal Hub**, and **5-second Satellite GPS Telematics**.
-- **100% Bilingual Localization**: Instant toggle between Pure Amharic (**አማርኛ**) and English (**English**).
+- **100% Bilingual Localization**: Instant toggle between Amharic and English.
 
 ### 2. 🚚 Transporter Fleet & Driver Management (Mobile App)
 - **Fleet Vehicles**: Register heavy commercial trucks with plate numbers, tonnage capacity, fuel type, **Goods in Transit (GIT) Cargo Insurance**, and **Federal Transport Authority (FTA) Roadworthiness** certification.
@@ -96,8 +96,8 @@ The TradeFlow Mobile Application (`apps/mobile`) is built on **React Native & Ex
 - **Digital Proof of Delivery (POD)**: Capture recipient name and digital signature upon cargo delivery, triggering instant escrow settlement via Telebirr.
 - **Offline-First Telematics Buffer**: Automatically queues GPS telemetry pings when traversing remote low-connectivity desert sections of the Afar corridor, synchronizing immediately when cellular connection is restored.
 
-#### 3. 🌐 100% Bilingual Localization (ቋንቋ መምረጫ):
-- Instant in-app toggle between **Pure Amharic (አማርኛ 🇪🇹)** and **English (🌐)** across all screens, modals, badges, and validation alerts.
+#### 3. 🌐 100% Bilingual Localization (Amharic & English):
+- Instant in-app toggle between **Amharic** and **English** across all screens, modals, badges, and validation alerts.
 
 ---
 

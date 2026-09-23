@@ -88,9 +88,9 @@ export const VerificationFilterBar: React.FC<VerificationFilterBarProps> = ({
           <option value="ALL">All Roles</option>
           <option value="SHIPPER">Shipper</option>
           <option value="TRANSPORTER">Transporter</option>
-          <option value="FORWARDER">Freight Forwarder</option>
+          <option value="FREIGHT_FORWARDER">Freight Forwarder</option>
           <option value="DRIVER">Driver</option>
-          <option value="CUSTOMS">Customs</option>
+          <option value="CUSTOMS_OFFICER">Customs Inspector</option>
         </select>
 
         <div className="relative flex-1 md:w-56">

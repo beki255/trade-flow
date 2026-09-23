@@ -306,7 +306,7 @@ export const getVerifications = async (req: Request, res: Response): Promise<voi
     const users = await prisma.user.findMany({
       where: {
         role: {
-          notIn: [UserRole.ADMIN, UserRole.CUSTOMS_OFFICER],
+          notIn: [UserRole.ADMIN],
         },
         OR: [
           { verificationStatus: VerificationStatus.PENDING },
@@ -316,6 +316,7 @@ export const getVerifications = async (req: Request, res: Response): Promise<voi
           { insuranceDoc: { not: null } },
           { roadworthinessDoc: { not: null } },
           { role: UserRole.DRIVER },
+          { role: UserRole.CUSTOMS_OFFICER },
         ],
       },
       orderBy: { createdAt: 'desc' },

@@ -96,6 +96,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       case 'ADMIN':
         return [
           { id: 'verifications', label: 'Verification Queue', icon: ShieldCheck },
+          { id: 'customs-oversight', label: 'Customs & Border Oversight', icon: FileCheck2 },
           { id: 'disputes', label: 'Dispute Resolution', icon: AlertTriangle },
           { id: 'system-health', label: 'System Health', icon: Activity },
           { id: 'fraud', label: 'Fraud Detection', icon: ShieldAlert },

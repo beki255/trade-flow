@@ -41,21 +41,36 @@ export const UserInspectionModal: React.FC<UserInspectionModalProps> = ({
                 className={`px-2.5 py-0.5 rounded-full text-[10px] font-black border ${
                   inspectUser.role === 'DRIVER'
                     ? 'bg-purple-50 text-purple-700 border-purple-200'
+                    : inspectUser.role === 'CUSTOMS_OFFICER'
+                    ? 'bg-amber-50 text-amber-800 border-amber-300'
                     : 'bg-blue-50 text-blue-700 border-blue-200'
                 }`}
               >
-                {inspectUser.role === 'DRIVER' ? '🚚 AUTHORIZED DRIVER' : inspectUser.role}
+                {inspectUser.role === 'DRIVER'
+                  ? '🚚 AUTHORIZED DRIVER'
+                  : inspectUser.role === 'CUSTOMS_OFFICER'
+                  ? '🛡️ OFFICIAL CUSTOMS INSPECTOR'
+                  : inspectUser.role}
               </span>
               <span className="text-xs text-slate-400 font-mono">
                 ID: {inspectUser.id.slice(0, 12)}
               </span>
             </div>
             <h2 className="text-xl font-black text-slate-900 mt-1">
-              {inspectUser.role === 'DRIVER' ? inspectUser.fullName : (inspectUser.companyName || inspectUser.fullName)}
+              {inspectUser.role === 'DRIVER'
+                ? inspectUser.fullName
+                : inspectUser.role === 'CUSTOMS_OFFICER'
+                ? inspectUser.fullName
+                : (inspectUser.companyName || inspectUser.fullName)}
             </h2>
             {inspectUser.role === 'DRIVER' && (
               <p className="text-xs text-slate-500 font-medium mt-0.5">
                 Employing Transporter: <span className="font-bold text-slate-800">{inspectUser.companyName || 'TradeFlow Fleet Network'}</span>
+              </p>
+            )}
+            {inspectUser.role === 'CUSTOMS_OFFICER' && (
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                Official Station: <span className="font-bold text-slate-800">{inspectUser.companyName || 'Galafi Border Checkpoint'}</span>
               </p>
             )}
           </div>
@@ -103,6 +118,33 @@ export const UserInspectionModal: React.FC<UserInspectionModalProps> = ({
                   ? `${inspectUser.driverProfile.assignedVehicle.plateNumber} (${inspectUser.driverProfile.assignedVehicle.vehicleType || 'Truck'})`
                   : 'Unassigned (Pool)'}
               </span>
+            </div>
+          </div>
+        ) : inspectUser.role === 'CUSTOMS_OFFICER' ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 rounded-2xl bg-amber-50/70 border border-amber-200 text-xs">
+            <div>
+              <span className="text-slate-400 font-bold block text-[10px] uppercase">Inspector Full Name</span>
+              <span className="font-extrabold text-slate-900">{inspectUser.fullName}</span>
+            </div>
+            <div>
+              <span className="text-slate-400 font-bold block text-[10px] uppercase">Phone & Contact</span>
+              <span className="font-extrabold text-slate-900">{inspectUser.phone}</span>
+            </div>
+            <div>
+              <span className="text-slate-400 font-bold block text-[10px] uppercase">Government Badge ID</span>
+              <span className="font-mono font-black text-amber-900">{inspectUser.tin || 'ECC-INSPECTOR-2026'}</span>
+            </div>
+            <div>
+              <span className="text-slate-400 font-bold block text-[10px] uppercase">Official Commission Email</span>
+              <span className="font-mono text-slate-700 font-bold">{inspectUser.email}</span>
+            </div>
+            <div>
+              <span className="text-slate-400 font-bold block text-[10px] uppercase">Station / Checkpoint</span>
+              <span className="font-extrabold text-slate-900">{inspectUser.companyName || 'Galafi Border Checkpoint'}</span>
+            </div>
+            <div>
+              <span className="text-slate-400 font-bold block text-[10px] uppercase">Regulatory Commission</span>
+              <span className="font-bold text-amber-900">Ethiopian Customs Commission (ECC)</span>
             </div>
           </div>
         ) : (

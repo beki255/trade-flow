@@ -53,20 +53,48 @@ export const VerificationTable: React.FC<VerificationTableProps> = ({
               {/* User & Company */}
               <td className="py-4 px-4">
                 <div className="font-extrabold text-slate-900">
-                  {item.role === 'DRIVER' ? item.fullName : (item.companyName || item.fullName)}
+                  {item.role === 'DRIVER'
+                    ? item.fullName
+                    : item.role === 'CUSTOMS_OFFICER'
+                    ? item.fullName
+                    : (item.companyName || item.fullName)}
                 </div>
-                <div className="text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5">
+                <div className="text-[11px] text-slate-500 flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
                   {item.role === 'DRIVER' ? (
                     <>
                       <span>🏢 Fleet: {item.companyName || 'Carrier Network'}</span>
                       <span>•</span>
                       <span>📞 {item.phone}</span>
+                      {item.email && (
+                        <>
+                          <span>•</span>
+                          <span className="font-mono text-slate-400">{item.email}</span>
+                        </>
+                      )}
+                    </>
+                  ) : item.role === 'CUSTOMS_OFFICER' ? (
+                    <>
+                      <span>🏛️ Station: {item.companyName || 'Customs Border Post'}</span>
+                      <span>•</span>
+                      <span>📞 {item.phone}</span>
+                      {item.email && (
+                        <>
+                          <span>•</span>
+                          <span className="font-mono text-slate-400">{item.email}</span>
+                        </>
+                      )}
                     </>
                   ) : (
                     <>
                       <span>👤 {item.fullName}</span>
                       <span>•</span>
                       <span>📞 {item.phone}</span>
+                      {item.email && (
+                        <>
+                          <span>•</span>
+                          <span className="font-mono text-slate-400">{item.email}</span>
+                        </>
+                      )}
                     </>
                   )}
                 </div>
@@ -78,14 +106,22 @@ export const VerificationTable: React.FC<VerificationTableProps> = ({
                   className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-extrabold border ${
                     item.role === 'DRIVER'
                       ? 'bg-purple-50 text-purple-700 border-purple-200'
+                      : item.role === 'CUSTOMS_OFFICER'
+                      ? 'bg-amber-50 text-amber-800 border-amber-300'
                       : 'bg-blue-50 text-blue-700 border-blue-200'
                   }`}
                 >
-                  {item.role === 'DRIVER' ? '🚚 DRIVER' : item.role}
+                  {item.role === 'DRIVER'
+                    ? '🚚 DRIVER'
+                    : item.role === 'CUSTOMS_OFFICER'
+                    ? '🛡️ CUSTOMS OFFICER'
+                    : item.role === 'FREIGHT_FORWARDER'
+                    ? '📦 FORWARDER'
+                    : item.role}
                 </span>
               </td>
 
-              {/* TIN & License / Driver License */}
+              {/* TIN & License / Driver License / Customs Badge */}
               <td className="py-4 px-4 font-mono text-[11px] text-slate-700">
                 {item.role === 'DRIVER' ? (
                   <div>
@@ -99,6 +135,17 @@ export const VerificationTable: React.FC<VerificationTableProps> = ({
                       )}
                       <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
                         🪪 Driver License
+                      </span>
+                    </div>
+                  </div>
+                ) : item.role === 'CUSTOMS_OFFICER' ? (
+                  <div>
+                    <div>
+                      Gov Badge: <span className="font-bold text-amber-900">{item.tin || 'ECC-OFFICIAL'}</span>
+                    </div>
+                    <div className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-0.5">
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-teal-50 text-teal-800 border border-teal-200">
+                        🏛️ Ethiopian Customs Commission
                       </span>
                     </div>
                   </div>
