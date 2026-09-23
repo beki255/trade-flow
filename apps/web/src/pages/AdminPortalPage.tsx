@@ -209,7 +209,7 @@ export const AdminPortalPage: React.FC = () => {
           userId,
           status: newStatus,
           adminId: user?.email || 'ADMIN-CORRIDOR-01',
-          notes: adminNotes.trim() ? adminNotes.trim() : null,
+          notes: (inspectUser?.id === userId && adminNotes.trim()) ? adminNotes.trim() : null,
         }),
       });
 
@@ -274,7 +274,21 @@ export const AdminPortalPage: React.FC = () => {
             onRefresh={fetchVerifications}
             onInspectUser={(u) => {
               setInspectUser(u);
-              setAdminNotes(u.verificationNotes || '');
+              const note = (u.verificationNotes || '').trim();
+              const lower = note.toLowerCase();
+              const isDefaultOrSystem =
+                !note ||
+                lower.includes('transporter') ||
+                lower.includes('company') ||
+                lower.includes('officially') ||
+                lower.includes('provisioned') ||
+                lower.includes('commissioned') ||
+                lower.includes('updated status') ||
+                lower.includes('default') ||
+                lower.includes('dbu') ||
+                lower.includes('fleet') ||
+                lower.startsWith('drv_');
+              setAdminNotes(isDefaultOrSystem ? '' : note);
             }}
             onUpdateStatus={handleUpdateStatus}
             pendingCount={pendingCount}

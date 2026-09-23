@@ -300,9 +300,32 @@ export const deleteLoad = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
-// 4. Get Verification Queue
 export const getVerifications = async (req: Request, res: Response): Promise<void> => {
   try {
+    // Auto-clean any legacy system tags from verificationNotes in the DB
+    try {
+      await prisma.user.updateMany({
+        where: {
+          OR: [
+            { verificationNotes: { contains: 'transporter' } },
+            { verificationNotes: { contains: 'company' } },
+            { verificationNotes: { contains: 'Officially' } },
+            { verificationNotes: { contains: 'provisioned' } },
+            { verificationNotes: { contains: 'commissioned' } },
+            { verificationNotes: { contains: 'Updated status' } },
+            { verificationNotes: { contains: 'drv_' } },
+            { verificationNotes: { contains: 'Default' } },
+            { verificationNotes: { contains: 'default' } },
+            { verificationNotes: { contains: 'Dbu' } },
+            { verificationNotes: { contains: 'Fleet' } },
+          ],
+        },
+        data: {
+          verificationNotes: null,
+        },
+      });
+    } catch (e) {}
+
     const users = await prisma.user.findMany({
       where: {
         role: {
@@ -367,24 +390,25 @@ export const getVerifications = async (req: Request, res: Response): Promise<voi
     const sanitizedUsers = users.map((u) => {
       let cleanNotes = u.verificationNotes || null;
       if (cleanNotes) {
+        const lower = cleanNotes.toLowerCase();
         if (
-          cleanNotes.startsWith('transporter:') ||
-          cleanNotes.includes('Officially provisioned & commissioned') ||
-          cleanNotes.startsWith('Updated status to ') ||
-          cleanNotes.includes('transporter:direct')
+          lower.includes('transporter') ||
+          lower.includes('company') ||
+          lower.includes('officially') ||
+          lower.includes('provisioned') ||
+          lower.includes('commissioned') ||
+          lower.includes('updated status') ||
+          lower.includes('default') ||
+          lower.includes('dbu') ||
+          lower.includes('fleet') ||
+          lower.startsWith('drv_')
         ) {
-          const stripped = cleanNotes
-            .replace(/\|\s*transporter:[^\s|]+/g, '')
-            .replace(/transporter:[^\s|]+/g, '')
-            .replace(/Officially provisioned & commissioned[^\n|]*/g, '')
-            .replace(/Updated status to [^\n|]*/g, '')
-            .replace(/^[|\s-]+|[|\s-]+$/g, '')
-            .trim();
-          cleanNotes = stripped.length > 0 ? stripped : null;
+          cleanNotes = null;
         }
       }
       return {
         ...u,
+        email: u.role === UserRole.DRIVER ? null : u.email,
         verificationNotes: cleanNotes,
       };
     });
@@ -409,13 +433,9 @@ export const verifyUser = async (req: Request, res: Response): Promise<void> => 
     const existingUser = await prisma.user.findUnique({ where: { id: userId } });
     const previousStatus = existingUser?.verificationStatus || 'PENDING';
 
-    let finalNotes = notes || existingUser?.verificationNotes || null;
-    if (existingUser?.verificationNotes && existingUser.verificationNotes.includes('transporter:')) {
-      const match = existingUser.verificationNotes.match(/transporter:[^\s|]+/);
-      if (match && (!notes || !notes.includes(match[0]))) {
-        finalNotes = notes ? `${notes} | ${match[0]}` : existingUser.verificationNotes;
-      }
-    }
+    const finalNotes = (notes && typeof notes === 'string' && notes.trim().length > 0)
+      ? notes.trim()
+      : null;
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
@@ -497,6 +517,25 @@ export const getUserStatus = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
+    let cleanNotes = user.verificationNotes || null;
+    if (cleanNotes) {
+      const lower = cleanNotes.toLowerCase();
+      if (
+        lower.includes('transporter') ||
+        lower.includes('company') ||
+        lower.includes('officially') ||
+        lower.includes('provisioned') ||
+        lower.includes('commissioned') ||
+        lower.includes('updated status') ||
+        lower.includes('default') ||
+        lower.includes('dbu') ||
+        lower.includes('fleet') ||
+        lower.startsWith('drv_')
+      ) {
+        cleanNotes = null;
+      }
+    }
+
     res.json({
       userId: user.id,
       email: user.email,
@@ -504,7 +543,7 @@ export const getUserStatus = async (req: Request, res: Response): Promise<void> 
       companyName: user.companyName,
       verificationStatus: user.verificationStatus,
       isVerified: user.verificationStatus === 'VERIFIED',
-      verificationNotes: user.verificationNotes,
+      verificationNotes: cleanNotes,
       updatedAt: user.updatedAt,
     });
   } catch (error: any) {
@@ -978,7 +1017,7 @@ export const getDrivers = async (req: Request, res: Response): Promise<void> => 
         userId: d.userId,
         fullName: d.user?.fullName || 'Authorized Driver',
         phone: d.user?.phone || '',
-        email: d.user?.email || '',
+        email: null,
         licenseNumber: d.driverLicenseNo,
         driverLicenseNo: d.driverLicenseNo,
         licenseCategory: d.licenseClass,
@@ -1021,7 +1060,10 @@ export const createDriver = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    const normalizedEmail = (email || `${phone.replace(/[^0-9]/g, '')}@tradeflow.et`).toLowerCase().trim();
+    const cleanPhoneDigits = phone.replace(/[^0-9]/g, '');
+    const internalDriverEmail = (email && email.trim())
+      ? email.toLowerCase().trim()
+      : `drv_${cleanPhoneDigits}@driver.internal`;
 
     // Find transporter if provided safely
     let transporter: any = null;
@@ -1057,15 +1099,13 @@ export const createDriver = async (req: Request, res: Response): Promise<void> =
       : 'transporter:direct';
     const company = transporter?.companyName || 'Freight Logistics & Fleet';
 
-    const cleanPhoneDigits = phone.replace(/[^0-9]/g, '');
-
-    // Upsert or Create Driver User by phone or email - Always set PENDING for admin verification
+    // Upsert or Create Driver User by phone - Phone number alone is the primary identifier
     const existingDriver = await prisma.user.findFirst({
       where: {
         OR: [
-          { email: normalizedEmail },
           { phone: phone.trim() },
           ...(cleanPhoneDigits.length >= 8 ? [{ phone: { contains: cleanPhoneDigits.slice(-8) } }] : []),
+          ...(email ? [{ email: email.toLowerCase().trim() }] : []),
         ],
       },
     });
@@ -1075,12 +1115,12 @@ export const createDriver = async (req: Request, res: Response): Promise<void> =
       driverUser = await prisma.user.create({
         data: {
           fullName: fullName.trim(),
-          email: normalizedEmail,
+          email: internalDriverEmail,
           username: `drv_${transporterTag}_${cleanPhoneDigits.slice(-4)}_${Date.now().toString().slice(-4)}`,
           phone: phone.trim(),
           role: UserRole.DRIVER,
           companyName: company,
-          verificationNotes: transporterNote,
+          verificationNotes: null,
           passwordHash: (password || 'Driver@123').trim(),
           verificationStatus: VerificationStatus.PENDING,
         },
@@ -1092,7 +1132,7 @@ export const createDriver = async (req: Request, res: Response): Promise<void> =
           fullName: fullName.trim(),
           phone: phone.trim(),
           companyName: company,
-          verificationNotes: transporterNote,
+          verificationNotes: null,
           passwordHash: (password || 'Driver@123').trim(),
           role: UserRole.DRIVER,
           verificationStatus: VerificationStatus.PENDING,
@@ -1143,7 +1183,7 @@ export const createDriver = async (req: Request, res: Response): Promise<void> =
         userId: driverUser.id,
         fullName: driverUser.fullName,
         phone: driverUser.phone,
-        email: driverUser.email,
+        email: null,
         licenseNumber: profile.driverLicenseNo,
         driverLicenseNo: profile.driverLicenseNo,
         licenseCategory: profile.licenseClass,
@@ -2429,7 +2469,7 @@ export const provisionCustomsOfficer = async (req: Request, res: Response): Prom
         companyName: `Ethiopian Customs Commission (${station || 'Galafi Border Checkpoint'})`,
         tin: badgeId || 'ECC-INSPECTOR-2026',
         verificationStatus: VerificationStatus.VERIFIED,
-        verificationNotes: `Officially provisioned & commissioned by Platform Admin ${adminId || 'SuperAdmin'} for station: ${station || 'Galafi Border'}`,
+        verificationNotes: null,
       },
     });
 

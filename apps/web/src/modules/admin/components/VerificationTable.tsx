@@ -65,12 +65,6 @@ export const VerificationTable: React.FC<VerificationTableProps> = ({
                       <span>🏢 Fleet: {item.companyName || 'Carrier Network'}</span>
                       <span>•</span>
                       <span>📞 {item.phone}</span>
-                      {item.email && (
-                        <>
-                          <span>•</span>
-                          <span className="font-mono text-slate-400">{item.email}</span>
-                        </>
-                      )}
                     </>
                   ) : item.role === 'CUSTOMS_OFFICER' ? (
                     <>
