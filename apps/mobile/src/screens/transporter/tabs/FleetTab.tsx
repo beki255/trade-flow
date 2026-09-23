@@ -13,6 +13,8 @@ interface FleetTabProps {
   driversList: DriverItem[];
   openAddTruckModal: () => void;
   openAddDriverModal: () => void;
+  fleetSubTab?: 'vehicles' | 'drivers';
+  setFleetSubTab?: (tab: 'vehicles' | 'drivers') => void;
 }
 
 export const FleetTab: React.FC<FleetTabProps> = ({
@@ -20,10 +22,25 @@ export const FleetTab: React.FC<FleetTabProps> = ({
   driversList,
   openAddTruckModal,
   openAddDriverModal,
+  fleetSubTab,
+  setFleetSubTab,
 }) => {
-  const [fleetSubTab, setFleetSubTab] = useState<'vehicles' | 'drivers'>('vehicles');
+  const [internalSubTab, setInternalSubTab] = useState<'vehicles' | 'drivers'>('vehicles');
+  const activeSubTab = fleetSubTab !== undefined ? fleetSubTab : internalSubTab;
+  const changeSubTab = (tab: 'vehicles' | 'drivers') => {
+    if (setFleetSubTab) {
+      setFleetSubTab(tab);
+    } else {
+      setInternalSubTab(tab);
+    }
+  };
+
   const [expandedTruckIds, setExpandedTruckIds] = useState<Record<string, boolean>>({});
   const [expandedDriverIds, setExpandedDriverIds] = useState<Record<string, boolean>>({});
+
+  const pendingDriversCount = driversList.filter(
+    (d) => d.status === 'PENDING' || d.verificationStatus === 'PENDING'
+  ).length;
 
   const toggleTruckExpand = (id: string) => {
     setExpandedTruckIds((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -40,17 +57,17 @@ export const FleetTab: React.FC<FleetTabProps> = ({
         <TouchableOpacity
           style={[
             styles.fleetSubTab,
-            { flexDirection: 'row', justifyContent: 'center', gap: 6 },
-            fleetSubTab === 'vehicles' && styles.fleetSubTabActive,
+            { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 },
+            activeSubTab === 'vehicles' && styles.fleetSubTabActive,
           ]}
-          onPress={() => setFleetSubTab('vehicles')}
+          onPress={() => changeSubTab('vehicles')}
         >
           <MaterialCommunityIcons
             name="truck-outline"
             size={16}
-            color={fleetSubTab === 'vehicles' ? '#0284C7' : '#64748B'}
+            color={activeSubTab === 'vehicles' ? '#0284C7' : '#64748B'}
           />
-          <Text style={[styles.fleetSubTabText, fleetSubTab === 'vehicles' && styles.fleetSubTabTextActive]}>
+          <Text style={[styles.fleetSubTabText, activeSubTab === 'vehicles' && styles.fleetSubTabTextActive]}>
             Fleet Vehicles ({fleetList.length})
           </Text>
         </TouchableOpacity>
@@ -58,24 +75,40 @@ export const FleetTab: React.FC<FleetTabProps> = ({
         <TouchableOpacity
           style={[
             styles.fleetSubTab,
-            { flexDirection: 'row', justifyContent: 'center', gap: 6 },
-            fleetSubTab === 'drivers' && styles.fleetSubTabActive,
+            { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 },
+            activeSubTab === 'drivers' && styles.fleetSubTabActive,
           ]}
-          onPress={() => setFleetSubTab('drivers')}
+          onPress={() => changeSubTab('drivers')}
         >
           <Ionicons
             name="people-outline"
             size={16}
-            color={fleetSubTab === 'drivers' ? '#0284C7' : '#64748B'}
+            color={activeSubTab === 'drivers' ? '#0284C7' : '#64748B'}
           />
-          <Text style={[styles.fleetSubTabText, fleetSubTab === 'drivers' && styles.fleetSubTabTextActive]}>
+          <Text style={[styles.fleetSubTabText, activeSubTab === 'drivers' && styles.fleetSubTabTextActive]}>
             Authorized Drivers ({driversList.length})
           </Text>
+          {pendingDriversCount > 0 && (
+            <View
+              style={{
+                backgroundColor: '#FEF3C7',
+                paddingHorizontal: 6,
+                paddingVertical: 2,
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: '#FCD34D',
+              }}
+            >
+              <Text style={{ fontSize: 9.5, fontWeight: '800', color: '#B45309' }}>
+                {pendingDriversCount} Pending
+              </Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 
       {/* SUB-TAB 1: FLEET VEHICLES */}
-      {fleetSubTab === 'vehicles' && (
+      {activeSubTab === 'vehicles' && (
         <View style={{ gap: 10 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <Text style={styles.sectionTitle}>Fleet Vehicles</Text>
@@ -217,7 +250,7 @@ export const FleetTab: React.FC<FleetTabProps> = ({
       )}
 
       {/* SUB-TAB 2: AUTHORIZED DRIVERS */}
-      {fleetSubTab === 'drivers' && (
+      {activeSubTab === 'drivers' && (
         <View style={{ gap: 10 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <Text style={styles.sectionTitle}>Authorized Fleet Drivers</Text>
@@ -237,6 +270,8 @@ export const FleetTab: React.FC<FleetTabProps> = ({
           ) : (
             driversList.map((drv) => {
               const isExpanded = !!expandedDriverIds[drv.id];
+              const isPending = drv.status === 'PENDING' || drv.verificationStatus === 'PENDING';
+
               return (
                 <TouchableOpacity
                   key={drv.id}
@@ -247,7 +282,7 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                   <View style={styles.cardHeader}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
                       <View style={styles.driverAvatarBox}>
-                        <Ionicons name="person" size={20} color="#0284C7" />
+                        <Ionicons name="person" size={20} color={isPending ? "#D97706" : "#0284C7"} />
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.truckPlate}>{drv.fullName}</Text>
@@ -264,24 +299,24 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                       <View
                         style={[
                           styles.statusBadge,
-                          drv.status === 'ACTIVE'
+                          isPending
+                            ? { backgroundColor: '#FEF3C7', borderWidth: 1, borderColor: '#FCD34D' }
+                            : drv.status === 'ACTIVE'
                             ? styles.statusAvailable
-                            : drv.status === 'PENDING'
-                            ? { backgroundColor: '#FEF3C7' }
                             : { backgroundColor: '#E0F2FE' },
                         ]}
                       >
                         <Text
                           style={[
                             styles.statusText,
-                            drv.status === 'ACTIVE'
+                            isPending
+                              ? { color: '#92400E', fontWeight: '800' }
+                              : drv.status === 'ACTIVE'
                               ? {}
-                              : drv.status === 'PENDING'
-                              ? { color: '#B45309', fontWeight: '800' }
                               : { color: '#0369A1' },
                           ]}
                         >
-                          {drv.status === 'PENDING' ? '⏳ PENDING' : drv.status}
+                          {isPending ? '⏳ PENDING APPROVAL' : drv.status}
                         </Text>
                       </View>
                       <View style={styles.chevronCircle}>
@@ -295,29 +330,65 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                   </View>
 
                   {!isExpanded && (
-                    <View style={styles.collapsedPreviewRow}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1 }}>
-                        <Ionicons name="card-outline" size={12} color="#64748B" />
-                        <Text style={styles.collapsedPreviewText} numberOfLines={1}>
-                          Lic: {drv.licenseNumber} •
-                        </Text>
-                        <MaterialCommunityIcons name="truck-outline" size={12} color="#0284C7" />
-                        <Text style={[styles.collapsedPreviewText, { color: drv.assignedTruckPlate ? '#0284C7' : '#64748B' }]}>
-                          {drv.assignedTruckPlate || 'Unassigned'}
-                        </Text>
+                    <View style={{ marginTop: 6, gap: 5 }}>
+                      <View style={styles.collapsedPreviewRow}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1 }}>
+                          <Ionicons name="card-outline" size={12} color="#64748B" />
+                          <Text style={styles.collapsedPreviewText} numberOfLines={1}>
+                            Lic: {drv.licenseNumber} •
+                          </Text>
+                          <MaterialCommunityIcons name="truck-outline" size={12} color="#0284C7" />
+                          <Text style={[styles.collapsedPreviewText, { color: drv.assignedTruckPlate ? '#0284C7' : '#64748B' }]}>
+                            {drv.assignedTruckPlate || 'Unassigned'}
+                          </Text>
+                        </View>
+                        <Text style={styles.tapDetailsHint}>Details ▾</Text>
                       </View>
-                      <Text style={styles.tapDetailsHint}>Details ▾</Text>
+                      {isPending && (
+                        <View
+                          style={{
+                            backgroundColor: '#FFFBEB',
+                            borderWidth: 1,
+                            borderColor: '#FDE68A',
+                            paddingHorizontal: 8,
+                            paddingVertical: 5,
+                            borderRadius: 6,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 6,
+                          }}
+                        >
+                          <Ionicons name="time-outline" size={13} color="#D97706" />
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: '#B45309', flex: 1 }}>
+                            ⏳ Pending Admin Verification (Cannot be dispatched yet)
+                          </Text>
+                        </View>
+                      )}
                     </View>
                   )}
 
                   {isExpanded && (
                     <View style={{ gap: 8, marginTop: 4 }}>
                       <View style={styles.cardDivider} />
-                      {drv.status === 'PENDING' && (
-                        <View style={{ backgroundColor: '#FEF3C7', padding: 8, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          <Ionicons name="time-outline" size={14} color="#B45309" />
-                          <Text style={{ fontSize: 11, color: '#B45309', fontWeight: '700', flex: 1 }}>
-                            Awaiting Platform Admin Verification. Credentials submitted to Admin Queue.
+                      {isPending && (
+                        <View
+                          style={{
+                            backgroundColor: '#FEF3C7',
+                            padding: 10,
+                            borderRadius: 8,
+                            borderWidth: 1,
+                            borderColor: '#FCD34D',
+                            gap: 4,
+                          }}
+                        >
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <Ionicons name="shield-outline" size={15} color="#B45309" />
+                            <Text style={{ fontSize: 12, fontWeight: '800', color: '#92400E' }}>
+                              Awaiting Platform Admin Verification
+                            </Text>
+                          </View>
+                          <Text style={{ fontSize: 11, color: '#78350F', lineHeight: 16 }}>
+                            Driver credentials (Commercial Heavy Freight License & FTA status) are currently in the Platform Administrator Queue. Once approved, this driver can be dispatched on Djibouti corridor loads.
                           </Text>
                         </View>
                       )}

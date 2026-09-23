@@ -45,6 +45,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
 }) => {
   const { language, toggleLanguage } = useLanguage();
   const [activeTab, setActiveTab] = useState<TransporterTabType>('overview');
+  const [fleetSubTab, setFleetSubTab] = useState<'vehicles' | 'drivers'>('vehicles');
   const [refreshing, setRefreshing] = useState(false);
 
   // Verification Status (Live Reactive State)
@@ -173,17 +174,24 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
       if (driversRes.ok) {
         const data = await driversRes.json();
         if (data.drivers && data.drivers.length > 0) {
-          const mappedDrivers = data.drivers.map((d: any) => ({
-            id: d.id || d.rawId || `DRV-${Date.now()}`,
-            rawId: d.id || d.profileId || d.userId,
-            fullName: d.fullName || d.user?.fullName || 'Authorized Driver',
-            phone: d.phone || d.user?.phone || '',
-            licenseNumber: d.licenseNumber || d.driverLicenseNo || d.driverProfile?.driverLicenseNo || 'Unspecified',
-            licenseCategory: d.licenseCategory || d.licenseClass || d.driverProfile?.licenseClass || 'Grade 5 Heavy',
-            experienceYears: `${d.experienceYears || d.driverProfile?.experienceYears || 4}`,
-            status: d.status || 'ACTIVE',
-            assignedTruckPlate: d.assignedTruckPlate || d.assignedVehicle?.plateNumber || d.driverProfile?.assignedVehicle?.plateNumber || '',
-          }));
+          const mappedDrivers = data.drivers.map((d: any) => {
+            const isPending =
+              d.status === 'PENDING' ||
+              d.verificationStatus === 'PENDING' ||
+              d.user?.verificationStatus === 'PENDING';
+            return {
+              id: d.id || d.rawId || `DRV-${Date.now()}`,
+              rawId: d.id || d.profileId || d.userId,
+              fullName: d.fullName || d.user?.fullName || 'Authorized Driver',
+              phone: d.phone || d.user?.phone || '',
+              licenseNumber: d.licenseNumber || d.driverLicenseNo || d.driverProfile?.driverLicenseNo || 'Unspecified',
+              licenseCategory: d.licenseCategory || d.licenseClass || d.driverProfile?.licenseClass || 'Grade 5 Heavy',
+              experienceYears: `${d.experienceYears || d.driverProfile?.experienceYears || 4}`,
+              status: isPending ? 'PENDING' : (d.status === 'ON_TRIP' ? 'ON_TRIP' : 'ACTIVE'),
+              verificationStatus: isPending ? 'PENDING' : (d.verificationStatus || d.user?.verificationStatus || 'VERIFIED'),
+              assignedTruckPlate: d.assignedTruckPlate || d.assignedVehicle?.plateNumber || d.driverProfile?.assignedVehicle?.plateNumber || '',
+            };
+          });
           setDriversList(mappedDrivers);
         } else {
           setDriversList([]);
@@ -385,6 +393,8 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
     setTruckFuelType('Diesel');
     setTruckDriver('');
     setShowAddTruck(false);
+    setActiveTab('fleet');
+    setFleetSubTab('vehicles');
     Alert.alert('Success', `Vehicle ${newTruck.plate} registered successfully!`);
   };
 
@@ -402,6 +412,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
       licenseCategory: driverCategory,
       experienceYears: driverExperience || '5',
       status: 'PENDING',
+      verificationStatus: 'PENDING',
       assignedTruckPlate: driverAssignedPlate,
     };
     setDriversList((prev) => [newDriver, ...prev]);
@@ -425,6 +436,10 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
         const result = await res.json();
         if (result.driver) {
           const saved = result.driver;
+          const isPending =
+            saved.status === 'PENDING' ||
+            saved.verificationStatus === 'PENDING' ||
+            saved.user?.verificationStatus === 'PENDING';
           const mappedSaved: DriverItem = {
             id: saved.id || saved.rawId,
             rawId: saved.id || saved.rawId,
@@ -433,7 +448,8 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
             licenseNumber: saved.licenseNumber || saved.driverLicenseNo || newDriver.licenseNumber,
             licenseCategory: saved.licenseCategory || saved.licenseClass || newDriver.licenseCategory,
             experienceYears: `${saved.experienceYears || newDriver.experienceYears}`,
-            status: saved.status || (saved.user?.verificationStatus === 'VERIFIED' ? 'ACTIVE' : 'PENDING'),
+            status: isPending ? 'PENDING' : 'ACTIVE',
+            verificationStatus: isPending ? 'PENDING' : 'VERIFIED',
             assignedTruckPlate: saved.assignedTruckPlate || saved.assignedVehicle?.plateNumber || newDriver.assignedTruckPlate || '',
           };
           setDriversList((prev) => [mappedSaved, ...prev.filter((d) => d.id !== newDriver.id && d.id !== mappedSaved.id)]);
@@ -449,6 +465,8 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
     setDriverLicense('');
     setDriverAssignedPlate('');
     setShowAddDriver(false);
+    setActiveTab('fleet');
+    setFleetSubTab('drivers');
     Alert.alert(
       '⏳ Driver Verification Pending',
       `Driver ${newDriver.fullName} registered and submitted for Administrator verification. The admin will review their commercial driving credentials.`
@@ -828,6 +846,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
             loadsList={loadsList}
             submittedBids={submittedBids}
             setActiveTab={setActiveTab}
+            setFleetSubTab={setFleetSubTab}
             openAddTruckModal={() => setShowAddTruck(true)}
             openAddDriverModal={() => setShowAddDriver(true)}
           />
@@ -838,6 +857,8 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
           <FleetTab
             fleetList={fleetList}
             driversList={driversList}
+            fleetSubTab={fleetSubTab}
+            setFleetSubTab={setFleetSubTab}
             openAddTruckModal={() => setShowAddTruck(true)}
             openAddDriverModal={() => setShowAddDriver(true)}
           />

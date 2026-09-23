@@ -364,7 +364,32 @@ export const getVerifications = async (req: Request, res: Response): Promise<voi
       },
     });
 
-    res.json({ users });
+    const sanitizedUsers = users.map((u) => {
+      let cleanNotes = u.verificationNotes || null;
+      if (cleanNotes) {
+        if (
+          cleanNotes.startsWith('transporter:') ||
+          cleanNotes.includes('Officially provisioned & commissioned') ||
+          cleanNotes.startsWith('Updated status to ') ||
+          cleanNotes.includes('transporter:direct')
+        ) {
+          const stripped = cleanNotes
+            .replace(/\|\s*transporter:[^\s|]+/g, '')
+            .replace(/transporter:[^\s|]+/g, '')
+            .replace(/Officially provisioned & commissioned[^\n|]*/g, '')
+            .replace(/Updated status to [^\n|]*/g, '')
+            .replace(/^[|\s-]+|[|\s-]+$/g, '')
+            .trim();
+          cleanNotes = stripped.length > 0 ? stripped : null;
+        }
+      }
+      return {
+        ...u,
+        verificationNotes: cleanNotes,
+      };
+    });
+
+    res.json({ users: sanitizedUsers });
   } catch (error: any) {
     console.error('Error fetching verifications:', error);
     res.status(500).json({ error: 'Failed to fetch verification queue' });
@@ -384,11 +409,19 @@ export const verifyUser = async (req: Request, res: Response): Promise<void> => 
     const existingUser = await prisma.user.findUnique({ where: { id: userId } });
     const previousStatus = existingUser?.verificationStatus || 'PENDING';
 
+    let finalNotes = notes || existingUser?.verificationNotes || null;
+    if (existingUser?.verificationNotes && existingUser.verificationNotes.includes('transporter:')) {
+      const match = existingUser.verificationNotes.match(/transporter:[^\s|]+/);
+      if (match && (!notes || !notes.includes(match[0]))) {
+        finalNotes = notes ? `${notes} | ${match[0]}` : existingUser.verificationNotes;
+      }
+    }
+
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
         verificationStatus: status as VerificationStatus,
-        verificationNotes: notes || null,
+        verificationNotes: finalNotes,
       },
     });
 

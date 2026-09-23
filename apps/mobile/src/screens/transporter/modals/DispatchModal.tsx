@@ -142,31 +142,44 @@ export const DispatchModal: React.FC<DispatchModalProps> = ({
                 <View style={styles.typeSelectorRow}>
                   {driversList.map((drv) => {
                     const isBusy = drv.status === 'IN_TRANSIT' || drv.status === 'ON_TRIP';
+                    const isPending = drv.status === 'PENDING' || drv.verificationStatus === 'PENDING';
+                    const isDisabled = isBusy || isAlreadyDispatched || isPending;
+
                     return (
                       <TouchableOpacity
                         key={drv.id}
-                        disabled={isBusy || isAlreadyDispatched}
+                        disabled={isDisabled}
                         style={[
                           styles.typeChip,
                           dispatchDriver === drv.fullName && styles.typeChipActive,
+                          isPending && { backgroundColor: '#FEF3C7', borderColor: '#FCD34D', opacity: 0.8 },
                           isBusy && { opacity: 0.45, backgroundColor: '#F1F5F9' },
                         ]}
-                        onPress={() => !isBusy && setDispatchDriver(drv.fullName)}
+                        onPress={() => !isDisabled && setDispatchDriver(drv.fullName)}
                       >
                         <Ionicons
-                          name="person-outline"
+                          name={isPending ? "time-outline" : "person-outline"}
                           size={13}
-                          color={dispatchDriver === drv.fullName ? '#0284C7' : isBusy ? '#94A3B8' : '#64748B'}
+                          color={
+                            dispatchDriver === drv.fullName
+                              ? '#0284C7'
+                              : isPending
+                              ? '#B45309'
+                              : isBusy
+                              ? '#94A3B8'
+                              : '#64748B'
+                          }
                           style={{ marginRight: 4 }}
                         />
                         <Text
                           style={[
                             styles.typeChipText,
                             dispatchDriver === drv.fullName && styles.typeChipTextActive,
+                            isPending && { color: '#92400E', fontWeight: '700' },
                             isBusy && { color: '#94A3B8' },
                           ]}
                         >
-                          {drv.fullName} ({drv.phone}) {isBusy ? '• On Trip' : ''}
+                          {drv.fullName} ({drv.phone}) {isPending ? '• ⏳ Pending Admin Approval' : isBusy ? '• On Trip' : ''}
                         </Text>
                       </TouchableOpacity>
                     );

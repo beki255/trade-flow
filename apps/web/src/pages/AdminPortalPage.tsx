@@ -209,12 +209,13 @@ export const AdminPortalPage: React.FC = () => {
           userId,
           status: newStatus,
           adminId: user?.email || 'ADMIN-CORRIDOR-01',
-          notes: adminNotes || `Updated status to ${newStatus} on ${new Date().toLocaleDateString()}`,
+          notes: adminNotes.trim() ? adminNotes.trim() : null,
         }),
       });
 
       if (res.ok) {
         setActionSuccess(`User status successfully updated to ${newStatus}!`);
+        setAdminNotes('');
         fetchVerifications();
         fetchAuditLogs();
         setTimeout(() => setActionSuccess(''), 3000);
@@ -359,7 +360,10 @@ export const AdminPortalPage: React.FC = () => {
           inspectUser={inspectUser}
           adminNotes={adminNotes}
           setAdminNotes={setAdminNotes}
-          onClose={() => setInspectUser(null)}
+          onClose={() => {
+            setInspectUser(null);
+            setAdminNotes('');
+          }}
           onOpenDocPreview={(doc) => setPreviewDoc(doc)}
           onUpdateStatus={handleUpdateStatus}
         />

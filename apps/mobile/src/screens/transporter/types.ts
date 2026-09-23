@@ -31,7 +31,8 @@ export interface DriverItem {
   licenseNumber: string;
   licenseCategory: string;
   experienceYears: string;
-  status: 'ACTIVE' | 'ON_TRIP' | 'OFF_DUTY';
+  status: 'PENDING' | 'ACTIVE' | 'ON_TRIP' | 'OFF_DUTY';
+  verificationStatus?: 'PENDING' | 'VERIFIED' | 'SUSPENDED';
   assignedTruckPlate?: string;
   rawId?: string;
 }

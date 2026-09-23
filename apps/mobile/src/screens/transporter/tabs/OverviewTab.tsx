@@ -16,6 +16,7 @@ interface OverviewTabProps {
   setActiveTab: (tab: any) => void;
   openAddTruckModal: () => void;
   openAddDriverModal: () => void;
+  setFleetSubTab?: (tab: 'vehicles' | 'drivers') => void;
 }
 
 export const OverviewTab: React.FC<OverviewTabProps> = ({
@@ -26,9 +27,13 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   setActiveTab,
   openAddTruckModal,
   openAddDriverModal,
+  setFleetSubTab,
 }) => {
   const availableFleetCount = fleetList.filter((f) => f.status === 'AVAILABLE').length;
   const inTransitCount = fleetList.filter((f) => f.status === 'IN_TRANSIT').length;
+  const pendingDriversCount = driversList.filter(
+    (d) => d.status === 'PENDING' || d.verificationStatus === 'PENDING'
+  ).length;
 
   return (
     <View style={styles.sectionContainer}>
@@ -36,7 +41,13 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
 
       {/* KPI Stats Grid */}
       <View style={styles.kpiGrid}>
-        <TouchableOpacity style={styles.kpiCard} onPress={() => setActiveTab('fleet')}>
+        <TouchableOpacity
+          style={styles.kpiCard}
+          onPress={() => {
+            setFleetSubTab?.('vehicles');
+            setActiveTab('fleet');
+          }}
+        >
           <Text style={styles.kpiLabel}>Active Trucks</Text>
           <Text style={styles.kpiValue}>{fleetList.length}</Text>
           <Text style={{ fontSize: 10, color: '#166534', fontWeight: '700' }}>
@@ -44,11 +55,23 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.kpiCard} onPress={() => setActiveTab('fleet')}>
+        <TouchableOpacity
+          style={styles.kpiCard}
+          onPress={() => {
+            setFleetSubTab?.('drivers');
+            setActiveTab('fleet');
+          }}
+        >
           <Text style={styles.kpiLabel}>Assigned Drivers</Text>
           <Text style={[styles.kpiValue, { color: '#0284C7' }]}>{driversList.length}</Text>
-          <Text style={{ fontSize: 10, color: '#0369A1', fontWeight: '700' }}>
-            Authorized Staff
+          <Text
+            style={{
+              fontSize: 10,
+              color: pendingDriversCount > 0 ? '#B45309' : '#0369A1',
+              fontWeight: '700',
+            }}
+          >
+            {pendingDriversCount > 0 ? `⏳ ${pendingDriversCount} Pending Approval` : 'Authorized Staff'}
           </Text>
         </TouchableOpacity>
       </View>
