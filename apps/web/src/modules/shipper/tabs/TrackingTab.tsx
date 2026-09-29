@@ -20,12 +20,16 @@ import {
   CreditCard,
   FileCheck,
   CheckCircle,
-  ExternalLink
+  ExternalLink,
+  ShieldAlert,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { CorridorLiveMap, PostedLoadItem } from '../components/CorridorLiveMap';
 import { DeliveredHandoverCard } from '../components/DeliveredHandoverCard';
 import { TrackingConsignmentCard } from '../components/TrackingConsignmentCard';
+import { FuelSecurityRouteOptimizationCard } from '../components/FuelSecurityRouteOptimizationCard';
+import { FuelConsumptionAnalyticsCard } from '../components/FuelConsumptionAnalyticsCard';
+import { ConflictZoneAlertsReroutingCard } from '../components/ConflictZoneAlertsReroutingCard';
 import { calculateCorridorRoadDistanceKm, resolveCorridorCoordinates } from '@tradeflow/shared';
 
 interface TrackingTabProps {
@@ -48,6 +52,7 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
   const [loading, setLoading] = useState<boolean>(true);
   const [lastRefreshed, setLastRefreshed] = useState<string>('');
   const [filterMode, setFilterMode] = useState<'ACTIVE' | 'DELIVERED' | 'ALL'>('ACTIVE');
+  const [trackingSubView, setTrackingSubView] = useState<'MAP' | 'FUEL_ANALYTICS' | 'CONFLICT_ALERTS'>('MAP');
 
   // Fetch real loads & live tracking from backend
   const fetchTrackingData = async () => {
@@ -56,8 +61,8 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
 
       // 1. Fetch live tracking info for selected load or overall corridor
       const trackingUrl = selectedLoad?.id
-        ? `http://localhost:5000/api/tracking/live/${selectedLoad.id}`
-        : 'http://localhost:5000/api/tracking/live';
+        ? `/api/tracking/live/${selectedLoad.id}`
+        : '/api/tracking/live';
       const trackingRes = await fetch(trackingUrl);
       let liveJson: any = null;
       if (trackingRes.ok) {
@@ -177,57 +182,71 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
     });
   }, [allLoads, liveData, filterMode]);
 
-  // 1. EMPTY STATE: No Loads Posted at all
-  if (!loading && allLoads.length === 0) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              Shipment GPS Tracking & Corridor Telematics
-            </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Live tracking and dynamic ETA calculations for your dispatched corridor shipments.
-            </p>
-          </div>
-        </div>
-
-        <div className="p-12 rounded-3xl bg-white border border-slate-200/80 shadow-sm text-center max-w-2xl mx-auto space-y-4 my-8">
-          <div className="w-16 h-16 rounded-2xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-700 mx-auto">
-            <Truck className="w-8 h-8 text-sky-600" />
-          </div>
-          <h3 className="text-lg font-black text-slate-900">No Consignments Available to Track</h3>
-          <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-            You currently have no active freight loads in the system. Post a new freight consignment to receive bids from verified carriers, assign a driver, and stream live GPS telematics between your origin and destination.
-          </p>
-          <button
-            onClick={handlePostLoadRedirect}
-            className="px-6 py-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold transition-all shadow-md inline-flex items-center gap-2 cursor-pointer"
-          >
-            <PlusCircle className="w-4 h-4" /> Post New Freight Consignment
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
-      {/* Top Header Bar */}
+      {/* Top Header Bar & View Switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <span className="text-[10px] font-extrabold uppercase tracking-widest text-sky-700 bg-sky-50 px-2.5 py-1 rounded-full border border-sky-200 inline-flex items-center gap-1.5">
-            <Radio className="w-3 h-3 text-sky-600 animate-pulse" /> Real-Time Telematics & GPS Tracking
+            <Radio className="w-3 h-3 text-sky-600 animate-pulse" /> Real-Time Telematics & Fleet Intelligence
           </span>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-1.5">
-            Live Shipment Tracking & Corridor Route Map
+            {trackingSubView === 'MAP'
+              ? 'Live Shipment Tracking & Corridor Route Map'
+              : trackingSubView === 'FUEL_ANALYTICS'
+              ? 'Fleet Fuel Consumption Analytics & Telematics'
+              : 'Conflict Zone Alerts & Dynamic Corridor Detours'}
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Select any active consignment below to inspect live vehicle telematics, dynamic ETA, or view completed delivery certificates.
+            {trackingSubView === 'MAP'
+              ? 'Select any active consignment below to inspect live vehicle telematics, dynamic ETA, or view completed delivery certificates.'
+              : trackingSubView === 'FUEL_ANALYTICS'
+              ? 'Trip-by-trip fuel tracking, vehicle and driver efficiency benchmarking, corridor elevation profiles, and data-driven savings.'
+              : 'Proactive 25 km geofenced conflict warnings, live security zone database, and automated alternate bypass comparison matrices.'}
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Sub-view toggle */}
+          <div className="flex items-center p-1 bg-slate-100 rounded-2xl border border-slate-200/80">
+            <button
+              type="button"
+              onClick={() => setTrackingSubView('MAP')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                trackingSubView === 'MAP'
+                  ? 'bg-white text-slate-900 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Navigation className="w-3.5 h-3.5 text-sky-600" />
+              <span>Corridor Map</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setTrackingSubView('FUEL_ANALYTICS')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                trackingSubView === 'FUEL_ANALYTICS'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Fuel className="w-3.5 h-3.5 text-amber-400" />
+              <span>Fuel Analytics</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setTrackingSubView('CONFLICT_ALERTS')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                trackingSubView === 'CONFLICT_ALERTS'
+                  ? 'bg-red-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <ShieldAlert className="w-3.5 h-3.5 text-red-400" />
+              <span>Conflict Alerts & Detours</span>
+            </button>
+          </div>
+
           {lastRefreshed && (
             <span className="text-[11px] font-semibold text-slate-400">
               Updated: {lastRefreshed}
@@ -241,6 +260,60 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
           </button>
         </div>
       </div>
+
+      {trackingSubView === 'CONFLICT_ALERTS' ? (
+        <ConflictZoneAlertsReroutingCard
+          selectedShipmentId={selectedLoad?.id}
+          onDetourActivated={() => {
+            fetchTrackingData();
+            setTrackingSubView('MAP');
+          }}
+          onRefreshParent={fetchTrackingData}
+        />
+      ) : trackingSubView === 'FUEL_ANALYTICS' ? (
+        <FuelConsumptionAnalyticsCard onRefresh={fetchTrackingData} />
+      ) : !loading && allLoads.length === 0 ? (
+        <div className="space-y-6">
+          <div className="p-12 rounded-3xl bg-white border border-slate-200/80 shadow-sm text-center max-w-2xl mx-auto space-y-4 my-8">
+            <div className="w-16 h-16 rounded-2xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-700 mx-auto">
+              <Truck className="w-8 h-8 text-sky-600" />
+            </div>
+            <h3 className="text-lg font-black text-slate-900">No Consignments Available to Track</h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+              You currently have no active freight loads in the system. Post a new freight consignment to receive bids from verified carriers, assign a driver, and stream live GPS telematics between your origin and destination.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <button
+                onClick={handlePostLoadRedirect}
+                className="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold transition-all shadow-md inline-flex items-center gap-2 cursor-pointer"
+              >
+                <PlusCircle className="w-4 h-4" /> Post New Freight Consignment
+              </button>
+              <button
+                onClick={() => setTrackingSubView('FUEL_ANALYTICS')}
+                className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-md inline-flex items-center gap-2 cursor-pointer"
+              >
+                <Fuel className="w-4 h-4 text-amber-400" /> Fuel Analytics
+              </button>
+              <button
+                onClick={() => setTrackingSubView('CONFLICT_ALERTS')}
+                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all shadow-md inline-flex items-center gap-2 cursor-pointer"
+              >
+                <ShieldAlert className="w-4 h-4 text-white" /> Conflict Alerts & Detours
+              </button>
+            </div>
+          </div>
+
+          {/* Corridor Route Optimization & Fuel Telematics Engine */}
+          <div className="pt-4">
+            <FuelSecurityRouteOptimizationCard
+              selectedLoadId={undefined}
+              onRerouteConfirmed={() => fetchTrackingData()}
+            />
+          </div>
+        </div>
+      ) : (
+        <>
 
       {/* FILTER TABS: Active vs Delivered vs All */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200 shadow-xs">
@@ -417,30 +490,30 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
           <div className="space-y-4 pt-2">
             {/* Active Selection Banner with Close Option */}
             <div
-              className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl text-white shadow-md ${
+              className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border shadow-xs ${
                 isTripDelivered
-                  ? 'bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900'
-                  : 'bg-sky-900'
+                  ? 'bg-purple-50/80 border-purple-200 text-slate-800'
+                  : 'bg-sky-50/80 border-sky-200 text-slate-800'
               }`}
             >
               <div>
                 <div className="flex items-center gap-2">
                   <span
-                    className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${
-                      isTripDelivered ? 'bg-purple-700 text-purple-200' : 'bg-sky-700 text-sky-200'
+                    className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                      isTripDelivered ? 'bg-purple-100 text-purple-800 border-purple-200' : 'bg-sky-100 text-sky-800 border-sky-200'
                     }`}
                   >
                     {selectedLoad.loadCode}
                   </span>
-                  <h3 className="text-sm font-black text-white">
+                  <h3 className="text-sm font-black text-slate-900">
                     {selectedLoad.title}
                   </h3>
                 </div>
-                <p className="text-xs text-sky-200 mt-1 flex items-center gap-2">
-                  <span>🟢 {selectedLoad.origin.split(',')[0]}</span>
-                  <span>➔</span>
-                  <span>🏁 {selectedLoad.destination.split(',')[0]}</span>
-                  <span className={isTripDelivered ? 'text-purple-300 font-bold' : 'text-sky-300'}>
+                <p className="text-xs text-slate-600 mt-1 flex items-center gap-2 font-medium">
+                  <span className="text-slate-700">🟢 {selectedLoad.origin.split(',')[0]}</span>
+                  <span className="text-slate-400">➔</span>
+                  <span className="text-slate-700">🏁 {selectedLoad.destination.split(',')[0]}</span>
+                  <span className={isTripDelivered ? 'text-purple-800 font-bold' : 'text-sky-800 font-bold'}>
                     • Status: {isTripDelivered ? 'DELIVERED (e-POD SIGNED ✓)' : isTripInTransit ? 'IN_TRANSIT (LIVE)' : selectedLoad.status}
                   </span>
                 </p>
@@ -448,7 +521,7 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
 
               <button
                 onClick={() => setSelectedLoad(null)}
-                className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all self-start sm:self-auto border border-white/20 cursor-pointer"
+                className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all self-start sm:self-auto border border-slate-200 hover:border-slate-300 shadow-xs cursor-pointer"
               >
                 ✕ Close / Select Other Consignment
               </button>
@@ -606,6 +679,16 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
           </div>
         );
       })()}
-    </div>
+
+      {/* 5. FUEL & SECURITY-AWARE ROUTE OPTIMIZATION ENGINE (SRS FR-05) */}
+      <div className="pt-2">
+        <FuelSecurityRouteOptimizationCard
+          selectedLoadId={selectedLoad?.id}
+          onRerouteConfirmed={() => fetchTrackingData()}
+        />
+      </div>
+    </>
+  )}
+</div>
   );
 };

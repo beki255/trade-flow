@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { DashboardLayout } from '../components/layout/DashboardLayout';
 import { CustomsStats, CustomsDossierItem, ClearanceLedgerItem } from '../modules/customs/types';
 
@@ -9,6 +10,7 @@ import { ComplianceTab } from '../modules/customs/tabs/ComplianceTab';
 import { ClearanceTab } from '../modules/customs/tabs/ClearanceTab';
 
 export const CustomsPortalPage: React.FC = () => {
+  const { user } = useAuth();
   const { tab } = useParams<{ tab?: string }>();
   const navigate = useNavigate();
   const activeTab = tab || 'review-queue';
@@ -90,7 +92,7 @@ export const CustomsPortalPage: React.FC = () => {
           clearanceStatus,
           officerNotes,
           clearingStation,
-          officerId: 'ECC-INSPECTOR-884',
+          officerId: user?.fullName ? `${user.fullName} (${user.id?.slice(-4) || 'ECC'})` : user?.id || 'ECC Customs Inspector',
         }),
       });
 

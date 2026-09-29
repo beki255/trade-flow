@@ -160,23 +160,47 @@ export const VerificationTable: React.FC<VerificationTableProps> = ({
                 )}
               </td>
 
-              {/* Verification Status */}
+              {/* Verification Status & Flags */}
               <td className="py-4 px-4">
-                {item.verificationStatus === 'VERIFIED' && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    <CheckCircle className="w-3 h-3" /> VERIFIED
-                  </span>
-                )}
-                {item.verificationStatus === 'PENDING' && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-50 text-amber-700 border border-amber-200">
-                    <Clock className="w-3 h-3" /> PENDING
-                  </span>
-                )}
-                {item.verificationStatus === 'SUSPENDED' && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200">
-                    <XCircle className="w-3 h-3" /> SUSPENDED
-                  </span>
-                )}
+                <div className="space-y-1">
+                  <div>
+                    {item.verificationStatus === 'VERIFIED' && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <CheckCircle className="w-3 h-3" /> VERIFIED
+                      </span>
+                    )}
+                    {item.verificationStatus === 'PENDING' && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-50 text-amber-700 border border-amber-200">
+                        <Clock className="w-3 h-3" /> PENDING
+                      </span>
+                    )}
+                    {item.verificationStatus === 'SUSPENDED' && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200">
+                        <XCircle className="w-3 h-3" /> SUSPENDED
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Exception Condition 6.7: Automated Performance Review (< 3.0 Stars) */}
+                  {(item.performanceReviewRequired || item.verificationNotes?.includes('[AUTOMATED PERFORMANCE REVIEW]')) && (
+                    <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black bg-amber-100/90 text-amber-900 border border-amber-300 shadow-xs">
+                      <span>⚠️ Performance Review (&lt; 3.0★)</span>
+                    </div>
+                  )}
+
+                  {/* Exception Condition 6.9: Duplicate Account Detected */}
+                  {(item.duplicateAccountDetected || item.verificationNotes?.includes('[DUPLICATE ACCOUNT DETECTED]')) && (
+                    <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black bg-rose-100/90 text-rose-900 border border-rose-300 shadow-xs">
+                      <span>🚨 Duplicate Account Flag</span>
+                    </div>
+                  )}
+
+                  {item.verificationNotes && (
+                    <div className="text-[10px] text-slate-500 font-medium max-w-[220px] leading-tight line-clamp-2" title={item.verificationNotes}>
+                      {item.verificationNotes}
+                    </div>
+                  )}
+                </div>
               </td>
 
               {/* Admin Action Buttons */}

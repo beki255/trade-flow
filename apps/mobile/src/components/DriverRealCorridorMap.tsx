@@ -1915,6 +1915,8 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
+    flexWrap: 'wrap',
+    gap: 8,
   },
   title: { fontSize: 11, fontWeight: '900', color: '#38BDF8', letterSpacing: 0.4 },
   sub: { fontSize: 9, color: '#64748B', marginTop: 1 },

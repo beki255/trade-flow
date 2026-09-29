@@ -39,16 +39,17 @@ export const CustomsCoordinationTab: React.FC<CustomsCoordinationTabProps> = ({
   return (
     <div className="space-y-6">
       {/* 1. Header Banner */}
-      <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-teal-950 via-slate-900 to-indigo-950 text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xl border border-teal-800/60 relative overflow-hidden">
-        <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/20 border border-teal-400/30 text-teal-300 text-[10.5px] font-extrabold uppercase tracking-widest">
-            <FileCheck2 className="w-3.5 h-3.5" />
-            <span>Customs Coordination</span>
+      <div className="p-6 sm:p-8 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 rounded-full bg-gradient-to-br from-teal-500/10 via-emerald-500/5 to-transparent blur-3xl pointer-events-none" />
+        <div className="space-y-2 relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 border border-teal-200/80 text-teal-900 text-[11px] font-bold tracking-wide">
+            <FileCheck2 className="w-3.5 h-3.5 text-teal-600" />
+            <span>Customs Coordination Hub</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
             Batch Customs Document Filing & Single Window Clearance
           </h1>
-          <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
             Coordinate customs clearance filings across multi-shipper consolidated containers. Assemble master transit declarations, commercial invoices, and packing lists for Galafi and Modjo customs inspection.
           </p>
         </div>
@@ -56,7 +57,7 @@ export const CustomsCoordinationTab: React.FC<CustomsCoordinationTabProps> = ({
         <button
           type="button"
           onClick={onRefresh}
-          className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all border border-white/20 flex items-center gap-2 shadow-sm cursor-pointer shrink-0"
+          className="relative z-10 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs hover:shadow flex items-center gap-2 cursor-pointer shrink-0"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           <span>Sync Status</span>

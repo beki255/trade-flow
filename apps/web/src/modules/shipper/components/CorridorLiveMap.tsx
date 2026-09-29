@@ -353,6 +353,59 @@ const createWaypointIcon = (wp: Waypoint, isCompleted: boolean) => {
   });
 };
 
+// Custom Leaflet DivIcon: Geotagged Incident Markers (SRS 4.5.2)
+const createIncidentMarkerIcon = (category: string, severity: string) => {
+  const iconEmoji =
+    category === 'ACCIDENT'
+      ? '💥'
+      : category === 'FUEL_OUTAGE'
+      ? '⛽'
+      : category === 'ROAD_BLOCKAGE'
+      ? '🚧'
+      : category === 'SECURITY_CONCERN'
+      ? '🛡️'
+      : '🛑';
+  const bg = severity === 'CRITICAL' ? '#DC2626' : severity === 'HIGH' ? '#EA580C' : '#D97706';
+
+  return L.divIcon({
+    className: 'custom-incident-marker',
+    iconSize: [32, 42],
+    iconAnchor: [16, 40],
+    html: `
+      <div style="display: flex; flex-direction: column; align-items: center; pointer-events: auto;">
+        <div style="
+          background: ${bg};
+          color: white;
+          font-size: 8px;
+          font-weight: 900;
+          padding: 1px 4px;
+          border-radius: 4px;
+          white-space: nowrap;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+          border: 1px solid white;
+          margin-bottom: 2px;
+        ">
+          ${severity}
+        </div>
+        <div style="
+          width: 26px;
+          height: 26px;
+          border-radius: 50%;
+          background: ${bg};
+          border: 2px solid #FFFFFF;
+          box-shadow: 0 3px 10px rgba(0,0,0,0.35);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 13px;
+        ">
+          ${iconEmoji}
+        </div>
+      </div>
+    `,
+  });
+};
+
 export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, allLoads = [] }) => {
   const [activeTileLayer, setActiveTileLayer] = useState<'STREETS' | 'DARK' | 'SATELLITE'>('STREETS');
   const [activeWeather, setActiveWeather] = useState<'CLEAR' | 'RAIN' | 'DUST'>('CLEAR');
@@ -389,6 +442,23 @@ export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, 
     truckPlate: '',
     status: 'OPEN',
   });
+
+  // Active verified corridor incident reports (SRS 4.5.2)
+  const [activeIncidents, setActiveIncidents] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchIncidents = () => {
+      fetch('/api/optimization/incidents')
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.incidents) setActiveIncidents(d.incidents);
+        })
+        .catch(() => {});
+    };
+    fetchIncidents();
+    const interval = setInterval(fetchIncidents, 8000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Selected Posted Load State (Dynamic from database)
   const activeLoad = useMemo(() => {
@@ -512,34 +582,76 @@ export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, 
     return waypoints.map((w) => [w.lat, w.lng] as [number, number]);
   }, [liveOsmRoad, activeLoad, waypoints]);
 
-  // Risk Zones
-  const riskZones: RiskZone[] = useMemo(
-    () => [
-      {
-        id: 'RZ-AFAR-BORDER',
-        name: 'Afar–Somali Border Corridor Buffer Zone',
-        severity: 'MEDIUM',
-        centerLat: 10.45,
-        centerLng: 41.25,
-        radiusKm: 28.0,
-        speedLimitKmh: 45,
-        advisory: 'Security escort recommended during night hours. Maintain convoy speed.',
-        active: true,
-      },
-      {
-        id: 'RZ-AWASH-GORGE',
-        name: 'Awash Gorge Heavy Gradient & High Winds',
-        severity: 'LOW',
-        centerLat: 8.95,
-        centerLng: 40.2,
-        radiusKm: 16.0,
-        speedLimitKmh: 35,
-        advisory: 'Steep descents and crosswinds. Mandatory brake check at weighbridge.',
-        active: true,
-      },
-    ],
-    []
-  );
+  // Risk Zones (Sourced dynamically from Corridor Security Database)
+  const [riskZones, setRiskZones] = useState<RiskZone[]>([
+    {
+      id: 'RZ-AFAR-NORTH-01',
+      name: 'Northern Corridor Escarpment Security Hotspot',
+      severity: 'CRITICAL',
+      centerLat: 11.75,
+      centerLng: 41.05,
+      radiusKm: 30.0,
+      speedLimitKmh: 30,
+      advisory: 'Armed skirmishes reported. Military escort required.',
+      active: true,
+    },
+    {
+      id: 'RZ-AFAR-SOMALI-02',
+      name: 'Afar–Somali Border Corridor Buffer Zone',
+      severity: 'HIGH',
+      centerLat: 10.45,
+      centerLng: 41.25,
+      radiusKm: 25.0,
+      speedLimitKmh: 45,
+      advisory: 'Nighttime transit curfews enforced. Maintain convoy speed.',
+      active: true,
+    },
+    {
+      id: 'RZ-GALAFI-CHOKE-03',
+      name: 'Galafi Customs Border Approach Freight Chokepoint',
+      severity: 'MEDIUM',
+      centerLat: 11.71,
+      centerLng: 41.83,
+      radiusKm: 20.0,
+      speedLimitKmh: 40,
+      advisory: 'High customs congestion and localized demonstrations.',
+      active: true,
+    },
+    {
+      id: 'RZ-AWASH-GORGE-04',
+      name: 'Awash Gorge Heavy Gradient & High Winds',
+      severity: 'LOW',
+      centerLat: 8.95,
+      centerLng: 40.2,
+      radiusKm: 15.0,
+      speedLimitKmh: 35,
+      advisory: 'Steep descents and crosswinds. Mandatory brake check.',
+      active: true,
+    },
+  ]);
+
+  useEffect(() => {
+    fetch('/api/security/risk-zones')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.riskZones && Array.isArray(data.riskZones) && data.riskZones.length > 0) {
+          setRiskZones(
+            data.riskZones.map((z: any) => ({
+              id: z.id,
+              name: z.name,
+              severity: z.severity,
+              centerLat: z.centerLat,
+              centerLng: z.centerLng,
+              radiusKm: z.radiusKm,
+              speedLimitKmh: z.severity === 'CRITICAL' ? 30 : z.severity === 'HIGH' ? 45 : 55,
+              advisory: z.description,
+              active: z.isActive,
+            }))
+          );
+        }
+      })
+      .catch((e) => console.warn('CorridorLiveMap risk zones note:', e));
+  }, []);
 
   // Real-Time GPS Telemetry Polling Loop from Driver Mobile App (< 3s latency updates)
   useEffect(() => {
@@ -549,7 +661,7 @@ export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, 
 
     const pollLiveTelemetry = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/tracking/live/${activeLoad.id}`);
+        const res = await fetch(`/api/tracking/live/${activeLoad.id}`);
         if (!res.ok) return;
         const data = await res.json();
         if (!isMounted) return;
@@ -575,6 +687,7 @@ export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, 
           truckPlate: data.shipment?.truckPlate || '',
           status: isDelivered ? 'DELIVERED' : (data.status || activeLoad.status),
           lastUpdated: tele?.lastUpdated,
+          telematicsCompliance: data.shipment?.telematicsCompliance || null,
         });
 
         if (isDelivered) {
@@ -869,6 +982,107 @@ export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, 
         </div>
       </div>
 
+      {/* Exception Condition 6.10: Mobile App Offline > 1 Hour — Dispatcher Alert & SMS Milestone Fallback */}
+      {serverTelemetry.telematicsCompliance?.status === 'OFFLINE_OVER_1_HOUR' && (
+        <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200/90 text-rose-900 text-xs shadow-xs flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <div className="font-black text-rose-900 flex items-center gap-2">
+              <span>Mobile App Offline for &gt; 1 Hour — Dispatcher Alert Active</span>
+              <span className="px-2 py-0.5 rounded-full bg-rose-200 text-rose-800 text-[10px] font-bold">SMS Milestone Fallback Dispatched</span>
+            </div>
+            <p className="text-slate-600">
+              No telematics ping received for {serverTelemetry.telematicsCompliance.minutesSinceLastUpdate} minutes during active corridor transit. Automated SMS milestone fallback ping has been dispatched to driver ({serverTelemetry.telematicsCompliance?.dispatcherAlert?.smsFallback?.recipientPhone || '+251911445566'}).
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Exception Condition 6.1: GPS Signal Lost — Telematics Cached Locally / Historical Corridor Velocity ETA */}
+      {serverTelemetry.telematicsCompliance?.gpsSignalStatus === 'SIGNAL_LOST_USING_HISTORICAL_VELOCITY' && serverTelemetry.telematicsCompliance?.status !== 'OFFLINE_OVER_1_HOUR' && (
+        <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200/90 text-amber-900 text-xs shadow-xs flex items-center gap-3">
+          <Radio className="w-4 h-4 text-amber-600 shrink-0 animate-pulse" />
+          <div>
+            <span className="font-black text-amber-900">GPS Signal Lost During Transit: </span>
+            <span className="text-amber-800">Telematics cached locally on driver device; dynamic ETA currently calculated using last known corridor waypoint and historical corridor velocity (50 km/h baseline).</span>
+          </div>
+        </div>
+      )}
+
+      {/* 4.3 Live Telemetry & Dynamic ETA Telematics Banner (SRS 4.3.1, 4.3.2, 4.3.3) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+        {/* KPI 1: Dynamic ETA with Confidence Margin (SRS 4.3.3) */}
+        <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1">
+          <div className="flex items-center justify-between">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500">Dynamic ETA (P95)</span>
+            <Clock className="w-4 h-4 text-sky-600" />
+          </div>
+          <div className="text-lg font-black text-slate-900 tracking-tight">
+            {serverTelemetry.status === 'DELIVERED'
+              ? 'Delivered ✓'
+              : !serverTelemetry.isInTransit
+              ? 'Awaiting Departure'
+              : dynamicEta.confidenceText}
+          </div>
+          <div className="text-[11px] font-semibold text-slate-500 flex items-center justify-between">
+            <span>Remaining:</span>
+            <span className="font-bold text-sky-700">{dynamicEta.formattedDuration}</span>
+          </div>
+        </div>
+
+        {/* KPI 2: Live Speed & Motion (SRS 4.3.1) */}
+        <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1">
+          <div className="flex items-center justify-between">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500">Vehicle Speed</span>
+            <Gauge className="w-4 h-4 text-emerald-600" />
+          </div>
+          <div className="text-lg font-black text-emerald-700 tracking-tight flex items-baseline gap-1">
+            <span>{currentTruckTelemetry.speedKmh}</span>
+            <span className="text-xs font-bold text-slate-500">km/h</span>
+          </div>
+          <div className="text-[11px] font-semibold text-slate-500 flex items-center justify-between">
+            <span>Status:</span>
+            <span className={`font-bold ${currentTruckTelemetry.speedKmh > 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
+              {currentTruckTelemetry.speedKmh > 0 ? 'Moving on Highway' : 'Rest / Stationary'}
+            </span>
+          </div>
+        </div>
+
+        {/* KPI 3: Fuel Level & Range (SRS 4.3.1) */}
+        <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1">
+          <div className="flex items-center justify-between">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500">Fuel Level</span>
+            <Fuel className="w-4 h-4 text-amber-500" />
+          </div>
+          <div className="text-lg font-black text-slate-900 tracking-tight flex items-baseline gap-1">
+            <span>{currentTruckTelemetry.fuelPct}</span>
+            <span className="text-xs font-bold text-slate-500">% Tank</span>
+          </div>
+          <div className="text-[11px] font-semibold text-slate-500 flex items-center justify-between">
+            <span>Est. Range:</span>
+            <span className="font-bold text-slate-700">~{Math.round(currentTruckTelemetry.fuelPct * 5.2)} km</span>
+          </div>
+        </div>
+
+        {/* KPI 4: Heading & Corridor Distance (SRS 4.3.1) */}
+        <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1">
+          <div className="flex items-center justify-between">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500">Heading & Progress</span>
+            <Compass className="w-4 h-4 text-indigo-600" />
+          </div>
+          <div className="text-lg font-black text-indigo-900 tracking-tight flex items-baseline gap-1">
+            <span>{currentTruckTelemetry.heading}°</span>
+            <span className="text-xs font-bold text-slate-500">Bearing</span>
+          </div>
+          <div className="text-[11px] font-semibold text-slate-500 flex items-center justify-between">
+            <span>Progress:</span>
+            <span className="font-bold text-indigo-700">
+              {Math.round((simProgress / 100) * totalCorridorKm)} / {totalCorridorKm} km ({Math.round(simProgress)}%)
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* Real Leaflet Map & Telematics Sidebar Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
@@ -1115,29 +1329,76 @@ export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, 
               })}
 
               {/* 6. RISK ZONE CIRCLES */}
-              {riskZones.map((rz) => (
-                <Circle
-                  key={rz.id}
-                  center={[rz.centerLat, rz.centerLng]}
-                  radius={rz.radiusKm * 1000}
-                  pathOptions={{
-                    color: '#F59E0B',
-                    fillColor: '#F59E0B',
-                    fillOpacity: 0.15,
-                    weight: 2,
-                    dashArray: '6, 6',
-                  }}
+              {riskZones.map((rz) => {
+                const zoneColor =
+                  rz.severity === 'CRITICAL'
+                    ? '#0F172A'
+                    : rz.severity === 'HIGH'
+                    ? '#DC2626'
+                    : rz.severity === 'MEDIUM'
+                    ? '#EA580C'
+                    : '#EAB308';
+
+                return (
+                  <Circle
+                    key={rz.id}
+                    center={[rz.centerLat, rz.centerLng]}
+                    radius={rz.radiusKm * 1000}
+                    pathOptions={{
+                      color: zoneColor,
+                      fillColor: zoneColor,
+                      fillOpacity: rz.severity === 'CRITICAL' ? 0.35 : 0.18,
+                      weight: 2,
+                      dashArray: '6, 6',
+                    }}
+                  >
+                    <Popup>
+                      <div className="p-2 space-y-1 min-w-[210px]">
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className="text-[9px] font-black uppercase px-2 py-0.5 rounded text-white"
+                            style={{ backgroundColor: zoneColor }}
+                          >
+                            {rz.severity} RISK
+                          </span>
+                          <span className="text-[10px] font-bold text-slate-500">{rz.radiusKm} km radius</span>
+                        </div>
+                        <div className="font-extrabold text-xs text-slate-900 mt-1">{rz.name}</div>
+                        <div className="text-[11px] text-slate-600 leading-snug">{rz.advisory}</div>
+                      </div>
+                    </Popup>
+                  </Circle>
+                );
+              })}
+
+              {/* 7. ACTIVE GEOTAGGED CORRIDOR INCIDENTS (SRS 4.5.2) */}
+              {activeIncidents.map((inc) => (
+                <Marker
+                  key={inc.id}
+                  position={[inc.latitude, inc.longitude]}
+                  icon={createIncidentMarkerIcon(inc.category, inc.severity)}
                 >
                   <Popup>
-                    <div className="p-1.5 space-y-1">
-                      <div className="font-extrabold text-xs text-amber-800">⚠️ {rz.name}</div>
-                      <div className="text-[11px] text-slate-700">{rz.advisory}</div>
+                    <div className="p-2 space-y-1 min-w-[210px]">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-rose-100 text-rose-800">
+                          {inc.category}
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-500">
+                          {inc.severity}
+                        </span>
+                      </div>
+                      <div className="font-black text-xs text-slate-900">{inc.locationName}</div>
+                      <p className="text-[11px] text-slate-600">{inc.description}</p>
+                      <div className="text-[9.5px] text-slate-400 font-mono">
+                        GPS: {inc.latitude.toFixed(4)}°N, {inc.longitude.toFixed(4)}°E
+                      </div>
                     </div>
                   </Popup>
-                </Circle>
+                </Marker>
               ))}
 
-              {/* 7. LIVE ANIMATED TRUCK MARKER */}
+              {/* 8. LIVE ANIMATED TRUCK MARKER */}
               <Marker
                 position={[currentTruckTelemetry.lat, currentTruckTelemetry.lng]}
                 icon={createLiveTruckIcon(

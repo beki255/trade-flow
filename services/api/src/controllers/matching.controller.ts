@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { PrismaClient, UserRole, LoadStatus, ShipmentStatus, CargoType } from '@prisma/client';
+import { PrismaClient, UserRole, VerificationStatus, LoadStatus, ShipmentStatus, CargoType } from '@prisma/client';
 import { resolveCorridorCoordinates, calculateCorridorRoadDistanceKm } from '@tradeflow/shared';
 
 const prisma = new PrismaClient();
@@ -14,13 +14,62 @@ export const CORRIDOR_LOCATIONS: Record<string, { name: string; lat: number; lng
   'Djibouti Port': { name: 'Port of Doraleh Container Terminal (SGTD), Djibouti', lat: 11.5950, lng: 43.1480 },
 };
 
-// 4.2.2 Weighted Utility Function Constants
-const W_COST = 0.35;        // w1: Cost optimization
-const W_RELIABILITY = 0.30; // w2: Historical reliability & on-time rating
-const W_FUEL = 0.15;        // w3: Fuel efficiency rating & Euro emissions standard
-const W_PROXIMITY = 0.20;   // w4: Proximity to pickup GPS & current availability
+// Default Utility Function Weights
+export const DEFAULT_WEIGHTS = {
+  cost: 0.35,        // w1: Cost optimization
+  reliability: 0.30, // w2: Historical reliability & on-time rating
+  fuel: 0.15,        // w3: Fuel efficiency rating & Euro emissions standard
+  proximity: 0.20,   // w4: Proximity to pickup GPS & current availability
+};
 
-// 1. AI Matching Engine: Rank Eligible Transporters by Weighted Utility Score (4.2.2)
+export type MatchingPreference = 'BALANCED' | 'COST_PRIORITY' | 'SPEED_PRIORITY' | 'RELIABILITY_PRIORITY';
+
+export const RESOLVED_WEIGHT_PRESETS: Record<MatchingPreference, { cost: number; reliability: number; fuel: number; proximity: number }> = {
+  BALANCED: { cost: 0.35, reliability: 0.30, proximity: 0.20, fuel: 0.15 },
+  COST_PRIORITY: { cost: 0.55, reliability: 0.20, proximity: 0.15, fuel: 0.10 },
+  SPEED_PRIORITY: { proximity: 0.45, reliability: 0.30, cost: 0.15, fuel: 0.10 },
+  RELIABILITY_PRIORITY: { reliability: 0.50, cost: 0.20, proximity: 0.15, fuel: 0.15 },
+};
+
+/**
+ * Helper to query count of active, qualified, verified corridor transporters
+ */
+export async function getQualifiedTransportersCount(): Promise<number> {
+  return await prisma.user.count({
+    where: {
+      role: UserRole.TRANSPORTER,
+      verificationStatus: VerificationStatus.VERIFIED,
+    },
+  });
+}
+
+/**
+ * GET /api/matching/bidding-quorum
+ * Checks if minimum 3 qualified transporters are available to open competitive bidding
+ */
+export const getBiddingQuorum = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const qualifiedCount = await getQualifiedTransportersCount();
+    const minimumRequired = 3;
+    const quorumMet = qualifiedCount >= minimumRequired;
+
+    res.json({
+      success: true,
+      minimumRequired,
+      qualifiedTransportersCount: qualifiedCount,
+      quorumMet,
+      status: quorumMet ? 'QUORUM_SATISFIED' : 'BELOW_QUORUM_THRESHOLD',
+      message: quorumMet
+        ? `Quorum satisfied: ${qualifiedCount} verified transporters available for competitive bidding.`
+        : `Minimum 3 qualified verified transporters required to open competitive bidding. Currently ${qualifiedCount} available.`,
+    });
+  } catch (error: any) {
+    console.error('Error checking bidding quorum:', error);
+    res.status(500).json({ error: 'Failed to evaluate competitive bidding quorum' });
+  }
+};
+
+// 1. AI Matching Engine: Rank Eligible Transporters by Weighted Utility Score
 export const calculateAIMatches = async (req: Request, res: Response): Promise<void> => {
   const startTime = Date.now();
 
@@ -37,21 +86,52 @@ export const calculateAIMatches = async (req: Request, res: Response): Promise<v
       pickupWindow,
       specialHandling,
       targetBudgetEtb,
+      priorityPreference, // 'BALANCED' | 'COST_PRIORITY' | 'SPEED_PRIORITY' | 'RELIABILITY_PRIORITY'
+      customWeights,
     } = req.body;
 
     const cargoWeight = parseFloat(weightTons) || 28;
     const targetBudget = parseFloat(targetBudgetEtb) || 185000;
 
-    // Fetch exclusively real registered Transporters from PostgreSQL
+    // Configurable Matching Weights
+    let activePreference: MatchingPreference = 'BALANCED';
+    if (priorityPreference && RESOLVED_WEIGHT_PRESETS[priorityPreference as MatchingPreference]) {
+      activePreference = priorityPreference as MatchingPreference;
+    }
+
+    let weights = { ...RESOLVED_WEIGHT_PRESETS[activePreference] };
+    if (customWeights && typeof customWeights === 'object') {
+      const c = parseFloat(customWeights.cost) || 0;
+      const r = parseFloat(customWeights.reliability) || 0;
+      const p = parseFloat(customWeights.proximity) || 0;
+      const f = parseFloat(customWeights.fuel) || 0;
+      const sum = c + r + p + f;
+      if (sum > 0) {
+        weights = {
+          cost: parseFloat((c / sum).toFixed(2)),
+          reliability: parseFloat((r / sum).toFixed(2)),
+          proximity: parseFloat((p / sum).toFixed(2)),
+          fuel: parseFloat((f / sum).toFixed(2)),
+        };
+      }
+    }
+
+    // Strict Access Control: Unverified or Suspended transporters cannot accept bookings or participate in market
+    // Exclusively query VERIFIED transporters from PostgreSQL
     const transporters = await prisma.user.findMany({
       where: {
         role: UserRole.TRANSPORTER,
+        verificationStatus: VerificationStatus.VERIFIED,
       },
       include: {
         vehicles: true,
       },
       orderBy: { createdAt: 'desc' },
     });
+
+    const qualifiedTransportersCount = transporters.length;
+    const minimumRequiredForQuorum = 3;
+    const quorumMet = qualifiedTransportersCount >= minimumRequiredForQuorum;
 
     if (transporters.length === 0) {
       const executionTimeMs = Date.now() - startTime;
@@ -71,12 +151,47 @@ export const calculateAIMatches = async (req: Request, res: Response): Promise<v
           targetBudgetEtb: targetBudget,
         },
         topMatches: [],
-        message: 'No registered transporter accounts found in the database. Please register a transporter account first.',
+        weightConfiguration: {
+          preference: activePreference,
+          weights,
+        },
+        biddingQuorum: {
+          minimumRequired: minimumRequiredForQuorum,
+          qualifiedTransportersCount,
+          quorumMet,
+        },
+        noTransportersAvailable: true,
+        immediateShipperNotification: {
+          severity: 'WARNING',
+          title: 'No Qualified Transporters Available for Immediate Match',
+          message: 'No verified corridor transporters are currently available meeting this load profile and pickup constraints.',
+          suggestedActions: [
+            {
+              action: 'EXPAND_SEARCH_RADIUS',
+              title: 'Expand Search Radius',
+              description: 'Broaden carrier availability search beyond primary terminals (+50 km to adjacent corridor depots).',
+              delta: '+50 km',
+            },
+            {
+              action: 'INCREASE_BUDGET',
+              title: 'Increase Target Budget',
+              description: `Increase spot rate budget by 10–15% (suggested: ETB ${Math.round(targetBudget * 1.12).toLocaleString()}) to attract high-availability return fleets.`,
+              suggestedBudgetEtb: Math.round(targetBudget * 1.12),
+            },
+            {
+              action: 'ADJUST_PICKUP_WINDOW',
+              title: 'Adjust Pickup Window',
+              description: 'Extend pickup window by +24 to +48 hours to match incoming discharge schedules at Modjo / Galafi.',
+              suggestedExtensionHours: 48,
+            },
+          ],
+        },
+        message: 'No verified transporter accounts found in the database. Transporters must be VERIFIED for market participation.',
       });
       return;
     }
 
-    // Compute Multi-Factor Weighted Utility Score for Each Real Registered Carrier
+    // Compute Multi-Factor Weighted Utility Score for Each Real Verified Transporter
     const rankedMatches = transporters.map((carrier: any, index: number) => {
       // 1. Cost Score (S_cost): Variance against target budget & spot benchmark
       const baseQuote = targetBudget * (0.92 + (index * 0.04));
@@ -91,15 +206,15 @@ export const calculateAIMatches = async (req: Request, res: Response): Promise<v
       const hasVehicles = carrier.vehicles && carrier.vehicles.length > 0;
       const fuelEcoScorePct = hasVehicles ? 95 : 85;
 
-      // 4. Proximity Score (S_proximity): Availability at origin hub
+      // 4. Proximity & Speed Score (S_proximity): Availability at origin hub & transit readiness
       const proximityScorePct = Math.max(80, 96 - (index * 3));
 
-      // Weighted Utility Formula: U(t) = w1*Cost + w2*Rel + w3*Fuel + w4*Prox
+      // Configurable Weighted Utility Formula: U(t) = w_cost*Cost + w_rel*Rel + w_fuel*Fuel + w_prox*Prox
       const weightedUtility = (
-        (W_COST * (costScorePct / 100)) +
-        (W_RELIABILITY * (reliabilityScorePct / 100)) +
-        (W_FUEL * (fuelEcoScorePct / 100)) +
-        (W_PROXIMITY * (proximityScorePct / 100))
+        (weights.cost * (costScorePct / 100)) +
+        (weights.reliability * (reliabilityScorePct / 100)) +
+        (weights.fuel * (fuelEcoScorePct / 100)) +
+        (weights.proximity * (proximityScorePct / 100))
       );
 
       const totalMatchScorePct = parseFloat((weightedUtility * 100).toFixed(1));
@@ -111,7 +226,7 @@ export const calculateAIMatches = async (req: Request, res: Response): Promise<v
         driverName: carrier.fullName,
         phone: carrier.phone || 'N/A',
         ratingStars: carrier.ratingAvg || 5.0,
-        totalCompletedTrips: carrier.totalRatingsCount || (carrier.verificationStatus === 'VERIFIED' ? 12 : 0),
+        totalCompletedTrips: carrier.totalRatingsCount || 12,
         assignedTruckPlate: primaryVehicle?.plateNumber || 'No Truck Registered',
         vehicleType: primaryVehicle?.vehicleType || 'Fleet Vehicle',
         payloadCapacityTons: primaryVehicle?.capacityTons || 35,
@@ -121,10 +236,10 @@ export const calculateAIMatches = async (req: Request, res: Response): Promise<v
         verificationStatus: carrier.verificationStatus,
         totalMatchScorePct,
         breakdownScores: {
-          costOptimization: `${costScorePct}% (w1: 0.35)`,
-          historicalReliability: `${reliabilityScorePct}% (w2: 0.30)`,
-          fuelEfficiency: `${fuelEcoScorePct}% (w3: 0.15)`,
-          proximityAndAvailability: `${proximityScorePct}% (w4: 0.20)`,
+          costOptimization: `${costScorePct}% (w: ${weights.cost})`,
+          historicalReliability: `${reliabilityScorePct}% (w: ${weights.reliability})`,
+          fuelEfficiency: `${fuelEcoScorePct}% (w: ${weights.fuel})`,
+          proximityAndAvailability: `${proximityScorePct}% (w: ${weights.proximity})`,
         },
       };
     });
@@ -148,6 +263,15 @@ export const calculateAIMatches = async (req: Request, res: Response): Promise<v
         volumeM3: volumeM3 || 45,
         specialHandling: specialHandling || 'Standard Heavy Freight',
         targetBudgetEtb: targetBudget,
+      },
+      weightConfiguration: {
+        preference: activePreference,
+        weights,
+      },
+      biddingQuorum: {
+        minimumRequired: minimumRequiredForQuorum,
+        qualifiedTransportersCount,
+        quorumMet,
       },
       topMatches: rankedMatches,
     });
@@ -217,8 +341,23 @@ export const postLoadWithBookingOption = async (req: Request, res: Response): Pr
       return;
     }
 
+    // Strict Access Control: Suspended accounts lose access to all transactional functions
+    if (shipper.verificationStatus === VerificationStatus.SUSPENDED) {
+      res.status(403).json({
+        error: 'Your account is SUSPENDED. Suspended accounts lose access to all transactional functions including posting freight loads.',
+        verificationStatus: VerificationStatus.SUSPENDED,
+      });
+      return;
+    }
+
     const weightVal = parseFloat(weightTons) || 28.0;
     const volumeVal = parseFloat(volumeM3) || 40.0;
+
+    // Check Competitive Bidding Quorum: Minimum 3 qualified transporters required
+    const isOptionB = bookingOption === 'COMPETITIVE_BIDDING';
+    const qualifiedCount = await getQualifiedTransportersCount();
+    const minimumRequiredForQuorum = 3;
+    const quorumMet = qualifiedCount >= minimumRequiredForQuorum;
 
     // Resolve real-world GPS coordinates from location address or picker inputs
     const resolvedOrigin = resolveCorridorCoordinates(originAddress, originGps?.lat, originGps?.lng);
@@ -240,7 +379,6 @@ export const postLoadWithBookingOption = async (req: Request, res: Response): Pr
     );
     
     // For Option B (Competitive Bidding), no target price is set by the shipper (pure RFQ)
-    const isOptionB = bookingOption === 'COMPETITIVE_BIDDING';
     const parsedTargetBudget = isOptionB ? null : (targetBudgetEtb ? parseFloat(targetBudgetEtb) : null);
     const calculatedSpot = Math.round(realDistanceKm * (weightVal / 30.0) * 6.8 * 100);
     const spotBenchmark = parseFloat(spotRateEtb) || parsedTargetBudget || calculatedSpot;
@@ -289,12 +427,25 @@ export const postLoadWithBookingOption = async (req: Request, res: Response): Pr
 
       if (!targetTransporter) {
         targetTransporter = await prisma.user.findFirst({
-          where: { role: UserRole.TRANSPORTER },
+          where: {
+            role: UserRole.TRANSPORTER,
+            verificationStatus: VerificationStatus.VERIFIED, // Strictly Verified
+          },
         });
       }
 
-      if (targetTransporter) {
+      // Verification & Access Control: Unverified transporters cannot accept bookings
+      if (targetTransporter && targetTransporter.verificationStatus !== VerificationStatus.VERIFIED) {
+        res.status(403).json({
+          error: `Cannot assign instant booking: Transporter is ${targetTransporter.verificationStatus}. Verification status must be VERIFIED for market participation.`,
+          verificationStatus: targetTransporter.verificationStatus,
+        });
+        return;
+      }
+
+      if (targetTransporter && targetTransporter.verificationStatus === VerificationStatus.VERIFIED) {
         const now = new Date();
+        const configuredHours = parseInt(req.body.validityHours) || 24;
         await prisma.bid.create({
           data: {
             loadId: newLoad.id,
@@ -302,10 +453,10 @@ export const postLoadWithBookingOption = async (req: Request, res: Response): Pr
             proposedRateEtb: spotBenchmark,
             pickupEstimatedTime: new Date(now.getTime() + 4 * 3600000),
             deliveryEstimatedTime: new Date(now.getTime() + 22 * 3600000),
-            validityHours: 24,
+            validityHours: configuredHours,
             proposalNotes: 'DIRECT AI INSTANT MATCH REQUEST (Option A): Shipper approved spot rate. Review and accept to lock dispatch.',
             status: 'PENDING',
-            expiresAt: new Date(now.getTime() + 24 * 3600000),
+            expiresAt: new Date(now.getTime() + configuredHours * 3600000),
           },
         });
       }
@@ -314,7 +465,7 @@ export const postLoadWithBookingOption = async (req: Request, res: Response): Pr
     res.status(201).json({
       message:
         bookingOption === 'INSTANT_MATCH'
-          ? 'Direct AI Instant Match request sent to the selected transporter!'
+          ? 'Direct AI Instant Match request sent to the verified transporter!'
           : 'Load published to Corridor Load Board for open competitive bidding!',
       load: {
         ...newLoad,
@@ -322,6 +473,12 @@ export const postLoadWithBookingOption = async (req: Request, res: Response): Pr
       },
       bookingOption,
       distanceKm: realDistanceKm,
+      competitiveBiddingQuorum: {
+        minimumRequired: minimumRequiredForQuorum,
+        qualifiedTransportersCount: qualifiedCount,
+        quorumMet,
+        status: quorumMet ? 'QUORUM_SATISFIED' : 'BELOW_QUORUM_THRESHOLD',
+      },
     });
   } catch (error: any) {
     console.error('Error posting load with booking options:', error);
@@ -329,43 +486,88 @@ export const postLoadWithBookingOption = async (req: Request, res: Response): Pr
   }
 };
 
-// 3. Submit Transporter Custom Bid (4.2.4)
+// 3. Submit Transporter Custom Bid
 export const submitTransporterBid = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { loadId, transporterId, bidAmountEtb, estimatedTransitHours, notes } = req.body;
+    const {
+      loadId,
+      transporterId,
+      transporterEmail,
+      bidAmountEtb,
+      proposedRateEtb,
+      estimatedTransitHours,
+      validityHours,
+      notes,
+    } = req.body;
 
-    if (!loadId || !bidAmountEtb) {
-      res.status(400).json({ error: 'loadId and bidAmountEtb are required' });
+    const rate = parseFloat(bidAmountEtb || proposedRateEtb);
+    if (!loadId || isNaN(rate)) {
+      res.status(400).json({ error: 'loadId and bidAmountEtb/proposedRateEtb are required' });
       return;
     }
 
     let transporter = transporterId ? await prisma.user.findUnique({ where: { id: transporterId } }) : null;
+    if (!transporter && transporterEmail) {
+      transporter = await prisma.user.findUnique({ where: { email: transporterEmail.toLowerCase().trim() } });
+    }
     if (!transporter) {
       transporter = await prisma.user.findFirst({ where: { role: UserRole.TRANSPORTER } });
     }
 
     if (!transporter) {
-      res.status(400).json({ error: 'Transporter required to submit bid' });
+      res.status(400).json({ error: 'Transporter profile required to submit bid' });
       return;
     }
+
+    // Strict Access Control: Unverified transporters cannot place bids; suspended accounts lose all transactional access
+    if (transporter.verificationStatus === VerificationStatus.SUSPENDED) {
+      res.status(403).json({
+        error: 'Your transporter account is SUSPENDED. All bidding and transactional access is revoked.',
+        verificationStatus: VerificationStatus.SUSPENDED,
+      });
+      return;
+    }
+
+    if (transporter.verificationStatus !== VerificationStatus.VERIFIED) {
+      res.status(403).json({
+        error: 'Unverified transporters cannot accept bookings or place bids. Verification status must be VERIFIED for market participation.',
+        verificationStatus: transporter.verificationStatus,
+      });
+      return;
+    }
+
+    // Bid validity period defaults to 24 hours (configurable)
+    const configuredValidityHours = parseInt(validityHours) || 24;
+    const transitHours = parseInt(estimatedTransitHours) || 18;
+    const now = new Date();
+    const pickupEst = new Date(now.getTime() + 4 * 3600000);
+    const deliveryEst = new Date(pickupEst.getTime() + transitHours * 3600000);
+    const expiresAt = new Date(now.getTime() + configuredValidityHours * 3600000);
 
     const newBid = await prisma.bid.create({
       data: {
         loadId,
         transporterId: transporter.id,
-        bidAmountEtb: parseFloat(bidAmountEtb),
-        estimatedTransitHours: parseInt(estimatedTransitHours) || 18,
-        transporterNotes: notes || 'Ready for immediate pickup upon escrow lock.',
-        status: 'SUBMITTED',
+        proposedRateEtb: rate,
+        pickupEstimatedTime: pickupEst,
+        deliveryEstimatedTime: deliveryEst,
+        validityHours: configuredValidityHours,
+        proposalNotes: notes || 'Direct carrier quotation for corridor dispatch.',
+        status: 'PENDING',
+        expiresAt,
       },
     });
 
     res.status(201).json({
       message: 'Bid submitted successfully to shipper!',
       bid: newBid,
+      validityWindow: {
+        validityHours: configuredValidityHours,
+        expiresAt: expiresAt.toISOString(),
+      },
     });
   } catch (error: any) {
     console.error('Error submitting bid:', error);
-    res.status(500).json({ error: 'Failed to submit bid' });
+    res.status(500).json({ error: error.message || 'Failed to submit bid' });
   }
 };

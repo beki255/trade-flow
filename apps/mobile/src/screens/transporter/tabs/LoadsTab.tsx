@@ -17,6 +17,12 @@ interface LoadsTabProps {
   submittedBids?: BidItem[];
   loadSearchQuery: string;
   setLoadSearchQuery: (val: string) => void;
+  selectedRouteFilter?: string;
+  setSelectedRouteFilter?: (val: string) => void;
+  selectedCargoFilter?: string;
+  setSelectedCargoFilter?: (val: string) => void;
+  selectedTonnageFilter?: string;
+  setSelectedTonnageFilter?: (val: string) => void;
   onSelectLoadForQuote: (load: LoadItem) => void;
   onRespondDirectOffer: (bidId: string, action: 'ACCEPT' | 'REJECT') => void;
   onDeleteBid?: (bid: BidItem) => void;
@@ -30,6 +36,12 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
   submittedBids = [],
   loadSearchQuery,
   setLoadSearchQuery,
+  selectedRouteFilter = 'ALL',
+  setSelectedRouteFilter,
+  selectedCargoFilter = 'ALL',
+  setSelectedCargoFilter,
+  selectedTonnageFilter = 'ALL',
+  setSelectedTonnageFilter,
   onSelectLoadForQuote,
   onRespondDirectOffer,
   onDeleteBid,
@@ -144,14 +156,119 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
         )}
       </View>
 
-      {/* Search Filter Clear Notice if applied */}
-      {loadSearchQuery.length > 0 && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 4, marginBottom: 6 }}>
-          <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '600' }}>
-            Showing {filteredLoads.length} of {loadsList.length} matching consignments
+      {/* 4.2.4 Multi-Dimensional Filter Chips (Route Hubs, Cargo Type & Tonnage) */}
+      <View style={{ gap: 6, marginBottom: 8 }}>
+        {/* Route Hubs Filter */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingVertical: 2 }}>
+          {[
+            { id: 'ALL', label: 'All Corridors' },
+            { id: 'Addis Ababa', label: 'Addis Ababa' },
+            { id: 'Modjo', label: 'Modjo Hub' },
+            { id: 'Adama', label: 'Adama Depot' },
+            { id: 'Dire Dawa', label: 'Dire Dawa FTZ' },
+            { id: 'Djibouti', label: 'Djibouti Port' },
+          ].map((h) => {
+            const active = selectedRouteFilter === h.id;
+            return (
+              <TouchableOpacity
+                key={h.id}
+                onPress={() => setSelectedRouteFilter && setSelectedRouteFilter(h.id)}
+                style={{
+                  paddingHorizontal: 10,
+                  paddingVertical: 5,
+                  borderRadius: 12,
+                  backgroundColor: active ? '#0284C7' : '#F1F5F9',
+                  borderWidth: 1,
+                  borderColor: active ? '#0284C7' : '#CBD5E1',
+                }}
+              >
+                <Text style={{ fontSize: 10.5, fontWeight: active ? '800' : '600', color: active ? '#FFFFFF' : '#475569' }}>
+                  {h.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {/* Cargo Type & Tonnage Quick Filter Row */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingVertical: 2 }}>
+          {/* Cargo Filters */}
+          {[
+            { id: 'ALL', label: 'All Types' },
+            { id: 'CONTAINER', label: '📦 Containers' },
+            { id: 'COFFEE', label: '☕ Coffee / Agri' },
+            { id: 'MACHINERY', label: '⚙️ Machinery' },
+            { id: 'GENERAL', label: '🏷️ General Cargo' },
+          ].map((c) => {
+            const active = selectedCargoFilter === c.id;
+            return (
+              <TouchableOpacity
+                key={c.id}
+                onPress={() => setSelectedCargoFilter && setSelectedCargoFilter(c.id)}
+                style={{
+                  paddingHorizontal: 9,
+                  paddingVertical: 4.5,
+                  borderRadius: 10,
+                  backgroundColor: active ? '#0369A1' : '#FFFFFF',
+                  borderWidth: 1,
+                  borderColor: active ? '#0369A1' : '#E2E8F0',
+                }}
+              >
+                <Text style={{ fontSize: 10, fontWeight: active ? '800' : '600', color: active ? '#FFFFFF' : '#64748B' }}>
+                  {c.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+
+          {/* Separator */}
+          <View style={{ width: 1, backgroundColor: '#CBD5E1', marginHorizontal: 2 }} />
+
+          {/* Tonnage Filters */}
+          {[
+            { id: 'ALL', label: 'All Weights' },
+            { id: 'LIGHT', label: '≤ 20 Tons' },
+            { id: 'MEDIUM', label: '21–35 Tons' },
+            { id: 'HEAVY', label: '> 35 Tons' },
+          ].map((t) => {
+            const active = selectedTonnageFilter === t.id;
+            return (
+              <TouchableOpacity
+                key={t.id}
+                onPress={() => setSelectedTonnageFilter && setSelectedTonnageFilter(t.id)}
+                style={{
+                  paddingHorizontal: 9,
+                  paddingVertical: 4.5,
+                  borderRadius: 10,
+                  backgroundColor: active ? '#059669' : '#FFFFFF',
+                  borderWidth: 1,
+                  borderColor: active ? '#059669' : '#E2E8F0',
+                }}
+              >
+                <Text style={{ fontSize: 10, fontWeight: active ? '800' : '600', color: active ? '#FFFFFF' : '#64748B' }}>
+                  {t.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+
+      {/* Filter Status & Reset Notice */}
+      {(loadSearchQuery.length > 0 || selectedRouteFilter !== 'ALL' || selectedCargoFilter !== 'ALL' || selectedTonnageFilter !== 'ALL') && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 4, marginBottom: 8, backgroundColor: '#F8FAFC', paddingVertical: 5, borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0' }}>
+          <Text style={{ fontSize: 10.5, color: '#64748B', fontWeight: '700' }}>
+            Filtered: {filteredLoads.length} of {loadsList.length} consignments
           </Text>
-          <TouchableOpacity onPress={() => setLoadSearchQuery('')}>
-            <Text style={{ fontSize: 11, color: '#0284C7', fontWeight: '800' }}>Clear Search</Text>
+          <TouchableOpacity
+            onPress={() => {
+              setLoadSearchQuery('');
+              setSelectedRouteFilter && setSelectedRouteFilter('ALL');
+              setSelectedCargoFilter && setSelectedCargoFilter('ALL');
+              setSelectedTonnageFilter && setSelectedTonnageFilter('ALL');
+            }}
+          >
+            <Text style={{ fontSize: 10.5, color: '#0284C7', fontWeight: '800' }}>Reset Filters ↺</Text>
           </TouchableOpacity>
         </View>
       )}

@@ -225,7 +225,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           style={styles.serverPill}
           onPress={() => {
             const current = getApiBaseUrl().replace('http://', '').replace(':5000', '');
-            setCustomIpInput(getCustomServerIp() || current || '10.18.93.34');
+            setCustomIpInput(getCustomServerIp() || current);
             setShowIpModal(true);
           }}
           activeOpacity={0.8}

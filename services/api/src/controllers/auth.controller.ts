@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { PrismaClient, UserRole, VerificationStatus } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
+import { auditTrailStore } from './portal.controller';
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'tradeflow_super_secret_jwt_key_2026';
@@ -209,7 +210,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Check if user already exists in database
+    // Check if user already exists in database by email or phone
     const existing = await prisma.user.findFirst({
       where: {
         OR: [
@@ -226,6 +227,40 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    // Boundary Condition 6.9: Duplicate account detected
+    // Flag account for administrator review; suspend duplicate account pending TIN/license verification.
+    let isDuplicateAccount = false;
+    let duplicateField = '';
+    let duplicateConflictUser: any = null;
+
+    if (tin && tin.trim().length > 0) {
+      duplicateConflictUser = await prisma.user.findFirst({
+        where: { tin: tin.trim() },
+      });
+      if (duplicateConflictUser) {
+        isDuplicateAccount = true;
+        duplicateField = `Tax Identification Number (TIN: ${tin.trim()})`;
+      }
+    }
+
+    if (!isDuplicateAccount && tradeLicenseNo && tradeLicenseNo.trim().length > 0) {
+      duplicateConflictUser = await prisma.user.findFirst({
+        where: { tradeLicenseNo: tradeLicenseNo.trim() },
+      });
+      if (duplicateConflictUser) {
+        isDuplicateAccount = true;
+        duplicateField = `Trade License Number (${tradeLicenseNo.trim()})`;
+      }
+    }
+
+    const initialStatus = isDuplicateAccount
+      ? VerificationStatus.SUSPENDED
+      : VerificationStatus.PENDING;
+
+    const initialNotes = isDuplicateAccount
+      ? `[DUPLICATE ACCOUNT DETECTED]: ${duplicateField} matches existing registered business "${duplicateConflictUser?.companyName || duplicateConflictUser?.fullName}". Account suspended pending administrator TIN/license verification.`
+      : null;
+
     // Insert newly registered user record into PostgreSQL Database
     const newUser = await prisma.user.create({
       data: {
@@ -241,8 +276,25 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         roadworthinessDoc: roadworthinessDoc ? roadworthinessDoc.trim() : null,
         role: mappedPrismaRole,
         passwordHash: password,
-        verificationStatus: VerificationStatus.PENDING, // Enters Admin Verification Queue
+        verificationStatus: initialStatus,
+        verificationNotes: initialNotes,
       },
+    });
+
+    // Record registration in immutable audit trail (§4.1.2)
+    auditTrailStore.unshift({
+      id: `AUD-${Date.now().toString().slice(-4)}`,
+      action: isDuplicateAccount ? 'DUPLICATE_ACCOUNT_SUSPENDED_FOR_ADMIN_REVIEW' : 'USER_REGISTERED_PENDING_VERIFICATION',
+      category: isDuplicateAccount ? 'FRAUD_PREVENTION' : 'VERIFICATION',
+      targetUserId: newUser.id,
+      targetName: newUser.companyName || newUser.fullName,
+      previousStatus: 'UNREGISTERED',
+      newStatus: initialStatus,
+      performedByAdminId: isDuplicateAccount ? 'SYSTEM_DUPLICATE_DETECTOR' : 'SYSTEM_ONBOARDING',
+      timestamp: new Date().toISOString(),
+      notes: isDuplicateAccount
+        ? `Duplicate account detected with matching ${duplicateField}. Suspended pending TIN/license verification.`
+        : `New commercial ${newUser.role} registered with TIN: ${newUser.tin || 'N/A'}, Trade License: ${newUser.tradeLicenseNo || 'N/A'}. Placed in verification queue.`,
     });
 
     const token = jwt.sign(

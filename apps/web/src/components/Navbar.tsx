@@ -41,12 +41,39 @@ export const Navbar: React.FC = () => {
 
         {/* Right CTA Button & Language Switcher */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Language Switcher */}
-          <div
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-slate-800/90 border border-slate-700 text-[11px] font-semibold text-slate-200"
-          >
-            <Globe className="w-3.5 h-3.5 text-[#38BDF8]" />
-            <span>English</span>
+          {/* Language Switcher supporting EN, AM, OM (NFR 7.5) */}
+          <div className="flex items-center bg-slate-800/90 rounded-full border border-slate-700 p-0.5 text-[11px] font-bold">
+            <Globe className="w-3.5 h-3.5 text-[#38BDF8] ml-2 mr-1" />
+            <button
+              type="button"
+              onClick={() => setLanguage('EN')}
+              className={`px-2 py-0.5 rounded-full transition-all cursor-pointer ${
+                language === 'EN' ? 'bg-[#38BDF8] text-slate-900 font-extrabold' : 'text-slate-300 hover:text-white'
+              }`}
+              title="English"
+            >
+              EN
+            </button>
+            <button
+              type="button"
+              onClick={() => setLanguage('AM')}
+              className={`px-2 py-0.5 rounded-full transition-all cursor-pointer ${
+                language === 'AM' ? 'bg-[#38BDF8] text-slate-900 font-extrabold' : 'text-slate-300 hover:text-white'
+              }`}
+              title="አማርኛ (Amharic)"
+            >
+              አማ
+            </button>
+            <button
+              type="button"
+              onClick={() => setLanguage('OM')}
+              className={`px-2 py-0.5 rounded-full transition-all cursor-pointer ${
+                language === 'OM' ? 'bg-[#38BDF8] text-slate-900 font-extrabold' : 'text-slate-300 hover:text-white'
+              }`}
+              title="Afaan Oromoo"
+            >
+              ORO
+            </button>
           </div>
 
           {/* "Get Started Free" Pill Button */}

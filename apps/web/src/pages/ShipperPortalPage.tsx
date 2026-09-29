@@ -23,6 +23,7 @@ import { TrackingTab } from '../modules/shipper/tabs/TrackingTab';
 import { DocumentsTab } from '../modules/shipper/tabs/DocumentsTab';
 import { PaymentsTab } from '../modules/shipper/tabs/PaymentsTab';
 import { RatingsTab } from '../modules/shipper/tabs/RatingsTab';
+import { PricingContractsTab } from '../modules/shipper/tabs/PricingContractsTab';
 
 // Modular Modal
 import { TelebirrEscrowModal } from '../modules/shipper/components/TelebirrEscrowModal';
@@ -58,6 +59,7 @@ export const ShipperPortalPage: React.FC = () => {
     lat: 0,
     lng: 0,
   });
+  const [lastCreatedLoadId, setLastCreatedLoadId] = useState<string | null>(null);
 
   // Map Modal State for "Pick on Map"
   const [mapModalOpen, setMapModalOpen] = useState<boolean>(false);
@@ -70,6 +72,8 @@ export const ShipperPortalPage: React.FC = () => {
 
   // Booking Options ('INSTANT_MATCH' vs 'COMPETITIVE_BIDDING')
   const [bookingOption, setBookingOption] = useState<'INSTANT_MATCH' | 'COMPETITIVE_BIDDING'>('INSTANT_MATCH');
+  const [matchingPreference, setMatchingPreference] = useState<'BALANCED' | 'COST_PRIORITY' | 'SPEED_PRIORITY' | 'RELIABILITY_PRIORITY'>('BALANCED');
+  const [validityHours, setValidityHours] = useState<number>(24);
 
   // AI Matching Results & SLA
   const [matchingLoading, setMatchingLoading] = useState<boolean>(false);
@@ -112,8 +116,9 @@ export const ShipperPortalPage: React.FC = () => {
   }, [originLocation, destinationLocation]);
 
   // Run AI Matching Engine
-  const handleRunAIMatching = async () => {
+  const handleRunAIMatching = async (preference?: 'BALANCED' | 'COST_PRIORITY' | 'SPEED_PRIORITY' | 'RELIABILITY_PRIORITY') => {
     if (!originLocation.address || !destinationLocation.address) return;
+    const pref = preference || matchingPreference;
     setMatchingLoading(true);
     try {
       const res = await fetch('/api/matching/find-matches', {
@@ -131,6 +136,7 @@ export const ShipperPortalPage: React.FC = () => {
           pickupWindow: pickupDate ? `${pickupDate} (${pickupTimeWindow || 'Morning'})` : 'Flexible',
           specialHandling,
           targetBudgetEtb: targetBudget || '180000',
+          priorityPreference: pref,
         }),
       });
 
@@ -309,6 +315,7 @@ export const ShipperPortalPage: React.FC = () => {
           const mapped: BidItem[] = data.bids.map((b: any) => ({
             id: b.id,
             loadId: `TF-SH-${b.load?.id?.slice(-4).toUpperCase() || 'LOAD'}`,
+            rawLoadId: b.loadId || b.load?.id,
             loadTitle: b.load?.title || 'Corridor Freight Consignment',
             route:
               b.load?.originName && b.load?.destName
@@ -319,6 +326,9 @@ export const ShipperPortalPage: React.FC = () => {
             rating: b.transporter?.ratingAvg || 4.9,
             bidAmount: Number(b.proposedRateEtb || 0),
             estimatedHours: `${b.validityHours || 24}h Validity`,
+            validityHours: Number(b.validityHours) || 24,
+            expiresAt: b.expiresAt,
+            transporterVerificationStatus: b.transporter?.verificationStatus || 'VERIFIED',
             notes: b.proposalNotes || 'Carrier quote submitted via RFQ board.',
             status: b.status || 'PENDING',
             createdAt: new Date(b.createdAt).toLocaleDateString(),
@@ -411,6 +421,8 @@ export const ShipperPortalPage: React.FC = () => {
           distanceKm: calculatedKm,
           pickupWindowStart: pickupDate,
           specialHandling,
+          validityHours,
+          priorityPreference: matchingPreference,
           targetBudgetEtb:
             bookingOption === 'COMPETITIVE_BIDDING'
               ? null
@@ -422,6 +434,10 @@ export const ShipperPortalPage: React.FC = () => {
       });
 
       if (res.ok) {
+        const data = await res.json();
+        if (data.load?.id) {
+          setLastCreatedLoadId(data.load.id);
+        }
         setPostedSuccess(true);
         loadShipments();
         if (bookingOption === 'COMPETITIVE_BIDDING') {
@@ -444,7 +460,9 @@ export const ShipperPortalPage: React.FC = () => {
     try {
       let targetLoadId: string | undefined = undefined;
       if (selectedMatch) {
-        targetLoadId = shipments[0]?.rawId || shipments[0]?.id;
+        targetLoadId = lastCreatedLoadId || shipments[0]?.rawId || shipments[0]?.id;
+      } else if (selectedBid?.rawLoadId) {
+        targetLoadId = selectedBid.rawLoadId;
       }
 
       const res = await fetch('/api/payments/initiate', {
@@ -457,6 +475,7 @@ export const ShipperPortalPage: React.FC = () => {
           telebirrPhone: details.phone || telebirrPhone,
           paymentMethod: details.paymentMethod || 'TELEBIRR',
           shipperId: user?.id,
+          transporterId: selectedMatch?.carrierId,
         }),
       });
 
@@ -508,19 +527,19 @@ export const ShipperPortalPage: React.FC = () => {
       <div className="space-y-6">
         {/* Real-time Delivery Alert Banner (Visible only on Dashboard or Consignments, NEVER on Post Load) */}
         {deliveryNotification && (activeTab === 'dashboard' || activeTab === 'consignments') && (
-          <div className="bg-gradient-to-r from-emerald-600/20 via-teal-600/20 to-emerald-600/20 border-2 border-emerald-500 rounded-2xl p-4 text-white flex items-start justify-between shadow-xl shadow-emerald-500/10 animate-fade-in">
+          <div className="bg-emerald-50 border border-emerald-200/90 rounded-2xl p-4 text-slate-800 flex items-start justify-between shadow-xs animate-fade-in">
             <div className="flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/30 border border-emerald-400 flex items-center justify-center shrink-0">
-                <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-6 h-6 text-emerald-600" />
               </div>
               <div>
-                <p className="font-black text-emerald-300 text-sm flex items-center gap-2">
+                <p className="font-black text-emerald-950 text-sm flex items-center gap-2">
                   <span>🎉 Consignment Delivered & e-POD Signed</span>
-                  <span className="text-[10px] bg-emerald-500/30 text-emerald-200 px-2 py-0.5 rounded-full border border-emerald-400/40 uppercase font-mono">
+                  <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200 uppercase font-mono font-bold">
                     Escrow Settled
                   </span>
                 </p>
-                <p className="text-xs text-white/90 font-medium mt-1 leading-relaxed">
+                <p className="text-xs text-slate-600 font-medium mt-1 leading-relaxed">
                   {deliveryNotification}
                 </p>
               </div>
@@ -532,14 +551,14 @@ export const ShipperPortalPage: React.FC = () => {
                     setDeliveryNotification('');
                     navigate('/shipper/consignments');
                   }}
-                  className="text-emerald-300 hover:text-white text-xs font-bold px-2.5 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 rounded-lg transition border border-emerald-400/30 cursor-pointer"
+                  className="text-emerald-700 hover:text-emerald-800 text-xs font-bold px-2.5 py-1.5 bg-emerald-100 hover:bg-emerald-200 rounded-lg transition border border-emerald-300 cursor-pointer"
                 >
                   View Details
                 </button>
               )}
               <button
                 onClick={() => setDeliveryNotification('')}
-                className="text-white/60 hover:text-white text-xs font-bold px-2 py-1.5 hover:bg-white/10 rounded-lg transition cursor-pointer"
+                className="text-slate-400 hover:text-slate-600 text-xs font-bold px-2 py-1.5 hover:bg-emerald-100/50 rounded-lg transition cursor-pointer"
               >
                 ✕ Dismiss
               </button>
@@ -582,6 +601,10 @@ export const ShipperPortalPage: React.FC = () => {
             destinationLocation={destinationLocation}
             setDestinationLocation={setDestinationLocation}
             corridorDistanceKm={corridorDistanceKm}
+            matchingPreference={matchingPreference}
+            setMatchingPreference={setMatchingPreference}
+            validityHours={validityHours}
+            setValidityHours={setValidityHours}
             pickupDate={pickupDate}
             setPickupDate={setPickupDate}
             pickupTimeWindow={pickupTimeWindow}
@@ -662,6 +685,9 @@ export const ShipperPortalPage: React.FC = () => {
             onSubmitRating={handleSubmitRating}
           />
         )}
+
+        {/* 8. DYNAMIC PRICING & CONTRACT RATE MANAGEMENT (FR-04) */}
+        {activeTab === 'pricing-contracts' && <PricingContractsTab />}
       </div>
 
       {/* INTERACTIVE MAP MODAL */}

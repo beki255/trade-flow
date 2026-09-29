@@ -172,25 +172,25 @@ export const TelebirrEscrowModal: React.FC<TelebirrEscrowModalProps> = ({
             </div>
 
             {/* Financial Ledger Breakdown */}
-            <div className="p-4 rounded-2xl bg-slate-900 text-white space-y-2.5 text-xs shadow-inner">
-              <div className="flex justify-between items-center text-slate-300">
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 space-y-2.5 text-xs shadow-xs">
+              <div className="flex justify-between items-center text-slate-600">
                 <span>Agreed Gross Freight Rate:</span>
-                <span className="font-bold text-white font-mono">{grossAmount.toLocaleString()} ETB</span>
+                <span className="font-bold text-slate-900 font-mono">{grossAmount.toLocaleString()} ETB</span>
               </div>
-              <div className="flex justify-between items-center text-slate-400">
-                <span>Platform Escrow & SLA Fee (5.0%):</span>
-                <span className="font-mono text-amber-400">-{platformFee.toLocaleString()} ETB</span>
+              <div className="flex justify-between items-center text-slate-500">
+                <span>Platform Escrow Fee (5.0%):</span>
+                <span className="font-mono text-amber-700 font-semibold">-{platformFee.toLocaleString()} ETB</span>
               </div>
-              <div className="flex justify-between items-center text-emerald-400 text-[11.5px]">
-                <span>Transporter Disbursement upon e-POD:</span>
+              <div className="flex justify-between items-center text-emerald-800 text-[11.5px]">
+                <span className="font-medium">Transporter Disbursement upon e-POD:</span>
                 <span className="font-bold font-mono">{netTransporterPayout.toLocaleString()} ETB</span>
               </div>
-              <div className="flex justify-between items-center pt-2.5 border-t border-slate-800 text-sm font-black">
-                <span className="text-slate-100 flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5 text-sky-400" />
+              <div className="flex justify-between items-center pt-2.5 border-t border-slate-200 text-sm font-black">
+                <span className="text-slate-900 flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-sky-600" />
                   Total Escrow Lock:
                 </span>
-                <span className="text-sky-400 font-mono text-base">{grossAmount.toLocaleString()} ETB</span>
+                <span className="text-sky-700 font-mono text-base">{grossAmount.toLocaleString()} ETB</span>
               </div>
             </div>
 

@@ -81,16 +81,17 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
   return (
     <div className="space-y-6">
       {/* 1. Header Banner */}
-      <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-emerald-950 via-slate-900 to-teal-950 text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xl border border-emerald-800/60 relative overflow-hidden">
+      <div className="p-6 sm:p-8 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 rounded-full bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent blur-3xl pointer-events-none" />
         <div className="relative z-10 space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-[10.5px] font-extrabold uppercase tracking-widest">
-            <Stamp className="w-3.5 h-3.5" />
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-900 text-[11px] font-bold tracking-wide">
+            <Stamp className="w-3.5 h-3.5 text-emerald-600" />
             <span>Ethiopian Customs Commission (ECC)</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
             Customs Document Review Queue
           </h1>
-          <p className="text-xs text-slate-300 max-w-2xl leading-relaxed font-medium">
+          <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
             Inspect international trade documents (Commercial Invoice, Packing List, Bill of Lading, Certificate of Origin) for Djibouti–Addis Ababa corridor consignments, conduct automated compliance cross-checks, and issue single-window Green Line electronic releases.
           </p>
         </div>
@@ -99,7 +100,7 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
           <button
             type="button"
             onClick={onRefresh}
-            className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all border border-white/20 flex items-center gap-2 shadow-sm cursor-pointer"
+            className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs hover:shadow flex items-center gap-2 cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span>Sync Queue</span>
@@ -168,7 +169,7 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
           <button
             type="button"
             onClick={() => setStatusFilter('ALL')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               statusFilter === 'ALL'
                 ? 'bg-white text-slate-900 shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -179,7 +180,7 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
           <button
             type="button"
             onClick={() => setStatusFilter('PENDING')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               statusFilter === 'PENDING'
                 ? 'bg-amber-500 text-white shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -190,7 +191,7 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
           <button
             type="button"
             onClick={() => setStatusFilter('CLEARED')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               statusFilter === 'CLEARED'
                 ? 'bg-emerald-600 text-white shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -201,7 +202,7 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
           <button
             type="button"
             onClick={() => setStatusFilter('REVISION')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               statusFilter === 'REVISION'
                 ? 'bg-rose-600 text-white shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -211,7 +212,7 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
           </button>
         </div>
 
-        <div className="relative min-w-[280px]">
+        <div className="relative w-full md:w-auto md:min-w-[280px]">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"

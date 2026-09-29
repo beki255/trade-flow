@@ -33,22 +33,24 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="p-6 rounded-3xl bg-slate-900 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl border border-slate-800">
-        <div className="space-y-1">
-          <span className="text-xs font-bold uppercase tracking-widest text-sky-400">
-            Shipper Workspace
-          </span>
-          <h1 className="text-xl sm:text-2xl font-black tracking-tight">
+      <div className="p-6 sm:p-7 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative overflow-hidden">
+        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 rounded-full bg-gradient-to-br from-sky-500/10 via-blue-500/5 to-transparent blur-3xl pointer-events-none" />
+        <div className="space-y-1.5 relative z-10">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-sky-50 border border-sky-200/80 text-sky-800 text-[11px] font-bold tracking-wide">
+            <Package className="w-3.5 h-3.5 text-sky-600" />
+            <span>Shipper Logistics Command Center</span>
+          </div>
+          <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
             Welcome, {user?.fullName || 'Shipper'}
           </h1>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
             Manage freight postings, AI freight matching, live corridor tracking, and escrow payments.
           </p>
         </div>
 
         <button
           onClick={onNavigatePostLoad}
-          className="px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-all"
+          className="relative z-10 px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold flex items-center gap-2 shadow-xs hover:shadow transition-all cursor-pointer shrink-0"
         >
           <PlusCircle className="w-4 h-4" />
           <span>Post New Load</span>

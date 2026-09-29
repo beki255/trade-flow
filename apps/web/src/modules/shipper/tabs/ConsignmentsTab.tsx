@@ -78,17 +78,18 @@ export const ConsignmentsTab: React.FC<ConsignmentsTabProps> = ({
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* 1. HERO / HEADER */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-sky-950 rounded-3xl p-6 sm:p-8 text-white shadow-xl border border-slate-800 relative overflow-hidden">
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-8 shadow-xs relative overflow-hidden">
+        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 rounded-full bg-gradient-to-br from-sky-500/10 via-blue-500/5 to-transparent blur-3xl pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-sky-500/20 border border-sky-400/30 text-sky-300 text-xs font-bold tracking-wider uppercase">
-              <Package className="w-3.5 h-3.5" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-50 border border-sky-200/80 text-sky-900 text-[11px] font-bold tracking-wide">
+              <Package className="w-3.5 h-3.5 text-sky-600" />
               <span>Shipper Freight Portfolio</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               My Consignments
             </h1>
-            <p className="text-sm text-slate-300 max-w-xl leading-relaxed font-medium">
+            <p className="text-xs sm:text-sm text-slate-500 max-w-xl leading-relaxed">
               Monitor your corridor freight postings, inspect incoming carrier bidding proposals, and track dispatched shipments from Djibouti to inland hubs.
             </p>
           </div>
@@ -98,7 +99,7 @@ export const ConsignmentsTab: React.FC<ConsignmentsTabProps> = ({
               <button
                 type="button"
                 onClick={onNavigatePostLoad}
-                className="px-5 py-3 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-sky-500/25 flex items-center gap-2 transition-all transform hover:-translate-y-0.5 cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs shadow-xs hover:shadow flex items-center gap-2 transition-all cursor-pointer"
               >
                 <PlusCircle className="w-4 h-4" />
                 <span>Post New Load</span>
@@ -108,22 +109,22 @@ export const ConsignmentsTab: React.FC<ConsignmentsTabProps> = ({
         </div>
 
         {/* METRICS ROW */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-6 border-t border-slate-700/60">
-          <div className="bg-white/5 rounded-2xl p-3 border border-white/10 backdrop-blur-xs">
-            <div className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">Total Posted</div>
-            <div className="text-xl font-black text-white mt-1">{counts.all}</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-6 border-t border-slate-100 relative z-10">
+          <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200/80">
+            <div className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500">Total Posted</div>
+            <div className="text-2xl font-black text-slate-900 mt-1">{counts.all}</div>
           </div>
-          <div className="bg-white/5 rounded-2xl p-3 border border-white/10 backdrop-blur-xs">
-            <div className="text-[10.5px] font-bold uppercase tracking-wider text-amber-300">Open / Bidding</div>
-            <div className="text-xl font-black text-amber-400 mt-1">{counts.open}</div>
+          <div className="bg-amber-50/60 rounded-xl p-3.5 border border-amber-200/60">
+            <div className="text-[10.5px] font-bold uppercase tracking-wider text-amber-700">Open / Bidding</div>
+            <div className="text-2xl font-black text-amber-900 mt-1">{counts.open}</div>
           </div>
-          <div className="bg-white/5 rounded-2xl p-3 border border-white/10 backdrop-blur-xs">
-            <div className="text-[10.5px] font-bold uppercase tracking-wider text-sky-300">In-Transit (Live)</div>
-            <div className="text-xl font-black text-sky-400 mt-1">{counts.inTransit}</div>
+          <div className="bg-sky-50/60 rounded-xl p-3.5 border border-sky-200/60">
+            <div className="text-[10.5px] font-bold uppercase tracking-wider text-sky-700">In-Transit (Live)</div>
+            <div className="text-2xl font-black text-sky-900 mt-1">{counts.inTransit}</div>
           </div>
-          <div className="bg-white/5 rounded-2xl p-3 border border-white/10 backdrop-blur-xs">
-            <div className="text-[10.5px] font-bold uppercase tracking-wider text-emerald-300">Delivered (e-POD)</div>
-            <div className="text-xl font-black text-emerald-400 mt-1">{counts.delivered}</div>
+          <div className="bg-emerald-50/60 rounded-xl p-3.5 border border-emerald-200/60">
+            <div className="text-[10.5px] font-bold uppercase tracking-wider text-emerald-700">Delivered (e-POD)</div>
+            <div className="text-2xl font-black text-emerald-900 mt-1">{counts.delivered}</div>
           </div>
         </div>
       </div>
@@ -135,7 +136,7 @@ export const ConsignmentsTab: React.FC<ConsignmentsTabProps> = ({
           <button
             type="button"
             onClick={() => setStatusFilter('ALL')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               statusFilter === 'ALL'
                 ? 'bg-white text-slate-900 shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -146,7 +147,7 @@ export const ConsignmentsTab: React.FC<ConsignmentsTabProps> = ({
           <button
             type="button"
             onClick={() => setStatusFilter('OPEN')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               statusFilter === 'OPEN'
                 ? 'bg-white text-amber-700 shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -157,7 +158,7 @@ export const ConsignmentsTab: React.FC<ConsignmentsTabProps> = ({
           <button
             type="button"
             onClick={() => setStatusFilter('IN_TRANSIT')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               statusFilter === 'IN_TRANSIT'
                 ? 'bg-white text-sky-700 shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -168,7 +169,7 @@ export const ConsignmentsTab: React.FC<ConsignmentsTabProps> = ({
           <button
             type="button"
             onClick={() => setStatusFilter('DELIVERED')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               statusFilter === 'DELIVERED'
                 ? 'bg-white text-emerald-700 shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -179,7 +180,7 @@ export const ConsignmentsTab: React.FC<ConsignmentsTabProps> = ({
         </div>
 
         {/* Search Box */}
-        <div className="relative min-w-[240px]">
+        <div className="relative w-full sm:w-auto sm:min-w-[240px]">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"

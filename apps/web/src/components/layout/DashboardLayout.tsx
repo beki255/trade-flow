@@ -27,6 +27,7 @@ import {
   X,
   ExternalLink,
   Clock,
+  TrendingUp,
 } from 'lucide-react';
 
 interface NavItem {
@@ -95,6 +96,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           { id: 'tracking', label: 'Live Tracking Map', icon: Navigation },
           { id: 'documents', label: 'Customs Documents', icon: FileText },
           { id: 'payments', label: 'Payments & TeleBirr', icon: CreditCard },
+          { id: 'pricing-contracts', label: 'Contract Rates & Pricing', icon: TrendingUp },
           { id: 'ratings', label: 'Ratings & Reviews', icon: Star },
         ];
       case 'FORWARDER':
@@ -328,19 +330,19 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         <header className="h-16 bg-white border-b border-slate-200 px-4 sm:px-8 flex items-center justify-between shadow-sm z-20">
           
           {/* Left: Mobile Toggle & Page Title */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 border border-slate-200"
+              className="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 border border-slate-200 shrink-0"
               aria-label="Open Navigation Menu"
             >
               <Menu className="w-5 h-5" />
             </button>
             
-            <div>
+            <div className="min-w-0">
               <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-                <span>{navItems.find((n) => n.id === activeTab)?.label || 'Portal'}</span>
-                <span className="hidden sm:inline-block text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                <span className="truncate max-w-[140px] sm:max-w-none">{navItems.find((n) => n.id === activeTab)?.label || 'Portal'}</span>
+                <span className="hidden sm:inline-block shrink-0 text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
                   {portalInfo.title}
                 </span>
               </h2>

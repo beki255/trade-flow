@@ -22,8 +22,12 @@ import {
   getDriverActiveTrip,
   startDriverTrip,
   toggleDriverDrivingState,
+  recordDriverCheckin,
   arriveDestinationTrip,
   provisionCustomsOfficer,
+  getSystemHealth,
+  getFraudAlerts,
+  updateFraudAlertStatus,
 } from '../controllers/portal.controller';
 
 const router = Router();
@@ -39,6 +43,13 @@ router.get('/verifications', getVerifications);
 router.post('/verify-user', verifyUser);
 router.get('/user-status', getUserStatus);
 router.get('/audit-logs', getAuditLogs);
+
+// System Health & Infrastructure Monitoring
+router.get('/system-health', getSystemHealth);
+
+// Fraud Detection & Corridor Geofence Security
+router.get('/fraud-alerts', getFraudAlerts);
+router.patch('/fraud-alerts/:id/status', updateFraudAlertStatus);
 
 // Ratings & Reviews
 router.post('/ratings', submitRating);
@@ -64,6 +75,7 @@ router.post('/dispatch', dispatchShipment);
 router.get('/driver/active-trip', getDriverActiveTrip);
 router.post('/driver/start-trip', startDriverTrip);
 router.post('/driver/toggle-driving', toggleDriverDrivingState);
+router.post('/driver/checkin', recordDriverCheckin);
 router.post('/driver/arrive-destination', arriveDestinationTrip);
 
 // Institutional Customs Officer Provisioning (Admin only)

@@ -157,32 +157,33 @@ export const ComplianceTab: React.FC<ComplianceTabProps> = ({
       )}
 
       {/* 2. Dossier Overview Banner */}
-      <div className="p-5 rounded-3xl bg-slate-900 text-white shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="space-y-1">
+      <div className="p-5 sm:p-6 rounded-2xl bg-white border border-slate-200/90 text-slate-800 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative overflow-hidden">
+        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 rounded-full bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent blur-3xl pointer-events-none" />
+        <div className="space-y-1.5 relative z-10">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono font-black bg-emerald-500/30 text-emerald-300 px-2.5 py-0.5 rounded border border-emerald-400/40">
+            <span className="text-xs font-mono font-bold bg-emerald-50 text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-200">
               {activeDossier.loadCode}
             </span>
-            <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+            <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
               Status: {activeDossier.customsStatus}
             </span>
           </div>
-          <h3 className="text-base font-black text-white">{activeDossier.title}</h3>
-          <p className="text-xs text-slate-300">
+          <h3 className="text-base sm:text-lg font-black text-slate-900">{activeDossier.title}</h3>
+          <p className="text-xs text-slate-500">
             {activeDossier.origin} ➔ {activeDossier.destination} • Consignor:{' '}
-            <strong className="text-white">{activeDossier.shipperCompany}</strong> (TIN:{' '}
-            <strong className="font-mono text-emerald-400">{activeDossier.shipperTin}</strong>)
+            <strong className="text-slate-900">{activeDossier.shipperCompany}</strong> (TIN:{' '}
+            <strong className="font-mono text-emerald-700">{activeDossier.shipperTin}</strong>)
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 relative z-10">
           <div className="text-right">
-            <div className="text-[10px] uppercase font-bold text-slate-400">Total Cargo Weight</div>
-            <div className="text-lg font-black text-white">{activeDossier.weightTons} Tons</div>
+            <div className="text-[10px] uppercase font-bold text-slate-500">Total Cargo Weight</div>
+            <div className="text-lg font-black text-slate-900">{activeDossier.weightTons} Tons</div>
           </div>
-          <div className="text-right pl-4 border-l border-slate-700">
-            <div className="text-[10px] uppercase font-bold text-slate-400">Declared Value</div>
-            <div className="text-lg font-black text-emerald-400 font-mono">
+          <div className="text-right pl-4 border-l border-slate-200">
+            <div className="text-[10px] uppercase font-bold text-slate-500">Declared Value</div>
+            <div className="text-lg font-black text-emerald-700 font-mono">
               {Number(activeDossier.declaredValueEtb).toLocaleString()} ETB
             </div>
           </div>

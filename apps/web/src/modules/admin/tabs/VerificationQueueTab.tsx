@@ -51,21 +51,23 @@ export const VerificationQueueTab: React.FC<VerificationQueueTabProps> = ({
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="p-6 rounded-3xl bg-slate-900 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl border border-slate-800">
-        <div className="space-y-1">
-          <span className="text-xs font-bold uppercase tracking-widest text-sky-400">
-            System Administration
-          </span>
-          <h1 className="text-xl sm:text-2xl font-black tracking-tight">
+      <div className="p-6 sm:p-7 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative overflow-hidden">
+        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 rounded-full bg-gradient-to-br from-sky-500/10 via-indigo-500/5 to-transparent blur-3xl pointer-events-none" />
+        <div className="space-y-1.5 relative z-10">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-sky-50 border border-sky-200/80 text-sky-800 text-[11px] font-bold tracking-wide">
+            <ShieldCheck className="w-3.5 h-3.5 text-sky-600" />
+            <span>Compliance & KYC Verification</span>
+          </div>
+          <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
             User Verification & KYC Queue
           </h1>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
             Review submitted TIN numbers, Trade Licenses, Insurance, and Roadworthiness documents for Shippers, Forwarders, Transporters, and Drivers.
           </p>
         </div>
-        <div className="px-3.5 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700/80 text-slate-300 text-xs font-bold flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-emerald-400" />
-          <span>TradeFlow Compliance Engine</span>
+        <div className="relative z-10 px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold flex items-center gap-2 shrink-0">
+          <ShieldCheck className="w-4 h-4 text-emerald-600" />
+          <span>Active Compliance Engine</span>
         </div>
       </div>
 

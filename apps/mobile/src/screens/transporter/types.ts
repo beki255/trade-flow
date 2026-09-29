@@ -46,6 +46,8 @@ export interface LoadItem {
   route: string;
   cargoType: string;
   weight: string;
+  weightTons?: number;
+  pickupDate?: string;
   budget: string;
   status: string;
   isDispatched?: boolean;

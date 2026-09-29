@@ -15,8 +15,9 @@ export const LoginPage: React.FC = () => {
       navigate('/customs');
     } else if (role === 'FORWARDER' || role === 'FREIGHT_FORWARDER' || role.includes('FORWARDER')) {
       navigate('/forwarder');
-    } else if (role === 'TRANSPORTER' || role.includes('TRANSPORTER')) {
-      navigate('/transporter');
+    } else if (role === 'TRANSPORTER' || role.includes('TRANSPORTER') || role === 'DRIVER' || role.includes('DRIVER')) {
+      alert('Transporters and Drivers operate exclusively on the TradeFlow Mobile App (Android / iOS). Please log in via the mobile application.');
+      navigate('/');
     } else {
       navigate('/shipper');
     }

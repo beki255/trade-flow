@@ -181,18 +181,40 @@ export const AdminPortalPage: React.FC = () => {
     await fetchAuditLogs();
   };
 
+  const fetchHealthAndFraudStats = async () => {
+    try {
+      const [healthRes, fraudRes] = await Promise.all([
+        fetch('/api/portal/system-health'),
+        fetch('/api/portal/fraud-alerts'),
+      ]);
+      if (healthRes.ok && fraudRes.ok) {
+        const healthData = await healthRes.json();
+        const fraudData = await fraudRes.json();
+        setStats((prev) => ({
+          ...prev,
+          systemHealth: `${healthData.overallUptimePct}%`,
+          fraudAlerts: fraudData.stats?.criticalAlerts ?? fraudData.alerts?.length ?? 0,
+        }));
+      }
+    } catch (e) {
+      console.warn('Failed to fetch health and fraud stats:', e);
+    }
+  };
+
   useEffect(() => {
     fetchVerifications();
     fetchAuditLogs();
     fetchDisputes();
     fetchCustomsData();
+    fetchHealthAndFraudStats();
 
     const interval = setInterval(() => {
       fetchVerifications();
       fetchAuditLogs();
       fetchDisputes();
       fetchCustomsData();
-    }, 4000);
+      fetchHealthAndFraudStats();
+    }, 6000);
 
     return () => clearInterval(interval);
   }, []);

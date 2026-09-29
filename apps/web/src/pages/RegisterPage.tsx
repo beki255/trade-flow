@@ -15,8 +15,6 @@ export const RegisterPage: React.FC = () => {
       navigate('/customs');
     } else if (role === 'FORWARDER' || role === 'FREIGHT_FORWARDER' || role.includes('FORWARDER')) {
       navigate('/forwarder');
-    } else if (role === 'TRANSPORTER' || role.includes('TRANSPORTER')) {
-      navigate('/transporter');
     } else {
       navigate('/shipper');
     }

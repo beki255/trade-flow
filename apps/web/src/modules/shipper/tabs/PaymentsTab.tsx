@@ -11,24 +11,38 @@ import {
   ArrowUpRight,
   RefreshCw,
   Scale,
-  Send
+  Send,
+  Building,
+  Filter,
+  Check,
+  Award,
+  Layers,
+  Search,
+  ExternalLink,
+  ChevronRight,
+  Receipt,
+  Percent,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
-
 import { BidItem, ShipmentItem } from '../types';
 import { DisputeEscrowModal } from '../components/DisputeEscrowModal';
 import { PayWithTelebirrModal } from '../components/PayWithTelebirrModal';
+import { TransporterPerformanceDashboard } from '../components/TransporterPerformanceDashboard';
 
-interface PaymentRecord {
+export interface PaymentRecord {
   id: string;
+  shipmentId?: string;
   shipmentCode: string;
+  routeTitle: string;
   grossAmountEtb: number;
   commissionEtb: number;
+  withholdingTaxEtb?: number;
   netPayoutEtb: number;
   paymentMethod: string;
   telebirrTxNo: string;
   status: 'PENDING' | 'CONFIRMED' | 'SETTLED' | 'DISPUTED' | 'HELD_IN_ESCROW';
   paidAt: string;
+  settledAt?: string;
 }
 
 interface PaymentsTabProps {
@@ -39,54 +53,15 @@ interface PaymentsTabProps {
 export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments = [] }) => {
   const { user } = useAuth();
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [activeSubView, setActiveSubView] = useState<'LEDGER' | 'BENCHMARKS'>('LEDGER');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Fetch real payment ledger from backend with auto-polling (strictly isolated by current shipper)
-  useEffect(() => {
-    setPayments([]);
-    if (!user?.id) return;
-
-    const fetchLedger = async () => {
-      try {
-        const shipperQ = user?.id ? `?shipperId=${encodeURIComponent(user.id)}` : '';
-        const res = await fetch(`/api/payments/ledger${shipperQ}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.payments && Array.isArray(data.payments) && data.payments.length > 0) {
-            const mapped: PaymentRecord[] = data.payments.map((p: any) => ({
-              id: p.id,
-              shipmentCode: p.shipment?.load?.title ? `TF-SH-${p.shipment.id.slice(0, 4).toUpperCase()}` : 'TF-SH-CORRIDOR',
-              grossAmountEtb: Number(p.grossAmountEtb || p.amountEtb || 0),
-              commissionEtb: Number(p.platformCommissionEtb || p.platformFeeEtb || p.commissionEtb || 0),
-              netPayoutEtb: Number(p.netTransporterPayoutEtb || p.carrierPayoutEtb || p.netPayoutEtb || 0),
-              paymentMethod: p.paymentMethod || 'TELEBIRR',
-              telebirrTxNo: p.telebirrTransactionNo || p.telebirrTxId || p.telebirrTxNo || `TB-TF-${p.id.slice(0, 6)}`,
-              status: p.status || 'HELD_IN_ESCROW',
-              paidAt: new Date(p.paidAt || p.createdAt).toLocaleDateString() + ' ' + new Date(p.paidAt || p.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            }));
-            setPayments(mapped);
-          } else {
-            setPayments([]);
-          }
-        }
-      } catch (err) {
-        console.warn('Failed to fetch payment ledger:', err);
-      }
-    };
-
-    fetchLedger();
-    const interval = setInterval(fetchLedger, 3500);
-    return () => clearInterval(interval);
-  }, [user?.id]);
-
-  // Financial KPIs dynamically computed from ledger
-  const totalEscrow = useMemo(() => payments.reduce((sum, p) => sum + (p.grossAmountEtb || 0), 0), [payments]);
-  const totalCommission = useMemo(() => payments.reduce((sum, p) => sum + (p.commissionEtb || 0), 0), [payments]);
-  const totalNetPayout = useMemo(() => payments.reduce((sum, p) => sum + (p.netPayoutEtb || 0), 0), [payments]);
-
-  // Payment Initiation Modal
+  // Payment Initiation Modal State
   const [payModalOpen, setPayModalOpen] = useState(false);
   const [selectedBidId, setSelectedBidId] = useState<string>('');
-  const [phone, setPhone] = useState('+251911445566');
+  const [phone, setPhone] = useState(user?.phone || '+251911445566');
   const [amount, setAmount] = useState('185000');
   const [paying, setPaying] = useState(false);
   const [paySuccess, setPaySuccess] = useState('');
@@ -94,45 +69,105 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
   // Dispute Modal State
   const [disputeModalOpen, setDisputeModalOpen] = useState(false);
   const [disputeSuccess, setDisputeSuccess] = useState('');
+  const [targetDisputePaymentId, setTargetDisputePaymentId] = useState<string>('');
 
-  const commissionRate = 5.0; // 5% platform fee
-  const calculatedCommission = Math.round((parseFloat(amount) || 0) * (commissionRate / 100));
-  const calculatedNetPayout = (parseFloat(amount) || 0) - calculatedCommission;
-
-  const handleInitiatePayment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPaying(true);
+  // Fetch real payment ledger from backend
+  const fetchLedger = async () => {
     try {
-      const matchedBid = bids.find((b) => b.id === selectedBidId);
+      setLoading(true);
+      const shipperQ = user?.id ? `?shipperId=${encodeURIComponent(user.id)}` : '';
+      const res = await fetch(`/api/payments/ledger${shipperQ}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.payments && Array.isArray(data.payments)) {
+          const mapped: PaymentRecord[] = data.payments.map((p: any) => {
+            const gross = Number(p.grossAmountEtb || 0);
+            const comm = Number(p.platformCommissionEtb || Math.round(gross * 0.05));
+            const withTax = Math.round(gross * 0.02);
+            const net = Number(p.netTransporterPayoutEtb || gross - comm - withTax);
+
+            return {
+              id: p.id,
+              shipmentId: p.shipmentId,
+              shipmentCode: p.shipment?.load?.id
+                ? `TF-SH-${p.shipment.load.id.slice(0, 6).toUpperCase()}`
+                : `TF-SH-${p.id.slice(0, 6).toUpperCase()}`,
+              routeTitle: p.shipment?.load
+                ? `${p.shipment.load.originName} ➔ ${p.shipment.load.destName}`
+                : 'Addis Ababa ➔ Djibouti Doraleh Port',
+              grossAmountEtb: gross,
+              commissionEtb: comm,
+              withholdingTaxEtb: withTax,
+              netPayoutEtb: net,
+              paymentMethod: p.paymentMethod || 'TELEBIRR',
+              telebirrTxNo: p.telebirrTransactionNo || `TB-TF-${p.id.slice(0, 8)}`,
+              status: p.status || 'HELD_IN_ESCROW',
+              paidAt: new Date(p.paidAt || p.createdAt).toLocaleString([], {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              }),
+              settledAt: p.settledAt ? new Date(p.settledAt).toLocaleDateString() : undefined,
+            };
+          });
+          setPayments(mapped);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch payment ledger:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLedger();
+    const interval = setInterval(fetchLedger, 5000);
+    return () => clearInterval(interval);
+  }, [user?.id]);
+
+  // Financial KPIs dynamically computed from ledger
+  const totalEscrow = useMemo(() => payments.reduce((sum, p) => sum + (p.grossAmountEtb || 0), 0), [payments]);
+  const totalCommission = useMemo(() => payments.reduce((sum, p) => sum + (p.commissionEtb || 0), 0), [payments]);
+  const totalNetPayout = useMemo(() => payments.reduce((sum, p) => sum + (p.netPayoutEtb || 0), 0), [payments]);
+  const settledCount = useMemo(() => payments.filter((p) => p.status === 'SETTLED').length, [payments]);
+
+  // Handle Initiate Payment (Multi-Method: TeleBirr / CBE Birr / Mobile Money)
+  const handleInitiatePayment = async (payload: {
+    paymentMethod: 'TELEBIRR' | 'CBE_BIRR' | 'MOBILE_MONEY';
+    phone: string;
+    accountNo?: string;
+    baseRateEtb: number;
+    accessorialChargesEtb: number;
+    penaltiesEtb: number;
+    totalAmountEtb: number;
+    selectedBidId?: string;
+  }) => {
+    try {
+      setPaying(true);
+      const matchedBid = bids.find((b) => b.id === payload.selectedBidId);
       const res = await fetch('/api/payments/initiate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          bidId: selectedBidId || undefined,
-          grossAmountEtb: parseFloat(amount),
-          telebirrPhone: phone,
-          paymentMethod: 'TELEBIRR',
+          bidId: payload.selectedBidId || undefined,
+          loadId: matchedBid?.rawLoadId || undefined,
+          grossAmountEtb: payload.totalAmountEtb,
+          accessorialChargesEtb: payload.accessorialChargesEtb,
+          penaltiesEtb: payload.penaltiesEtb,
+          telebirrPhone: payload.phone,
+          paymentMethod: payload.paymentMethod,
+          shipperId: user?.id,
         }),
       });
 
       if (res.ok) {
-        const data = await res.json();
-        const newRecord: PaymentRecord = {
-          id: data.payment?.id || `PAY-${Date.now().toString().slice(-4)}`,
-          shipmentCode: matchedBid?.loadId || 'TF-SH-9901',
-          grossAmountEtb: parseFloat(amount),
-          commissionEtb: calculatedCommission,
-          netPayoutEtb: calculatedNetPayout,
-          paymentMethod: 'TELEBIRR',
-          telebirrTxNo: data.telebirrReceipt?.transactionNo || `TB-TF-${Date.now().toString().slice(-6)}`,
-          status: 'CONFIRMED',
-          paidAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        };
-
-        setPayments([newRecord, ...payments]);
-        setPaySuccess('TeleBirr smart escrow payment confirmed & locked successfully!');
+        setPaySuccess('✓ Smart escrow payment authorized and funds securely locked in TradeFlow vault!');
         setPayModalOpen(false);
-        setTimeout(() => setPaySuccess(''), 4000);
+        await fetchLedger();
+        setTimeout(() => setPaySuccess(''), 5000);
       }
     } catch (err) {
       console.warn('Payment error:', err);
@@ -141,193 +176,418 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
     }
   };
 
-  const handleFileDispute = async (reason: string, claimed: number) => {
+  // Handle Instant Escrow Settlement (upon e-POD confirmation)
+  const handleSettlePayment = async (paymentId: string, shipmentId?: string) => {
+    try {
+      const res = await fetch('/api/payments/settle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paymentId,
+          shipmentId,
+          recipientName: 'Authorized Consignee Agent',
+        }),
+      });
+
+      if (res.ok) {
+        setPaySuccess('✓ Escrow funds settled & disbursed to carrier mobile wallet upon verified e-POD!');
+        await fetchLedger();
+        setTimeout(() => setPaySuccess(''), 5000);
+      }
+    } catch (e) {
+      console.warn('Settlement error:', e);
+    }
+  };
+
+  // Handle File Dispute
+  const handleFileDispute = async (
+    reason: string,
+    claimed: number,
+    photoUrl?: string,
+    requestedResolution?: string
+  ) => {
     try {
       const res = await fetch('/api/payments/dispute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          paymentId: targetDisputePaymentId || undefined,
           disputeReason: reason,
           claimedAmountEtb: claimed,
-          requestedResolution: 'Escrow Deduction & Shipper Refund',
+          requestedResolution: requestedResolution || 'Escrow Deduction & Shipper Refund',
         }),
       });
 
       if (res.ok) {
-        setDisputeSuccess('Dispute ticket registered and routed to Platform Admin for mediation.');
-        setTimeout(() => setDisputeSuccess(''), 4000);
+        setDisputeSuccess('✓ Dispute ticket registered and routed to Platform Administrator console for mediation.');
+        await fetchLedger();
+        setTimeout(() => setDisputeSuccess(''), 5000);
       }
     } catch (e) {
       console.warn('Dispute error:', e);
     }
   };
 
+  // Filtered Payments
+  const filteredPayments = useMemo(() => {
+    return payments.filter((p) => {
+      const matchStatus = statusFilter === 'ALL' || p.status === statusFilter;
+      const q = searchQuery.toLowerCase().trim();
+      const matchSearch =
+        !q ||
+        p.shipmentCode.toLowerCase().includes(q) ||
+        p.telebirrTxNo.toLowerCase().includes(q) ||
+        p.routeTitle.toLowerCase().includes(q);
+      return matchStatus && matchSearch;
+    });
+  }, [payments, statusFilter, searchQuery]);
+
   return (
     <div className="space-y-6">
-      
-      {/* Header Bar */}
+      {/* 1. Header Bar with Sub-View Switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <span className="text-[10px] font-extrabold uppercase tracking-widest text-sky-700 bg-sky-50 px-2.5 py-1 rounded-full border border-sky-200 inline-flex items-center gap-1.5">
-            <Smartphone className="w-3.5 h-3.5 text-sky-600" /> TeleBirr Smart Escrow & Financial Settlement
+            <Smartphone className="w-3.5 h-3.5 text-sky-600" /> Multi-Gateway Escrow & Fleet Settlement
           </span>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-1.5">
-            Payment & Carrier Settlement Ledger
+            {activeSubView === 'LEDGER'
+              ? 'Payment & Carrier Settlement Ledger'
+              : 'Transporter Performance & Corridor Benchmarking'}
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            TeleBirr escrow checkout upon proof-of-delivery (e-POD), 5.0% commission deduction, and dispute resolution.
+            {activeSubView === 'LEDGER'
+              ? 'Multi-gateway escrow checkouts (TeleBirr, CBE Birr), automated 5.0% commission deductions, accessorial reconciliation, and dispute mediation.'
+              : 'Self-service performance dashboard comparing carrier on-time rates, fuel economy, and customer ratings against corridor leaders.'}
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => setDisputeModalOpen(true)}
-            className="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-rose-700 hover:bg-rose-50 transition-all flex items-center gap-1.5 shadow-sm"
-          >
-            <Scale className="w-3.5 h-3.5" /> File Payment Dispute
-          </button>
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Sub-view switcher */}
+          <div className="flex items-center p-1 bg-slate-100 rounded-2xl border border-slate-200/80">
+            <button
+              type="button"
+              onClick={() => setActiveSubView('LEDGER')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeSubView === 'LEDGER'
+                  ? 'bg-white text-slate-900 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <CreditCard className="w-3.5 h-3.5 text-sky-600" />
+              <span>Payments Ledger</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveSubView('BENCHMARKS')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeSubView === 'BENCHMARKS'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Award className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Carrier Benchmarks</span>
+            </button>
+          </div>
 
-          <button
-            onClick={() => setPayModalOpen(true)}
-            className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
-          >
-            <CreditCard className="w-3.5 h-3.5" /> Pay with TeleBirr
-          </button>
+          {activeSubView === 'LEDGER' && (
+            <>
+              <button
+                onClick={() => {
+                  setTargetDisputePaymentId('');
+                  setDisputeModalOpen(true);
+                }}
+                className="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-rose-700 hover:bg-rose-50 transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <Scale className="w-3.5 h-3.5" /> File Dispute
+              </button>
+
+              <button
+                onClick={() => setPayModalOpen(true)}
+                className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+              >
+                <CreditCard className="w-3.5 h-3.5" /> Authorize Escrow
+              </button>
+            </>
+          )}
         </div>
       </div>
 
       {paySuccess && (
-        <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600" /> {paySuccess}
+        <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-black flex items-center gap-2 shadow-sm animate-fade-in">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span>{paySuccess}</span>
         </div>
       )}
 
       {disputeSuccess && (
-        <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 text-amber-600" /> {disputeSuccess}
+        <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-black flex items-center gap-2 shadow-sm animate-fade-in">
+          <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+          <span>{disputeSuccess}</span>
         </div>
       )}
 
-      {/* Financial KPIs Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        
-        <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 shrink-0">
-            <CreditCard className="w-5 h-5" />
+      {/* SUB-VIEW 2: TRANSPORTER PERFORMANCE BENCHMARKING */}
+      {activeSubView === 'BENCHMARKS' ? (
+        <TransporterPerformanceDashboard onRefresh={fetchLedger} />
+      ) : (
+        /* SUB-VIEW 1: PAYMENTS & SETTLEMENT LEDGER */
+        <div className="space-y-6">
+          {/* Financial KPIs Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+            <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 shrink-0">
+                <CreditCard className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-[10px] font-bold uppercase text-slate-400">Total Escrow Volume</div>
+                <div className="text-xl font-black text-slate-900">{totalEscrow.toLocaleString()} ETB</div>
+                <div className="text-[10px] text-emerald-600 font-bold mt-0.5">TeleBirr & CBE Birr</div>
+              </div>
+            </div>
+
+            <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+                <Percent className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-[10px] font-bold uppercase text-slate-400">Platform Commission (5.0%)</div>
+                <div className="text-xl font-black text-indigo-900">{totalCommission.toLocaleString()} ETB</div>
+                <div className="text-[10px] text-slate-500 font-medium mt-0.5">Automated Deduction</div>
+              </div>
+            </div>
+
+            <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-[10px] font-bold uppercase text-slate-400">Carrier Net Payouts</div>
+                <div className="text-xl font-black text-emerald-700">{totalNetPayout.toLocaleString()} ETB</div>
+                <div className="text-[10px] text-emerald-600 font-bold mt-0.5">Net of 2% Withholding</div>
+              </div>
+            </div>
+
+            <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 shrink-0">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-[10px] font-bold uppercase text-slate-400">Reconciled Settlements</div>
+                <div className="text-xl font-black text-purple-900">{settledCount} Settled</div>
+                <div className="text-[10px] text-slate-500 font-medium mt-0.5">e-POD Verified Disbursed</div>
+              </div>
+            </div>
           </div>
-          <div>
-            <div className="text-[10px] font-bold uppercase text-slate-400">Total Escrow Processed</div>
-            <div className="text-xl font-black text-slate-900">{totalEscrow.toLocaleString()} ETB</div>
-            <div className="text-[10px] text-emerald-600 font-bold mt-0.5">✓ 100% TeleBirr Verified</div>
+
+          {/* Filter Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200 shadow-xs">
+            <div className="flex items-center gap-1.5 overflow-x-auto">
+              <button
+                type="button"
+                onClick={() => setStatusFilter('ALL')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  statusFilter === 'ALL' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                All Transactions ({payments.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('HELD_IN_ESCROW')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  statusFilter === 'HELD_IN_ESCROW' ? 'bg-amber-600 text-white' : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                In Escrow ({payments.filter((p) => p.status === 'HELD_IN_ESCROW').length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('SETTLED')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  statusFilter === 'SETTLED' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                Settled ({settledCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('DISPUTED')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  statusFilter === 'DISPUTED' ? 'bg-rose-600 text-white' : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                Disputed ({payments.filter((p) => p.status === 'DISPUTED').length})
+              </button>
+            </div>
+
+            <div className="relative w-full sm:w-56">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search trip ID, transaction..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-sky-500"
+              />
+            </div>
+          </div>
+
+          {/* Automated Transaction Ledger Table */}
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-black text-slate-900">
+                  Automated Reconciliation Ledger & Payout Schedule
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Transactions reconciled against trip completion IDs, webhook confirmations, and e-POD signatures.
+                </p>
+              </div>
+              <div className="text-xs font-bold text-slate-400">
+                {filteredPayments.length} Reconciled Records
+              </div>
+            </div>
+
+            {filteredPayments.length === 0 ? (
+              <div className="p-12 text-center text-slate-500 space-y-2">
+                <CreditCard className="w-8 h-8 text-slate-300 mx-auto" />
+                <p className="text-xs font-bold">No payment ledger records found matching filter.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 text-[10px] font-black uppercase text-slate-400 tracking-wider border-b border-slate-100">
+                    <tr>
+                      <th className="py-3 px-4">Trip Code & Route</th>
+                      <th className="py-3 px-4">Gateway & Tx No</th>
+                      <th className="py-3 px-4 text-right">Gross Amount</th>
+                      <th className="py-3 px-4 text-right">Fee (5%) & Tax (2%)</th>
+                      <th className="py-3 px-4 text-right">Net Payout</th>
+                      <th className="py-3 px-4 text-center">Settlement Status</th>
+                      <th className="py-3 px-4 text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredPayments.map((p) => {
+                      const isSettled = p.status === 'SETTLED';
+                      const isDisputed = p.status === 'DISPUTED';
+                      const isEscrow = p.status === 'HELD_IN_ESCROW' || p.status === 'CONFIRMED';
+
+                      return (
+                        <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="py-3.5 px-4">
+                            <div className="font-black text-slate-900">{p.shipmentCode}</div>
+                            <div className="text-[11px] text-slate-600 mt-0.5">{p.routeTitle}</div>
+                            <div className="text-[10px] text-slate-400">{p.paidAt}</div>
+                          </td>
+
+                          <td className="py-3.5 px-4">
+                            <div className="font-extrabold text-slate-800 flex items-center gap-1.5">
+                              {p.paymentMethod === 'CBE_BIRR' ? (
+                                <Building className="w-3.5 h-3.5 text-purple-600" />
+                              ) : (
+                                <Smartphone className="w-3.5 h-3.5 text-sky-600" />
+                              )}
+                              <span>{p.paymentMethod}</span>
+                            </div>
+                            <div className="text-[10px] font-mono text-slate-500 mt-0.5">{p.telebirrTxNo}</div>
+                          </td>
+
+                          <td className="py-3.5 px-4 text-right">
+                            <div className="font-black text-slate-900 text-sm">
+                              {p.grossAmountEtb.toLocaleString()} ETB
+                            </div>
+                          </td>
+
+                          <td className="py-3.5 px-4 text-right">
+                            <div className="text-rose-600 font-bold">
+                              -{p.commissionEtb.toLocaleString()} ETB
+                            </div>
+                            <div className="text-amber-700 text-[10px] font-medium">
+                              -{(p.withholdingTaxEtb || 0).toLocaleString()} ETB (Tax)
+                            </div>
+                          </td>
+
+                          <td className="py-3.5 px-4 text-right">
+                            <div className="font-black text-emerald-700 text-sm">
+                              {p.netPayoutEtb.toLocaleString()} ETB
+                            </div>
+                            <div className="text-[10px] text-slate-400">Scheduled Payout</div>
+                          </td>
+
+                          <td className="py-3.5 px-4 text-center">
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                              isSettled
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : isDisputed
+                                ? 'bg-rose-100 text-rose-800'
+                                : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              {isSettled ? (
+                                <>
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                  <span>Settled</span>
+                                </>
+                              ) : isDisputed ? (
+                                <>
+                                  <AlertCircle className="w-3 h-3 text-rose-600" />
+                                  <span>Disputed</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Clock className="w-3 h-3 text-amber-600" />
+                                  <span>Held in Escrow</span>
+                                </>
+                              )}
+                            </span>
+                          </td>
+
+                          <td className="py-3.5 px-4 text-center">
+                            <div className="flex items-center justify-center gap-1.5">
+                              {isEscrow && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSettlePayment(p.id, p.shipmentId)}
+                                  className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] transition shadow-xs cursor-pointer"
+                                >
+                                  Settle Payout
+                                </button>
+                              )}
+
+                              {!isDisputed && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setTargetDisputePaymentId(p.id);
+                                    setDisputeModalOpen(true);
+                                  }}
+                                  className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-700 font-bold text-[10px] transition cursor-pointer"
+                                >
+                                  Dispute
+                                </button>
+                              )}
+
+                              {isDisputed && (
+                                <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded">
+                                  Under Mediation
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
+      )}
 
-        <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
-            <DollarSign className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-[10px] font-bold uppercase text-slate-400">Platform Commission (5.0%)</div>
-            <div className="text-xl font-black text-indigo-900">{totalCommission.toLocaleString()} ETB</div>
-            <div className="text-[10px] text-slate-500 font-medium mt-0.5">Automated Deduction</div>
-          </div>
-        </div>
-
-        <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-[10px] font-bold uppercase text-slate-400">Carrier Net Payouts</div>
-            <div className="text-xl font-black text-emerald-700">{totalNetPayout.toLocaleString()} ETB</div>
-            <div className="text-[10px] text-emerald-600 font-bold mt-0.5">Disbursed upon e-POD</div>
-          </div>
-        </div>
-
-      </div>
-
-      {/* Transaction Ledger Table */}
-      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">
-            Settlement & Escrow Ledger ({payments.length})
-          </h3>
-          <span className="text-[11px] text-slate-500">Instant TeleBirr Webhook Reconciliation</span>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-[10px] font-black uppercase text-slate-400 tracking-wider">
-              <tr>
-                <th className="py-3 px-4">Transaction Reference</th>
-                <th className="py-3 px-4">Shipment Code</th>
-                <th className="py-3 px-4">Gross Freight</th>
-                <th className="py-3 px-4">Platform Fee (5%)</th>
-                <th className="py-3 px-4">Net Payout</th>
-                <th className="py-3 px-4">Settlement Status</th>
-                <th className="py-3 px-4">Date</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {payments.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-14 text-center text-slate-400">
-                    <CreditCard className="w-10 h-10 text-slate-300 mx-auto mb-2.5" />
-                    <div className="font-bold text-slate-700 text-xs">No transactions in ledger yet</div>
-                    <p className="text-[11px] text-slate-400 mt-1 max-w-sm mx-auto">
-                      TeleBirr escrow deposits and carrier settlements will appear here once freight consignments are funded and delivered.
-                    </p>
-                  </td>
-                </tr>
-              ) : (
-                payments.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-3.5 px-4 font-mono font-bold text-sky-800">
-                      {p.telebirrTxNo}
-                    </td>
-                    <td className="py-3.5 px-4 font-bold text-slate-900">
-                      {p.shipmentCode}
-                    </td>
-                    <td className="py-3.5 px-4 font-extrabold text-slate-900">
-                      {p.grossAmountEtb.toLocaleString()} ETB
-                    </td>
-                    <td className="py-3.5 px-4 font-bold text-rose-600">
-                      -{p.commissionEtb.toLocaleString()} ETB
-                    </td>
-                    <td className="py-3.5 px-4 font-black text-emerald-700">
-                      {p.netPayoutEtb.toLocaleString()} ETB
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span
-                        className={`text-[9.5px] font-black uppercase px-2.5 py-1 rounded-full border inline-flex items-center gap-1 ${
-                          p.status === 'SETTLED'
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : p.status === 'HELD_IN_ESCROW'
-                            ? 'bg-amber-50 text-amber-700 border-amber-200'
-                            : p.status === 'CONFIRMED'
-                            ? 'bg-sky-50 text-sky-700 border-sky-200'
-                            : 'bg-rose-50 text-rose-700 border-rose-200'
-                        }`}
-                      >
-                        {p.status === 'HELD_IN_ESCROW'
-                          ? '🔒 HELD IN ESCROW'
-                          : p.status === 'SETTLED'
-                          ? '✓ SETTLED (e-POD)'
-                          : p.status}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-400 text-[11px]">
-                      {p.paidAt}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Modular Pay with TeleBirr Modal */}
+      {/* Pay / Escrow Modal */}
       <PayWithTelebirrModal
         isOpen={payModalOpen}
         onClose={() => setPayModalOpen(false)}
@@ -340,17 +600,16 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
         amount={amount}
         setAmount={setAmount}
         paying={paying}
-        calculatedCommission={calculatedCommission}
-        calculatedNetPayout={calculatedNetPayout}
       />
 
-      {/* Modular File Dispute Modal */}
+      {/* Dispute Modal */}
       <DisputeEscrowModal
         isOpen={disputeModalOpen}
         onClose={() => setDisputeModalOpen(false)}
         onSubmit={handleFileDispute}
+        paymentRef={targetDisputePaymentId || undefined}
+        defaultAmount={25000}
       />
-
     </div>
   );
 };

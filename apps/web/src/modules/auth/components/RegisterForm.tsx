@@ -8,6 +8,7 @@ import {
   Eye,
   EyeOff,
   Shield,
+  Smartphone,
 } from 'lucide-react';
 
 interface RegisterFormProps {
@@ -32,7 +33,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onAuthSuccess }) => 
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
 
-  const handlePickTradeLicense = () => {
+  const pickDocument = (
+    onSuccess: (name: string, dataUrl: string) => void
+  ) => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'application/pdf,image/*';
@@ -43,10 +46,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onAuthSuccess }) => 
           setErrorMsg('Selected file is too large (maximum 15MB)');
           return;
         }
-        setTradeLicenseDocName(file.name);
         const reader = new FileReader();
         reader.onload = () => {
-          setTradeLicenseDocData(reader.result as string);
+          onSuccess(file.name, reader.result as string);
           setErrorMsg('');
         };
         reader.onerror = () => {
@@ -58,6 +60,15 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onAuthSuccess }) => 
     input.click();
   };
 
+  const handlePickTradeLicense = () => {
+    pickDocument((name, data) => {
+      setTradeLicenseDocName(name);
+      setTradeLicenseDocData(data);
+    });
+  };
+
+  // Dedicated Web Commercial Roles (Shipper & Freight Forwarder)
+  // Note: Transporters & Drivers operate exclusively on the TradeFlow Mobile App
   const webRoles = [
     {
       key: 'SHIPPER',
@@ -68,7 +79,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onAuthSuccess }) => 
     {
       key: 'FORWARDER',
       label: 'Freight Forwarder',
-      sub: 'Licensed Logistics Partner',
+      sub: 'Logistics Partner',
       icon: Building2,
     },
   ];
@@ -139,7 +150,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onAuthSuccess }) => 
           <div className="text-[11px] font-semibold text-slate-500 mb-2">
             Select Account Role:
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2.5">
             {webRoles.map((r) => {
               const IconComp = r.icon;
               const isSelected = selectedRole === r.key;
@@ -164,6 +175,13 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onAuthSuccess }) => 
                 </button>
               );
             })}
+          </div>
+
+          <div className="mt-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2 text-[11px] text-slate-500">
+            <Smartphone className="w-4 h-4 text-[#0284C7] shrink-0" />
+            <span>
+              Transporters and Truck Drivers register & operate exclusively on the <strong>TradeFlow Mobile App</strong> (Android / iOS).
+            </span>
           </div>
         </div>
 

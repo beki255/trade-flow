@@ -28,6 +28,7 @@ export interface ShipmentItem {
 export interface BidItem {
   id: string;
   loadId: string;
+  rawLoadId?: string;
   loadTitle: string;
   route: string;
   transporterName: string;
@@ -35,6 +36,9 @@ export interface BidItem {
   rating: number;
   bidAmount: number;
   estimatedHours: string;
+  validityHours?: number;
+  expiresAt?: string;
+  transporterVerificationStatus?: string;
   notes: string;
   status: string;
   createdAt: string;
@@ -76,3 +80,59 @@ export interface MatchingSLA {
   actualExecutionTimeMs: string;
   target: string;
 }
+
+export interface SpotPricingBreakdown {
+  baseFreightEtb: number;
+  baseRatePerKm: number;
+  demandIndexFactor: number;
+  demandAdjustmentEtb: number;
+  dieselPricePerLiter: number;
+  baselineDieselPrice: number;
+  fuelCostIndex: number;
+  fuelSurchargeEtb: number;
+  congestionSurchargeEtb: number;
+  specialHandlingEtb: number;
+  vat15PctEtb: number;
+  totalWithVatEtb: number;
+}
+
+export interface SpotPricingResult {
+  totalSpotRateEtb: number;
+  floorBoundEtb: number;
+  ceilingBoundEtb: number;
+  currency: string;
+  distanceKm: number;
+  originName?: string;
+  destName?: string;
+  itemizedBreakdown: SpotPricingBreakdown;
+  auditLogId: string;
+  requesterId?: string;
+  refreshedAt: string;
+  validUntil: string;
+}
+
+export interface LockedContractItem {
+  id: string;
+  contractCode: string;
+  shipperId: string;
+  shipperName: string;
+  shipperEmail: string;
+  transporterId: string;
+  transporterName: string;
+  corridorName: string;
+  originName: string;
+  destName: string;
+  lockedRateEtb: number;
+  currentSpotBenchmarkEtb: number;
+  divergencePercentage: number;
+  isMateriallyDivergent: boolean;
+  periodDurationWeeks: number;
+  startDate: string;
+  endDate: string;
+  committedWeeklyLoads: number;
+  status: 'ACTIVE_LOCKED' | 'FLAGGED_FOR_RENEGOTIATION' | 'UNDER_RENEGOTIATION' | 'RENEGOTIATED_RENEWED';
+  renegotiationNotes?: string;
+  proposedNewRateEtb?: number;
+  lastEvaluatedAt: string;
+}
+

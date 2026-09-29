@@ -43,7 +43,7 @@ export const RouteLocationPickerCard: React.FC<RouteLocationPickerCardProps> = (
               <span>Origin (Pickup Point) *</span>
             </label>
             {originLocation.lat !== 0 && (
-              <span className="text-[9.5px] font-mono text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded">
+              <span className="text-[9.5px] font-mono text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded shrink-0">
                 {originLocation.lat.toFixed(4)}°N, {originLocation.lng.toFixed(4)}°E
               </span>
             )}
@@ -65,7 +65,7 @@ export const RouteLocationPickerCard: React.FC<RouteLocationPickerCardProps> = (
                 });
               }}
               placeholder="e.g. Debre Sina Transit Terminal, Amhara"
-              className="flex-1 px-3 py-2 rounded-xl border border-slate-300 focus:border-sky-600 outline-none text-xs font-medium text-slate-900 bg-white"
+              className="flex-1 min-w-0 px-3 py-2 rounded-xl border border-slate-300 focus:border-sky-600 outline-none text-xs font-medium text-slate-900 bg-white"
             />
             <button
               type="button"
@@ -86,7 +86,7 @@ export const RouteLocationPickerCard: React.FC<RouteLocationPickerCardProps> = (
               <span>Destination (Delivery Point) *</span>
             </label>
             {destinationLocation.lat !== 0 && (
-              <span className="text-[9.5px] font-mono text-sky-700 font-bold bg-sky-50 px-2 py-0.5 rounded">
+              <span className="text-[9.5px] font-mono text-sky-700 font-bold bg-sky-50 px-2 py-0.5 rounded shrink-0">
                 {destinationLocation.lat.toFixed(4)}°N, {destinationLocation.lng.toFixed(4)}°E
               </span>
             )}
@@ -108,7 +108,7 @@ export const RouteLocationPickerCard: React.FC<RouteLocationPickerCardProps> = (
                 });
               }}
               placeholder="e.g. Debre Berhan Industrial Hub, Amhara"
-              className="flex-1 px-3 py-2 rounded-xl border border-slate-300 focus:border-sky-600 outline-none text-xs font-medium text-slate-900 bg-white"
+              className="flex-1 min-w-0 px-3 py-2 rounded-xl border border-slate-300 focus:border-sky-600 outline-none text-xs font-medium text-slate-900 bg-white"
             />
             <button
               type="button"
@@ -124,32 +124,32 @@ export const RouteLocationPickerCard: React.FC<RouteLocationPickerCardProps> = (
 
       {/* 🛣️ Live Real-Time Road Distance & ETA Preview Banner */}
       {(originLocation.address || destinationLocation.address) && (
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-sky-950 to-slate-900 border border-sky-700/50 text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="p-4 rounded-2xl bg-sky-50/70 border border-sky-200/90 text-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-sky-400 shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-sky-100 border border-sky-200 flex items-center justify-center text-sky-600 shrink-0">
               <Route className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black uppercase tracking-wider text-sky-400 bg-sky-900/60 px-2 py-0.5 rounded border border-sky-700">
-                  ERA Highway Road Network
+                <span className="text-[10px] font-bold uppercase tracking-wider text-sky-800 bg-sky-100 px-2 py-0.5 rounded-full border border-sky-200">
+                  ERA Highway Network
                 </span>
-                <span className="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-950/90 px-2 py-0.5 rounded border border-emerald-700/60">
+                <span className="text-[10px] font-mono text-emerald-800 font-bold bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
                   Exact Ground GPS
                 </span>
               </div>
-              <div className="text-xs font-bold text-slate-200 mt-1 flex flex-wrap items-center gap-1.5">
-                <span className="text-emerald-400 font-semibold">{originLocation.address || 'Select Origin'}</span>
-                <span className="text-sky-400 font-black">➔</span>
-                <span className="text-sky-300 font-semibold">{destinationLocation.address || 'Select Destination'}</span>
+              <div className="text-xs font-bold text-slate-800 mt-1 flex flex-wrap items-center gap-1.5">
+                <span className="text-emerald-700 font-semibold">{originLocation.address || 'Select Origin'}</span>
+                <span className="text-sky-600 font-black">➔</span>
+                <span className="text-sky-700 font-semibold">{destinationLocation.address || 'Select Destination'}</span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-5 shrink-0 sm:border-l sm:border-slate-700/70 sm:pl-5">
+          <div className="flex flex-wrap items-center gap-4 shrink-0 sm:border-l sm:border-slate-200 sm:pl-5">
             <div>
-              <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Ground Road Distance</div>
-              <div className="text-lg sm:text-xl font-black text-sky-400">
+              <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Ground Road Distance</div>
+              <div className="text-lg sm:text-xl font-black text-slate-900">
                 {calculateCorridorRoadDistanceKm(
                   originLocation.address,
                   destinationLocation.address,
@@ -161,8 +161,8 @@ export const RouteLocationPickerCard: React.FC<RouteLocationPickerCardProps> = (
               </div>
             </div>
             <div>
-              <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Est. Drive Time</div>
-              <div className="text-lg sm:text-xl font-black text-emerald-400">
+              <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Est. Drive Time</div>
+              <div className="text-lg sm:text-xl font-black text-emerald-700">
                 ~{(
                   calculateCorridorRoadDistanceKm(
                     originLocation.address,

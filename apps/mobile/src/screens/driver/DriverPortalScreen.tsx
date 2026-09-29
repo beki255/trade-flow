@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { TabIcon } from '../../components/TabIcon';
 import { getDynamicCorridorWaypoints } from '@tradeflow/shared';
 import { driverStyles as styles } from './driverStyles';
-import { WaypointItem, CheckinRecord, IncidentRecord, ActiveTripDetails, DriverTabType } from './types';
+import { WaypointItem, CheckinRecord, IncidentRecord, DynamicRerouteProposal, ActiveTripDetails, DriverTabType } from './types';
 import { getApiBaseUrl, apiFetch } from '../../utils/api';
 import {
   requestLocationPermission,
@@ -52,8 +52,11 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
   const [activeTrip, setActiveTrip] = useState<ActiveTripDetails | null>(null);
   const [lastDeliveredTrip, setLastDeliveredTrip] = useState<ActiveTripDetails | null>(null);
 
-  // Offline Telemetry Queue Buffer
+  // Offline Telemetry Queue Buffer (NFR 7.2)
   const [offlineQueue, setOfflineQueue] = useState<any[]>([]);
+  const [offlineCheckinQueue, setOfflineCheckinQueue] = useState<any[]>([]);
+  const [offlineIncidentQueue, setOfflineIncidentQueue] = useState<any[]>([]);
+  const [offlineSyncMessage, setOfflineSyncMessage] = useState<string>('');
   const [lastGpsSyncTime, setLastGpsSyncTime] = useState<string>('');
 
   // Real-Time Device GPS State (Physical phone / browser GPS)
@@ -152,6 +155,7 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
       if (res.ok) {
         setOfflineQueue([]); // Successfully synced all queued pings
         setLastGpsSyncTime(new Date().toLocaleTimeString());
+        syncOfflineQueues(); // Auto-drain queued check-ins & incidents (NFR 7.2)
       } else {
         // Queue ping offline if server returned non-200
         setOfflineQueue((prev) => [...prev, currentPing]);
@@ -159,6 +163,80 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
     } catch (e) {
       // Network failure / offline: buffer to offline queue
       setOfflineQueue((prev) => [...prev, currentPing]);
+    }
+  };
+
+  // Offline Auto-Sync with Conflict Resolution favoring Most-Recent Authoritative Timestamp (NFR 7.2)
+  const syncOfflineQueues = async () => {
+    // 1. Synchronize Offline Check-ins
+    if (offlineCheckinQueue.length > 0) {
+      const sortedCheckins = [...offlineCheckinQueue].sort((a, b) => b.authoritativeTimestamp - a.authoritativeTimestamp);
+      const uniqueCheckins = new Map<string, any>();
+      for (const item of sortedCheckins) {
+        if (!uniqueCheckins.has(item.locationName)) {
+          uniqueCheckins.set(item.locationName, item);
+        }
+      }
+      const toSync = Array.from(uniqueCheckins.values());
+      let syncedCheckinsCount = 0;
+
+      for (const item of toSync) {
+        try {
+          const res = await apiFetch('/api/portal/driver/checkin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(item),
+          });
+          if (res.ok) {
+            syncedCheckinsCount++;
+          }
+        } catch (e) {
+          console.warn('Checkin sync error:', e);
+          break;
+        }
+      }
+
+      if (syncedCheckinsCount > 0) {
+        setOfflineCheckinQueue([]);
+        setOfflineSyncMessage(`Synced ${syncedCheckinsCount} check-in(s) (Authoritative timestamp applied)`);
+        setTimeout(() => setOfflineSyncMessage(''), 4000);
+      }
+    }
+
+    // 2. Synchronize Offline Incident Reports
+    if (offlineIncidentQueue.length > 0) {
+      const sortedIncidents = [...offlineIncidentQueue].sort((a, b) => b.authoritativeTimestamp - a.authoritativeTimestamp);
+      const uniqueIncidents = new Map<string, any>();
+      for (const inc of sortedIncidents) {
+        const key = `${inc.shipmentId || 'active'}-${inc.category}`;
+        if (!uniqueIncidents.has(key)) {
+          uniqueIncidents.set(key, inc);
+        }
+      }
+      const toSync = Array.from(uniqueIncidents.values());
+      let syncedIncidentsCount = 0;
+
+      for (const inc of toSync) {
+        try {
+          const res = await apiFetch('/api/optimization/incident', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(inc),
+          });
+          if (res.ok) {
+            syncedIncidentsCount++;
+          }
+        } catch (e) {
+          console.warn('Incident sync error:', e);
+          break;
+        }
+      }
+
+      if (syncedIncidentsCount > 0) {
+        setOfflineIncidentQueue([]);
+        setOfflineSyncMessage(`Synced ${syncedIncidentsCount} incident(s) with authoritative timestamp`);
+        setTimeout(() => setOfflineSyncMessage(''), 4000);
+      }
     }
   };
 
@@ -176,6 +254,15 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
       source: 'DRIVER_LIVE_GPS_STREAM',
     });
   }, [realGpsLocation?.latitude, realGpsLocation?.longitude, activeTrip?.status, activeTrip?.isDriving]);
+
+  // Guaranteed periodic telemetry transmission every 60s while trip is in transit (SLA: minimum every 5 minutes)
+  useEffect(() => {
+    if (activeTrip?.status !== 'IN_TRANSIT') return;
+    const periodicTimer = setInterval(() => {
+      transmitGpsTelemetry();
+    }, 60000);
+    return () => clearInterval(periodicTimer);
+  }, [activeTrip?.status, activeTrip?.id, activeTrip?.isDriving]);
 
   // Fetch real-time active trip assigned by Transporter
   const fetchActiveTrip = async () => {
@@ -341,15 +428,33 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
     };
   }, [user?.id, activeTrip?.id, activeTrip?.status, activeTrip?.isDriving]);
 
+  // Periodic offline queue sync routine (NFR 7.2: Auto-sync upon reconnect)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      syncOfflineQueues();
+    }, 20000);
+    return () => clearInterval(timer);
+  }, [offlineCheckinQueue.length, offlineIncidentQueue.length]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await syncOfflineQueues();
+    await fetchActiveTrip();
+    setRefreshing(false);
+  };
+
   // Check-in state
   const [checkedInSuccess, setCheckedInSuccess] = useState('');
   const [checkinHistory, setCheckinHistory] = useState<CheckinRecord[]>([]);
 
-  // Incident state
-  const [incidentType, setIncidentType] = useState('');
+  // Incident state (SRS 4.5.2 & 4.5.3)
+  const [incidentType, setIncidentType] = useState('CHECKPOINT_DELAY');
+  const [incidentSeverity, setIncidentSeverity] = useState('MEDIUM');
   const [incidentNotes, setIncidentNotes] = useState('');
+  const [incidentPhoto, setIncidentPhoto] = useState<string | null>(null);
   const [incidentSent, setIncidentSent] = useState(false);
   const [incidentsList, setIncidentsList] = useState<IncidentRecord[]>([]);
+  const [pendingReroute, setPendingReroute] = useState<DynamicRerouteProposal | null>(null);
 
   // Digital POD state
   const [recipientName, setRecipientName] = useState('');
@@ -373,7 +478,7 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
     );
   }, [activeTrip]);
 
-  const handleCheckin = () => {
+  const handleCheckin = async () => {
     const activeWp = waypoints.find((w) => w.status === 'ACTIVE_NOW') || waypoints[0];
     const lat = realGpsLocation?.latitude ?? (activeWp as any)?.latitude ?? (activeWp as any)?.lat ?? activeTrip?.originLat;
     const lng = realGpsLocation?.longitude ?? (activeWp as any)?.longitude ?? (activeWp as any)?.lng ?? activeTrip?.originLng;
@@ -382,63 +487,148 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
 
     const coords = `${Number(lat).toFixed(3)}° N, ${Number(lng).toFixed(3)}° E`;
     const locName = activeWp?.name || activeTrip?.route || 'Corridor Checkpoint';
+    const nowEpoch = Date.now();
     const record: CheckinRecord = {
-      id: `CHK-${Date.now().toString().slice(-4)}`,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      id: `CHK-${nowEpoch.toString().slice(-4)}`,
+      time: new Date(nowEpoch).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       coords: `${coords} (${locName})`,
     };
     setCheckinHistory([record, ...checkinHistory]);
-    transmitGpsTelemetry({
+
+    const checkinPayload = {
+      shipmentId: activeTrip?.id,
+      driverId: user?.id,
+      driverEmail: user?.email,
       latitude: Number(lat),
       longitude: Number(lng),
-      speedKmh: 0,
-      heading: 240,
-      fuelLevelPct: activeTrip?.fuelLevelPct ?? 78,
-      timestamp: new Date().toISOString(),
-      source: 'DRIVER_CHECKIN',
-    });
-    setCheckedInSuccess(`GPS Check-in Confirmed at ${locName}!`);
-    setTimeout(() => setCheckedInSuccess(''), 3000);
+      locationName: locName,
+      authoritativeTimestamp: nowEpoch,
+    };
+
+    try {
+      const res = await apiFetch('/api/portal/driver/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(checkinPayload),
+      });
+
+      if (res.ok) {
+        setCheckedInSuccess(`GPS Check-in Confirmed at ${locName}!`);
+        transmitGpsTelemetry({
+          latitude: Number(lat),
+          longitude: Number(lng),
+          speedKmh: 0,
+          heading: 240,
+          fuelLevelPct: activeTrip?.fuelLevelPct ?? 78,
+          timestamp: new Date(nowEpoch).toISOString(),
+          source: 'DRIVER_CHECKIN',
+        });
+      } else {
+        setOfflineCheckinQueue((prev) => [...prev, checkinPayload]);
+        setCheckedInSuccess(`Check-in Queued Offline at ${locName} (Will auto-sync)`);
+      }
+    } catch (e) {
+      setOfflineCheckinQueue((prev) => [...prev, checkinPayload]);
+      setCheckedInSuccess(`Offline: Check-in Cached at ${locName} (Will auto-sync)`);
+    }
+
+    setTimeout(() => setCheckedInSuccess(''), 3500);
   };
 
+  // 🚨 Handle Driver Geotagged Incident Reporting with Offline Queuing (NFR 7.2)
   const handleSendIncident = async () => {
     if (!incidentType) return;
     const activeWp = waypoints.find((w) => w.status === 'ACTIVE_NOW') || waypoints[0];
-    const incidentLat = realGpsLocation?.latitude ?? (activeWp as any)?.latitude ?? (activeWp as any)?.lat ?? activeTrip?.originLat ?? 0;
-    const incidentLng = realGpsLocation?.longitude ?? (activeWp as any)?.longitude ?? (activeWp as any)?.lng ?? activeTrip?.originLng ?? 0;
-    const incidentLocName = activeWp?.name || activeTrip?.route || 'Corridor Route Checkpoint';
+    const incidentLat = realGpsLocation?.latitude ?? (activeWp as any)?.latitude ?? (activeWp as any)?.lat ?? activeTrip?.originLat ?? 8.895;
+    const incidentLng = realGpsLocation?.longitude ?? (activeWp as any)?.longitude ?? (activeWp as any)?.lng ?? activeTrip?.originLng ?? 38.765;
+    const incidentLocName = activeWp?.name || activeTrip?.route || 'Djibouti-Addis Corridor Route Checkpoint';
+    const nowEpoch = Date.now();
 
     const newInc: IncidentRecord = {
-      id: `INC-${Date.now().toString().slice(-4)}`,
+      id: `INC-${nowEpoch.toString().slice(-4)}`,
       type: incidentType,
+      category: incidentType,
+      severity: incidentSeverity,
       notes: incidentNotes,
-      time: new Date().toLocaleTimeString(),
+      coords: `${Number(incidentLat).toFixed(4)}° N, ${Number(incidentLng).toFixed(4)}° E`,
+      photoUrl: incidentPhoto || undefined,
+      time: new Date(nowEpoch).toLocaleTimeString(),
+      isVerified: true,
     };
     setIncidentsList([newInc, ...incidentsList]);
     setIncidentSent(true);
 
+    const incidentPayload = {
+      reporterDriverId: user?.id,
+      driverEmail: user?.email,
+      shipmentId: activeTrip?.id,
+      category: incidentType,
+      severity: incidentSeverity,
+      description: incidentNotes || `Driver reported ${incidentType} at ${incidentLocName}`,
+      latitude: incidentLat,
+      longitude: incidentLng,
+      locationName: incidentLocName,
+      photoUrl: incidentPhoto,
+      authoritativeTimestamp: nowEpoch,
+    };
+
     try {
-      await apiFetch('/api/optimization/incident', {
+      const res = await apiFetch('/api/optimization/incident', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(incidentPayload),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.reroutingProposal) {
+          setPendingReroute(data.reroutingProposal);
+        }
+      } else {
+        setOfflineIncidentQueue((prev) => [...prev, incidentPayload]);
+      }
+    } catch (e) {
+      setOfflineIncidentQueue((prev) => [...prev, incidentPayload]);
+      console.warn('Network offline: Queued incident report locally for auto-sync');
+    }
+
+    setIncidentNotes('');
+    setIncidentPhoto(null);
+    setTimeout(() => setIncidentSent(false), 3500);
+  };
+
+  // 🔄 Handle Dynamic Reroute Confirmation (SRS FR-05.3)
+  const handleConfirmReroute = async (action: 'ACCEPT' | 'DECLINE') => {
+    if (!pendingReroute) return;
+    try {
+      const res = await apiFetch('/api/optimization/reroute/confirm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          reporterDriverId: user?.id,
-          driverEmail: user?.email,
-          shipmentId: activeTrip?.id,
-          category: incidentType,
-          description: incidentNotes || 'Driver reported incident on corridor highway',
-          latitude: incidentLat,
-          longitude: incidentLng,
-          locationName: incidentLocName,
+          shipmentId: activeTrip?.id || pendingReroute.shipmentId,
+          proposalId: pendingReroute.proposalId,
+          action,
+          confirmedByUserId: user?.id,
+          confirmedByRole: 'DRIVER',
+          reason: pendingReroute.reason,
         }),
       });
-    } catch (e) {
-      console.warn('Incident report API error:', e);
-    }
 
-    setIncidentType('');
-    setIncidentNotes('');
-    setTimeout(() => setIncidentSent(false), 3500);
+      if (res.ok) {
+        if (action === 'ACCEPT') {
+          if (activeTrip) {
+            setActiveTrip({
+              ...activeTrip,
+              route: 'Addis Ababa ➔ Dire Dawa ➔ Dewele ➔ Djibouti (Southern Bypass)',
+            });
+          }
+          await fetchActiveTrip();
+        }
+        setPendingReroute(null);
+      }
+    } catch (e) {
+      console.warn('Error confirming reroute:', e);
+    }
   };
 
   // 🏁 Mark as Delivered from Trip Tab -> Navigates to e-POD Tab & Records Arrival
@@ -541,6 +731,16 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
         onToggleSos={() => setSosActive(!sosActive)}
       />
 
+      {/* Offline Queuing & Sync Status Indicator (NFR 7.2) */}
+      {(offlineCheckinQueue.length + offlineIncidentQueue.length > 0 || !!offlineSyncMessage) && (
+        <View style={{ backgroundColor: offlineSyncMessage ? '#059669' : '#0284C7', paddingVertical: 6, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name={offlineSyncMessage ? "checkmark-circle" : "cloud-offline-outline"} size={14} color="#FFFFFF" style={{ marginRight: 6 }} />
+          <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700' }}>
+            {offlineSyncMessage || `Offline Mode: ${offlineCheckinQueue.length} check-in(s), ${offlineIncidentQueue.length} incident(s) cached (Syncs on reconnect)`}
+          </Text>
+        </View>
+      )}
+
       {/* Main Scrollable Content */}
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -590,11 +790,20 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
           <IncidentTab
             incidentType={incidentType}
             setIncidentType={setIncidentType}
+            incidentSeverity={incidentSeverity}
+            setIncidentSeverity={setIncidentSeverity}
             incidentNotes={incidentNotes}
             setIncidentNotes={setIncidentNotes}
+            incidentPhoto={incidentPhoto}
+            setIncidentPhoto={setIncidentPhoto}
             incidentSent={incidentSent}
             incidentsList={incidentsList}
             onSendIncident={handleSendIncident}
+            realGpsLocation={realGpsLocation}
+            activeTrip={activeTrip}
+            activeWaypoint={waypoints.find((w) => w.status === 'ACTIVE_NOW') || waypoints[0]}
+            pendingReroute={pendingReroute}
+            onConfirmReroute={handleConfirmReroute}
           />
         )}
 

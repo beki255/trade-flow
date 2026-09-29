@@ -14,8 +14,30 @@ export interface CheckinRecord {
 export interface IncidentRecord {
   id: string;
   type: string;
+  category?: string;
+  severity?: string;
   notes: string;
+  coords?: string;
+  photoUrl?: string;
   time: string;
+  isVerified?: boolean;
+}
+
+export interface DynamicRerouteProposal {
+  proposalId: string;
+  shipmentId?: string;
+  incidentId?: string;
+  incidentCategory: string;
+  incidentLocation: string;
+  originalRouteName: string;
+  suggestedBypassRouteName: string;
+  reason: string;
+  distanceDeltaKm: number;
+  estimatedTimeSavingMins: number;
+  fuelCostDeltaEtb: number;
+  status: 'PENDING_CONFIRMATION' | 'CONFIRMED' | 'DECLINED';
+  createdAt?: string;
+  bypassPolyline?: Array<{ lat: number; lng: number }>;
 }
 
 export interface ActiveTripDetails {

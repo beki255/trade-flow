@@ -142,6 +142,15 @@ function MainApp() {
     }
   }, []);
 
+  if (!fontsLoaded) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0284C7" />
+        <Text style={styles.loadingText}>Loading TradeFlow...</Text>
+      </View>
+    );
+  }
+
   if (authLoading) {
     return (
       <View style={styles.loadingContainer}>

@@ -3,17 +3,26 @@ import {
   calculateSpotRate,
   checkContractDivergence,
   getPricingAuditLogs,
+  getContracts,
+  lockContractRate,
+  approveContractRate,
+  submitContractRenegotiation,
 } from '../controllers/pricing.controller';
 
 const router = Router();
 
-// 1. Calculate dynamic spot rate with itemized breakdown
+// 1. Calculate dynamic spot rate with itemized breakdown (4.4.1)
 router.post('/spot-rate', calculateSpotRate);
 
-// 2. Check contract rate divergence (> 20%) & renegotiation trigger
+// 2. Contract rate management & renegotiation review workflow (4.4.2)
+router.get('/contracts', getContracts);
+router.post('/contracts/lock', lockContractRate);
+router.post('/contracts/:id/approve', approveContractRate);
+router.post('/contracts/:id/renegotiate', submitContractRenegotiation);
 router.post('/contract-rate/check', checkContractDivergence);
 
-// 3. Get pricing audit trail
+// 3. Get pricing audit trail (4.4.3)
 router.get('/audit-logs', getPricingAuditLogs);
 
 export default router;
+

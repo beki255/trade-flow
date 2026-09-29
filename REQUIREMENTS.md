@@ -85,13 +85,16 @@ Sections follow standard SRS structure: Overall Description (§2), Page & Module
 
 ### 2.2 Seeded Administrative & Regulatory Accounts (from `seed.ts`)
 
-| Role | Email | Username | Password | Target Platform & Route |
-| :--- | :--- | :--- | :--- | :--- |
-| **Platform Administrator** | `admin@miaoda.com` | `admin` | `Admin2024!` | Web App (`/admin`) |
-| **Customs Officer (ECC)** | `kebede@miaoda.com` | `kebede` | `Demo1234!` | Web App (`/customs`) |
+| Role                             | Email                 | Username   | Password       | Target Platform & Route |
+| :------------------------------- | :-------------------- | :--------- | :------------- | :---------------------- |
+| **Platform Administrator** | `admin@miaoda.com`  | `admin`  | `Admin2024!` | Web App (`/admin`)    |
+| **Customs Officer (ECC)**  | `kebede@miaoda.com` | `kebede` | `Demo1234!`  | Web App (`/customs`)  |
 
-> **Note on Commercial Actors (Shippers, Transporters, Forwarders, Drivers):**  
-> Per system specification, commercial logistics participants register directly via the **Register Screen** (Web or Mobile), submitting their legal business identity (TIN, Trade License, GIT Insurance, Roadworthiness, or Driving License). They are verified dynamically by the System Administrator in the **Admin Verification Queue** (`/admin`).
+> **Note on Commercial Actors (Shippers, Transporters, Forwarders, Drivers):**
+> Per system architecture specification:
+> - **Web Application (`/register`, `/login`)**: Exclusively for **Shippers** and **Freight Forwarders**. Transporters do NOT have a web portal and do not register on the web.
+> - **Mobile Application (React Native Expo)**: Exclusively for **Transporters** (Fleet carrier portal) and **Commercial Truck Drivers** (Offline telematics & execution).
+> Commercial entities submit their legal business identity (TIN, Trade License, GIT Insurance, Roadworthiness, or Driving License) on their respective platforms and are verified dynamically by the System Administrator in the **Admin Verification Queue** (`/admin`).
 
 ---
 
@@ -103,8 +106,8 @@ Sections follow standard SRS structure: Overall Description (§2), Page & Module
 TradeFlow Web Platform
 ├── Public Pages
 │   ├── Landing Page (Hero, Features, Live Corridor Stats, CTA)
-│   ├── Login / Registration (Multi-role selection)
-│   └── Role Selection & Verification Status Notice
+│   ├── Login / Registration (Web Roles: Shipper, Freight Forwarder)
+│   └── Role Selection & Mobile App Notice (Transporters & Drivers directed to Mobile App)
 ├── Shipper Portal
 │   ├── Dashboard (Active Shipments Overview, Status Tiles, Quick Actions)
 │   ├── Load Posting (Step-by-step cargo, dimensions, route, and budget)
@@ -156,14 +159,18 @@ TradeFlow Mobile App (React Native Expo)
 
 #### 4.1.1 Registration Process
 
-- Shippers and Transporters register with:
+- **Web Registration (`/register`)**: Exclusively for cargo owners and forwarding intermediaries (`Shipper`, `Freight Forwarder`).
   - Business/legal identity: Trade license number, Tax Identification Number (TIN).
   - Contact information: Email, phone number, physical address.
-  - Role selection during registration (`Shipper`, `Transporter`, `Freight Forwarder`, `Driver`).
-- Transporters additionally submit:
-  - Fleet details: Vehicle type (Flatbed, Box, Container, Tanker), payload capacity (weight/volume), fuel type.
-  - Insurance documentation (Upload PDF/Image).
-  - Roadworthiness certificate (Upload PDF/Image).
+  - Upload signed trade license document (PDF/Image).
+- **Mobile Registration (TradeFlow Mobile App)**: Exclusively for freight carriers and operators (`Transporter`, `Driver`).
+  - Transporters register and operate exclusively on the **TradeFlow Mobile App (React Native Expo)**. There is no Transporter web application.
+  - Transporters submit:
+    - Business identity: TIN, Trade license.
+    - Fleet details: Vehicle type (Flatbed, Box, Container, Tanker), payload capacity (weight/volume), fuel type.
+    - Insurance documentation: Goods In Transit (GIT) Insurance (Upload PDF/Image).
+    - Roadworthiness certificate from Ethiopian Road Authority/FTA (Upload PDF/Image).
+  - Commercial truck drivers are assigned by their verified Transporter or self-onboard on the mobile app with their driver's license.
 
 #### 4.1.2 Verification Workflow
 

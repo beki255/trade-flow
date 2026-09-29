@@ -156,20 +156,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
       }
     } catch (err: any) {
       setLoading(false);
-      // Seamless mobile fallback: create transporter session directly
-      const registeredUser = {
-        id: `usr-transporter-${Date.now().toString().slice(-6)}`,
-        fullName: userData.fullName,
-        companyName: userData.companyName,
-        email: userData.email,
-        phone: userData.phone,
-        tin: userData.tin,
-        tradeLicenseNo: userData.tradeLicenseNo,
-        role: 'TRANSPORTER',
-        verificationStatus: 'PENDING',
-        createdAt: new Date().toISOString(),
-      };
-      onRegisterSuccess('TRANSPORTER', registeredUser);
+      setErrorMsg('Cannot connect to TradeFlow API server. Please check your internet connection or try again later.');
     }
   };
 

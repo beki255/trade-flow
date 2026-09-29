@@ -6,6 +6,7 @@ import {
   getPaymentLedger,
   getDisputeTickets,
   arbitrateDispute,
+  checkPendingConfirmationReminders,
 } from '../controllers/payment.controller';
 
 const router = Router();
@@ -27,5 +28,8 @@ router.post('/disputes/:paymentId/arbitrate', arbitrateDispute);
 
 // 6. Get financial payment ledger
 router.get('/ledger', getPaymentLedger);
+
+// 7. Check & dispatch automated 24-hour pending confirmation reminders (Boundary Condition 6.6)
+router.get('/pending-reminders', checkPendingConfirmationReminders);
 
 export default router;

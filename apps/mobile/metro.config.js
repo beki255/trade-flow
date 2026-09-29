@@ -6,8 +6,12 @@ const monorepoRoot = path.resolve(projectRoot, '../..');
 
 const config = getDefaultConfig(projectRoot);
 
-// 1. Watch all files within the monorepo root
-config.watchFolders = [monorepoRoot];
+// 1. Only watch mobile project and the shared package (avoid scanning web & api folders)
+config.watchFolders = [
+  projectRoot,
+  path.resolve(monorepoRoot, 'packages/shared'),
+  path.resolve(monorepoRoot, 'node_modules'),
+];
 
 // 2. Let Metro know where to resolve packages and assets in what order
 config.resolver.nodeModulesPaths = [

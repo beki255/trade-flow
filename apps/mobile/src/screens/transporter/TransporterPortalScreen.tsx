@@ -101,10 +101,21 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
   const [bidSuccess, setBidSuccess] = useState('');
   const [biddingSubTab, setBiddingSubTab] = useState<'create' | 'history'>('create');
 
-  // Load Search & Filter State
+  // Load Search & Filter State (4.2.4)
   const [loadSearchQuery, setLoadSearchQuery] = useState('');
   const [selectedCargoFilter, setSelectedCargoFilter] = useState('ALL');
   const [selectedRouteFilter, setSelectedRouteFilter] = useState('ALL');
+  const [selectedTonnageFilter, setSelectedTonnageFilter] = useState('ALL');
+
+  // Real-time Bid Acceptance/Rejection Notification State & Ref (4.2.4)
+  const [bidNotification, setBidNotification] = useState<{
+    type: 'ACCEPTED' | 'REJECTED';
+    title: string;
+    message: string;
+    bidId: string;
+    amount?: string;
+  } | null>(null);
+  const prevBidStatusesRef = useRef<Record<string, string>>({});
 
   // Dispatch Assignment State
   const [dispatchTruck, setDispatchTruck] = useState('');
@@ -128,15 +139,22 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
               route: `${l.originName || 'Addis Ababa'} ➔ ${l.destName || 'Djibouti Port'}`,
               cargoType: l.cargoType || 'General Freight',
               weight: `${l.weightTons || 28.0} Tons`,
+              weightTons: parseFloat(l.weightTons) || 28.0,
+              pickupDate: l.pickupWindowStart ? new Date(l.pickupWindowStart).toLocaleDateString() : '',
               budget: l.targetBudgetEtb ? `${Number(l.targetBudgetEtb).toLocaleString()} ETB` : '',
               status: l.status || 'OPEN',
               isDispatched:
-                Boolean(l.shipment?.vehicle?.plateNumber && l.shipment?.driver?.user?.fullName) &&
-                (l.status === 'IN_TRANSIT' ||
-                  l.status === 'COMPLETED' ||
-                  (l.shipment && (l.shipment.status === 'DISPATCHED' || l.shipment.status === 'IN_TRANSIT'))),
-              dispatchedTruck: l.shipment?.vehicle?.plateNumber || '',
-              dispatchedDriver: l.shipment?.driver?.user?.fullName || '',
+                Boolean(
+                  l.shipment &&
+                  l.shipment.status !== 'ASSIGNED' &&
+                  (l.shipment.status === 'DISPATCHED' || l.shipment.status === 'IN_TRANSIT' || l.status === 'IN_TRANSIT' || l.status === 'COMPLETED') &&
+                  l.shipment.vehicle?.plateNumber &&
+                  l.shipment.driver?.user?.fullName
+                ),
+              dispatchedTruck:
+                l.shipment && l.shipment.status !== 'ASSIGNED' ? (l.shipment.vehicle?.plateNumber || '') : '',
+              dispatchedDriver:
+                l.shipment && l.shipment.status !== 'ASSIGNED' ? (l.shipment.driver?.user?.fullName || '') : '',
             }))
           );
         }
@@ -206,27 +224,43 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
         const data = await bidsRes.json();
         if (data.bids && data.bids.length > 0) {
           const mappedBids = data.bids.map((b: any) => {
-            const truck =
-              b.dispatchedTruck ||
-              b.load?.shipment?.vehicle?.plateNumber ||
-              (b.proposalNotes?.match(/Vehicle:\s*([^\s•]+)/)?.[1]) ||
-              '';
-
-            const driver =
-              b.dispatchedDriver ||
-              b.load?.shipment?.driver?.user?.fullName ||
-              (b.proposalNotes?.match(/Driver:\s*([^•\n]+)/)?.[1]?.trim()) ||
-              '';
-
-            const isDispatched = Boolean(
-              truck &&
-              driver &&
-              (b.isDispatched ||
-                b.load?.status === 'IN_TRANSIT' ||
-                (b.load?.shipment &&
-                  (b.load.shipment.status === 'DISPATCHED' || b.load.shipment.status === 'IN_TRANSIT')) ||
-                (b.proposalNotes && b.proposalNotes.includes('Dispatched')))
+            const isActualDispatched = Boolean(
+              b.isDispatched ||
+              (b.proposalNotes && b.proposalNotes.startsWith('Dispatched')) ||
+              (b.load?.shipment &&
+                b.load.shipment.status !== 'ASSIGNED' &&
+                (b.load.shipment.status === 'DISPATCHED' || b.load.shipment.status === 'IN_TRANSIT'))
             );
+
+            const truck = isActualDispatched
+              ? (b.dispatchedTruck || (b.proposalNotes?.match(/Vehicle:\s*([^\s•]+)/)?.[1]) || '')
+              : '';
+
+            const driver = isActualDispatched
+              ? (b.dispatchedDriver || (b.proposalNotes?.match(/Driver:\s*([^•\n]+)/)?.[1]?.trim()) || '')
+              : '';
+
+            const isDispatched = Boolean(truck && driver && isActualDispatched);
+
+            // Instant Acceptance/Rejection Status Detection (SRS 4.2.4)
+            const prev = prevBidStatusesRef.current[b.id];
+            if (prev && prev === 'PENDING' && b.status === 'ACCEPTED') {
+              setBidAlertNotification({
+                type: 'ACCEPTED',
+                title: '🎉 QUOTE ACCEPTED BY SHIPPER!',
+                message: `Your quote for "${b.load?.title || 'Corridor Consignment'}" was accepted! TeleBirr Escrow is funded. Dispatch your fleet now.`,
+                bidId: b.id,
+                amount: `${Number(b.proposedRateEtb).toLocaleString()} ETB`,
+              });
+            } else if (prev && prev === 'PENDING' && b.status === 'REJECTED') {
+              setBidAlertNotification({
+                type: 'REJECTED',
+                title: 'Quote Update: Declined',
+                message: `The shipper accepted another quote for "${b.load?.title || 'Consignment'}". Explore other loads on the corridor board.`,
+                bidId: b.id,
+              });
+            }
+            prevBidStatusesRef.current[b.id] = b.status;
 
             return {
               id: `BID-${b.id.slice(-4).toUpperCase()}`,
@@ -300,11 +334,11 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
     setRefreshing(false);
   };
 
-  // Filtered Loads for Load Board (Search by keyword, route, consignment ID, or cargo type)
+  // 4.2.4 Multi-Factor Filtered Loads (Search by Origin/Destination, Cargo Type & Tonnage)
   const filteredLoads = loadsList.filter((load) => {
+    // 1. Text keyword search across title, route, ID, origin, and destination
     const q = loadSearchQuery.toLowerCase().trim();
-    if (!q) return true;
-    return (
+    const matchesSearch = !q || (
       load.title?.toLowerCase().includes(q) ||
       load.route?.toLowerCase().includes(q) ||
       load.id?.toLowerCase().includes(q) ||
@@ -312,6 +346,29 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
       load.destination?.toLowerCase().includes(q) ||
       load.cargoType?.toLowerCase().includes(q)
     );
+
+    // 2. Origin / Destination Corridor Hub Filter
+    const matchesRoute = selectedRouteFilter === 'ALL' || (
+      load.origin?.toLowerCase().includes(selectedRouteFilter.toLowerCase()) ||
+      load.destination?.toLowerCase().includes(selectedRouteFilter.toLowerCase()) ||
+      load.route?.toLowerCase().includes(selectedRouteFilter.toLowerCase())
+    );
+
+    // 3. Cargo Type Filter
+    const matchesCargo = selectedCargoFilter === 'ALL' || (
+      load.cargoType?.toLowerCase().includes(selectedCargoFilter.toLowerCase()) ||
+      load.title?.toLowerCase().includes(selectedCargoFilter.toLowerCase())
+    );
+
+    // 4. Tonnage Filter
+    const tons = load.weightTons || parseFloat(load.weight) || 28;
+    const matchesTonnage =
+      selectedTonnageFilter === 'ALL' ||
+      (selectedTonnageFilter === 'LIGHT' && tons <= 20) ||
+      (selectedTonnageFilter === 'MEDIUM' && tons > 20 && tons <= 35) ||
+      (selectedTonnageFilter === 'HEAVY' && tons > 35);
+
+    return matchesSearch && matchesRoute && matchesCargo && matchesTonnage;
   });
 
   // Direct AI Instant Match Requests (Option A from Shipper)
@@ -479,6 +536,14 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
       Alert.alert(
         '⚠️ Verification Required',
         'Your carrier account is currently PENDING verification. You cannot submit bids until Platform Administrators approve your Trade License.'
+      );
+      return;
+    }
+
+    if (carrierStatus === 'SUSPENDED') {
+      Alert.alert(
+        '🚫 Account Suspended',
+        'Your carrier account has been suspended by platform administration. Access to submit bids or accept consignments is revoked.'
       );
       return;
     }
@@ -838,6 +903,75 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
           </View>
         )}
 
+        {/* 4.2.4 Real-Time Bid Acceptance / Rejection Alert Banner */}
+        {bidNotification && (
+          <View
+            style={{
+              flexDirection: 'row',
+              backgroundColor: bidNotification.type === 'ACCEPTED' ? '#ECFDF5' : '#FFF1F2',
+              borderWidth: 1.5,
+              borderColor: bidNotification.type === 'ACCEPTED' ? '#10B981' : '#FDA4AF',
+              borderRadius: 16,
+              padding: 14,
+              gap: 12,
+              alignItems: 'center',
+              marginBottom: 10,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.08,
+              shadowRadius: 4,
+              elevation: 2,
+            }}
+          >
+            <Text style={{ fontSize: 24 }}>{bidNotification.type === 'ACCEPTED' ? '🏆' : 'ℹ️'}</Text>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: '900',
+                  color: bidNotification.type === 'ACCEPTED' ? '#065F46' : '#9F1239',
+                }}
+              >
+                {bidNotification.title}
+              </Text>
+              <Text
+                style={{
+                  fontSize: 11,
+                  color: bidNotification.type === 'ACCEPTED' ? '#047857' : '#881337',
+                  marginTop: 2,
+                  fontWeight: '600',
+                }}
+              >
+                {bidNotification.message}
+              </Text>
+
+              {bidNotification.type === 'ACCEPTED' && (
+                <TouchableOpacity
+                  style={{
+                    alignSelf: 'flex-start',
+                    backgroundColor: '#10B981',
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 8,
+                    marginTop: 8,
+                  }}
+                  onPress={() => {
+                    setBidNotification(null);
+                    setActiveTab('bidding');
+                  }}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: '800', color: '#FFFFFF' }}>
+                    View & Dispatch Vehicle ➔
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            <TouchableOpacity onPress={() => setBidNotification(null)} style={{ padding: 4 }}>
+              <Ionicons name="close" size={18} color="#64748B" />
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* 1. OVERVIEW TAB */}
         {activeTab === 'overview' && (
           <OverviewTab
@@ -873,6 +1007,12 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
             submittedBids={submittedBids}
             loadSearchQuery={loadSearchQuery}
             setLoadSearchQuery={setLoadSearchQuery}
+            selectedRouteFilter={selectedRouteFilter}
+            setSelectedRouteFilter={setSelectedRouteFilter}
+            selectedCargoFilter={selectedCargoFilter}
+            setSelectedCargoFilter={setSelectedCargoFilter}
+            selectedTonnageFilter={selectedTonnageFilter}
+            setSelectedTonnageFilter={setSelectedTonnageFilter}
             onSelectLoadForQuote={(item) => {
               setSelectedLoadId(item.id);
               setBidPrice(item.budget ? item.budget.replace(/[^0-9]/g, '') : '');
