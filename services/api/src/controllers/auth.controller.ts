@@ -308,7 +308,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     auditTrailStore.unshift({
       id: `AUD-${Date.now().toString().slice(-4)}`,
       action: isDuplicateAccount ? 'DUPLICATE_ACCOUNT_SUSPENDED_FOR_ADMIN_REVIEW' : 'USER_REGISTERED_PENDING_VERIFICATION',
-      category: isDuplicateAccount ? 'FRAUD_PREVENTION' : 'VERIFICATION',
+      category: isDuplicateAccount ? 'FRAUD' : 'VERIFICATION',
       targetUserId: newUser.id,
       targetName: newUser.companyName || newUser.fullName,
       previousStatus: 'UNREGISTERED',

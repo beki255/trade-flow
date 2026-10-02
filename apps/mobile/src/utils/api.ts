@@ -12,15 +12,17 @@ import Constants from 'expo-constants';
  * 6. Localhost fallback (127.0.0.1:5000)
  */
 export const getApiBaseUrl = (): string => {
+  // 1. Web browser: Always match the browser's hostname (localhost or LAN IP)
+  if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined' && window.location && window.location.hostname) {
+      return `http://${window.location.hostname}:5000`;
+    }
+    return 'http://localhost:5000';
+  }
 
   // 2. Explicit environment variable if configured
   if (process.env.EXPO_PUBLIC_API_URL) {
     return process.env.EXPO_PUBLIC_API_URL;
-  }
-
-  // 3. Web browser: Always use localhost:5000 directly if no custom IP
-  if (Platform.OS === 'web') {
-    return 'http://localhost:5000';
   }
 
   // 4. React Native SourceCode scriptURL (Most accurate on physical phone / Expo Go)

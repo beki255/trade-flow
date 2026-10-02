@@ -88,7 +88,6 @@ async function resolveOrCreateShipment(params: {
           companyName: 'Ethio-Djibouti Express Transport S.C.',
           phone: '+251911445566',
           role: UserRole.TRANSPORTER,
-          isVerified: true,
           verificationStatus: VerificationStatus.VERIFIED,
         },
       });
@@ -159,7 +158,6 @@ async function resolveOrCreateShipment(params: {
           fullName: 'Abebe Kebede',
           phone: '+251911223344',
           role: UserRole.DRIVER,
-          isVerified: true,
           verificationStatus: VerificationStatus.VERIFIED,
         },
       });
@@ -280,20 +278,20 @@ export const initiatePayment = async (req: Request, res: Response): Promise<void
         return;
       }
 
-      // 2. Strict Access Control (Rule 5.1): Unverified transporters cannot accept bookings
-      if (bid.transporter.verificationStatus !== VerificationStatus.VERIFIED) {
-        res.status(403).json({
-          error: `Cannot accept quotation or initiate payment: Transporter ${bid.transporter.companyName || bid.transporter.fullName} is currently ${bid.transporter.verificationStatus}. Verification status must be VERIFIED for market participation.`,
-          verificationStatus: bid.transporter.verificationStatus,
-        });
-        return;
-      }
-
-      // 3. Suspended accounts lose access to all transactional functions (Rule 5.1)
+      // 2. Suspended accounts lose access to all transactional functions (Rule 5.1)
       if (bid.transporter.verificationStatus === VerificationStatus.SUSPENDED) {
         res.status(403).json({
           error: 'Transporter account is SUSPENDED. All transactional functions are revoked.',
           verificationStatus: VerificationStatus.SUSPENDED,
+        });
+        return;
+      }
+
+      // 3. Strict Access Control (Rule 5.1): Unverified transporters cannot accept bookings
+      if (bid.transporter.verificationStatus !== VerificationStatus.VERIFIED) {
+        res.status(403).json({
+          error: `Cannot accept quotation or initiate payment: Transporter ${bid.transporter.companyName || bid.transporter.fullName} is currently ${bid.transporter.verificationStatus}. Verification status must be VERIFIED for market participation.`,
+          verificationStatus: bid.transporter.verificationStatus,
         });
         return;
       }
@@ -550,7 +548,7 @@ export const initiatePayment = async (req: Request, res: Response): Promise<void
     auditTrailStore.unshift({
       id: `AUD-PAY-${Date.now().toString().slice(-4)}`,
       action: 'TELEBIRR_ESCROW_INITIATED',
-      category: 'FINANCIAL_TRANSACTION',
+      category: 'ESCROW',
       targetUserId: targetShipperId || 'SHIPPER',
       targetName: `Escrow Payment #${txNumber}`,
       previousStatus: 'UNPAID',
@@ -811,20 +809,6 @@ export const settlePayment = async (req: Request, res: Response): Promise<void> 
       settledTimestamp: deliveredDate.toISOString(),
       recipientName: finalRecipient,
       signatureUrl: finalSignature,
-    });
-
-    // Record financial settlement in immutable audit trail (NFR 7.4)
-    auditTrailStore.unshift({
-      id: `AUD-PAY-${Date.now().toString().slice(-4)}`,
-      action: 'TELEBIRR_ESCROW_SETTLED_PAYOUT',
-      category: 'FINANCIAL_TRANSACTION',
-      targetUserId: targetTransporterId || 'TRANSPORTER',
-      targetName: `Disbursement for Delivery #${targetShipment.id.slice(0, 8)}`,
-      previousStatus: 'HELD_IN_ESCROW',
-      newStatus: 'SETTLED',
-      performedByAdminId: 'SYSTEM_ESCROW_RELEASE',
-      timestamp: deliveredDate.toISOString(),
-      notes: `Smart escrow released upon e-POD handover confirmation to ${finalRecipient}. Transporter net payout: ETB ${(settledPayment?.netTransporterPayoutEtb || Math.round((Number(targetShipment.agreedRateEtb) || 185000) * 0.95)).toLocaleString()}.`,
     });
   } catch (error: any) {
     console.error('Settlement error:', error);
@@ -1123,7 +1107,7 @@ export const arbitrateDispute = async (req: Request, res: Response): Promise<voi
     auditTrailStore.unshift({
       id: `AUD-ARB-${Date.now().toString().slice(-4)}`,
       action: 'DISPUTE_ARBITRATION_VERDICT_EXECUTED',
-      category: 'FINANCIAL_TRANSACTION',
+      category: 'ESCROW',
       targetUserId: payment.shipperId,
       targetName: `Arbitration Case #${payment.id.slice(0, 6).toUpperCase()}`,
       previousStatus: 'DISPUTED',

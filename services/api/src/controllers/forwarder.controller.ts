@@ -201,6 +201,8 @@ export const consolidateLtlLoads = async (req: Request, res: Response): Promise<
             destLng: 43.145,
             targetBudgetEtb: consolidatedCost,
             spotEstimatedPriceEtb: consolidatedCost,
+            pickupWindowStart: new Date(),
+            pickupWindowEnd: new Date(Date.now() + 72 * 3600 * 1000),
             status: LoadStatus.OPEN,
             specialHandling: ['Consolidated Multi-Consignor Cargo', 'High-Cube Containerized'],
           },

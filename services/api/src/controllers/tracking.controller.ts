@@ -426,7 +426,7 @@ export const ingestTelemetry = async (req: Request, res: Response): Promise<void
       if (distFromDest <= 2.0 && isTransit && hasDeparted && hasSubstantialProgress && !shipment.arrivedDestinationAt) {
         const ts = new Date();
         milestoneUpdates.arrivedDestinationAt = ts;
-        milestoneUpdates.status = ShipmentStatus.AT_DESTINATION;
+        milestoneUpdates.status = ShipmentStatus.OUT_FOR_DELIVERY;
         milestoneNotifications.push(`🏁 Arrived at Final Destination: Ready for digital proof-of-delivery (e-POD) sign-off.`);
       }
 

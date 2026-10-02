@@ -5,6 +5,7 @@ import {
   getCorridorRoadPolyline,
   resolveCorridorCoordinates,
 } from '@tradeflow/shared';
+import { CORRIDOR_RISK_ZONES, calculateDistanceKm } from './tracking.controller';
 
 const prisma = new PrismaClient();
 

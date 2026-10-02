@@ -121,7 +121,7 @@ export const getRiskZones = async (req: Request, res: Response): Promise<void> =
       where.severity = severity.toUpperCase();
     }
     if (isActive !== undefined && isActive !== 'ALL') {
-      where.isActive = isActive === 'true' || isActive === true;
+      where.isActive = String(isActive) === 'true';
     }
     if (search && typeof search === 'string') {
       where.OR = [
@@ -318,6 +318,10 @@ export const getProactiveGeofenceAlerts = async (req: Request, res: Response): P
           load: true,
           vehicle: true,
           driver: { include: { user: true } },
+          trackingEvents: {
+            orderBy: { timestamp: 'desc' },
+            take: 1,
+          },
         },
         orderBy: { updatedAt: 'desc' },
       });
@@ -535,11 +539,12 @@ export const applyAlternateRoute = async (req: Request, res: Response): Promise<
       await prisma.trackingEvent.create({
         data: {
           shipmentId,
-          status: 'IN_TRANSIT',
           latitude: 8.986,
           longitude: 40.165,
-          locationName: 'Awash Junction (Southern Bypass Detour Activated)',
-          description: 'Shipment rerouted to Southern Bypass via Dewele Border to avoid active corridor conflict zone.',
+          speedKmh: 45.0,
+          heading: 90.0,
+          fuelLevelPct: 85.0,
+          source: 'SOUTHERN_BYPASS_DETOUR',
         },
       });
     } catch (e) {

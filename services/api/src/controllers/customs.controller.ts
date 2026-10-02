@@ -782,7 +782,7 @@ export const updateShipmentCustomsClearance = async (req: Request, res: Response
     auditTrailStore.unshift({
       id: `AUD-CUST-${Date.now().toString().slice(-4)}`,
       action: mappedStatus === CustomsClearanceStatus.CLEARED ? 'CUSTOMS_DOSSIER_GREEN_LINE_CLEARED' : `CUSTOMS_DOSSIER_${mappedStatus}`,
-      category: 'CUSTOMS_CLEARANCE',
+      category: 'CUSTOMS',
       targetUserId: shipment.load?.shipperId || 'SHIPPER',
       targetName: `Shipment ${shipment.load?.title || shipmentId} (${certCode})`,
       previousStatus: shipment.customsStatus,

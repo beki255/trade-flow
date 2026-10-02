@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import * as fs from 'fs';
-import { PrismaClient, UserRole, VerificationStatus, LoadStatus, BidStatus, ShipmentStatus, VehicleType, FuelType } from '@prisma/client';
+import { PrismaClient, UserRole, VerificationStatus, LoadStatus, BidStatus, ShipmentStatus, VehicleType, FuelType, CargoType } from '@prisma/client';
 import { getDynamicCorridorWaypoints, calculateCorridorRoadDistanceKm, resolveCorridorCoordinates } from '@tradeflow/shared';
 
 const prisma = new PrismaClient();
@@ -432,6 +432,8 @@ export const getVerifications = async (req: Request, res: Response): Promise<voi
         roadworthinessDoc: true,
         verificationStatus: true,
         verificationNotes: true,
+        ratingAvg: true,
+        totalRatingsCount: true,
         createdAt: true,
         updatedAt: true,
         driverProfile: {
@@ -710,7 +712,7 @@ export const submitRating = async (req: Request, res: Response): Promise<void> =
       auditTrailStore.unshift({
         id: `AUD-PERF-${Date.now().toString().slice(-4)}`,
         action: 'AUTOMATED_PERFORMANCE_REVIEW_TRIGGERED',
-        category: 'PERFORMANCE_REVIEW',
+        category: 'VERIFICATION',
         targetUserId: target.id,
         targetName: target.companyName || target.fullName,
         previousStatus: target.verificationStatus,
@@ -1242,7 +1244,7 @@ export const createDriver = async (req: Request, res: Response): Promise<void> =
       ? password.trim()
       : `TF-${Math.floor(1000 + Math.random() * 9000)}`;
 
-    if (!driverUser) {
+    if (!existingDriver) {
       driverUser = await prisma.user.create({
         data: {
           fullName: fullName.trim(),
@@ -2353,7 +2355,7 @@ export const getDriverActiveTrip = async (req: Request, res: Response): Promise<
           data: { progressPercentage: 0 },
         }).catch(() => {});
       }
-    } else if (shipment.status === ShipmentStatus.AT_DESTINATION || shipment.status === ShipmentStatus.DELIVERED) {
+    } else if (shipment.status === ShipmentStatus.OUT_FOR_DELIVERY || shipment.status === ShipmentStatus.DELIVERED) {
       progressPct = 100;
     }
 
