@@ -911,11 +911,8 @@ export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, 
             <div className="text-[10px] font-black uppercase tracking-widest text-sky-700">
               Active Consignment Route
             </div>
-            <h3 className="text-base font-black text-slate-900 leading-snug flex items-center gap-2">
+            <h3 className="text-base font-black text-slate-900 leading-snug flex items-center gap-2 capitalize">
               {activeLoad.title}
-              <span className="text-xs font-mono font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
-                {activeLoad.loadCode}
-              </span>
             </h3>
           </div>
         </div>
@@ -932,7 +929,7 @@ export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, 
               >
                 {allLoads.map((load) => (
                   <option key={load.id} value={load.id}>
-                    {load.loadCode} • {load.title.slice(0, 24)}... ({load.origin.split(',')[0]} ➔ {load.destination.split(',')[0]})
+                    {load.title} ({load.origin.split(',')[0]} ➔ {load.destination.split(',')[0]})
                   </option>
                 ))}
               </select>
@@ -1621,8 +1618,8 @@ export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, 
             <div className="space-y-2.5 max-h-[200px] overflow-y-auto pr-1">
               <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-900 line-clamp-1">
-                    Consignment #{activeLoad.loadCode} GPS Telemetry Online
+                  <span className="text-xs font-bold text-slate-900 line-clamp-1 capitalize">
+                    {activeLoad.title} • Live GPS Telemetry Online
                   </span>
                   <span className="text-[10px] font-semibold text-slate-400 shrink-0">Live</span>
                 </div>

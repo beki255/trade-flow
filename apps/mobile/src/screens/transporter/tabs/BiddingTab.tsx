@@ -106,7 +106,7 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
           <View style={{ marginBottom: 4 }}>
             <Text style={styles.sectionTitle}>Submit Freight Rate Quote</Text>
             <Text style={styles.sectionSubtitle}>
-              Propose custom pricing & transit timelines on {selectedLoadObj.id}
+              Propose custom pricing & transit timelines for this consignment
             </Text>
           </View>
 
@@ -115,13 +115,29 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <Text style={styles.loadPreviewTitle}>{selectedLoadObj.title}</Text>
               <View style={[styles.statusBadge, { backgroundColor: '#E0F2FE' }]}>
-                <Text style={[styles.statusText, { color: '#0369A1' }]}>{selectedLoadObj.id}</Text>
+                <Text style={[styles.statusText, { color: '#0369A1' }]}>{selectedLoadObj.cargoType || 'Consignment'}</Text>
               </View>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginVertical: 4 }}>
               <Ionicons name="location-outline" size={13} color="#0284C7" />
               <Text style={styles.loadPreviewRoute}>{selectedLoadObj.route}</Text>
             </View>
+            {selectedLoadObj.shipperName ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 4 }}>
+                <Ionicons name="business" size={13} color="#0284C7" />
+                <Text style={{ fontSize: 11.5, color: '#334155', fontWeight: '700' }}>
+                  Shipper: {selectedLoadObj.shipperName}
+                </Text>
+                {selectedLoadObj.shipperPhone ? (
+                  <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '600' }}>
+                    • {selectedLoadObj.shipperPhone}
+                  </Text>
+                ) : null}
+                {selectedLoadObj.shipperVerified && (
+                  <Ionicons name="shield-checkmark" size={12} color="#16A34A" />
+                )}
+              </View>
+            ) : null}
             <View style={styles.loadPreviewFooter}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                 <MaterialCommunityIcons name="scale" size={13} color="#64748B" />
@@ -130,7 +146,7 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                 <MaterialCommunityIcons name="cash-multiple" size={13} color="#64748B" />
                 <Text style={styles.loadPreviewBudget}>
-                  {selectedLoadObj.budget ? `Target: ${selectedLoadObj.budget}` : 'RFQ: Open for Quotes'}
+                  {selectedLoadObj.budget ? `Target: ${selectedLoadObj.budget}` : 'Open for Quotes'}
                 </Text>
               </View>
             </View>
@@ -177,6 +193,9 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
 
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Estimated Corridor Transit Time (Hours):</Text>
+              <Text style={{ fontSize: 11, color: '#64748B', marginBottom: 4 }}>
+                ⏱️ Trip Duration: How many driving hours the truck takes to deliver the cargo.
+              </Text>
               <TextInput
                 style={[
                   styles.input,
@@ -192,24 +211,29 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
             </View>
 
             {/* Validity Period */}
-            <Text style={styles.fieldLabel}>Quote Validity Period</Text>
-            <View style={styles.typeSelectorRow}>
-              {[24, 48, 72].map((hrs) => (
-                <TouchableOpacity
-                  key={hrs}
-                  style={[
-                    styles.typeChip,
-                    bidValidityHours === hrs && styles.typeChipActive,
-                    existingBidForSelectedLoad && { opacity: 0.6 },
-                  ]}
-                  onPress={() => !existingBidForSelectedLoad && setBidValidityHours(hrs)}
-                  disabled={!!existingBidForSelectedLoad}
-                >
-                  <Text style={[styles.typeChipText, bidValidityHours === hrs && styles.typeChipTextActive]}>
-                    {hrs} Hours
-                  </Text>
-                </TouchableOpacity>
-              ))}
+            <View style={{ marginTop: 2, marginBottom: 8 }}>
+              <Text style={styles.fieldLabel}>Quote Validity Period</Text>
+              <Text style={{ fontSize: 11, color: '#64748B', marginBottom: 6 }}>
+                ⏳ Offer Expiry: How long this price stays valid for the shipper before expiring.
+              </Text>
+              <View style={styles.typeSelectorRow}>
+                {[24, 48, 72].map((hrs) => (
+                  <TouchableOpacity
+                    key={hrs}
+                    style={[
+                      styles.typeChip,
+                      bidValidityHours === hrs && styles.typeChipActive,
+                      existingBidForSelectedLoad && { opacity: 0.6 },
+                    ]}
+                    onPress={() => !existingBidForSelectedLoad && setBidValidityHours(hrs)}
+                    disabled={!!existingBidForSelectedLoad}
+                  >
+                    <Text style={[styles.typeChipText, bidValidityHours === hrs && styles.typeChipTextActive]}>
+                      {hrs} Hours
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
 
             <View style={styles.inputGroup}>
@@ -471,7 +495,9 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
                       <Text style={styles.truckPlate} numberOfLines={1}>
                         {b.loadTitle || b.loadId}
                       </Text>
-                      <Text style={styles.infoLabel}>Ref: {b.loadId}</Text>
+                      <Text style={styles.infoLabel}>
+                        {b.shipperName ? `Shipper: ${b.shipperName}${b.shipperPhone ? ` • ${b.shipperPhone}` : ''}` : 'Corridor Shipment'}
+                      </Text>
                     </View>
                     <View style={{ alignItems: 'flex-end', flexShrink: 0 }}>
                       <Text style={[styles.kpiValue, { fontSize: 16, color: isAccepted ? '#16A34A' : '#0284C7' }]}>

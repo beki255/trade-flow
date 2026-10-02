@@ -14,7 +14,6 @@ import {
   ShieldCheck,
   Sliders,
   AlertCircle,
-  Users,
 } from 'lucide-react';
 import { LocationData, AIMatchCarrier, MatchingSLA, ShipmentItem } from '../types';
 import { AIMatchingResultsCard } from '../components/AIMatchingResultsCard';
@@ -25,6 +24,7 @@ export type MatchingPreferenceType = 'BALANCED' | 'COST_PRIORITY' | 'SPEED_PRIOR
 
 interface PostLoadTabProps {
   postedSuccess: boolean;
+  activeShipment?: ShipmentItem | null;
   bookingOption: 'INSTANT_MATCH' | 'COMPETITIVE_BIDDING';
   setBookingOption: (val: 'INSTANT_MATCH' | 'COMPETITIVE_BIDDING') => void;
   matchingPreference?: MatchingPreferenceType;
@@ -66,6 +66,7 @@ interface PostLoadTabProps {
 
 export const PostLoadTab: React.FC<PostLoadTabProps> = ({
   postedSuccess,
+  activeShipment,
   bookingOption,
   setBookingOption,
   matchingPreference: propMatchingPreference,
@@ -119,49 +120,24 @@ export const PostLoadTab: React.FC<PostLoadTabProps> = ({
     else setLocalValidity(hours);
   };
 
-  // Quorum state from real PostgreSQL database
-  const [quorumData, setQuorumData] = useState<{
-    minimumRequired: number;
-    qualifiedTransportersCount: number;
-    quorumMet: boolean;
-  }>({
-    minimumRequired: 3,
-    qualifiedTransportersCount: 3,
-    quorumMet: true,
-  });
-
-  useEffect(() => {
-    const fetchQuorum = async () => {
-      try {
-        const res = await fetch('/api/matching/bidding-quorum');
-        if (res.ok) {
-          const json = await res.json();
-          setQuorumData({
-            minimumRequired: json.minimumRequired || 3,
-            qualifiedTransportersCount: json.qualifiedTransportersCount || 0,
-            quorumMet: json.quorumMet !== undefined ? json.quorumMet : true,
-          });
-        }
-      } catch (e) {
-        console.warn('Could not query bidding quorum:', e);
-      }
-    };
-    fetchQuorum();
-  }, []);
+  const hasActiveLoad = Boolean(
+    activeShipment &&
+    activeShipment.status !== 'DELIVERED' &&
+    activeShipment.status !== 'CANCELLED'
+  );
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-sky-700 bg-sky-50 px-2.5 py-1 rounded-lg border border-sky-200">
-              Freight Consignment Posting
-            </span>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-2">
-              Post New Freight Consignment
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              {hasActiveLoad ? 'Consignment In Progress' : 'Post New Freight Consignment'}
             </h2>
             <p className="text-xs text-slate-500">
-              Enter cargo specs, set locations with the GPS picker, configure matching preferences, and broadcast for quotes or instant AI matching.
+              {hasActiveLoad
+                ? 'Your active corridor consignment is currently in progress. TradeFlow allows one active freight load at a time.'
+                : 'Enter cargo specs, set locations with the GPS picker, configure matching preferences, and broadcast for quotes or instant AI matching.'}
             </p>
           </div>
 
@@ -191,14 +167,67 @@ export const PostLoadTab: React.FC<PostLoadTabProps> = ({
           </div>
         )}
 
-        <form onSubmit={onSubmitPostLoad} className="space-y-6">
+        {hasActiveLoad ? (
+          <div className="p-6 rounded-3xl bg-amber-50/80 border border-amber-200/90 shadow-2xs space-y-4">
+            <div className="flex items-start gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-amber-100 border border-amber-200 text-amber-800 flex items-center justify-center shrink-0 mt-0.5">
+                <ShieldCheck className="w-6 h-6 text-amber-700" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-sm sm:text-base font-black text-slate-900">
+                    Active Consignment In Progress
+                  </h3>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-200 text-amber-900 border border-amber-300">
+                    {activeShipment?.status}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                  You already have an active freight consignment (<strong>{activeShipment?.title}</strong> — <span className="font-mono">{activeShipment?.id}</span>). In accordance with TradeFlow corridor freight regulations, shippers manage one active consignment at a time. You cannot post a new load until the current load is completed or cancelled.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white border border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs shadow-2xs">
+              <div>
+                <span className="text-[10px] font-bold uppercase text-slate-400">Consignment ID</span>
+                <div className="font-mono font-black text-slate-900 mt-0.5">{activeShipment?.id}</div>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold uppercase text-slate-400">Corridor Route</span>
+                <div className="font-bold text-slate-800 mt-0.5 truncate">{activeShipment?.route}</div>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold uppercase text-slate-400">Weight & Budget</span>
+                <div className="font-bold text-slate-800 mt-0.5">{activeShipment?.weight} • {activeShipment?.budget}</div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
+              {onNavigateConsignments && (
+                <button
+                  type="button"
+                  onClick={onNavigateConsignments}
+                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+                >
+                  <Package className="w-4 h-4" />
+                  <span>View Active Consignment & Bids ➔</span>
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={onSubmitPostLoad} className="space-y-6">
           {/* 1. ROUTE & TERMINAL SELECTION (ERA HIGHWAY CORRIDOR) */}
           <RouteLocationPickerCard
             originLocation={originLocation}
+            setOriginLocation={setOriginLocation}
             destinationLocation={destinationLocation}
+            setDestinationLocation={setDestinationLocation}
             corridorDistanceKm={corridorDistanceKm}
-            onOpenOriginPicker={() => onOpenMapPicker('ORIGIN')}
-            onOpenDestinationPicker={() => onOpenMapPicker('DESTINATION')}
+            onOpenMapPicker={onOpenMapPicker}
+            onOpenOriginPicker={() => onOpenMapPicker && onOpenMapPicker('ORIGIN')}
+            onOpenDestinationPicker={() => onOpenMapPicker && onOpenMapPicker('DESTINATION')}
           />
 
           {/* 2. CARGO DETAILS */}
@@ -469,38 +498,6 @@ export const PostLoadTab: React.FC<PostLoadTabProps> = ({
               </div>
             </div>
 
-            {/* Competitive Bidding Quorum Indicator (Rule 5.2.2) */}
-            {bookingOption === 'COMPETITIVE_BIDDING' && (
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-2.5">
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                    quorumData.quorumMet ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                  }`}>
-                    <Users className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="font-black text-slate-900 flex items-center gap-1.5">
-                      <span>Competitive Market Bidding:</span>
-                      <span className={quorumData.quorumMet ? 'text-emerald-700 font-extrabold' : 'text-amber-700 font-extrabold'}>
-                        {quorumData.qualifiedTransportersCount} / {quorumData.minimumRequired} Qualified Carriers
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-500">
-                      Minimum 3 verified, qualified transporters required to open competitive market bidding.
-                    </p>
-                  </div>
-                </div>
-
-                <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider self-start sm:self-auto shrink-0 ${
-                  quorumData.quorumMet
-                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                    : 'bg-amber-100 text-amber-800 border border-amber-300'
-                }`}>
-                  {quorumData.quorumMet ? 'Ready for Bidding' : 'Waiting for Verified Carriers'}
-                </div>
-              </div>
-            )}
-
             {/* Bid Validity Window Configuration (Rule 5.2.3) */}
             <div className="p-3.5 rounded-2xl bg-white border border-slate-200 space-y-2">
               <div className="flex items-center justify-between">
@@ -533,7 +530,7 @@ export const PostLoadTab: React.FC<PostLoadTabProps> = ({
           </div>
 
           {/* Target Budget - ONLY for Option A */}
-          {bookingOption === 'INSTANT_MATCH' ? (
+          {bookingOption === 'INSTANT_MATCH' && (
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
                 Target Budget (ETB) *
@@ -547,51 +544,45 @@ export const PostLoadTab: React.FC<PostLoadTabProps> = ({
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-sky-600 outline-hidden text-xs font-medium text-slate-900"
               />
             </div>
-          ) : (
-            <div className="p-3.5 rounded-2xl bg-sky-50/60 border border-sky-200 text-xs text-sky-900 flex items-start gap-2.5">
-              <Scale className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
-              <div>
-                <span className="font-bold">Competitive Bidding Mode:</span> Verified corridor transporters will inspect your route, cargo specifications, and payload tonnage to submit their price quotations within the configured {activeValidity}-hour validity window.
-              </div>
-            </div>
           )}
 
-          {/* Form Submit & AI Match Trigger Buttons */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 pt-3">
-            {bookingOption === 'INSTANT_MATCH' && (
-              <button
-                type="button"
-                onClick={() => onRunAIMatching(activePref)}
-                disabled={matchingLoading || !originLocation.address || !destinationLocation.address}
-                className="w-full sm:w-auto px-5 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all disabled:opacity-50 cursor-pointer"
-              >
-                <Zap className="w-4 h-4 text-sky-400" />
-                <span>{matchingLoading ? 'Calculating Best Transporter Matches...' : 'Find Verified Carriers (< 1s Instant)'}</span>
-              </button>
-            )}
-
+          {/* Form Submit & Action Button */}
+          <div className="pt-3">
             <button
               type="submit"
-              className="w-full flex-1 py-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+              disabled={matchingLoading}
+              className="w-full py-3.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-50"
             >
-              <PlusCircle className="w-4 h-4" />
-              <span>
-                {bookingOption === 'INSTANT_MATCH'
-                  ? 'Confirm & Proceed with Top AI Match'
-                  : 'Broadcast RFQ for Competitive Bidding'}
-              </span>
+              {bookingOption === 'INSTANT_MATCH' ? (
+                <>
+                  <Zap className="w-4 h-4 text-sky-200" />
+                  <span>
+                    {matchingLoading
+                      ? 'Finding & Matching Best Transporters...'
+                      : 'Confirm & Match with Top AI Carrier'}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <PlusCircle className="w-4 h-4" />
+                  <span>Broadcast RFQ for Competitive Bidding</span>
+                </>
+              )}
             </button>
           </div>
         </form>
+        )}
       </div>
 
       {/* AI MATCHING RESULTS PRESENTATION */}
-      <AIMatchingResultsCard
-        matchedTransporters={matchedTransporters}
-        matchingSla={matchingSla}
-        matchingPreference={activePref}
-        onSelectCarrier={onSelectCarrier}
-      />
+      {!hasActiveLoad && (
+        <AIMatchingResultsCard
+          matchedTransporters={matchedTransporters}
+          matchingSla={matchingSla}
+          matchingPreference={activePref}
+          onSelectCarrier={onSelectCarrier}
+        />
+      )}
     </div>
   );
 };

@@ -141,7 +141,7 @@ export const PodTab: React.FC<PodTabProps> = ({
               </Text>
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '600' }}>TeleBirr Escrow Status:</Text>
+              <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '600' }}>Digital Escrow Status:</Text>
               <Text style={{ fontSize: 11, color: '#0284C7', fontWeight: '900' }}>
                 RELEASED & SETTLED
               </Text>
@@ -204,7 +204,7 @@ export const PodTab: React.FC<PodTabProps> = ({
 
           <View style={{ backgroundColor: '#F0F9FF', padding: 10, borderRadius: 10, borderWidth: 1, borderColor: '#BAE6FD', marginTop: 2 }}>
             <Text style={{ fontSize: 10.5, color: '#0369A1', lineHeight: 15 }}>
-              🔒 <Text style={{ fontWeight: 'bold' }}>Smart Escrow Release:</Text> Upon submitting this e-POD, the consignment is marked as DELIVERED and the TeleBirr escrow payment is automatically disbursed to the transporter.
+              🔒 <Text style={{ fontWeight: 'bold' }}>Smart Escrow Release:</Text> Upon submitting this e-POD, the consignment is marked as DELIVERED and the digital escrow payment is automatically disbursed to the transporter.
             </Text>
           </View>
 

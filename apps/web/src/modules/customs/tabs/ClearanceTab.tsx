@@ -61,11 +61,7 @@ export const ClearanceTab: React.FC<ClearanceTabProps> = ({
       {/* 1. Header Banner */}
       <div className="p-6 sm:p-8 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 rounded-full bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent blur-3xl pointer-events-none" />
-        <div className="space-y-2 relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-900 text-[11px] font-bold tracking-wide">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Digital Clearance Registry</span>
-          </div>
+        <div className="space-y-1 relative z-10">
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
             Customs Electronic Release Clearances (Ledger)
           </h1>

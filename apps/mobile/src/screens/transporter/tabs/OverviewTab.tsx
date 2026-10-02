@@ -70,8 +70,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
               color: pendingDriversCount > 0 ? '#B45309' : '#0369A1',
               fontWeight: '700',
             }}
+            numberOfLines={1}
           >
-            {pendingDriversCount > 0 ? `⏳ ${pendingDriversCount} Pending Approval` : 'Authorized Staff'}
+            {pendingDriversCount > 0 ? `⏳ ${pendingDriversCount} Pending` : 'Authorized Staff'}
           </Text>
         </TouchableOpacity>
       </View>

@@ -2,8 +2,6 @@ import {
   PlusCircle,
   Package,
   Inbox,
-  Clock,
-  ShieldCheck,
   Trash2,
   ExternalLink,
 } from 'lucide-react';
@@ -35,11 +33,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
       {/* Header Banner */}
       <div className="p-6 sm:p-7 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative overflow-hidden">
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 rounded-full bg-gradient-to-br from-sky-500/10 via-blue-500/5 to-transparent blur-3xl pointer-events-none" />
-        <div className="space-y-1.5 relative z-10">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-sky-50 border border-sky-200/80 text-sky-800 text-[11px] font-bold tracking-wide">
-            <Package className="w-3.5 h-3.5 text-sky-600" />
-            <span>Shipper Logistics Command Center</span>
-          </div>
+        <div className="space-y-1 relative z-10">
           <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
             Welcome, {user?.fullName || 'Shipper'}
           </h1>
@@ -56,45 +50,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
           <span>Post New Load</span>
         </button>
       </div>
-
-      {/* Verification Status Guidance Banner (4.1.2) */}
-      {(!user?.verificationStatus || user?.verificationStatus === 'PENDING') && (
-        <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-amber-900 shadow-sm">
-          <div className="flex items-center gap-3">
-            <Clock className="w-5 h-5 text-amber-600 shrink-0" />
-            <div>
-              <div className="text-xs font-bold text-amber-950">
-                Account Status: Pending Verification
-              </div>
-              <div className="text-[11px] text-amber-800 mt-0.5">
-                Your TIN and Trade License are currently under review by Platform Administrators. You have full access to explore corridor routes and prepare freight postings.
-              </div>
-            </div>
-          </div>
-          <div className="px-3 py-1 rounded-full bg-amber-200/80 text-amber-900 text-[10px] font-bold uppercase tracking-wide shrink-0">
-            Pending Review
-          </div>
-        </div>
-      )}
-
-      {user?.verificationStatus === 'VERIFIED' && (
-        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between gap-3 text-emerald-900 shadow-sm">
-          <div className="flex items-center gap-3">
-            <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
-            <div>
-              <div className="text-xs font-bold text-emerald-950">
-                Account Status: Verified Business Identity
-              </div>
-              <div className="text-[11px] text-emerald-800 mt-0.5">
-                Your legal entity is verified. All corridor logistics, live bidding, and TeleBirr smart escrow features are fully unlocked.
-              </div>
-            </div>
-          </div>
-          <div className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase tracking-wide shrink-0">
-            Verified
-          </div>
-        </div>
-      )}
 
       {/* Quick Stat Tiles */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -118,7 +73,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
             {bids.length}
           </div>
           <div className="text-[10px] text-slate-500 font-semibold">
-            Transporter RFQ Bids
+            Transporter Quotes
           </div>
         </div>
 
@@ -138,11 +93,11 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
           <div className="text-[11px] font-bold text-slate-500 uppercase">
             Escrow Protected
           </div>
-          <div className="text-2xl font-black text-sky-700">
-            TeleBirr Smart
+          <div className="text-2xl font-black text-emerald-600">
+            Smart Escrow
           </div>
           <div className="text-[10px] text-slate-400">
-            Automated GPS POD Release
+            TeleBirr & CBE Birr Supported
           </div>
         </div>
       </div>
@@ -184,10 +139,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
               >
                 <div className="space-y-1 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-mono text-[10px] font-extrabold text-slate-500 bg-slate-200/70 px-1.5 py-0.5 rounded">
-                      {s.id}
-                    </span>
-                    <span className="text-xs font-black text-slate-900">{s.title}</span>
+                    <span className="text-xs font-black text-slate-900 capitalize">{s.title}</span>
                     <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-sky-100 text-sky-800">
                       {s.type}
                     </span>

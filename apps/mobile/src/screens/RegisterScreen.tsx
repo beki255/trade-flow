@@ -12,9 +12,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as DocumentPicker from 'expo-document-picker';
 import { useLanguage } from '../context/LanguageContext';
-import { getApiBaseUrl } from '../utils/api';
+import { apiFetch } from '../utils/api';
 
 interface RegisterScreenProps {
   onBack: () => void;
@@ -29,89 +28,25 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
 }) => {
   const { t } = useLanguage();
 
-  // Transporter Company & Personal Details
-  const [companyName, setCompanyName] = useState('');
+  // Streamlined Initial Registration (Phone, Email, Password, Name)
   const [ownerName, setOwnerName] = useState('');
+  const [companyName, setCompanyName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [tin, setTin] = useState('');
-  const [tradeLicenseNo, setTradeLicenseNo] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-
-  // Mandatory Compliance Documents (The 2 Transporter Registration Documents)
-  const [insuranceDocName, setInsuranceDocName] = useState('');
-  const [insuranceDocData, setInsuranceDocData] = useState('');
-  const [roadworthinessDocName, setRoadworthinessDocName] = useState('');
-  const [roadworthinessDocData, setRoadworthinessDocData] = useState('');
 
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Real Native & Web Device File Explorer Picker with Data URL extraction
-  const pickDocument = async (
-    onSuccess: (name: string, dataUrl: string) => void
-  ) => {
-    try {
-      if (Platform.OS === 'web' && typeof document !== 'undefined') {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'application/pdf,image/*';
-        input.onchange = (e: any) => {
-          const file = e.target?.files?.[0];
-          if (file) {
-            const reader = new FileReader();
-            reader.onload = () => {
-              onSuccess(file.name, reader.result as string);
-            };
-            reader.readAsDataURL(file);
-            setErrorMsg('');
-          }
-        };
-        input.click();
-      } else {
-        const res = await DocumentPicker.getDocumentAsync({
-          type: ['application/pdf', 'image/*'],
-          copyToCacheDirectory: true,
-        });
-        if (!res.canceled && res.assets && res.assets.length > 0) {
-          const asset = res.assets[0];
-          try {
-            const resp = await fetch(asset.uri);
-            const blob = await resp.blob();
-            const reader = new FileReader();
-            reader.onload = () => {
-              onSuccess(asset.name, reader.result as string);
-            };
-            reader.readAsDataURL(blob);
-          } catch {
-            onSuccess(asset.name, asset.uri);
-          }
-          setErrorMsg('');
-        }
-      }
-    } catch (err) {
-      console.warn('Document picker error:', err);
-    }
-  };
-
-  const handlePickInsurance = () => {
-    pickDocument((name, data) => {
-      setInsuranceDocName(name);
-      setInsuranceDocData(data);
-    });
-  };
-
-  const handlePickRoadworthiness = () => {
-    pickDocument((name, data) => {
-      setRoadworthinessDocName(name);
-      setRoadworthinessDocData(data);
-    });
-  };
-
   const handleRegister = async () => {
-    if (!companyName || !ownerName || !phone || !tin || !password) {
-      setErrorMsg('Please fill in all required business and contact fields.');
+    if (!ownerName.trim() || !phone.trim() || !password) {
+      setErrorMsg('Please enter your full name, phone number, and password.');
+      return;
+    }
+
+    if (password.length < 6) {
+      setErrorMsg('Password must be at least 6 characters long.');
       return;
     }
 
@@ -119,28 +54,23 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
     setErrorMsg('');
 
     const cleanPhone = phone.trim();
-    const cleanEmail = email && email.trim() ? email.trim() : `${cleanPhone.replace(/[^0-9]/g, '') || 'transporter'}@tradeflow.et`;
+    const cleanEmail = email && email.trim()
+      ? email.trim().toLowerCase()
+      : `${cleanPhone.replace(/[^0-9]/g, '') || 'transporter'}@tradeflow.et`;
+
+    const finalCompanyName = companyName.trim() || `${ownerName.trim()} Transport`;
 
     const userData = {
       fullName: ownerName.trim(),
       phone: cleanPhone,
       email: cleanEmail,
       role: 'TRANSPORTER',
-      companyName: companyName.trim(),
-      tin: tin.trim(),
-      tradeLicenseNo: tradeLicenseNo ? tradeLicenseNo.trim() : null,
-      insuranceDoc: insuranceDocData
-        ? JSON.stringify({ name: insuranceDocName, data: insuranceDocData })
-        : (insuranceDocName || null),
-      roadworthinessDoc: roadworthinessDocData
-        ? JSON.stringify({ name: roadworthinessDocName, data: roadworthinessDocData })
-        : (roadworthinessDocName || null),
-      password,
+      companyName: finalCompanyName,
+      password: password.trim(),
     };
 
     try {
-      const apiUrl = getApiBaseUrl();
-      const res = await fetch(`${apiUrl}/api/auth/register`, {
+      const res = await apiFetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData),
@@ -152,11 +82,11 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
       if (res.ok && data.user) {
         onRegisterSuccess('TRANSPORTER', data.user);
       } else {
-        setErrorMsg(data.error || 'Registration failed. Please check your data and try again.');
+        setErrorMsg(data.error || 'Registration failed. Please check your data and retry.');
       }
     } catch (err: any) {
       setLoading(false);
-      setErrorMsg('Cannot connect to TradeFlow API server. Please check your internet connection or try again later.');
+      setErrorMsg('Cannot connect to TradeFlow API server. Please check your connection and retry.');
     }
   };
 
@@ -176,28 +106,20 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
         {/* Form Card */}
         <View style={styles.card}>
           
-          <Text style={styles.screenHeading}>Transporter Registration</Text>
-          <Text style={styles.screenSubtitle}>Register your freight transport company & fleet</Text>
+          <Text style={styles.screenHeading}>Transporter Sign Up</Text>
+          <Text style={styles.screenSubtitle}>
+            Create your carrier account in seconds. You will complete your business credentials on the next step.
+          </Text>
 
           {/* Error Message */}
           {errorMsg ? (
             <View style={styles.errorBox}>
+              <Ionicons name="alert-circle" size={16} color="#DC2626" style={{ marginRight: 6 }} />
               <Text style={styles.errorText}>{errorMsg}</Text>
             </View>
           ) : null}
 
-          {/* Transporter Fields */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Transport Company Name *</Text>
-            <TextInput
-              style={styles.textInput}
-              value={companyName}
-              onChangeText={setCompanyName}
-              placeholder="e.g. Red Sea Freight Logistics"
-              placeholderTextColor="#94A3B8"
-            />
-          </View>
-
+          {/* 1. Full Legal Name */}
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Managing Owner / Director Full Name *</Text>
             <TextInput
@@ -206,11 +128,25 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
               onChangeText={setOwnerName}
               placeholder="e.g. Sara Haile"
               placeholderTextColor="#94A3B8"
+              autoCapitalize="words"
             />
           </View>
 
+          {/* 2. Company / Business Name */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Business Phone Number *</Text>
+            <Text style={styles.inputLabel}>Transport Company Name (Optional)</Text>
+            <TextInput
+              style={styles.textInput}
+              value={companyName}
+              onChangeText={setCompanyName}
+              placeholder="e.g. Red Sea Freight Logistics (or leave empty)"
+              placeholderTextColor="#94A3B8"
+            />
+          </View>
+
+          {/* 3. Phone Number */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Mobile Phone Number *</Text>
             <TextInput
               style={styles.textInput}
               value={phone}
@@ -221,8 +157,9 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
             />
           </View>
 
+          {/* 4. Email Address */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Company Email Address</Text>
+            <Text style={styles.inputLabel}>Email Address (Optional)</Text>
             <TextInput
               style={styles.textInput}
               value={email}
@@ -234,70 +171,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
             />
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Tax Identification Number (TIN) *</Text>
-            <TextInput
-              style={styles.textInput}
-              value={tin}
-              onChangeText={setTin}
-              placeholder="10-digit TIN (e.g. 0047281934)"
-              placeholderTextColor="#94A3B8"
-              keyboardType="numeric"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Trade License / Registration Number</Text>
-            <TextInput
-              style={styles.textInput}
-              value={tradeLicenseNo}
-              onChangeText={setTradeLicenseNo}
-              placeholder="e.g. ETH-MOTI-2026-881"
-              placeholderTextColor="#94A3B8"
-            />
-          </View>
-
-          {/* Mandatory Compliance Documents */}
-          <View style={styles.docsContainer}>
-            <Text style={styles.docsSectionHeader}>Company Verification Documents</Text>
-            {/* Insurance Documentation (GIT) */}
-            <TouchableOpacity
-              style={[styles.uploadCard, insuranceDocName ? styles.uploadCardDone : null]}
-              onPress={handlePickInsurance}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.uploadCardIcon}>{insuranceDocName ? '✅' : '📄'}</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.uploadCardTitle}>Insurance Documentation (GIT) *</Text>
-                <Text style={styles.uploadCardStatus}>
-                  {insuranceDocName ? insuranceDocName : 'Tap to select Insurance PDF/Image'}
-                </Text>
-              </View>
-              <View style={styles.uploadBtnBadge}>
-                <Text style={styles.uploadBtnBadgeText}>{insuranceDocName ? 'Replace' : 'Upload'}</Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* Roadworthiness Certificate */}
-            <TouchableOpacity
-              style={[styles.uploadCard, roadworthinessDocName ? styles.uploadCardDone : null]}
-              onPress={handlePickRoadworthiness}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.uploadCardIcon}>{roadworthinessDocName ? '✅' : '🛡️'}</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.uploadCardTitle}>Roadworthiness Certificate (FTA) *</Text>
-                <Text style={styles.uploadCardStatus}>
-                  {roadworthinessDocName ? roadworthinessDocName : 'Tap to select Certificate PDF/Image'}
-                </Text>
-              </View>
-              <View style={styles.uploadBtnBadge}>
-                <Text style={styles.uploadBtnBadgeText}>{roadworthinessDocName ? 'Replace' : 'Upload'}</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-
-          {/* Password */}
+          {/* 5. Password */}
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Create Password *</Text>
             <View style={styles.passwordWrapper}>
@@ -314,7 +188,6 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
                 style={styles.eyeBtn}
                 hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 activeOpacity={0.7}
-                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
               >
                 <Ionicons
                   name={showPassword ? 'eye-off' : 'eye'}
@@ -332,9 +205,13 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
             disabled={loading}
             activeOpacity={0.85}
           >
-            <Text style={styles.primaryRegisterBtnText}>
-              {loading ? 'Submitting Registration...' : 'Complete Transporter Registration'}
-            </Text>
+            {loading ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <>
+                <Text style={styles.primaryRegisterBtnText}>Create Account ➔</Text>
+              </>
+            )}
           </TouchableOpacity>
 
           {/* Bottom Switch to Login */}
@@ -390,7 +267,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
-    padding: 20,
+    padding: 22,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     ...Platform.select({
@@ -405,21 +282,23 @@ const styles = StyleSheet.create({
         elevation: 2,
       },
     }),
-    gap: 12,
+    gap: 14,
   },
   screenHeading: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '800',
     color: '#0F172A',
   },
   screenSubtitle: {
-    fontSize: 12,
+    fontSize: 12.5,
     color: '#64748B',
-    marginTop: 4,
-    marginBottom: 6,
-    lineHeight: 16,
+    lineHeight: 18,
+    marginTop: -4,
+    marginBottom: 4,
   },
   errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#FEF2F2',
     borderWidth: 1,
     borderColor: '#FCA5A5',
@@ -427,15 +306,16 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   errorText: {
-    fontSize: 11,
+    fontSize: 11.5,
     color: '#DC2626',
     fontWeight: '700',
+    flex: 1,
   },
   inputGroup: {
-    gap: 4,
+    gap: 5,
   },
   inputLabel: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: '700',
     color: '#334155',
   },
@@ -445,7 +325,7 @@ const styles = StyleSheet.create({
     borderColor: '#CBD5E1',
     borderRadius: 12,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 11,
     fontSize: 13,
     color: '#0F172A',
   },
@@ -463,71 +343,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  docsContainer: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 16,
-    padding: 14,
-    gap: 10,
-    marginVertical: 4,
-  },
-  docsSectionHeader: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  docsSectionSub: {
-    fontSize: 10,
-    color: '#64748B',
-    marginTop: 2,
-    lineHeight: 14,
-  },
-  uploadCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: '#CBD5E1',
-    borderStyle: 'dashed',
-    borderRadius: 12,
-    padding: 10,
-    gap: 10,
-  },
-  uploadCardDone: {
-    borderColor: '#22C55E',
-    borderStyle: 'solid',
-    backgroundColor: '#F0FDF4',
-  },
-  uploadCardIcon: {
-    fontSize: 18,
-  },
-  uploadCardTitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#1E293B',
-  },
-  uploadCardStatus: {
-    fontSize: 9.5,
-    color: '#64748B',
-    marginTop: 2,
-  },
-  uploadBtnBadge: {
-    backgroundColor: '#E0F2FE',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  uploadBtnBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#0284C7',
-  },
   primaryRegisterBtn: {
     backgroundColor: '#0284C7',
     borderRadius: 14,
-    paddingVertical: 13,
+    paddingVertical: 14,
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 6,
     ...Platform.select({
       web: {
@@ -538,20 +359,20 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.25,
         shadowRadius: 8,
-        elevation: 4,
+        elevation: 3,
       },
     }),
   },
   primaryRegisterBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13.5,
+    fontSize: 14,
     fontWeight: '800',
+    color: '#FFFFFF',
   },
   loginPrompt: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 6,
   },
   promptText: {
     fontSize: 12,

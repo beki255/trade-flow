@@ -34,6 +34,8 @@ export interface DriverItem {
   status: 'PENDING' | 'ACTIVE' | 'ON_TRIP' | 'OFF_DUTY';
   verificationStatus?: 'PENDING' | 'VERIFIED' | 'SUSPENDED';
   assignedTruckPlate?: string;
+  photoUrl?: string;
+  licenseDocUrl?: string;
   rawId?: string;
 }
 
@@ -53,6 +55,13 @@ export interface LoadItem {
   isDispatched?: boolean;
   dispatchedTruck?: string;
   dispatchedDriver?: string;
+  shipperName?: string;
+  shipperCompany?: string;
+  shipperPhone?: string;
+  shipperEmail?: string;
+  shipperTin?: string;
+  shipperRating?: number;
+  shipperVerified?: boolean;
 }
 
 export interface BidItem {
@@ -70,6 +79,13 @@ export interface BidItem {
   dispatchedTruck?: string;
   dispatchedDriver?: string;
   isDispatched?: boolean;
+  shipperName?: string;
+  shipperCompany?: string;
+  shipperPhone?: string;
+  shipperEmail?: string;
+  shipperTin?: string;
+  shipperRating?: number;
+  shipperVerified?: boolean;
 }
 
 export type TransporterTabType = 'overview' | 'fleet' | 'loads' | 'bidding' | 'earnings';

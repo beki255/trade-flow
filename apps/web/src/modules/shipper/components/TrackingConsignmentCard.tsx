@@ -45,9 +45,9 @@ export const TrackingConsignmentCard: React.FC<TrackingConsignmentCardProps> = (
       )}
 
       <div className="flex items-center justify-between gap-2 pr-14">
-        <span className="text-xs font-mono font-extrabold text-sky-800 bg-sky-100/80 px-2 py-0.5 rounded border border-sky-200">
-          {load.loadCode}
-        </span>
+        <h4 className="text-sm font-black text-slate-900 truncate capitalize">
+          {load.title}
+        </h4>
         <span
           className={`text-[9.5px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${
             isLoadDelivered
@@ -67,10 +67,6 @@ export const TrackingConsignmentCard: React.FC<TrackingConsignmentCardProps> = (
             ? 'DISPATCHED'
             : load.status}
         </span>
-      </div>
-
-      <div className="text-sm font-black text-slate-900 mt-2 line-clamp-1">
-        {load.title}
       </div>
 
       {/* Origin ➔ Destination Route */}

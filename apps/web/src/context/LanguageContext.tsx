@@ -66,7 +66,7 @@ export const landingTranslations: Translations = {
   postLoad: { EN: 'Post Freight Load', AM: 'አዲስ ጭነት ይለጥፉ', OM: 'Fe\'isa Haaraa Maxxansaa' },
   liveTracking: { EN: 'Live Tracking', AM: 'የቀጥታ ክትትል', OM: 'Hordoffii Kallattii' },
   offlineSync: { EN: 'Offline Auto-Sync', AM: 'ያለኢንተርኔት ራስ-ሰር ማመሳሰል', OM: 'Ofiin Walsaamuu' },
-  telebirrEscrow: { EN: 'TeleBirr Smart Escrow', AM: 'የቴሌብር አስተማማኝ ክፍያ', OM: 'Kaffaltii Teeleebirr Amansiisaa' },
+  telebirrEscrow: { EN: 'Smart Escrow (TeleBirr & CBE)', AM: 'አስተማማኝ የኤስክሮው ክፍያ (ቴሌብር እና ሲቢኢ)', OM: 'Kaffaltii Amansiisaa (TeleBirr & CBE)' },
   complianceEcc: { EN: 'ECC Compliant', AM: 'የኢትዮጵያ ጉምሩክ ኮሚሽን ደንብ ያሟላ', OM: 'Ulaagaa Gumruukaa Guute' },
 };
 

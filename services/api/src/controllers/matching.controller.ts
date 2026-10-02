@@ -350,6 +350,24 @@ export const postLoadWithBookingOption = async (req: Request, res: Response): Pr
       return;
     }
 
+    // Prevent duplicate active loads: Shipper can only have one active consignment in progress
+    const activeExistingLoad = await prisma.load.findFirst({
+      where: {
+        shipperId: shipper.id,
+        status: {
+          in: [LoadStatus.OPEN, LoadStatus.BIDDING, LoadStatus.MATCHED, LoadStatus.BOOKED, LoadStatus.IN_TRANSIT],
+        },
+      },
+    });
+
+    if (activeExistingLoad) {
+      res.status(400).json({
+        error: `Active consignment already in progress: "${activeExistingLoad.title}" (${activeExistingLoad.status}). Shippers cannot post multiple loads at once. Please complete or cancel the current load before creating a new one.`,
+        activeLoadId: activeExistingLoad.id,
+      });
+      return;
+    }
+
     const weightVal = parseFloat(weightTons) || 28.0;
     const volumeVal = parseFloat(volumeM3) || 40.0;
 

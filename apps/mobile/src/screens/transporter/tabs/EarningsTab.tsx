@@ -79,7 +79,7 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
             {settledPayoutEtb.toLocaleString()} ETB
           </Text>
           <Text style={{ fontSize: 9.5, color: '#059669', fontWeight: '700', marginTop: 1 }}>
-            Released to TeleBirr
+            Escrow Disbursed
           </Text>
         </View>
 
@@ -114,11 +114,11 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
         </Text>
       </View>
 
-      {/* TeleBirr Escrow Transaction Ledger */}
+      {/* Smart Escrow Transaction Ledger */}
       <View style={styles.card}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <View>
-            <Text style={styles.cardTitle}>TeleBirr Settlements Ledger</Text>
+            <Text style={styles.cardTitle}>Smart Escrow Settlements</Text>
             <Text style={styles.emptySub}>Verified digital freight payouts</Text>
           </View>
           <Text style={{ fontSize: 10, fontWeight: '800', color: '#0284C7' }}>
@@ -132,7 +132,7 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
               No payments recorded yet
             </Text>
             <Text style={{ fontSize: 9.5, color: '#94A3B8', marginTop: 2, textAlign: 'center' }}>
-              TeleBirr smart escrow locks and settlements will appear here.
+              Smart escrow locks and settlements will appear here.
             </Text>
           </View>
         ) : (
@@ -140,7 +140,8 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
             const isSettled = pay.status === 'SETTLED';
             const netAmount = Number(pay.netTransporterPayoutEtb || pay.carrierPayoutEtb || pay.netPayoutEtb) || 0;
             const grossAmount = Number(pay.grossAmountEtb || pay.amountEtb) || 0;
-            const txNo = pay.telebirrTransactionNo || pay.telebirrTxId || `TB-TF-${pay.id.slice(0, 6)}`;
+            const prefix = pay.paymentMethod === 'CBE_BIRR' ? 'CBE-TF-' : 'TB-TF-';
+            const txNo = pay.telebirrTransactionNo || pay.telebirrTxId || `${prefix}${pay.id.slice(0, 6)}`;
 
             return (
               <View
@@ -233,9 +234,9 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
         )}
       </View>
 
-      {/* TeleBirr Escrow Safety Summary */}
+      {/* Smart Escrow Safety Summary */}
       <View style={[styles.card, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
-        <Text style={[styles.cardTitle, { color: '#166534' }]}>TeleBirr Smart Escrow Protected</Text>
+        <Text style={[styles.cardTitle, { color: '#166534' }]}>Digital Smart Escrow Protected</Text>
         <Text style={{ fontSize: 11, color: '#166534', lineHeight: 16 }}>
           100% of freight payments are locked in digital escrow upon booking acceptance. Milestone payouts are released automatically upon digital proof-of-delivery (e-POD) confirmation.
         </Text>

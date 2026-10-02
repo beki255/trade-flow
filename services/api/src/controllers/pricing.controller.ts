@@ -136,33 +136,47 @@ export const calculateSpotRate = async (req: Request, res: Response): Promise<vo
     const ceilingBoundEtb = Math.round(subtotalEtb * 1.18); // +18% ceiling limit
     const finalRateEtb = subtotalEtb;
 
-    // Save calculation into Pricing Audit Log Database (PostgreSQL)
-    const auditLog = await prisma.pricingLog.create({
-      data: {
-        corridorName: `${originName} ➔ ${destName} (${corridorName})`,
-        baseDistanceKm: Math.round(distanceKm),
-        baseCorridorRateEtb: baseFreightEtb,
-        demandRatio,
-        fuelCostIndex: Math.round(fuelCostIndex * 100) / 100,
-        congestionSurchargeEtb,
-        calculatedSpotRateEtb: subtotalEtb,
-        floorBoundEtb,
-        ceilingBoundEtb,
+    // Deduplication guard: do not re-insert identical calculation within 60s
+    const corridorFullName = `${originName} ➔ ${destName} (${corridorName})`;
+    const recentDuplicate = await prisma.pricingLog.findFirst({
+      where: {
+        corridorName: corridorFullName,
         finalRateEtb,
+        timestamp: {
+          gte: new Date(Date.now() - 60000),
+        },
       },
     });
 
-    // Also push to centralized platform Audit Trail (4.4.3)
-    auditTrailStore.unshift({
-      id: `PRC-${auditLog.id.slice(0, 8)}`,
-      action: 'DYNAMIC_SPOT_RATE_CALCULATED',
-      category: 'PRICING',
-      targetUserId: requesterId || 'SHIPPER_PORTAL',
-      targetName: `${originName} ➔ ${destName}`,
-      performedByAdminId: requesterEmail || 'SYSTEM_PRICING_ENGINE',
-      timestamp: new Date().toISOString(),
-      notes: `Spot: ETB ${finalRateEtb.toLocaleString()} (Dist: ${Math.round(distanceKm)}km, Base: ETB ${baseFreightEtb}, Fuel Index: ${(fuelCostIndex).toFixed(2)}, Demand: ${demandRatio}, Congestion: ETB ${congestionSurchargeEtb})`,
-    });
+    let auditLog = recentDuplicate;
+    if (!auditLog) {
+      auditLog = await prisma.pricingLog.create({
+        data: {
+          corridorName: corridorFullName,
+          baseDistanceKm: Math.round(distanceKm),
+          baseCorridorRateEtb: baseFreightEtb,
+          demandRatio,
+          fuelCostIndex: Math.round(fuelCostIndex * 100) / 100,
+          congestionSurchargeEtb,
+          calculatedSpotRateEtb: subtotalEtb,
+          floorBoundEtb,
+          ceilingBoundEtb,
+          finalRateEtb,
+        },
+      });
+
+      // Also push to centralized platform Audit Trail (4.4.3)
+      auditTrailStore.unshift({
+        id: `PRC-${auditLog.id.slice(0, 8)}`,
+        action: 'DYNAMIC_SPOT_RATE_CALCULATED',
+        category: 'PRICING',
+        targetUserId: requesterId || 'SHIPPER_PORTAL',
+        targetName: `${originName} ➔ ${destName}`,
+        performedByAdminId: requesterEmail || 'SYSTEM_PRICING_ENGINE',
+        timestamp: new Date().toISOString(),
+        notes: `Spot: ETB ${finalRateEtb.toLocaleString()} (Dist: ${Math.round(distanceKm)}km, Base: ETB ${baseFreightEtb}, Fuel Index: ${(fuelCostIndex).toFixed(2)}, Demand: ${demandRatio}, Congestion: ETB ${congestionSurchargeEtb})`,
+      });
+    }
 
     res.json({
       success: true,
@@ -507,17 +521,42 @@ export const getPricingAuditLogs = async (req: Request, res: Response): Promise<
     // 1. Fetch exact calculation logs from PostgreSQL
     const dbLogs = await prisma.pricingLog.findMany({
       orderBy: { timestamp: 'desc' },
-      take: 100,
+      take: 200,
     });
+
+    // Deduplicate identical calculations that occurred within seconds of each other
+    const dedupedLogs: typeof dbLogs = [];
+    const duplicateIdsToDelete: string[] = [];
+    const seenMap = new Set<string>();
+
+    for (const log of dbLogs) {
+      const minuteBucket = new Date(log.timestamp).toISOString().slice(0, 16);
+      const key = `${log.corridorName}_${log.finalRateEtb}_${minuteBucket}`;
+      if (!seenMap.has(key)) {
+        seenMap.add(key);
+        dedupedLogs.push(log);
+      } else {
+        duplicateIdsToDelete.push(log.id);
+      }
+    }
+
+    // Clean up redundant duplicate rows in PostgreSQL in the background
+    if (duplicateIdsToDelete.length > 0) {
+      prisma.pricingLog
+        .deleteMany({
+          where: { id: { in: duplicateIdsToDelete } },
+        })
+        .catch((err) => console.warn('Pricing log cleanup notice:', err?.message || err));
+    }
 
     // 2. Fetch all pricing-specific event audits from platform audit store
     const pricingAuditEvents = auditTrailStore.filter((log) => log.category === 'PRICING');
 
     res.json({
       success: true,
-      logs: dbLogs,
+      logs: dedupedLogs,
       auditEvents: pricingAuditEvents,
-      totalLogsCount: dbLogs.length,
+      totalLogsCount: dedupedLogs.length,
     });
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to fetch pricing audit logs' });

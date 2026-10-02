@@ -89,9 +89,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
             return {
               id: p.id,
               shipmentId: p.shipmentId,
-              shipmentCode: p.shipment?.load?.id
-                ? `TF-SH-${p.shipment.load.id.slice(0, 6).toUpperCase()}`
-                : `TF-SH-${p.id.slice(0, 6).toUpperCase()}`,
+              shipmentCode: p.shipment?.load?.title || 'Corridor Consignment',
               routeTitle: p.shipment?.load
                 ? `${p.shipment.load.originName} ➔ ${p.shipment.load.destName}`
                 : 'Addis Ababa ➔ Djibouti Doraleh Port',
@@ -100,7 +98,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
               withholdingTaxEtb: withTax,
               netPayoutEtb: net,
               paymentMethod: p.paymentMethod || 'TELEBIRR',
-              telebirrTxNo: p.telebirrTransactionNo || `TB-TF-${p.id.slice(0, 8)}`,
+              telebirrTxNo: p.telebirrTransactionNo || `${p.paymentMethod === 'CBE_BIRR' ? 'CBE' : 'TB'}-TF-${p.id.slice(0, 8)}`,
               status: p.status || 'HELD_IN_ESCROW',
               paidAt: new Date(p.paidAt || p.createdAt).toLocaleString([], {
                 year: 'numeric',
@@ -134,9 +132,9 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
   const totalNetPayout = useMemo(() => payments.reduce((sum, p) => sum + (p.netPayoutEtb || 0), 0), [payments]);
   const settledCount = useMemo(() => payments.filter((p) => p.status === 'SETTLED').length, [payments]);
 
-  // Handle Initiate Payment (Multi-Method: TeleBirr / CBE Birr / Mobile Money)
+  // Handle Initiate Payment (Multi-Method: TeleBirr / CBE Birr)
   const handleInitiatePayment = async (payload: {
-    paymentMethod: 'TELEBIRR' | 'CBE_BIRR' | 'MOBILE_MONEY';
+    paymentMethod: 'TELEBIRR' | 'CBE_BIRR';
     phone: string;
     accountNo?: string;
     baseRateEtb: number;
@@ -247,10 +245,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
       {/* 1. Header Bar with Sub-View Switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-[10px] font-extrabold uppercase tracking-widest text-sky-700 bg-sky-50 px-2.5 py-1 rounded-full border border-sky-200 inline-flex items-center gap-1.5">
-            <Smartphone className="w-3.5 h-3.5 text-sky-600" /> Multi-Gateway Escrow & Fleet Settlement
-          </span>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-1.5">
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
             {activeSubView === 'LEDGER'
               ? 'Payment & Carrier Settlement Ledger'
               : 'Transporter Performance & Corridor Benchmarking'}

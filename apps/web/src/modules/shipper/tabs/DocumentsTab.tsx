@@ -361,11 +361,7 @@ export const DocumentsTab: React.FC = () => {
       {/* 1. HERO HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200/90 p-6 sm:p-7 rounded-2xl shadow-xs relative overflow-hidden">
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 rounded-full bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent blur-3xl pointer-events-none" />
-        <div className="space-y-1.5 relative z-10">
-          <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-900 text-[11px] font-bold tracking-wide">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Single-Window Digital Customs Clearance</span>
-          </div>
+        <div className="space-y-1 relative z-10">
           <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
             Digital Trade Documentation & Pre-Submission Vault
           </h1>

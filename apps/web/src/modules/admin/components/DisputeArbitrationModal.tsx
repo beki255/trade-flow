@@ -73,7 +73,7 @@ export const DisputeArbitrationModal: React.FC<DisputeArbitrationModalProps> = (
               </span>
             </div>
             <h3 className="text-lg font-black text-slate-900 mt-1">
-              TeleBirr Smart Escrow Arbitration Verdict
+              Smart Escrow Arbitration Verdict
             </h3>
           </div>
           <button
@@ -180,7 +180,7 @@ export const DisputeArbitrationModal: React.FC<DisputeArbitrationModalProps> = (
               <span>100% Full Refund to Shipper</span>
             </div>
             <p className="text-[11px] text-slate-500">
-              Total escrow funds returned to Shipper TeleBirr mobile wallet. Transporter receives 0 ETB.
+              Total escrow funds returned to Shipper digital mobile wallet. Transporter receives 0 ETB.
             </p>
           </div>
 

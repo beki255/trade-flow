@@ -83,7 +83,7 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
                       <Text style={[styles.statusText, { color: '#B45309' }]}>ACTION REQUIRED</Text>
                     </View>
                   </View>
-                  <Text style={styles.infoLabel}>Ref: {req.loadId}</Text>
+                  <Text style={styles.infoLabel}>Corridor Shipment</Text>
                 </View>
                 <View style={{ alignItems: 'flex-end', flexShrink: 0 }}>
                   <Text style={[styles.kpiValue, { fontSize: 16, color: '#0284C7' }]}>
@@ -98,6 +98,21 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
               <View style={{ marginVertical: 2 }}>
                 <Text style={styles.infoLabel}>Consignment:</Text>
                 <Text style={[styles.infoValue, { fontWeight: '800', marginTop: 1 }]}>{req.loadTitle}</Text>
+              </View>
+
+              <View style={[styles.infoRow, { marginVertical: 2, alignItems: 'center' }]}>
+                <Text style={styles.infoLabel}>Shipper Client:</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  <Ionicons name="business" size={13} color="#0284C7" />
+                  <Text style={[styles.infoValue, { color: '#0F172A', fontWeight: '800' }]}>
+                    {req.shipperName || 'Verified Shipper'}
+                  </Text>
+                  {req.shipperPhone ? (
+                    <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '600' }}>
+                      • {req.shipperPhone}
+                    </Text>
+                  ) : null}
+                </View>
               </View>
 
               <View style={{ marginVertical: 3 }}>
@@ -115,7 +130,7 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
               <View style={{ backgroundColor: '#E0F2FE', borderRadius: 10, padding: 8, marginVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Ionicons name="sparkles" size={14} color="#0284C7" />
                 <Text style={{ fontSize: 11, color: '#0369A1', fontWeight: '700', flex: 1 }}>
-                  Shipper selected your fleet via AI Instant Match. TeleBirr escrow is funded. Accept to lock trip.
+                  Shipper selected your fleet via AI Instant Match. Escrow deposit is funded. Accept to lock trip.
                 </Text>
               </View>
 
@@ -139,15 +154,17 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
         </View>
       )}
 
-      {/* Interactive Search Bar */}
-      <View style={[styles.searchBarContainer, { marginTop: 4, marginBottom: 6 }]}>
+      {/* Interactive Search Bar (Filtered by typing only) */}
+      <View style={[styles.searchBarContainer, { marginTop: 4, marginBottom: 8 }]}>
         <Ionicons name="search-outline" size={18} color="#64748B" style={{ marginLeft: 4 }} />
         <TextInput
           style={styles.searchBarInput}
-          placeholder="Search by origin, destination, cargo, ID..."
+          placeholder="Search by city, route, cargo, or weight..."
           placeholderTextColor="#94A3B8"
           value={loadSearchQuery}
           onChangeText={setLoadSearchQuery}
+          returnKeyType="search"
+          clearButtonMode="while-editing"
         />
         {loadSearchQuery.length > 0 && (
           <TouchableOpacity onPress={() => setLoadSearchQuery('')}>
@@ -156,119 +173,14 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
         )}
       </View>
 
-      {/* 4.2.4 Multi-Dimensional Filter Chips (Route Hubs, Cargo Type & Tonnage) */}
-      <View style={{ gap: 6, marginBottom: 8 }}>
-        {/* Route Hubs Filter */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingVertical: 2 }}>
-          {[
-            { id: 'ALL', label: 'All Corridors' },
-            { id: 'Addis Ababa', label: 'Addis Ababa' },
-            { id: 'Modjo', label: 'Modjo Hub' },
-            { id: 'Adama', label: 'Adama Depot' },
-            { id: 'Dire Dawa', label: 'Dire Dawa FTZ' },
-            { id: 'Djibouti', label: 'Djibouti Port' },
-          ].map((h) => {
-            const active = selectedRouteFilter === h.id;
-            return (
-              <TouchableOpacity
-                key={h.id}
-                onPress={() => setSelectedRouteFilter && setSelectedRouteFilter(h.id)}
-                style={{
-                  paddingHorizontal: 10,
-                  paddingVertical: 5,
-                  borderRadius: 12,
-                  backgroundColor: active ? '#0284C7' : '#F1F5F9',
-                  borderWidth: 1,
-                  borderColor: active ? '#0284C7' : '#CBD5E1',
-                }}
-              >
-                <Text style={{ fontSize: 10.5, fontWeight: active ? '800' : '600', color: active ? '#FFFFFF' : '#475569' }}>
-                  {h.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-
-        {/* Cargo Type & Tonnage Quick Filter Row */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingVertical: 2 }}>
-          {/* Cargo Filters */}
-          {[
-            { id: 'ALL', label: 'All Types' },
-            { id: 'CONTAINER', label: '📦 Containers' },
-            { id: 'COFFEE', label: '☕ Coffee / Agri' },
-            { id: 'MACHINERY', label: '⚙️ Machinery' },
-            { id: 'GENERAL', label: '🏷️ General Cargo' },
-          ].map((c) => {
-            const active = selectedCargoFilter === c.id;
-            return (
-              <TouchableOpacity
-                key={c.id}
-                onPress={() => setSelectedCargoFilter && setSelectedCargoFilter(c.id)}
-                style={{
-                  paddingHorizontal: 9,
-                  paddingVertical: 4.5,
-                  borderRadius: 10,
-                  backgroundColor: active ? '#0369A1' : '#FFFFFF',
-                  borderWidth: 1,
-                  borderColor: active ? '#0369A1' : '#E2E8F0',
-                }}
-              >
-                <Text style={{ fontSize: 10, fontWeight: active ? '800' : '600', color: active ? '#FFFFFF' : '#64748B' }}>
-                  {c.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-
-          {/* Separator */}
-          <View style={{ width: 1, backgroundColor: '#CBD5E1', marginHorizontal: 2 }} />
-
-          {/* Tonnage Filters */}
-          {[
-            { id: 'ALL', label: 'All Weights' },
-            { id: 'LIGHT', label: '≤ 20 Tons' },
-            { id: 'MEDIUM', label: '21–35 Tons' },
-            { id: 'HEAVY', label: '> 35 Tons' },
-          ].map((t) => {
-            const active = selectedTonnageFilter === t.id;
-            return (
-              <TouchableOpacity
-                key={t.id}
-                onPress={() => setSelectedTonnageFilter && setSelectedTonnageFilter(t.id)}
-                style={{
-                  paddingHorizontal: 9,
-                  paddingVertical: 4.5,
-                  borderRadius: 10,
-                  backgroundColor: active ? '#059669' : '#FFFFFF',
-                  borderWidth: 1,
-                  borderColor: active ? '#059669' : '#E2E8F0',
-                }}
-              >
-                <Text style={{ fontSize: 10, fontWeight: active ? '800' : '600', color: active ? '#FFFFFF' : '#64748B' }}>
-                  {t.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
-
-      {/* Filter Status & Reset Notice */}
-      {(loadSearchQuery.length > 0 || selectedRouteFilter !== 'ALL' || selectedCargoFilter !== 'ALL' || selectedTonnageFilter !== 'ALL') && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 4, marginBottom: 8, backgroundColor: '#F8FAFC', paddingVertical: 5, borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0' }}>
-          <Text style={{ fontSize: 10.5, color: '#64748B', fontWeight: '700' }}>
-            Filtered: {filteredLoads.length} of {loadsList.length} consignments
+      {/* Real-time search indicator */}
+      {loadSearchQuery.trim().length > 0 && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 6, marginBottom: 8, backgroundColor: '#F8FAFC', paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0' }}>
+          <Text style={{ fontSize: 11, color: '#475569', fontWeight: '700' }}>
+            Found {filteredLoads.length} of {loadsList.length} loads for "{loadSearchQuery}"
           </Text>
-          <TouchableOpacity
-            onPress={() => {
-              setLoadSearchQuery('');
-              setSelectedRouteFilter && setSelectedRouteFilter('ALL');
-              setSelectedCargoFilter && setSelectedCargoFilter('ALL');
-              setSelectedTonnageFilter && setSelectedTonnageFilter('ALL');
-            }}
-          >
-            <Text style={{ fontSize: 10.5, color: '#0284C7', fontWeight: '800' }}>Reset Filters ↺</Text>
+          <TouchableOpacity onPress={() => setLoadSearchQuery('')}>
+            <Text style={{ fontSize: 11, color: '#0284C7', fontWeight: '800' }}>Clear ✕</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -281,7 +193,7 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
             <View style={{ flex: 1 }}>
               <Text style={styles.truckPlate} numberOfLines={1}>{item.title}</Text>
-              <Text style={styles.infoLabel}>Ref: {item.id} • {item.cargoType}</Text>
+              <Text style={styles.infoLabel}>{item.cargoType || 'Corridor Freight'}</Text>
             </View>
             <View style={{ alignItems: 'flex-end', flexShrink: 0 }}>
               {item.budget ? (
@@ -293,7 +205,7 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
                 </>
               ) : (
                 <View style={[styles.statusBadge, { backgroundColor: '#F0F9FF', borderColor: '#BAE6FD', borderWidth: 1 }]}>
-                  <Text style={[styles.statusText, { color: '#0284C7', fontWeight: '800' }]}>RFQ • Open for Bids</Text>
+                  <Text style={[styles.statusText, { color: '#0284C7', fontWeight: '800' }]}>Open for Quotes</Text>
                 </View>
               )}
             </View>
@@ -307,6 +219,25 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
             <Text style={[styles.infoValue, { color: '#0F172A', fontWeight: '800', marginTop: 2, lineHeight: 18 }]}>
               {item.route}
             </Text>
+          </View>
+
+          {/* Shipper Client Details (matches Driver Portal) */}
+          <View style={[styles.infoRow, { marginTop: 4, alignItems: 'center' }]}>
+            <Text style={styles.infoLabel}>Shipper Client:</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+              <Ionicons name="business" size={13} color="#0284C7" />
+              <Text style={[styles.infoValue, { color: '#0F172A', fontWeight: '800' }]}>
+                {item.shipperName || 'Verified Shipper'}
+              </Text>
+              {item.shipperPhone ? (
+                <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '600' }}>
+                  • {item.shipperPhone}
+                </Text>
+              ) : null}
+              {item.shipperVerified && (
+                <Ionicons name="shield-checkmark" size={13} color="#16A34A" />
+              )}
+            </View>
           </View>
 
           {/* Cargo Specifications */}
@@ -324,7 +255,7 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
               <Text style={styles.complianceText}>GIT Insured</Text>
             </View>
             <View style={[styles.complianceBadge, { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' }]}>
-              <Text style={[styles.complianceText, { color: '#065F46' }]}>TeleBirr Escrow Ready</Text>
+              <Text style={[styles.complianceText, { color: '#065F46' }]}>Smart Escrow Ready</Text>
             </View>
           </View>
 
@@ -473,7 +404,7 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
                 onPress={() => onSelectLoadForQuote(item)}
               >
                 <Text style={styles.submitBidBtnText}>
-                  Place Competitive Quote ({item.id}) ➔
+                  Submit Quotation ➔
                 </Text>
               </TouchableOpacity>
             );

@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import * as fs from 'fs';
 import { PrismaClient, UserRole, VerificationStatus, LoadStatus, BidStatus, ShipmentStatus, VehicleType, FuelType } from '@prisma/client';
 import { getDynamicCorridorWaypoints, calculateCorridorRoadDistanceKm, resolveCorridorCoordinates } from '@tradeflow/shared';
 
@@ -141,6 +142,8 @@ export const getLoads = async (req: Request, res: Response): Promise<void> => {
             fullName: true,
             companyName: true,
             tin: true,
+            phone: true,
+            email: true,
             verificationStatus: true,
             ratingAvg: true,
           },
@@ -249,8 +252,11 @@ export const getLoads = async (req: Request, res: Response): Promise<void> => {
 
     res.json({ loads: sanitizedLoads });
   } catch (error: any) {
+    try {
+      fs.appendFileSync('c:/tradeflow-v2/api_error.log', `[${new Date().toISOString()}] getLoads ERROR: ${error?.stack || error?.message || error}\n`);
+    } catch (_) {}
     console.error('Error fetching loads:', error);
-    res.status(500).json({ error: 'Failed to fetch loads from database' });
+    res.status(500).json({ error: 'Failed to fetch loads from database', details: error?.message || String(error) });
   }
 };
 
@@ -269,6 +275,24 @@ export const createLoad = async (req: Request, res: Response): Promise<void> => 
 
     if (!shipper) {
       res.status(400).json({ error: 'No valid user found to attach shipment load.' });
+      return;
+    }
+
+    // Prevent duplicate active loads: Shipper can only have one active consignment in progress
+    const activeExistingLoad = await prisma.load.findFirst({
+      where: {
+        shipperId: shipper.id,
+        status: {
+          in: [LoadStatus.OPEN, LoadStatus.BIDDING, LoadStatus.MATCHED, LoadStatus.BOOKED, LoadStatus.IN_TRANSIT],
+        },
+      },
+    });
+
+    if (activeExistingLoad) {
+      res.status(400).json({
+        error: `Active consignment already in progress: "${activeExistingLoad.title}" (${activeExistingLoad.status}). Shippers cannot post multiple loads at once. Please complete or cancel the current load before creating a new one.`,
+        activeLoadId: activeExistingLoad.id,
+      });
       return;
     }
 
@@ -1061,6 +1085,9 @@ export const getDrivers = async (req: Request, res: Response): Promise<void> => 
             companyName: true,
             verificationStatus: true,
             verificationNotes: true,
+            tradeLicenseDoc: true,
+            roadworthinessDoc: true,
+            insuranceDoc: true,
           },
         },
         assignedVehicle: {
@@ -1087,6 +1114,9 @@ export const getDrivers = async (req: Request, res: Response): Promise<void> => 
               companyName: true,
               verificationStatus: true,
               verificationNotes: true,
+              tradeLicenseDoc: true,
+              roadworthinessDoc: true,
+              insuranceDoc: true,
             },
           },
           assignedVehicle: {
@@ -1119,6 +1149,8 @@ export const getDrivers = async (req: Request, res: Response): Promise<void> => 
         status: isPending ? 'PENDING' : (d.isOnline ? 'ACTIVE' : 'AVAILABLE'),
         verificationStatus: d.user?.verificationStatus || 'PENDING',
         assignedTruckPlate: d.assignedVehicle?.plateNumber || '',
+        photoUrl: d.user?.roadworthinessDoc || d.user?.insuranceDoc || null,
+        licenseDocUrl: d.user?.tradeLicenseDoc || null,
         assignedVehicle: d.assignedVehicle,
         user: d.user,
         driverProfile: d,
@@ -1146,6 +1178,8 @@ export const createDriver = async (req: Request, res: Response): Promise<void> =
       assignedVehiclePlate,
       experienceYears,
       password,
+      driverPhoto,
+      licenseDoc,
     } = req.body;
 
     if (!fullName || !phone || !licenseNo) {
@@ -1204,6 +1238,10 @@ export const createDriver = async (req: Request, res: Response): Promise<void> =
     });
     let driverUser = existingDriver;
 
+    const finalPassword = (password && password.trim().length > 0)
+      ? password.trim()
+      : `TF-${Math.floor(1000 + Math.random() * 9000)}`;
+
     if (!driverUser) {
       driverUser = await prisma.user.create({
         data: {
@@ -1214,8 +1252,10 @@ export const createDriver = async (req: Request, res: Response): Promise<void> =
           role: UserRole.DRIVER,
           companyName: company,
           verificationNotes: null,
-          passwordHash: (password || 'Driver@123').trim(),
+          passwordHash: finalPassword,
           verificationStatus: VerificationStatus.PENDING,
+          tradeLicenseDoc: licenseDoc || null,
+          roadworthinessDoc: driverPhoto || null,
         },
       });
     } else {
@@ -1229,6 +1269,8 @@ export const createDriver = async (req: Request, res: Response): Promise<void> =
           passwordHash: (password && password.trim().length > 0) ? password.trim() : existingDriver.passwordHash,
           role: UserRole.DRIVER,
           verificationStatus: VerificationStatus.PENDING,
+          ...(licenseDoc ? { tradeLicenseDoc: licenseDoc } : {}),
+          ...(driverPhoto ? { roadworthinessDoc: driverPhoto } : {}),
         },
       });
     }
@@ -1285,6 +1327,9 @@ export const createDriver = async (req: Request, res: Response): Promise<void> =
         status: 'PENDING',
         verificationStatus: 'PENDING',
         assignedTruckPlate: vehicle ? vehicle.plateNumber : '',
+        temporaryPassword: finalPassword,
+        photoUrl: driverUser.roadworthinessDoc || driverPhoto || null,
+        licenseDocUrl: driverUser.tradeLicenseDoc || licenseDoc || null,
         assignedVehicle: vehicle,
         user: driverUser,
         driverProfile: profile,
@@ -1528,6 +1573,18 @@ export const getBids = async (req: Request, res: Response): Promise<void> => {
             cargoType: true,
             targetBudgetEtb: true,
             status: true,
+            shipper: {
+              select: {
+                id: true,
+                fullName: true,
+                companyName: true,
+                tin: true,
+                phone: true,
+                email: true,
+                verificationStatus: true,
+                ratingAvg: true,
+              },
+            },
             shipment: {
               select: {
                 id: true,
@@ -1596,8 +1653,11 @@ export const getBids = async (req: Request, res: Response): Promise<void> => {
 
     res.json({ bids: mappedBids });
   } catch (error: any) {
+    try {
+      fs.appendFileSync('c:/tradeflow-v2/api_error.log', `[${new Date().toISOString()}] getBids ERROR: ${error?.stack || error?.message || error}\n`);
+    } catch (_) {}
     console.error('Error fetching bids:', error);
-    res.status(500).json({ error: 'Failed to fetch bids from database' });
+    res.status(500).json({ error: 'Failed to fetch bids from database', details: error?.message || String(error) });
   }
 };
 

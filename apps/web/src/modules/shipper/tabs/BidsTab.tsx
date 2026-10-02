@@ -98,10 +98,7 @@ export const BidsTab: React.FC<BidsTabProps> = ({
       {/* 1. Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-[10px] font-black uppercase tracking-wider text-sky-700 bg-sky-50 px-2.5 py-1 rounded-lg border border-sky-200">
-            Market Bidding & Quotation Portal
-          </span>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-1.5">
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
             Transporter Bids & Quotations
           </h2>
           <p className="text-xs text-slate-500 max-w-2xl mt-0.5">

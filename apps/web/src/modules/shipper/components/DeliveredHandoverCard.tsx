@@ -32,11 +32,7 @@ export const DeliveredHandoverCard: React.FC<DeliveredHandoverCardProps> = ({
             <CheckCircle2 className="w-8 h-8 text-purple-700" />
           </div>
           <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[10px] font-black uppercase tracking-wider border border-purple-200">
-              <CheckCircle className="w-3 h-3 text-purple-600" />
-              <span>Delivery Completed • Live GPS Closed</span>
-            </div>
-            <h3 className="text-xl font-black text-slate-900 mt-1">
+            <h3 className="text-xl font-black text-slate-900">
               Consignment Delivered & Verified
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -53,7 +49,7 @@ export const DeliveredHandoverCard: React.FC<DeliveredHandoverCardProps> = ({
         </div>
       </div>
 
-      {/* Verified e-POD & TeleBirr Escrow Card */}
+      {/* Verified e-POD & Smart Escrow Card */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Proof of Delivery Details */}
         <div className="p-5 rounded-2xl bg-purple-50/70 border border-purple-200/80 space-y-3">
@@ -90,11 +86,11 @@ export const DeliveredHandoverCard: React.FC<DeliveredHandoverCardProps> = ({
           </div>
         </div>
 
-        {/* TeleBirr Escrow Settlement Details */}
+        {/* Smart Escrow Settlement Details */}
         <div className="p-5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 space-y-3">
           <div className="flex items-center gap-2 text-emerald-800 font-extrabold text-xs">
             <CreditCard className="w-4 h-4 text-emerald-700" />
-            <span>TeleBirr Smart Escrow Settlement</span>
+            <span>Digital Smart Escrow Settlement</span>
           </div>
 
           <div className="space-y-2 text-xs">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Text,
   View,
@@ -33,6 +33,7 @@ import { ProfileModal } from './modals/ProfileModal';
 // Modular Screen Components
 import { TransporterHeader } from './components/TransporterHeader';
 import { TransporterBottomNavBar } from './components/TransporterBottomNavBar';
+import { CompleteProfileGate } from './components/CompleteProfileGate';
 
 interface TransporterPortalScreenProps {
   onLogout: () => void;
@@ -44,21 +45,49 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
   user,
 }) => {
   const { language, toggleLanguage } = useLanguage();
-  const [activeTab, setActiveTab] = useState<TransporterTabType>('overview');
+  const [currentUser, setCurrentUser] = useState<any>(user);
+
+  useEffect(() => {
+    if (user) setCurrentUser(user);
+  }, [user]);
+
+  const [activeTab, setActiveTab] = useState<TransporterTabType>(() => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      const saved = window.localStorage.getItem('tradeflow_transporter_tab') as TransporterTabType;
+      if (saved && ['overview', 'fleet', 'loads', 'bidding', 'earnings'].includes(saved)) {
+        return saved;
+      }
+    }
+    return 'overview';
+  });
+
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem('tradeflow_transporter_tab', activeTab);
+    }
+  }, [activeTab]);
   const [fleetSubTab, setFleetSubTab] = useState<'vehicles' | 'drivers'>('vehicles');
   const [refreshing, setRefreshing] = useState(false);
 
   // Verification Status (Live Reactive State)
   const [carrierStatus, setCarrierStatus] = useState<'PENDING' | 'VERIFIED' | 'SUSPENDED'>(
-    user?.isVerified
+    user?.isVerified || user?.verificationStatus === 'VERIFIED'
       ? 'VERIFIED'
-      : user?.verificationStatus === 'PENDING'
-      ? 'PENDING'
       : user?.verificationStatus === 'SUSPENDED'
       ? 'SUSPENDED'
-      : 'VERIFIED'
+      : 'PENDING'
   );
   const [showApprovalNotice, setShowApprovalNotice] = useState(false);
+
+  // Check if compliance credentials & documents are complete
+  const isProfileComplete = Boolean(
+    (currentUser?.tin || user?.tin) &&
+    (
+      (currentUser?.insuranceDoc || user?.insuranceDoc) ||
+      (currentUser?.roadworthinessDoc || user?.roadworthinessDoc) ||
+      (currentUser?.tradeLicenseDoc || user?.tradeLicenseDoc)
+    )
+  );
 
   // Data Collections
   const [fleetList, setFleetList] = useState<TruckItem[]>([]);
@@ -90,6 +119,11 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
   const [driverCategory, setDriverCategory] = useState('Grade 5 Heavy');
   const [driverExperience, setDriverExperience] = useState('5');
   const [driverAssignedPlate, setDriverAssignedPlate] = useState('');
+  const [driverPhoto, setDriverPhoto] = useState('');
+  const [driverLicenseDoc, setDriverLicenseDoc] = useState('');
+  const [licenseDocName, setLicenseDocName] = useState('');
+  const generateRandomPassword = () => `TF-${Math.floor(1000 + Math.random() * 9000)}`;
+  const [driverTemporaryPassword, setDriverTemporaryPassword] = useState(generateRandomPassword());
   const [showTruckDropdown, setShowTruckDropdown] = useState(false);
 
   // Bidding State
@@ -155,6 +189,13 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
                 l.shipment && l.shipment.status !== 'ASSIGNED' ? (l.shipment.vehicle?.plateNumber || '') : '',
               dispatchedDriver:
                 l.shipment && l.shipment.status !== 'ASSIGNED' ? (l.shipment.driver?.user?.fullName || '') : '',
+              shipperName: l.shipper?.companyName || l.shipper?.fullName || 'Verified Shipper',
+              shipperCompany: l.shipper?.companyName || '',
+              shipperPhone: l.shipper?.phone || '',
+              shipperEmail: l.shipper?.email || '',
+              shipperTin: l.shipper?.tin || '',
+              shipperRating: l.shipper?.ratingAvg || 5.0,
+              shipperVerified: l.shipper?.verificationStatus === 'VERIFIED',
             }))
           );
         }
@@ -208,6 +249,8 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
               status: isPending ? 'PENDING' : (d.status === 'ON_TRIP' ? 'ON_TRIP' : 'ACTIVE'),
               verificationStatus: isPending ? 'PENDING' : (d.verificationStatus || d.user?.verificationStatus || 'VERIFIED'),
               assignedTruckPlate: d.assignedTruckPlate || d.assignedVehicle?.plateNumber || d.driverProfile?.assignedVehicle?.plateNumber || '',
+              photoUrl: d.photoUrl || d.user?.roadworthinessDoc || d.user?.insuranceDoc || '',
+              licenseDocUrl: d.licenseDocUrl || d.user?.tradeLicenseDoc || '',
             };
           });
           setDriversList(mappedDrivers);
@@ -248,7 +291,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
               setBidAlertNotification({
                 type: 'ACCEPTED',
                 title: '🎉 QUOTE ACCEPTED BY SHIPPER!',
-                message: `Your quote for "${b.load?.title || 'Corridor Consignment'}" was accepted! TeleBirr Escrow is funded. Dispatch your fleet now.`,
+                message: `Your quote for "${b.load?.title || 'Corridor Consignment'}" was accepted! Digital Escrow deposit is funded. Dispatch your fleet now.`,
                 bidId: b.id,
                 amount: `${Number(b.proposedRateEtb).toLocaleString()} ETB`,
               });
@@ -277,6 +320,13 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
               dispatchedTruck: truck,
               dispatchedDriver: driver,
               isDispatched,
+              shipperName: b.load?.shipper?.companyName || b.load?.shipper?.fullName || 'Verified Shipper',
+              shipperCompany: b.load?.shipper?.companyName || '',
+              shipperPhone: b.load?.shipper?.phone || '',
+              shipperEmail: b.load?.shipper?.email || '',
+              shipperTin: b.load?.shipper?.tin || '',
+              shipperRating: b.load?.shipper?.ratingAvg || 5.0,
+              shipperVerified: b.load?.shipper?.verificationStatus === 'VERIFIED',
             };
           });
           setSubmittedBids(mappedBids);
@@ -334,41 +384,22 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
     setRefreshing(false);
   };
 
-  // 4.2.4 Multi-Factor Filtered Loads (Search by Origin/Destination, Cargo Type & Tonnage)
+  // Real-time Text Keyword Search across all load fields (typing only)
   const filteredLoads = loadsList.filter((load) => {
-    // 1. Text keyword search across title, route, ID, origin, and destination
     const q = loadSearchQuery.toLowerCase().trim();
-    const matchesSearch = !q || (
+    if (!q) return true;
+    return (
       load.title?.toLowerCase().includes(q) ||
       load.route?.toLowerCase().includes(q) ||
       load.id?.toLowerCase().includes(q) ||
       load.origin?.toLowerCase().includes(q) ||
       load.destination?.toLowerCase().includes(q) ||
-      load.cargoType?.toLowerCase().includes(q)
+      load.cargoType?.toLowerCase().includes(q) ||
+      load.weight?.toLowerCase().includes(q) ||
+      String(load.weightTons || '').includes(q) ||
+      load.shipperName?.toLowerCase().includes(q) ||
+      load.status?.toLowerCase().includes(q)
     );
-
-    // 2. Origin / Destination Corridor Hub Filter
-    const matchesRoute = selectedRouteFilter === 'ALL' || (
-      load.origin?.toLowerCase().includes(selectedRouteFilter.toLowerCase()) ||
-      load.destination?.toLowerCase().includes(selectedRouteFilter.toLowerCase()) ||
-      load.route?.toLowerCase().includes(selectedRouteFilter.toLowerCase())
-    );
-
-    // 3. Cargo Type Filter
-    const matchesCargo = selectedCargoFilter === 'ALL' || (
-      load.cargoType?.toLowerCase().includes(selectedCargoFilter.toLowerCase()) ||
-      load.title?.toLowerCase().includes(selectedCargoFilter.toLowerCase())
-    );
-
-    // 4. Tonnage Filter
-    const tons = load.weightTons || parseFloat(load.weight) || 28;
-    const matchesTonnage =
-      selectedTonnageFilter === 'ALL' ||
-      (selectedTonnageFilter === 'LIGHT' && tons <= 20) ||
-      (selectedTonnageFilter === 'MEDIUM' && tons > 20 && tons <= 35) ||
-      (selectedTonnageFilter === 'HEAVY' && tons > 35);
-
-    return matchesSearch && matchesRoute && matchesCargo && matchesTonnage;
   });
 
   // Direct AI Instant Match Requests (Option A from Shipper)
@@ -471,6 +502,8 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
       status: 'PENDING',
       verificationStatus: 'PENDING',
       assignedTruckPlate: driverAssignedPlate,
+      photoUrl: driverPhoto,
+      licenseDocUrl: driverLicenseDoc,
     };
     setDriversList((prev) => [newDriver, ...prev]);
 
@@ -487,6 +520,9 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
           licenseClass: newDriver.licenseCategory,
           experienceYears: parseInt(driverExperience) || 5,
           assignedVehiclePlate: driverAssignedPlate,
+          password: driverTemporaryPassword.trim(),
+          driverPhoto: driverPhoto || undefined,
+          licenseDoc: driverLicenseDoc || undefined,
         }),
       });
       if (res.ok) {
@@ -508,6 +544,8 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
             status: isPending ? 'PENDING' : 'ACTIVE',
             verificationStatus: isPending ? 'PENDING' : 'VERIFIED',
             assignedTruckPlate: saved.assignedTruckPlate || saved.assignedVehicle?.plateNumber || newDriver.assignedTruckPlate || '',
+            photoUrl: saved.photoUrl || saved.user?.roadworthinessDoc || newDriver.photoUrl,
+            licenseDocUrl: saved.licenseDocUrl || saved.user?.tradeLicenseDoc || newDriver.licenseDocUrl,
           };
           setDriversList((prev) => [mappedSaved, ...prev.filter((d) => d.id !== newDriver.id && d.id !== mappedSaved.id)]);
         }
@@ -517,16 +555,21 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
       console.warn('Driver save error:', err);
     }
 
+    const oneTimePass = driverTemporaryPassword;
     setDriverFullName('');
     setDriverPhone('');
     setDriverLicense('');
     setDriverAssignedPlate('');
+    setDriverPhoto('');
+    setDriverLicenseDoc('');
+    setLicenseDocName('');
+    setDriverTemporaryPassword(generateRandomPassword());
     setShowAddDriver(false);
     setActiveTab('fleet');
     setFleetSubTab('drivers');
     Alert.alert(
-      '⏳ Driver Verification Pending',
-      `Driver ${newDriver.fullName} registered and submitted for Administrator verification. The admin will review their commercial driving credentials.`
+      '✅ Driver Registered Successfully!',
+      `Driver: ${newDriver.fullName}\nPhone: ${newDriver.phone}\n🔑 One-Time Password: ${oneTimePass}\n\nPlease share this temporary password with the driver. They can sign in on the TradeFlow Driver app and update it in their Profile.`
     );
   };
 
@@ -651,7 +694,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
         Alert.alert(
           action === 'ACCEPT' ? '🎉 Match Confirmed!' : 'Offer Declined',
           action === 'ACCEPT'
-            ? 'You have officially accepted the AI Instant Match! TeleBirr Escrow is locked.'
+            ? 'You have officially accepted the AI Instant Match! Smart Escrow deposit is locked.'
             : 'You declined the instant match request.'
         );
       }
@@ -834,7 +877,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
 
       Alert.alert(
         '🚀 Fleet Dispatched!',
-        `Vehicle ${dispatchTruck} and Driver ${dispatchDriver} have been officially assigned and dispatched for shipment ${targetLoadId}. TeleBirr escrow is locked and live GPS tracking is now streaming!`
+        `Vehicle ${dispatchTruck} and Driver ${dispatchDriver} have been officially assigned and dispatched for shipment ${targetLoadId}. Smart escrow is locked and live GPS tracking is now streaming!`
       );
 
       // Refresh data so database values sync
@@ -848,13 +891,36 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
 
   const availableTrucksForDriver = fleetList.filter((t) => !t.driver || t.driver === 'Unassigned');
 
+  // Dedicated Gate for Incomplete Profile and Admin Verification Pending ("wedeitm sayehid coplite profile yemile metolt ahun yekeruten formoch molto sicherse admin verfi siyadergwe endigeba")
+  if (!isProfileComplete || carrierStatus !== 'VERIFIED') {
+    return (
+      <CompleteProfileGate
+        user={currentUser}
+        carrierStatus={carrierStatus}
+        onProfileCompleted={(updatedUser) => {
+          setCurrentUser(updatedUser);
+          setCarrierStatus('PENDING');
+          if (user) {
+            user.tin = updatedUser.tin;
+            user.companyName = updatedUser.companyName;
+            user.tradeLicenseNo = updatedUser.tradeLicenseNo;
+            user.insuranceDoc = updatedUser.insuranceDoc;
+            user.roadworthinessDoc = updatedUser.roadworthinessDoc;
+            user.verificationStatus = 'PENDING';
+          }
+        }}
+        onLogout={onLogout}
+      />
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
 
       {/* Modular Top Header */}
       <TransporterHeader
-        user={user}
+        user={currentUser}
         carrierStatus={carrierStatus}
         onOpenProfile={() => setShowProfileModal(true)}
         onLogout={onLogout}
@@ -1124,6 +1190,15 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
         availableTrucksForDriver={availableTrucksForDriver}
         showTruckDropdown={showTruckDropdown}
         setShowTruckDropdown={setShowTruckDropdown}
+        driverPhoto={driverPhoto}
+        setDriverPhoto={setDriverPhoto}
+        driverLicenseDoc={driverLicenseDoc}
+        setDriverLicenseDoc={setDriverLicenseDoc}
+        licenseDocName={licenseDocName}
+        setLicenseDocName={setLicenseDocName}
+        driverTemporaryPassword={driverTemporaryPassword}
+        setDriverTemporaryPassword={setDriverTemporaryPassword}
+        onGenerateNewPassword={() => setDriverTemporaryPassword(generateRandomPassword())}
         onSubmit={handleAddDriver}
       />
 
@@ -1145,7 +1220,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
       <ProfileModal
         visible={showProfileModal}
         onClose={() => setShowProfileModal(false)}
-        user={user}
+        user={currentUser}
         carrierStatus={carrierStatus}
         language={language}
         toggleLanguage={toggleLanguage}

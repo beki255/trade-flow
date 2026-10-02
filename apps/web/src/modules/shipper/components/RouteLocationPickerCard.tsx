@@ -5,11 +5,13 @@ import { resolveCorridorCoordinates, calculateCorridorRoadDistanceKm } from '@tr
 
 interface RouteLocationPickerCardProps {
   originLocation: LocationData;
-  setOriginLocation: React.Dispatch<React.SetStateAction<LocationData>>;
+  setOriginLocation?: React.Dispatch<React.SetStateAction<LocationData>>;
   destinationLocation: LocationData;
-  setDestinationLocation: React.Dispatch<React.SetStateAction<LocationData>>;
+  setDestinationLocation?: React.Dispatch<React.SetStateAction<LocationData>>;
   corridorDistanceKm: number;
-  onOpenMapPicker: (target: 'ORIGIN' | 'DESTINATION') => void;
+  onOpenMapPicker?: (target: 'ORIGIN' | 'DESTINATION') => void;
+  onOpenOriginPicker?: () => void;
+  onOpenDestinationPicker?: () => void;
 }
 
 export const RouteLocationPickerCard: React.FC<RouteLocationPickerCardProps> = ({
@@ -19,6 +21,8 @@ export const RouteLocationPickerCard: React.FC<RouteLocationPickerCardProps> = (
   setDestinationLocation,
   corridorDistanceKm,
   onOpenMapPicker,
+  onOpenOriginPicker,
+  onOpenDestinationPicker,
 }) => {
   return (
     <div className="space-y-3 pt-2">
@@ -57,19 +61,24 @@ export const RouteLocationPickerCard: React.FC<RouteLocationPickerCardProps> = (
               onChange={(e) => {
                 const addr = e.target.value;
                 const res = resolveCorridorCoordinates(addr);
-                setOriginLocation({
-                  address: addr,
-                  lat: res.lat,
-                  lng: res.lng,
-                  hubName: res.resolvedName,
-                });
+                if (setOriginLocation) {
+                  setOriginLocation({
+                    address: addr,
+                    lat: res.lat,
+                    lng: res.lng,
+                    hubName: res.resolvedName,
+                  });
+                }
               }}
               placeholder="e.g. Debre Sina Transit Terminal, Amhara"
               className="flex-1 min-w-0 px-3 py-2 rounded-xl border border-slate-300 focus:border-sky-600 outline-none text-xs font-medium text-slate-900 bg-white"
             />
             <button
               type="button"
-              onClick={() => onOpenMapPicker('ORIGIN')}
+              onClick={() => {
+                if (onOpenMapPicker) onOpenMapPicker('ORIGIN');
+                else if (onOpenOriginPicker) onOpenOriginPicker();
+              }}
               className="px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer"
             >
               <MapPin className="w-3.5 h-3.5 text-emerald-600" />
@@ -100,19 +109,24 @@ export const RouteLocationPickerCard: React.FC<RouteLocationPickerCardProps> = (
               onChange={(e) => {
                 const addr = e.target.value;
                 const res = resolveCorridorCoordinates(addr);
-                setDestinationLocation({
-                  address: addr,
-                  lat: res.lat,
-                  lng: res.lng,
-                  hubName: res.resolvedName,
-                });
+                if (setDestinationLocation) {
+                  setDestinationLocation({
+                    address: addr,
+                    lat: res.lat,
+                    lng: res.lng,
+                    hubName: res.resolvedName,
+                  });
+                }
               }}
               placeholder="e.g. Debre Berhan Industrial Hub, Amhara"
               className="flex-1 min-w-0 px-3 py-2 rounded-xl border border-slate-300 focus:border-sky-600 outline-none text-xs font-medium text-slate-900 bg-white"
             />
             <button
               type="button"
-              onClick={() => onOpenMapPicker('DESTINATION')}
+              onClick={() => {
+                if (onOpenMapPicker) onOpenMapPicker('DESTINATION');
+                else if (onOpenDestinationPicker) onOpenDestinationPicker();
+              }}
               className="px-3 py-2 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 text-xs font-bold flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer"
             >
               <MapPin className="w-3.5 h-3.5 text-sky-600" />

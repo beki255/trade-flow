@@ -242,20 +242,17 @@ export const PricingContractsTab: React.FC = () => {
       {/* 1. Header & Navigation Tabs */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-black uppercase tracking-wider text-sky-700 bg-sky-50 px-2.5 py-1 rounded-lg border border-sky-200">
-              Dynamic Pricing & Contract Engine
-            </span>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              Corridor Dynamic Pricing & Contract Rates
+            </h1>
             {flaggedCount > 0 && (
               <span className="text-[10px] font-black uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-1 rounded-lg flex items-center gap-1 animate-pulse">
                 <AlertTriangle className="w-3 h-3 text-rose-600" />
-                {flaggedCount} Contract Divergence Flagged (&gt;20%)
+                {flaggedCount} Divergence Flagged (&gt;20%)
               </span>
             )}
           </div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-1.5">
-            Corridor Dynamic Pricing & Contract Rates
-          </h1>
           <p className="text-xs text-slate-500">
             Real-time spot rate calculation, committed volume contracts with verified carriers, and automated divergence review workflows.
           </p>

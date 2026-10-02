@@ -3,6 +3,7 @@ import {
   View,
   Text,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { transporterStyles as styles } from '../transporterStyles';
@@ -57,49 +58,56 @@ export const FleetTab: React.FC<FleetTabProps> = ({
         <TouchableOpacity
           style={[
             styles.fleetSubTab,
-            { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 },
             activeSubTab === 'vehicles' && styles.fleetSubTabActive,
           ]}
           onPress={() => changeSubTab('vehicles')}
+          activeOpacity={0.8}
         >
           <MaterialCommunityIcons
             name="truck-outline"
             size={16}
             color={activeSubTab === 'vehicles' ? '#0284C7' : '#64748B'}
           />
-          <Text style={[styles.fleetSubTabText, activeSubTab === 'vehicles' && styles.fleetSubTabTextActive]}>
-            Fleet Vehicles ({fleetList.length})
+          <Text
+            style={[styles.fleetSubTabText, activeSubTab === 'vehicles' && styles.fleetSubTabTextActive]}
+            numberOfLines={1}
+          >
+            Vehicles ({fleetList.length})
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[
             styles.fleetSubTab,
-            { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 },
             activeSubTab === 'drivers' && styles.fleetSubTabActive,
           ]}
           onPress={() => changeSubTab('drivers')}
+          activeOpacity={0.8}
         >
           <Ionicons
             name="people-outline"
             size={16}
             color={activeSubTab === 'drivers' ? '#0284C7' : '#64748B'}
           />
-          <Text style={[styles.fleetSubTabText, activeSubTab === 'drivers' && styles.fleetSubTabTextActive]}>
-            Authorized Drivers ({driversList.length})
+          <Text
+            style={[styles.fleetSubTabText, activeSubTab === 'drivers' && styles.fleetSubTabTextActive]}
+            numberOfLines={1}
+          >
+            Drivers ({driversList.length})
           </Text>
           {pendingDriversCount > 0 && (
             <View
               style={{
                 backgroundColor: '#FEF3C7',
-                paddingHorizontal: 6,
+                paddingHorizontal: 5,
                 paddingVertical: 2,
-                borderRadius: 8,
+                borderRadius: 6,
                 borderWidth: 1,
                 borderColor: '#FCD34D',
+                flexShrink: 0,
               }}
             >
-              <Text style={{ fontSize: 9.5, fontWeight: '800', color: '#B45309' }}>
+              <Text style={{ fontSize: 9, fontWeight: '800', color: '#B45309' }}>
                 {pendingDriversCount} Pending
               </Text>
             </View>
@@ -136,7 +144,7 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                   style={[styles.card, isExpanded && styles.cardExpanded]}
                 >
                   <View style={styles.cardHeader}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, marginRight: 6 }}>
                       <View style={styles.vehicleIconBox}>
                         <MaterialCommunityIcons name="truck" size={20} color="#0284C7" />
                       </View>
@@ -151,7 +159,7 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                       </View>
                     </View>
 
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                       <View
                         style={[
                           styles.statusBadge,
@@ -280,9 +288,13 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                   style={[styles.card, isExpanded && styles.cardExpanded]}
                 >
                   <View style={styles.cardHeader}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, marginRight: 6 }}>
                       <View style={styles.driverAvatarBox}>
-                        <Ionicons name="person" size={20} color={isPending ? "#D97706" : "#0284C7"} />
+                        {drv.photoUrl ? (
+                          <Image source={{ uri: drv.photoUrl }} style={styles.driverAvatarImg} />
+                        ) : (
+                          <Ionicons name="person" size={20} color={isPending ? "#D97706" : "#0284C7"} />
+                        )}
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.truckPlate}>{drv.fullName}</Text>
@@ -295,12 +307,12 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                       </View>
                     </View>
 
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                       <View
                         style={[
                           styles.statusBadge,
                           isPending
-                            ? { backgroundColor: '#FEF3C7', borderWidth: 1, borderColor: '#FCD34D' }
+                            ? { backgroundColor: '#FEF3C7', borderWidth: 1, borderColor: '#FCD34D', paddingHorizontal: 7, paddingVertical: 3 }
                             : drv.status === 'ACTIVE'
                             ? styles.statusAvailable
                             : { backgroundColor: '#E0F2FE' },
@@ -310,13 +322,13 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                           style={[
                             styles.statusText,
                             isPending
-                              ? { color: '#92400E', fontWeight: '800' }
+                              ? { color: '#92400E', fontWeight: '800', fontSize: 10.5 }
                               : drv.status === 'ACTIVE'
                               ? {}
                               : { color: '#0369A1' },
                           ]}
                         >
-                          {isPending ? '⏳ PENDING APPROVAL' : drv.status}
+                          {isPending ? 'Pending' : drv.status}
                         </Text>
                       </View>
                       <View style={styles.chevronCircle}>
@@ -360,7 +372,7 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                         >
                           <Ionicons name="time-outline" size={13} color="#D97706" />
                           <Text style={{ fontSize: 11, fontWeight: '700', color: '#B45309', flex: 1 }}>
-                            ⏳ Pending Admin Verification (Cannot be dispatched yet)
+                            Pending Admin Verification (Cannot be dispatched yet)
                           </Text>
                         </View>
                       )}
@@ -415,6 +427,28 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                           </Text>
                         </View>
                       </View>
+                      {drv.photoUrl ? (
+                        <View style={styles.infoRow}>
+                          <Text style={styles.infoLabel}>Driver Biometric / Photo ID:</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <Ionicons name="checkmark-circle" size={14} color="#10B981" />
+                            <Text style={[styles.infoValue, { color: '#047857', fontWeight: '700' }]}>
+                              Attached (Verified EXIF)
+                            </Text>
+                          </View>
+                        </View>
+                      ) : null}
+                      {drv.licenseDocUrl ? (
+                        <View style={styles.infoRow}>
+                          <Text style={styles.infoLabel}>Physical License Scan:</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <Ionicons name="document-attach-outline" size={14} color="#0284C7" />
+                            <Text style={[styles.infoValue, { color: '#0284C7', fontWeight: '700' }]}>
+                              Uploaded & Available
+                            </Text>
+                          </View>
+                        </View>
+                      ) : null}
                     </View>
                   )}
                 </TouchableOpacity>

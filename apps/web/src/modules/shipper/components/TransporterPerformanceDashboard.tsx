@@ -148,11 +148,7 @@ export const TransporterPerformanceDashboard: React.FC<TransporterPerformanceDas
       <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-8 shadow-xs relative overflow-hidden">
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 rounded-full bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-transparent blur-3xl pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200/80 text-indigo-900 text-[11px] font-bold tracking-wide">
-              <Award className="w-3.5 h-3.5 text-indigo-600" />
-              <span>Corridor Benchmarking & Fleet Performance Analytics</span>
-            </div>
+          <div className="space-y-1">
             <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
               Transporter Performance & Corridor Benchmarking
             </h2>

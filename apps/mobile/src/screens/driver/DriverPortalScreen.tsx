@@ -35,6 +35,7 @@ import { PodTab } from './tabs/PodTab';
 // Modular Screen Components
 import { DriverTopHeader } from './components/DriverTopHeader';
 import { DriverBottomNavBar } from './components/DriverBottomNavBar';
+import { DriverProfileModal } from './modals/DriverProfileModal';
 
 interface DriverPortalScreenProps {
   onLogout: () => void;
@@ -42,8 +43,39 @@ interface DriverPortalScreenProps {
 }
 
 export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout, user }) => {
-  const [activeTab, setActiveTab] = useState<DriverTabType>('trip');
+  const [currentUser, setCurrentUser] = useState<any>(user);
+  const [activeTab, setActiveTab] = useState<DriverTabType>(() => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      const saved = window.localStorage.getItem('tradeflow_driver_tab') as DriverTabType;
+      if (saved && ['trip', 'nav', 'checkin', 'incident', 'pod'].includes(saved)) {
+        return saved;
+      }
+    }
+    return 'trip';
+  });
+
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem('tradeflow_driver_tab', activeTab);
+    }
+  }, [activeTab]);
   const [refreshing, setRefreshing] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+
+  // Sync currentUser when parent user prop updates
+  useEffect(() => {
+    if (user) {
+      setCurrentUser(user);
+    }
+  }, [user]);
+
+  const handlePhotoUpdated = (newPhotoUrl: string) => {
+    setCurrentUser((prev: any) => ({
+      ...prev,
+      photoUrl: newPhotoUrl,
+      roadworthinessDoc: newPhotoUrl,
+    }));
+  };
 
   // Emergency SOS state
   const [sosActive, setSosActive] = useState(false);
@@ -663,7 +695,7 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
     setActionLoading(true);
     try {
       const sigData = `✍️ ${recipientName} [TradeFlow Verified Cryptographic e-POD Handover Signature]`;
-      // Auto-trigger delivery milestone & TeleBirr payment smart escrow release
+      // Auto-trigger delivery milestone & smart escrow release
       const res = await apiFetch('/api/payments/settle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -695,7 +727,7 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
         await fetchActiveTrip();
         Alert.alert(
           '🎉 Delivery Confirmed!',
-          'Digital e-POD has been permanently recorded. TeleBirr escrow payment has been released to the transporter, and the shipper notified.',
+          'Digital e-POD has been permanently recorded. Escrow payment has been released to the transporter, and the shipper notified.',
           [{ text: 'OK' }]
         );
       } else {
@@ -713,22 +745,17 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
     }
   };
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await fetchActiveTrip();
-    setRefreshing(false);
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
 
       {/* Modular Top Mobile Header & Emergency SOS */}
       <DriverTopHeader
-        user={user}
+        user={currentUser}
         onLogout={onLogout}
         sosActive={sosActive}
         onToggleSos={() => setSosActive(!sosActive)}
+        onOpenProfile={() => setShowProfileModal(true)}
       />
 
       {/* Offline Queuing & Sync Status Indicator (NFR 7.2) */}
@@ -826,6 +853,14 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
       <DriverBottomNavBar
         activeTab={activeTab}
         onSelectTab={(tab) => setActiveTab(tab)}
+      />
+
+      {/* Driver Profile & Password Change Modal */}
+      <DriverProfileModal
+        visible={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        user={currentUser}
+        onPhotoUpdated={handlePhotoUpdated}
       />
     </SafeAreaView>
   );

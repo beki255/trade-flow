@@ -227,7 +227,7 @@ export const UploadCustomsDocModal: React.FC<UploadCustomsDocModalProps> = ({
               >
                 {availableShipments.map((s) => (
                   <option key={s.id} value={s.id}>
-                    {s.loadCode} • {s.title}
+                    {s.title}
                   </option>
                 ))}
               </select>

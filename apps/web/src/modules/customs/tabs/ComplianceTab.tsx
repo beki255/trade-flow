@@ -105,10 +105,6 @@ export const ComplianceTab: React.FC<ComplianceTabProps> = ({
       {/* 1. Header with Dossier Selector Dropdown */}
       <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="inline-flex items-center gap-2 text-emerald-800 font-extrabold text-[10.5px] uppercase tracking-wider">
-            <FileCheck2 className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Side-by-Side Compliance Verification Workbench</span>
-          </div>
           <h2 className="text-xl font-black text-slate-900 tracking-tight">
             Cross-Document Consistency Inspector
           </h2>

@@ -52,9 +52,11 @@ export const UserInspectionModal: React.FC<UserInspectionModalProps> = ({
                   ? '🛡️ OFFICIAL CUSTOMS INSPECTOR'
                   : inspectUser.role}
               </span>
-              <span className="text-xs text-slate-400 font-mono">
-                ID: {inspectUser.id.slice(0, 12)}
-              </span>
+              {inspectUser.tin && (
+                <span className="text-xs text-slate-700 font-mono font-bold">
+                  {inspectUser.role === 'CUSTOMS_OFFICER' ? `Badge: ${inspectUser.tin}` : `TIN: ${inspectUser.tin}`}
+                </span>
+              )}
             </div>
             <h2 className="text-xl font-black text-slate-900 mt-1">
               {inspectUser.role === 'DRIVER'
@@ -204,122 +206,146 @@ export const UserInspectionModal: React.FC<UserInspectionModalProps> = ({
             return { fileName, fileUrl };
           };
 
-          // 1. Insurance Documentation (GIT) (Uploaded by Transporter)
-          if (inspectUser.insuranceDoc) {
-            const fallbackName = `Insurance_GIT_${inspectUser.companyName || inspectUser.fullName}.pdf`.replace(/\s+/g, '_');
-            const parsed = parseDocumentValue(inspectUser.insuranceDoc, fallbackName);
-
-            if (parsed) {
-              docs.push({
-                title: 'Insurance Documentation (GIT)',
-                docType: 'INSURANCE_GIT',
-                docNumber: `GIT-${inspectUser.tin || 'PENDING'}`,
-                issuer: 'Ethiopian Insurance Corporation / Commercial Insurer',
-                fileName: parsed.fileName,
-                fileUrl: parsed.fileUrl,
-                status: inspectUser.verificationStatus,
-                issuedDate: new Date(inspectUser.createdAt).toLocaleDateString(),
-                ownerName: inspectUser.companyName || inspectUser.fullName,
-              });
-            }
-          }
-
-          // 2. Roadworthiness Certificate (FTA) (Uploaded by Transporter)
-          if (inspectUser.roadworthinessDoc) {
-            const fallbackName = `Roadworthiness_FTA_${inspectUser.companyName || inspectUser.fullName}.pdf`.replace(/\s+/g, '_');
-            const parsed = parseDocumentValue(inspectUser.roadworthinessDoc, fallbackName);
-
-            if (parsed) {
-              docs.push({
-                title: 'Roadworthiness Certificate (FTA)',
-                docType: 'ROADWORTHINESS_FTA',
-                docNumber: `FTA-${inspectUser.tin || 'PENDING'}`,
-                issuer: 'Federal Transport Authority (FTA Ethiopia)',
-                fileName: parsed.fileName,
-                fileUrl: parsed.fileUrl,
-                status: inspectUser.verificationStatus,
-                issuedDate: new Date(inspectUser.createdAt).toLocaleDateString(),
-                ownerName: inspectUser.companyName || inspectUser.fullName,
-              });
-            }
-          }
-
-          // 3. Trade License / Registration Certificate (Uploaded by Shipper / Other Users)
-          if (inspectUser.tradeLicenseDoc) {
-            const fallbackName = inspectUser.tradeLicenseNo
-              ? `Trade_License_${inspectUser.tradeLicenseNo}.pdf`
-              : 'Trade_License_Certificate.pdf';
-            const parsed = parseDocumentValue(inspectUser.tradeLicenseDoc, fallbackName);
-
-            if (parsed) {
-              docs.push({
-                title: 'Trade License / Business Registration Certificate',
-                docType: 'COMMERCIAL_TRADE_LICENSE',
-                docNumber: inspectUser.tradeLicenseNo || 'MOTI-PENDING',
-                issuer: 'Ministry of Trade & Regional Integration (MOTI)',
-                fileName: parsed.fileName,
-                fileUrl: parsed.fileUrl,
-                status: inspectUser.verificationStatus,
-                issuedDate: new Date(inspectUser.createdAt).toLocaleDateString(),
-                ownerName: inspectUser.companyName || inspectUser.fullName,
-              });
-            }
-          }
-
-          // 4. Commercial Driving License & Heavy Vehicle Qualification Certificate (If Driver)
+          // Case 1: When inspecting an AUTHORIZED DRIVER:
+          // Strictly and exclusively include ONLY what was submitted on the driver registration form!
           if (inspectUser.role === 'DRIVER') {
             const licenseNo = inspectUser.driverProfile?.driverLicenseNo || 'DL-PENDING';
             const cleanName = (inspectUser.fullName || 'Driver').replace(/\s+/g, '_');
             const fallbackName = `Commercial_Driver_License_${licenseNo}_${cleanName}.pdf`;
+            const licenseParsed = inspectUser.tradeLicenseDoc
+              ? parseDocumentValue(inspectUser.tradeLicenseDoc, fallbackName)
+              : null;
 
+            // 1. Commercial Driver's License Card (Physical scan from form)
             docs.push({
-              title: "Commercial Driver's License (CDL) & Grade Qualification",
+              title: "Commercial Driver's License (CDL)",
               docType: 'DRIVER_LICENSE',
               docNumber: licenseNo,
               issuer: 'Federal Transport Authority (FTA) - Driver Licensing Division',
-              fileName: fallbackName,
-              fileUrl: undefined,
+              fileName: licenseParsed ? licenseParsed.fileName : fallbackName,
+              fileUrl: licenseParsed ? licenseParsed.fileUrl : undefined,
               status: inspectUser.verificationStatus,
               issuedDate: new Date(inspectUser.createdAt).toLocaleDateString(),
               ownerName: inspectUser.fullName,
             });
-          }
 
-          // 5. Transporter Individual Vehicle Fleet Documents
-          (inspectUser.vehicles || []).forEach((v: any) => {
-            if (v.insuranceDocUrl) {
+            // 2. Driver Portrait / Facial ID Photo (From form) - ONLY if attached
+            if (inspectUser.roadworthinessDoc) {
+              const photoParsed = parseDocumentValue(inspectUser.roadworthinessDoc, `Driver_Photo_${cleanName}.jpg`);
               docs.push({
-                title: `Vehicle Insurance Policy (${v.plateNumber})`,
-                docType: 'INSURANCE_POLICY',
-                docNumber: v.insurancePolicyNo || `POL-${v.plateNumber}`,
-                issuer: 'Commercial Insurance Provider',
-                fileName: v.insuranceDocUrl,
-                fileUrl: v.insuranceDocUrl,
-                status: 'ATTACHED',
+                title: "Driver Biometric ID & Facial Portrait",
+                docType: 'DRIVER_PORTRAIT',
+                docNumber: `ID-${inspectUser.id.slice(-6).toUpperCase()}`,
+                issuer: 'National ID / Transporter Fleet Registry',
+                fileName: photoParsed ? photoParsed.fileName : `Driver_Photo_${cleanName}.jpg`,
+                fileUrl: photoParsed ? photoParsed.fileUrl : (inspectUser.roadworthinessDoc.startsWith('http') || inspectUser.roadworthinessDoc.startsWith('data:') ? inspectUser.roadworthinessDoc : undefined),
+                status: inspectUser.verificationStatus,
                 issuedDate: new Date(inspectUser.createdAt).toLocaleDateString(),
-                ownerName: inspectUser.companyName || inspectUser.fullName,
+                ownerName: inspectUser.fullName,
               });
             }
-            if (v.roadworthinessCertUrl) {
-              docs.push({
-                title: `Roadworthiness Certificate (${v.plateNumber})`,
-                docType: 'ROADWORTHINESS_CERTIFICATE',
-                docNumber: `RW-${v.plateNumber}`,
-                issuer: 'Transport Regulatory Authority',
-                fileName: v.roadworthinessCertUrl,
-                fileUrl: v.roadworthinessCertUrl,
-                status: 'ATTACHED',
-                issuedDate: new Date(inspectUser.createdAt).toLocaleDateString(),
-                ownerName: inspectUser.companyName || inspectUser.fullName,
-              });
+          } else {
+            // Case 2: For NON-DRIVERS (Transporters, Shippers, Forwarders)
+            // 1. Insurance Documentation (GIT) (Uploaded by Transporter)
+            if (inspectUser.insuranceDoc) {
+              const fallbackName = `Insurance_GIT_${inspectUser.companyName || inspectUser.fullName}.pdf`.replace(/\s+/g, '_');
+              const parsed = parseDocumentValue(inspectUser.insuranceDoc, fallbackName);
+
+              if (parsed) {
+                docs.push({
+                  title: 'Insurance Documentation (GIT)',
+                  docType: 'INSURANCE_GIT',
+                  docNumber: `GIT-${inspectUser.tin || 'PENDING'}`,
+                  issuer: 'Ethiopian Insurance Corporation / Commercial Insurer',
+                  fileName: parsed.fileName,
+                  fileUrl: parsed.fileUrl,
+                  status: inspectUser.verificationStatus,
+                  issuedDate: new Date(inspectUser.createdAt).toLocaleDateString(),
+                  ownerName: inspectUser.companyName || inspectUser.fullName,
+                });
+              }
             }
-          });
+
+            // 2. Roadworthiness Certificate (FTA) (Uploaded by Transporter)
+            if (inspectUser.roadworthinessDoc) {
+              const fallbackName = `Roadworthiness_FTA_${inspectUser.companyName || inspectUser.fullName}.pdf`.replace(/\s+/g, '_');
+              const parsed = parseDocumentValue(inspectUser.roadworthinessDoc, fallbackName);
+
+              if (parsed) {
+                docs.push({
+                  title: 'Roadworthiness Certificate (FTA)',
+                  docType: 'ROADWORTHINESS_FTA',
+                  docNumber: `FTA-${inspectUser.tin || 'PENDING'}`,
+                  issuer: 'Federal Transport Authority (FTA Ethiopia)',
+                  fileName: parsed.fileName,
+                  fileUrl: parsed.fileUrl,
+                  status: inspectUser.verificationStatus,
+                  issuedDate: new Date(inspectUser.createdAt).toLocaleDateString(),
+                  ownerName: inspectUser.companyName || inspectUser.fullName,
+                });
+              }
+            }
+
+            // 3. Trade License / Registration Certificate (Uploaded by Shipper / Other Users)
+            if (inspectUser.tradeLicenseDoc) {
+              const fallbackName = inspectUser.tradeLicenseNo
+                ? `Trade_License_${inspectUser.tradeLicenseNo}.pdf`
+                : 'Trade_License_Certificate.pdf';
+              const parsed = parseDocumentValue(inspectUser.tradeLicenseDoc, fallbackName);
+
+              if (parsed) {
+                docs.push({
+                  title: 'Trade License / Business Registration Certificate',
+                  docType: 'COMMERCIAL_TRADE_LICENSE',
+                  docNumber: inspectUser.tradeLicenseNo || 'MOTI-PENDING',
+                  issuer: 'Ministry of Trade & Regional Integration (MOTI)',
+                  fileName: parsed.fileName,
+                  fileUrl: parsed.fileUrl,
+                  status: inspectUser.verificationStatus,
+                  issuedDate: new Date(inspectUser.createdAt).toLocaleDateString(),
+                  ownerName: inspectUser.companyName || inspectUser.fullName,
+                });
+              }
+            }
+
+            // 4. Transporter Individual Vehicle Fleet Documents
+            (inspectUser.vehicles || []).forEach((v: any) => {
+              if (v.insuranceDocUrl) {
+                docs.push({
+                  title: `Vehicle Insurance Policy (${v.plateNumber})`,
+                  docType: 'INSURANCE_POLICY',
+                  docNumber: v.insurancePolicyNo || `POL-${v.plateNumber}`,
+                  issuer: 'Commercial Insurance Provider',
+                  fileName: v.insuranceDocUrl,
+                  fileUrl: v.insuranceDocUrl,
+                  status: 'ATTACHED',
+                  issuedDate: new Date(inspectUser.createdAt).toLocaleDateString(),
+                  ownerName: inspectUser.companyName || inspectUser.fullName,
+                });
+              }
+              if (v.roadworthinessCertUrl) {
+                docs.push({
+                  title: `Roadworthiness Certificate (${v.plateNumber})`,
+                  docType: 'ROADWORTHINESS_CERTIFICATE',
+                  docNumber: `RW-${v.plateNumber}`,
+                  issuer: 'Transport Regulatory Authority',
+                  fileName: v.roadworthinessCertUrl,
+                  fileUrl: v.roadworthinessCertUrl,
+                  status: 'ATTACHED',
+                  issuedDate: new Date(inspectUser.createdAt).toLocaleDateString(),
+                  ownerName: inspectUser.companyName || inspectUser.fullName,
+                });
+              }
+            });
+          }
 
           return (
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">
-                  Submitted Verification Documents & Certificates ({docs.length})
+                  {inspectUser.role === 'DRIVER'
+                    ? `Submitted Driver Credentials & Identification (${docs.length})`
+                    : `Submitted Verification Documents & Certificates (${docs.length})`}
                 </h3>
               </div>
 

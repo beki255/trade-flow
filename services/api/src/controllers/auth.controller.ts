@@ -70,6 +70,13 @@ export const login = async (req: Request, res: Response): Promise<void> => {
             : []),
         ],
       },
+      include: {
+        driverProfile: {
+          include: {
+            assignedVehicle: true,
+          },
+        },
+      },
     });
 
     if (!user) {
@@ -105,10 +112,15 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         email: user.email,
         username: user.username,
         fullName: user.fullName,
+        phone: user.phone,
         role: user.role,
         companyName: user.companyName,
         tin: user.tin,
         tradeLicenseNo: user.tradeLicenseNo,
+        tradeLicenseDoc: user.tradeLicenseDoc,
+        roadworthinessDoc: user.roadworthinessDoc,
+        photoUrl: user.roadworthinessDoc || user.insuranceDoc || null,
+        driverProfile: user.driverProfile,
         verificationStatus: user.verificationStatus,
         ratingAvg: user.ratingAvg,
       },
@@ -147,6 +159,13 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
           { email: decoded.email },
         ],
       },
+      include: {
+        driverProfile: {
+          include: {
+            assignedVehicle: true,
+          },
+        },
+      },
     });
 
     if (!user) {
@@ -166,6 +185,10 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
         role: user.role,
         tin: user.tin,
         tradeLicenseNo: user.tradeLicenseNo,
+        tradeLicenseDoc: user.tradeLicenseDoc,
+        roadworthinessDoc: user.roadworthinessDoc,
+        photoUrl: user.roadworthinessDoc || user.insuranceDoc || null,
+        driverProfile: user.driverProfile,
         verificationStatus: user.verificationStatus,
         ratingAvg: user.ratingAvg,
       },
@@ -450,3 +473,217 @@ export const updateVerification = async (req: Request, res: Response): Promise<v
     res.status(500).json({ error: 'Failed to update database verification record' });
   }
 };
+
+// 7. Change / Update User Password (for Driver one-time password update or any user)
+export const changePassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { userId, phone, email, oldPassword, newPassword } = req.body;
+
+    if (!newPassword || newPassword.trim().length < 4) {
+      res.status(400).json({ error: 'New password must be at least 4 characters long.' });
+      return;
+    }
+
+    let user: any = null;
+    if (userId) {
+      user = await prisma.user.findUnique({ where: { id: userId } });
+    }
+    if (!user && phone) {
+      const cleanDigits = phone.replace(/[^0-9]/g, '');
+      user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { phone: phone.trim() },
+            ...(cleanDigits.length >= 8 ? [{ phone: { contains: cleanDigits.slice(-8) } }] : []),
+          ],
+        },
+      });
+    }
+    if (!user && email) {
+      user = await prisma.user.findFirst({ where: { email: email.toLowerCase().trim() } });
+    }
+
+    if (!user) {
+      res.status(404).json({ error: 'Account not found. Please log in again.' });
+      return;
+    }
+
+    // Verify current / one-time password if provided
+    if (oldPassword && oldPassword.trim().length > 0) {
+      if ((user.passwordHash || '').trim() !== oldPassword.trim()) {
+        res.status(401).json({ error: 'Current or temporary password does not match.' });
+        return;
+      }
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash: newPassword.trim(),
+      },
+    });
+
+    res.json({
+      message: 'Password updated successfully! Your new permanent password has been saved.',
+      success: true,
+    });
+  } catch (error: any) {
+    console.error('Change password error:', error);
+    res.status(500).json({ error: 'Failed to update password.' });
+  }
+};
+
+// 8. Update Driver / User Photo
+export const updatePhoto = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { userId, phone, email, photoUrl } = req.body;
+    if (!photoUrl) {
+      res.status(400).json({ error: 'Photo data or URL is required.' });
+      return;
+    }
+
+    let user: any = null;
+    if (userId) {
+      user = await prisma.user.findUnique({ where: { id: userId } });
+    }
+    if (!user && phone) {
+      const cleanDigits = phone.replace(/[^0-9]/g, '');
+      user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { phone: phone.trim() },
+            ...(cleanDigits.length >= 8 ? [{ phone: { contains: cleanDigits.slice(-8) } }] : []),
+          ],
+        },
+      });
+    }
+    if (!user && email) {
+      user = await prisma.user.findFirst({ where: { email: email.toLowerCase().trim() } });
+    }
+
+    if (!user) {
+      res.status(404).json({ error: 'Account not found.' });
+      return;
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        roadworthinessDoc: photoUrl,
+      },
+      include: {
+        driverProfile: {
+          include: {
+            assignedVehicle: true,
+          },
+        },
+      },
+    });
+
+    res.json({
+      message: 'Profile photo updated successfully!',
+      photoUrl: updated.roadworthinessDoc,
+      user: {
+        ...updated,
+        photoUrl: updated.roadworthinessDoc,
+      },
+    });
+  } catch (error: any) {
+    console.error('Update photo error:', error);
+    res.status(500).json({ error: 'Failed to update profile photo.' });
+  }
+};
+
+// 9. Complete Profile for Transporter / Commercial Users
+export const completeProfile = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const {
+      userId,
+      email,
+      phone,
+      companyName,
+      tin,
+      tradeLicenseNo,
+      tradeLicenseDoc,
+      insuranceDoc,
+      roadworthinessDoc,
+    } = req.body;
+
+    let user: any = null;
+    if (userId) {
+      try {
+        user = await prisma.user.findUnique({ where: { id: userId } });
+      } catch (e) {}
+    }
+    if (!user && email) {
+      user = await prisma.user.findFirst({ where: { email: email.toLowerCase().trim() } });
+    }
+    if (!user && phone) {
+      const cleanDigits = phone.replace(/[^0-9]/g, '');
+      user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { phone: phone.trim() },
+            ...(cleanDigits.length >= 8 ? [{ phone: { contains: cleanDigits.slice(-8) } }] : []),
+          ],
+        },
+      });
+    }
+
+    if (!user) {
+      res.status(404).json({ error: 'User account not found' });
+      return;
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        ...(companyName ? { companyName: companyName.trim() } : {}),
+        ...(tin ? { tin: tin.trim() } : {}),
+        ...(tradeLicenseNo ? { tradeLicenseNo: tradeLicenseNo.trim() } : {}),
+        ...(tradeLicenseDoc ? { tradeLicenseDoc: typeof tradeLicenseDoc === 'object' ? JSON.stringify(tradeLicenseDoc) : tradeLicenseDoc } : {}),
+        ...(insuranceDoc ? { insuranceDoc: typeof insuranceDoc === 'object' ? JSON.stringify(insuranceDoc) : insuranceDoc } : {}),
+        ...(roadworthinessDoc ? { roadworthinessDoc: typeof roadworthinessDoc === 'object' ? JSON.stringify(roadworthinessDoc) : roadworthinessDoc } : {}),
+        verificationStatus: VerificationStatus.PENDING,
+      },
+    });
+
+    // Record in immutable audit trail (§4.1.2)
+    auditTrailStore.unshift({
+      id: `AUD-${Date.now().toString().slice(-4)}`,
+      action: 'TRANSPORTER_PROFILE_COMPLETED',
+      category: 'VERIFICATION',
+      targetUserId: updatedUser.id,
+      targetName: updatedUser.companyName || updatedUser.fullName,
+      previousStatus: user.verificationStatus,
+      newStatus: VerificationStatus.PENDING,
+      performedByAdminId: 'SYSTEM_ONBOARDING',
+      timestamp: new Date().toISOString(),
+      notes: `Transporter completed compliance credentials with TIN: ${updatedUser.tin || 'N/A'}, License: ${updatedUser.tradeLicenseNo || 'N/A'}. Placed in administrative verification queue.`,
+    });
+
+    // Broadcast WebSocket event to Web Admin & Portals
+    const io = req.app?.get('io');
+    if (io) {
+      io.emit('user:verification-updated', {
+        userId: updatedUser.id,
+        email: updatedUser.email,
+        verificationStatus: VerificationStatus.PENDING,
+      });
+      io.emit('portal:refresh', { type: 'VERIFICATION', userId: updatedUser.id });
+    }
+
+    res.json({
+      message: 'Business profile and compliance credentials submitted successfully! Placed in verification queue.',
+      user: {
+        ...updatedUser,
+        photoUrl: updatedUser.roadworthinessDoc || updatedUser.insuranceDoc || null,
+      },
+    });
+  } catch (error: any) {
+    console.error('completeProfile error:', error);
+    res.status(500).json({ error: 'Failed to complete profile' });
+  }
+};
+
+

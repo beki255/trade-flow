@@ -253,14 +253,9 @@ export const FuelSecurityRouteOptimizationCard: React.FC<FuelSecurityRouteOptimi
       {/* Top Banner Header */}
       <div className="p-5 sm:p-6 bg-slate-50/70 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-800 border border-sky-200/80 text-[10px] font-bold tracking-wider uppercase flex items-center gap-1.5">
-              <Zap className="w-3 h-3 text-sky-600 animate-pulse" /> AI Route Optimization
-            </span>
-            <h3 className="text-base sm:text-lg font-black tracking-tight text-slate-900">
-              Fuel & Security-Aware Route Optimization
-            </h3>
-          </div>
+          <h3 className="text-base sm:text-lg font-black tracking-tight text-slate-900">
+            Fuel & Security-Aware Route Optimization
+          </h3>
           <p className="text-xs text-slate-500 mt-1">
             Dynamic route recommendation minimizing Distance (30%), Transit Time (35%), Fuel (20%), and Security Risk (15%).
           </p>

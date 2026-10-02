@@ -187,10 +187,7 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
       {/* Top Header Bar & View Switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-[10px] font-extrabold uppercase tracking-widest text-sky-700 bg-sky-50 px-2.5 py-1 rounded-full border border-sky-200 inline-flex items-center gap-1.5">
-            <Radio className="w-3 h-3 text-sky-600 animate-pulse" /> Real-Time Telematics & Fleet Intelligence
-          </span>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-1.5">
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
             {trackingSubView === 'MAP'
               ? 'Live Shipment Tracking & Corridor Route Map'
               : trackingSubView === 'FUEL_ANALYTICS'
@@ -360,7 +357,7 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
 
         <div className="text-[11px] text-slate-500 font-medium">
           {filterMode === 'ACTIVE' && 'Live GPS stream active for consignments on the road'}
-          {filterMode === 'DELIVERED' && 'Historical records with permanent e-POD & TeleBirr settlement'}
+          {filterMode === 'DELIVERED' && 'Historical records with permanent e-POD & Escrow settlement'}
           {filterMode === 'ALL' && 'Viewing all active and delivered freight postings'}
         </div>
       </div>
@@ -498,16 +495,16 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
             >
               <div>
                 <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-black text-slate-900 capitalize">
+                    {selectedLoad.title}
+                  </h3>
                   <span
                     className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
                       isTripDelivered ? 'bg-purple-100 text-purple-800 border-purple-200' : 'bg-sky-100 text-sky-800 border-sky-200'
                     }`}
                   >
-                    {selectedLoad.loadCode}
+                    {isTripDelivered ? '✓ Delivered' : isTripInTransit ? '🟢 In Transit' : 'Dispatched'}
                   </span>
-                  <h3 className="text-sm font-black text-slate-900">
-                    {selectedLoad.title}
-                  </h3>
                 </div>
                 <p className="text-xs text-slate-600 mt-1 flex items-center gap-2 font-medium">
                   <span className="text-slate-700">🟢 {selectedLoad.origin.split(',')[0]}</span>
@@ -578,16 +575,13 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-0.5 rounded border border-amber-200">
+                        <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full border border-amber-200">
                           {selectedLoad.status === 'DISPATCHED' || selectedLoad.status === 'BOOKED'
                             ? 'Dispatched • Ready at Origin'
                             : 'Awaiting Carrier Match'}
                         </span>
-                        <span className="text-xs font-mono font-bold text-slate-400">
-                          {selectedLoad.loadCode}
-                        </span>
                       </div>
-                      <h3 className="text-lg font-black text-slate-900 mt-1">
+                      <h3 className="text-xl font-black text-slate-900 mt-1 capitalize">
                         {selectedLoad.title}
                       </h3>
                     </div>

@@ -53,11 +53,7 @@ export const VerificationQueueTab: React.FC<VerificationQueueTabProps> = ({
       {/* Header Banner */}
       <div className="p-6 sm:p-7 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative overflow-hidden">
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 rounded-full bg-gradient-to-br from-sky-500/10 via-indigo-500/5 to-transparent blur-3xl pointer-events-none" />
-        <div className="space-y-1.5 relative z-10">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-sky-50 border border-sky-200/80 text-sky-800 text-[11px] font-bold tracking-wide">
-            <ShieldCheck className="w-3.5 h-3.5 text-sky-600" />
-            <span>Compliance & KYC Verification</span>
-          </div>
+        <div className="space-y-1 relative z-10">
           <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
             User Verification & KYC Queue
           </h1>

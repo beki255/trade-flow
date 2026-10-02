@@ -317,7 +317,7 @@ export const initiatePayment = async (req: Request, res: Response): Promise<void
         where: { id: bid.id },
         data: {
           status: BidStatus.ACCEPTED,
-          proposalNotes: `Bid accepted by shipper. TeleBirr Escrow locked. Awaiting fleet dispatch by carrier.`,
+          proposalNotes: `Bid accepted by shipper. Smart Escrow locked. Awaiting fleet dispatch by carrier.`,
         },
       });
 
@@ -377,7 +377,7 @@ export const initiatePayment = async (req: Request, res: Response): Promise<void
           where: { id: winningBidId },
           data: {
             status: BidStatus.ACCEPTED,
-            proposalNotes: `Direct match accepted by shipper. TeleBirr Escrow locked. Awaiting fleet dispatch by carrier.`,
+            proposalNotes: `Direct match accepted by shipper. Smart Escrow locked. Awaiting fleet dispatch by carrier.`,
           },
         });
         await prisma.bid.updateMany({
@@ -501,6 +501,8 @@ export const initiatePayment = async (req: Request, res: Response): Promise<void
         status: PaymentStatus.HELD_IN_ESCROW,
         paidAt: new Date(),
       },
+    });
+
     // Record tamper-evident audit logging for financial transaction (NFR 7.4)
     auditTrailStore.unshift({
       id: `AUD-ESC-${Date.now().toString().slice(-4)}`,
@@ -510,9 +512,9 @@ export const initiatePayment = async (req: Request, res: Response): Promise<void
       targetName: `Shipment ${targetShipment.id} (${txNumber})`,
       previousStatus: 'PENDING',
       newStatus: 'HELD_IN_ESCROW',
-      performedByAdminId: targetShipperId || 'TELEBIRR_GATEWAY',
+      performedByAdminId: targetShipperId || (normalizedMethod === PaymentMethod.CBE_BIRR ? 'CBE_GATEWAY' : 'TELEBIRR_GATEWAY'),
       timestamp: new Date().toISOString(),
-      notes: `TeleBirr escrow locked: ETB ${resolvedGross.toLocaleString()} (Commission 5%: ETB ${platformCommissionEtb.toLocaleString()}, Net Payout: ETB ${netTransporterPayoutEtb.toLocaleString()}). Tx: ${txNumber}`,
+      notes: `${normalizedMethod === PaymentMethod.CBE_BIRR ? 'CBE Birr' : 'TeleBirr'} escrow locked: ETB ${resolvedGross.toLocaleString()} (Commission 5%: ETB ${platformCommissionEtb.toLocaleString()}, Net Payout: ETB ${netTransporterPayoutEtb.toLocaleString()}). Tx: ${txNumber}`,
     });
 
     res.status(200).json({
@@ -781,6 +783,8 @@ export const settlePayment = async (req: Request, res: Response): Promise<void> 
             },
           });
         }
+      }
+
       // 4. Record tamper-evident audit logging for financial transaction payout (NFR 7.4)
       auditTrailStore.unshift({
         id: `AUD-PAY-${Date.now().toString().slice(-4)}`,
@@ -792,7 +796,7 @@ export const settlePayment = async (req: Request, res: Response): Promise<void> 
         newStatus: 'SETTLED',
         performedByAdminId: 'SMART_CONTRACT_ESCROW',
         timestamp: deliveredDate.toISOString(),
-        notes: `Digital e-POD confirmed and verified. Released TeleBirr escrow payout of ETB ${(settledPayment?.netTransporterPayoutEtb || 0).toLocaleString()} to carrier. Recipient: ${finalRecipient}`,
+        notes: `Digital e-POD confirmed and verified. Released Smart Escrow payout of ETB ${(settledPayment?.netTransporterPayoutEtb || 0).toLocaleString()} to carrier. Recipient: ${finalRecipient}`,
       });
     } catch (payErr) {
       console.warn('Payment settlement warning (e-POD saved successfully):', payErr);
@@ -800,7 +804,7 @@ export const settlePayment = async (req: Request, res: Response): Promise<void> 
 
     res.json({
       success: true,
-      message: 'TeleBirr Smart Escrow released successfully! e-POD saved in database and consignment delivered.',
+      message: 'Smart Escrow released successfully! e-POD saved in database and consignment delivered.',
       payment: settledPayment,
       shipment: updatedShipment,
       carrierPayoutEtb: settledPayment?.netTransporterPayoutEtb || Math.round((Number(targetShipment.agreedRateEtb) || 185000) * 0.95),
@@ -1073,7 +1077,7 @@ export const arbitrateDispute = async (req: Request, res: Response): Promise<voi
     if (verdict === 'REFUND_SHIPPER') {
       newStatus = PaymentStatus.REFUNDED;
       finalPayout = 0;
-      verdictText = `[ARBITRATION VERDICT: 100% REFUND TO SHIPPER] Escrow released back to Shipper TeleBirr wallet. Rationale: ${adminResolutionNotes || 'Cargo damage verified; full reimbursement authorized.'}`;
+      verdictText = `[ARBITRATION VERDICT: 100% REFUND TO SHIPPER] Escrow released back to Shipper mobile wallet. Rationale: ${adminResolutionNotes || 'Cargo damage verified; full reimbursement authorized.'}`;
     } else if (verdict === 'RELEASE_TRANSPORTER') {
       newStatus = PaymentStatus.SETTLED;
       finalPayout = payment.netTransporterPayoutEtb;

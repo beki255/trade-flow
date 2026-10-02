@@ -795,7 +795,7 @@ export const getLiveTracking = async (req: Request, res: Response): Promise<void
       isDriverMoving: isMoving,
       status: shipment.status,
       message: isDelivered
-        ? `Consignment arrived at destination and successfully DELIVERED! Electronic POD verified & TeleBirr Smart Escrow released.`
+        ? `Consignment arrived at destination and successfully DELIVERED! Electronic POD verified & Smart Escrow released.`
         : isDispatchedOnly
         ? `Fleet dispatched to Driver ${shipment.driver?.user?.fullName || ''} (${shipment.vehicle?.plateNumber || ''}). Awaiting driver departure.`
         : isMoving

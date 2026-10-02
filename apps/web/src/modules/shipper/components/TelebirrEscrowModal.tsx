@@ -40,7 +40,7 @@ export const TelebirrEscrowModal: React.FC<TelebirrEscrowModalProps> = ({
   onPay,
   txReceipt,
 }) => {
-  const [selectedMethod, setSelectedMethod] = useState<'TELEBIRR' | 'CBE_BIRR' | 'AWASH_BIRR'>('TELEBIRR');
+  const [selectedMethod, setSelectedMethod] = useState<'TELEBIRR' | 'CBE_BIRR'>('TELEBIRR');
 
   if (!isOpen) return null;
 
@@ -80,23 +80,29 @@ export const TelebirrEscrowModal: React.FC<TelebirrEscrowModalProps> = ({
     <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl sm:rounded-3xl max-w-lg w-full my-auto shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[92vh] sm:max-h-[90vh] overflow-hidden">
         
-        {/* Header - Fixed at top */}
+        {/* Header - Dynamically reflects selected method */}
         <div className="flex items-center justify-between border-b border-slate-100 p-4 sm:p-5 shrink-0 bg-white">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-sky-600 to-sky-800 text-white font-black text-sm flex items-center justify-center shadow-md shadow-sky-500/20 shrink-0">
-              TB
+            <div className={`w-10 h-10 rounded-2xl ${
+              selectedMethod === 'CBE_BIRR'
+                ? 'bg-gradient-to-br from-purple-700 to-purple-900 shadow-purple-500/20'
+                : 'bg-gradient-to-br from-sky-600 to-sky-800 shadow-sky-500/20'
+            } text-white font-black text-sm flex items-center justify-center shadow-md shrink-0 transition-all`}>
+              {selectedMethod === 'CBE_BIRR' ? 'CBE' : 'TB'}
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight">
-                  TeleBirr Smart Escrow Lock
+                  {selectedMethod === 'CBE_BIRR' ? 'CBE Birr Smart Escrow Lock' : 'TeleBirr Smart Escrow Lock'}
                 </h3>
                 <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full shrink-0">
                   Secure
                 </span>
               </div>
               <p className="text-[10.5px] sm:text-[11px] text-slate-500">
-                Ethio Telecom digital escrow backed by Ethiopian National Logistics SLA
+                {selectedMethod === 'CBE_BIRR'
+                  ? 'Commercial Bank of Ethiopia digital escrow backed by National Logistics SLA'
+                  : 'Ethio Telecom digital escrow backed by Ethiopian National Logistics SLA'}
               </p>
             </div>
           </div>
@@ -124,7 +130,7 @@ export const TelebirrEscrowModal: React.FC<TelebirrEscrowModalProps> = ({
                 Escrow Funds Successfully Locked!
               </h4>
               <p className="text-xs text-emerald-800 mt-1">
-                Receipt reference: <span className="font-mono font-bold text-emerald-900">{txReceipt?.transactionNo || 'TB-TF-CONFIRMED'}</span>
+                Receipt reference: <span className="font-mono font-bold text-emerald-900">{txReceipt?.transactionNo || (selectedMethod === 'CBE_BIRR' ? 'CBE-TF-CONFIRMED' : 'TB-TF-CONFIRMED')}</span>
               </p>
             </div>
 
@@ -194,16 +200,16 @@ export const TelebirrEscrowModal: React.FC<TelebirrEscrowModalProps> = ({
               </div>
             </div>
 
-            {/* Mobile Wallet Selector */}
+            {/* Mobile Wallet Selector: TeleBirr & CBE Birr only */}
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-700">
                 Select Mobile Money Wallet
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2.5">
                 <button
                   type="button"
                   onClick={() => setSelectedMethod('TELEBIRR')}
-                  className={`p-2.5 rounded-xl border text-left transition-all ${
+                  className={`p-3 rounded-xl border text-left transition-all ${
                     selectedMethod === 'TELEBIRR'
                       ? 'border-sky-600 bg-sky-50/70 text-sky-950 font-bold ring-2 ring-sky-500/20'
                       : 'border-slate-200 hover:border-slate-300 text-slate-700'
@@ -219,7 +225,7 @@ export const TelebirrEscrowModal: React.FC<TelebirrEscrowModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedMethod('CBE_BIRR')}
-                  className={`p-2.5 rounded-xl border text-left transition-all ${
+                  className={`p-3 rounded-xl border text-left transition-all ${
                     selectedMethod === 'CBE_BIRR'
                       ? 'border-purple-600 bg-purple-50/70 text-purple-950 font-bold ring-2 ring-purple-500/20'
                       : 'border-slate-200 hover:border-slate-300 text-slate-700'
@@ -229,23 +235,7 @@ export const TelebirrEscrowModal: React.FC<TelebirrEscrowModalProps> = ({
                     <span className="text-xs font-black text-purple-700">CBE Birr</span>
                     {selectedMethod === 'CBE_BIRR' && <Check className="w-3.5 h-3.5 text-purple-600" />}
                   </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">Commercial Bank</div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setSelectedMethod('AWASH_BIRR')}
-                  className={`p-2.5 rounded-xl border text-left transition-all ${
-                    selectedMethod === 'AWASH_BIRR'
-                      ? 'border-emerald-600 bg-emerald-50/70 text-emerald-950 font-bold ring-2 ring-emerald-500/20'
-                      : 'border-slate-200 hover:border-slate-300 text-slate-700'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-emerald-700">Awash Birr</span>
-                    {selectedMethod === 'AWASH_BIRR' && <Check className="w-3.5 h-3.5 text-emerald-600" />}
-                  </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">Awash Bank</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">Commercial Bank of Ethiopia</div>
                 </button>
               </div>
             </div>
@@ -291,12 +281,18 @@ export const TelebirrEscrowModal: React.FC<TelebirrEscrowModalProps> = ({
             <button
               type="submit"
               disabled={isProcessing}
-              className="w-full py-3.5 rounded-2xl bg-sky-700 hover:bg-sky-800 active:bg-sky-900 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-sky-700/25 transition-all disabled:opacity-75 disabled:cursor-not-allowed"
+              className={`w-full py-3.5 rounded-2xl ${
+                selectedMethod === 'CBE_BIRR'
+                  ? 'bg-purple-700 hover:bg-purple-800 active:bg-purple-900 shadow-purple-700/25'
+                  : 'bg-sky-700 hover:bg-sky-800 active:bg-sky-900 shadow-sky-700/25'
+              } text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg transition-all disabled:opacity-75 disabled:cursor-not-allowed`}
             >
               {isProcessing ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Contacting TeleBirr Gateway & Locking Escrow...</span>
+                  <span>
+                    Contacting {selectedMethod === 'CBE_BIRR' ? 'CBE Birr' : 'TeleBirr'} Gateway & Locking Escrow...
+                  </span>
                 </>
               ) : (
                 <>

@@ -81,9 +81,13 @@ export const DynamicSpotRateCard: React.FC<DynamicSpotRateCardProps> = ({
   };
 
   useEffect(() => {
-    if (originLocation.address && destinationLocation.address) {
+    if (!originLocation.address || !destinationLocation.address) return;
+
+    const timer = setTimeout(() => {
       fetchSpotRate();
-    }
+    }, 600);
+
+    return () => clearTimeout(timer);
   }, [
     originLocation.address,
     destinationLocation.address,
@@ -121,19 +125,15 @@ export const DynamicSpotRateCard: React.FC<DynamicSpotRateCardProps> = ({
       {/* Header & Status */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4 relative z-10">
         <div className="space-y-1">
+          <h3 className="text-base sm:text-lg font-black tracking-tight text-slate-900 flex items-center gap-2">
+            Prevailing Corridor Benchmark Rate
+          </h3>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider bg-sky-50 text-sky-800 border border-sky-200/80 px-2 py-0.5 rounded-full flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-sky-600" />
-              Dynamic Spot Rate
-            </span>
             <span className="text-[10px] text-slate-500 font-mono flex items-center gap-1">
               <Clock className="w-3 h-3 text-slate-400" />
               Hourly Refresh: Valid for {countdownMinutes}m
             </span>
           </div>
-          <h3 className="text-base sm:text-lg font-black tracking-tight text-slate-900 flex items-center gap-2">
-            Prevailing Corridor Benchmark Rate
-          </h3>
         </div>
 
         <button

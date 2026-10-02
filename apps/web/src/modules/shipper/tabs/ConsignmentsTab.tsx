@@ -81,11 +81,7 @@ export const ConsignmentsTab: React.FC<ConsignmentsTabProps> = ({
       <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-8 shadow-xs relative overflow-hidden">
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 rounded-full bg-gradient-to-br from-sky-500/10 via-blue-500/5 to-transparent blur-3xl pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-50 border border-sky-200/80 text-sky-900 text-[11px] font-bold tracking-wide">
-              <Package className="w-3.5 h-3.5 text-sky-600" />
-              <span>Shipper Freight Portfolio</span>
-            </div>
+          <div className="space-y-1">
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               My Consignments
             </h1>
@@ -233,13 +229,10 @@ export const ConsignmentsTab: React.FC<ConsignmentsTabProps> = ({
                 key={item.id}
                 className="p-5 sm:p-6 rounded-3xl border border-slate-200 bg-white hover:border-slate-300 hover:shadow-md transition-all shadow-xs space-y-4"
               >
-                {/* Header: Ref ID, Cargo Title, Status Badge */}
+                {/* Header: Cargo Title & Status Badge */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
                   <div className="flex items-center gap-2.5 flex-wrap">
-                    <span className="font-mono text-[10.5px] font-extrabold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
-                      {item.id}
-                    </span>
-                    <h3 className="text-base font-black text-slate-900">
+                    <h3 className="text-base font-black text-slate-900 capitalize">
                       {item.title}
                     </h3>
                     <span className="px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-sky-50 text-sky-700 border border-sky-200">

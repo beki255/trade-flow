@@ -95,7 +95,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           { id: 'bids', label: 'Bid Management', icon: Gavel },
           { id: 'tracking', label: 'Live Tracking Map', icon: Navigation },
           { id: 'documents', label: 'Customs Documents', icon: FileText },
-          { id: 'payments', label: 'Payments & TeleBirr', icon: CreditCard },
+          { id: 'payments', label: 'Payments & Escrow', icon: CreditCard },
           { id: 'pricing-contracts', label: 'Contract Rates & Pricing', icon: TrendingUp },
           { id: 'ratings', label: 'Ratings & Reviews', icon: Star },
         ];

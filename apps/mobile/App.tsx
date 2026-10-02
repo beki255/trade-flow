@@ -23,9 +23,41 @@ function MainApp() {
     ...Ionicons.font,
     ...MaterialCommunityIcons.font,
   });
-  const [currentScreen, setCurrentScreen] = useState<'welcome' | 'login' | 'register' | 'active_home'>('welcome');
-  const [currentRole, setCurrentRole] = useState<'DRIVER' | 'TRANSPORTER'>('DRIVER');
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentScreen, setCurrentScreen] = useState<'welcome' | 'login' | 'register' | 'active_home'>(() => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      const savedUser = window.localStorage.getItem('tradeflow_mobile_user');
+      const savedScreen = window.localStorage.getItem('tradeflow_mobile_screen');
+      if (savedUser && savedScreen === 'active_home') {
+        return 'active_home';
+      }
+    }
+    return 'welcome';
+  });
+
+  const [currentRole, setCurrentRole] = useState<'DRIVER' | 'TRANSPORTER'>(() => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      const savedRole = window.localStorage.getItem('tradeflow_mobile_role');
+      if (savedRole === 'DRIVER' || savedRole === 'TRANSPORTER') {
+        return savedRole;
+      }
+    }
+    return 'DRIVER';
+  });
+
+  const [currentUser, setCurrentUser] = useState<any>(() => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      try {
+        const savedUser = window.localStorage.getItem('tradeflow_mobile_user');
+        if (savedUser) {
+          return JSON.parse(savedUser);
+        }
+      } catch (e) {
+        console.warn('Error reading saved user:', e);
+      }
+    }
+    return null;
+  });
+
   const [authLoading, setAuthLoading] = useState<boolean>(false);
 
   // Check for Google OAuth callback in URL hash when returning from Google Account Chooser
@@ -120,9 +152,7 @@ function MainApp() {
             setAuthLoading(false);
 
             if (apiRes.ok && data.user) {
-              setCurrentUser(data.user);
-              setCurrentRole((data.user.role || targetRole) as 'DRIVER' | 'TRANSPORTER');
-              setCurrentScreen('active_home');
+              handleLoginSuccess(data.user.role || targetRole, data.user);
             } else {
               // Unregistered user attempted to LOGIN with Google -> Block & redirect to register
               const errorMsg = data.error || 'No registered account found with this Google email. Please register first.';
@@ -161,9 +191,38 @@ function MainApp() {
   }
 
   const handleLoginSuccess = (role: string, user?: any) => {
-    setCurrentRole(role as 'DRIVER' | 'TRANSPORTER');
+    const normRole = (role ? role.toUpperCase() : 'DRIVER') as 'DRIVER' | 'TRANSPORTER';
+    setCurrentRole(normRole);
     if (user) setCurrentUser(user);
     setCurrentScreen('active_home');
+
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      try {
+        if (user) {
+          window.localStorage.setItem('tradeflow_mobile_user', JSON.stringify(user));
+        }
+        window.localStorage.setItem('tradeflow_mobile_role', normRole);
+        window.localStorage.setItem('tradeflow_mobile_screen', 'active_home');
+      } catch (e) {
+        console.warn('Could not save session to localStorage:', e);
+      }
+    }
+  };
+
+  const handleLogout = () => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      try {
+        window.localStorage.removeItem('tradeflow_mobile_user');
+        window.localStorage.removeItem('tradeflow_mobile_role');
+        window.localStorage.removeItem('tradeflow_mobile_screen');
+        window.localStorage.removeItem('tradeflow_transporter_tab');
+        window.localStorage.removeItem('tradeflow_driver_tab');
+      } catch (e) {
+        console.warn('Could not clear session from localStorage:', e);
+      }
+    }
+    setCurrentUser(null);
+    setCurrentScreen('welcome');
   };
 
   // 1. Welcome Screen
@@ -200,10 +259,10 @@ function MainApp() {
 
   // 4. Role-Specific Mobile Portals
   if (currentRole === 'TRANSPORTER') {
-    return <TransporterPortalScreen onLogout={() => setCurrentScreen('welcome')} user={currentUser} />;
+    return <TransporterPortalScreen onLogout={handleLogout} user={currentUser} />;
   }
 
-  return <DriverPortalScreen onLogout={() => setCurrentScreen('welcome')} user={currentUser} />;
+  return <DriverPortalScreen onLogout={handleLogout} user={currentUser} />;
 }
 
 export default function App() {

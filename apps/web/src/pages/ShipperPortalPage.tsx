@@ -115,6 +115,11 @@ export const ShipperPortalPage: React.FC = () => {
     );
   }, [originLocation, destinationLocation]);
 
+  // Active consignment in progress (shippers manage at most 1 active load at a time)
+  const activeShipment = shipments.find(
+    (s) => s.status !== 'DELIVERED' && s.status !== 'CANCELLED'
+  ) || null;
+
   // Run AI Matching Engine
   const handleRunAIMatching = async (preference?: 'BALANCED' | 'COST_PRIORITY' | 'SPEED_PRIORITY' | 'RELIABILITY_PRIORITY') => {
     if (!originLocation.address || !destinationLocation.address) return;
@@ -218,7 +223,7 @@ export const ShipperPortalPage: React.FC = () => {
             const prevStatus = prevShipmentStatusesRef.current[l.id];
             if (prevStatus && prevStatus !== 'DELIVERED' && l.status === 'DELIVERED') {
               setDeliveryNotification(
-                `🎉 Delivery Confirmed! Consignment "${l.title}" has safely arrived at destination and electronic e-POD was signed. TeleBirr Escrow payment has been released!`
+                `🎉 Delivery Confirmed! Consignment "${l.title}" has safely arrived at destination and electronic e-POD was signed. Digital Escrow payment has been released!`
               );
               // Auto-dismiss after 8 seconds so it doesn't linger
               setTimeout(() => {
@@ -253,7 +258,7 @@ export const ShipperPortalPage: React.FC = () => {
               destLat: resD.lat,
               destLng: resD.lng,
               distanceKm,
-              budget: l.targetBudgetEtb ? `${Number(l.targetBudgetEtb).toLocaleString()} ETB` : 'Competitive RFQ',
+              budget: l.targetBudgetEtb ? `${Number(l.targetBudgetEtb).toLocaleString()} ETB` : 'Open for Quotes',
               targetBudgetEtb: l.targetBudgetEtb ? Number(l.targetBudgetEtb) : null,
               status: l.status || 'OPEN',
               createdAt: new Date(l.createdAt).toLocaleDateString(),
@@ -391,6 +396,11 @@ export const ShipperPortalPage: React.FC = () => {
     e.preventDefault();
     if (!cargoName || !weightTons || !originLocation.address || !destinationLocation.address) return;
 
+    if (activeShipment) {
+      alert(`Active consignment already in progress: "${activeShipment.title}" (${activeShipment.status}). Shippers cannot post multiple loads at once. Please complete or cancel the active load before creating a new one.`);
+      return;
+    }
+
     const resO = resolveCorridorCoordinates(originLocation.address, originLocation.lat, originLocation.lng);
     const resD = resolveCorridorCoordinates(destinationLocation.address, destinationLocation.lat, destinationLocation.lng);
     const calculatedKm = calculateCorridorRoadDistanceKm(
@@ -448,6 +458,9 @@ export const ShipperPortalPage: React.FC = () => {
         } else {
           handleRunAIMatching();
         }
+      } else {
+        const errJson = await res.json().catch(() => ({}));
+        alert(errJson.error || 'Failed to post load to database.');
       }
     } catch (err) {
       console.error('Error posting load to database:', err);
@@ -481,14 +494,15 @@ export const ShipperPortalPage: React.FC = () => {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || 'Failed to authorize TeleBirr escrow deposit.');
+        throw new Error(errData.error || 'Failed to authorize escrow deposit.');
       }
 
       const data = await res.json();
+      const prefix = details.paymentMethod === 'CBE_BIRR' ? 'CBE-TF-' : 'TB-TF-';
       const txNum =
         data.payment?.telebirrTransactionNo ||
         data.telebirrReceipt?.transactionNo ||
-        `TB-TF-${Date.now().toString().slice(-8)}`;
+        `${prefix}${Date.now().toString().slice(-8)}`;
 
       setTxReceipt({
         transactionNo: txNum,
@@ -498,9 +512,10 @@ export const ShipperPortalPage: React.FC = () => {
       await fetchAllBids();
       await loadShipments();
 
+      const methodLabel = details.paymentMethod === 'CBE_BIRR' ? 'CBE Birr' : 'TeleBirr';
       const notifMsg = selectedBid
-        ? `✅ Bid accepted! ${details.amount.toLocaleString()} ETB locked in TeleBirr Escrow (${txNum}).`
-        : `✅ Transporter assigned! ${details.amount.toLocaleString()} ETB locked in TeleBirr Escrow (${txNum}).`;
+        ? `✅ Bid accepted! ${details.amount.toLocaleString()} ETB locked in ${methodLabel} Escrow (${txNum}).`
+        : `✅ Transporter assigned! ${details.amount.toLocaleString()} ETB locked in ${methodLabel} Escrow (${txNum}).`;
       setAcceptedBidNotification(notifMsg);
       setTimeout(() => setAcceptedBidNotification(''), 7000);
 
@@ -511,7 +526,7 @@ export const ShipperPortalPage: React.FC = () => {
         navigate('/shipper/tracking');
       }, 2500);
     } catch (err: any) {
-      console.error('TeleBirr payment initiation error:', err);
+      console.error('Smart escrow payment initiation error:', err);
       setPaymentError(err.message || 'Payment processing failed. Please verify your mobile wallet number.');
     } finally {
       setIsProcessingPayment(false);
@@ -584,6 +599,7 @@ export const ShipperPortalPage: React.FC = () => {
         {activeTab === 'post-load' && (
           <PostLoadTab
             postedSuccess={postedSuccess}
+            activeShipment={activeShipment}
             bookingOption={bookingOption}
             setBookingOption={setBookingOption}
             cargoName={cargoName}

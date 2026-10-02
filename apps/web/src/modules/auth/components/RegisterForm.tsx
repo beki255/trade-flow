@@ -8,7 +8,6 @@ import {
   Eye,
   EyeOff,
   Shield,
-  Smartphone,
 } from 'lucide-react';
 
 interface RegisterFormProps {
@@ -175,13 +174,6 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onAuthSuccess }) => 
                 </button>
               );
             })}
-          </div>
-
-          <div className="mt-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2 text-[11px] text-slate-500">
-            <Smartphone className="w-4 h-4 text-[#0284C7] shrink-0" />
-            <span>
-              Transporters and Truck Drivers register & operate exclusively on the <strong>TradeFlow Mobile App</strong> (Android / iOS).
-            </span>
           </div>
         </div>
 

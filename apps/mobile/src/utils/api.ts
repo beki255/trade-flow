@@ -1,30 +1,17 @@
 import { Platform, NativeModules } from 'react-native';
 import Constants from 'expo-constants';
 
-let customServerIp: string | null = null;
-
-export const setCustomServerIp = (ip: string) => {
-  customServerIp = ip.trim() || null;
-};
-
-export const getCustomServerIp = (): string | null => customServerIp;
-
 /**
  * Universal & Bulletproof API Base URL Resolver
  * Automatically detects the current computer LAN IP in real-time, even when Wi-Fi changes daily:
- * 1. Custom IP Override if manually set / default LAN IP (10.18.93.34)
- * 2. Explicit environment variable (EXPO_PUBLIC_API_URL)
- * 3. NativeModules.SourceCode.scriptURL (Exact IP from which the JS bundle was downloaded on physical phone)
- * 4. Expo Constants (hostUri, debuggerHost, linkingUri)
- * 5. Web browser fallback (http://localhost:5000)
- * 6. Android Emulator (10.0.2.2)
- * 7. Localhost fallback (127.0.0.1:5000)
+ * 1. Explicit environment variable (EXPO_PUBLIC_API_URL)
+ * 2. NativeModules.SourceCode.scriptURL (Exact IP from which the JS bundle was downloaded on physical phone)
+ * 3. Expo Constants (hostUri, debuggerHost, linkingUri)
+ * 4. Web browser fallback (http://localhost:5000)
+ * 5. Android Emulator (10.0.2.2)
+ * 6. Localhost fallback (127.0.0.1:5000)
  */
 export const getApiBaseUrl = (): string => {
-  // 1. Custom override if manually set or default LAN IP
-  if (customServerIp) {
-    return customServerIp.startsWith('http') ? customServerIp : `http://${customServerIp}:5000`;
-  }
 
   // 2. Explicit environment variable if configured
   if (process.env.EXPO_PUBLIC_API_URL) {

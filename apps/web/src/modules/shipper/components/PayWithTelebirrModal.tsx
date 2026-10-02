@@ -6,7 +6,7 @@ interface PayWithTelebirrModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (payload: {
-    paymentMethod: 'TELEBIRR' | 'CBE_BIRR' | 'MOBILE_MONEY';
+    paymentMethod: 'TELEBIRR' | 'CBE_BIRR';
     phone: string;
     accountNo?: string;
     baseRateEtb: number;
@@ -38,7 +38,7 @@ export const PayWithTelebirrModal: React.FC<PayWithTelebirrModalProps> = ({
   setAmount,
   paying,
 }) => {
-  const [paymentMethod, setPaymentMethod] = useState<'TELEBIRR' | 'CBE_BIRR' | 'MOBILE_MONEY'>('TELEBIRR');
+  const [paymentMethod, setPaymentMethod] = useState<'TELEBIRR' | 'CBE_BIRR'>('TELEBIRR');
   const [cbeAccountNo, setCbeAccountNo] = useState('1000289384729');
   const [accessorialCharges, setAccessorialCharges] = useState('0');
   const [penalties, setPenalties] = useState('0');
@@ -97,11 +97,11 @@ export const PayWithTelebirrModal: React.FC<PayWithTelebirrModalProps> = ({
           {/* Payment Method Selector */}
           <div>
             <label className="block font-bold text-slate-700 mb-1.5">Supported Settlement Method</label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2.5">
               <button
                 type="button"
                 onClick={() => setPaymentMethod('TELEBIRR')}
-                className={`py-2 px-2.5 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                className={`py-2 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
                   paymentMethod === 'TELEBIRR'
                     ? 'bg-sky-50 border-sky-500 text-sky-800 shadow-xs'
                     : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
@@ -114,7 +114,7 @@ export const PayWithTelebirrModal: React.FC<PayWithTelebirrModalProps> = ({
               <button
                 type="button"
                 onClick={() => setPaymentMethod('CBE_BIRR')}
-                className={`py-2 px-2.5 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                className={`py-2 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
                   paymentMethod === 'CBE_BIRR'
                     ? 'bg-purple-50 border-purple-500 text-purple-800 shadow-xs'
                     : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
@@ -122,19 +122,6 @@ export const PayWithTelebirrModal: React.FC<PayWithTelebirrModalProps> = ({
               >
                 <Building className="w-3.5 h-3.5 text-purple-600" />
                 <span>CBE Birr</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('MOBILE_MONEY')}
-                className={`py-2 px-2.5 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                  paymentMethod === 'MOBILE_MONEY'
-                    ? 'bg-emerald-50 border-emerald-500 text-emerald-800 shadow-xs'
-                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Mobile Money</span>
               </button>
             </div>
           </div>

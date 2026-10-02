@@ -78,16 +78,12 @@ export const DisputesTab: React.FC<DisputesTabProps> = ({
         {/* Ambient subtle glow */}
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 rounded-full bg-gradient-to-br from-amber-500/10 via-rose-500/5 to-transparent blur-3xl pointer-events-none" />
 
-        <div className="space-y-2 relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 border border-amber-200/80 text-amber-900 text-[11px] font-bold tracking-wide">
-            <Scale className="w-3.5 h-3.5 text-amber-600" />
-            <span>TeleBirr Smart Escrow Mediation Center</span>
-          </div>
+        <div className="space-y-1 relative z-10">
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
             Escrow Dispute Arbitration Workbench
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
-            Mediate contested freight payments, review cargo condition discrepancy claims, assess delay penalties, and execute binding financial disbursements or TeleBirr escrow refunds.
+            Mediate contested freight payments, review cargo condition discrepancy claims, assess delay penalties, and execute binding financial disbursements or smart escrow refunds.
           </p>
         </div>
 
@@ -231,7 +227,7 @@ export const DisputesTab: React.FC<DisputesTabProps> = ({
           <ShieldCheck className="w-10 h-10 text-emerald-500 mx-auto" />
           <div className="text-sm font-bold text-slate-800">
             {tickets.length === 0
-              ? 'No Active TeleBirr Escrow Disputes'
+              ? 'No Active Smart Escrow Disputes'
               : 'No Disputes Matching Filter'}
           </div>
           <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
@@ -363,7 +359,7 @@ export const DisputesTab: React.FC<DisputesTabProps> = ({
         </div>
       )}
 
-      {/* 5. Modular TeleBirr Arbitration Verdict Modal */}
+      {/* 5. Modular Smart Escrow Arbitration Verdict Modal */}
       <DisputeArbitrationModal
         activeTicket={activeTicket}
         onClose={() => setActiveTicket(null)}
