@@ -1,12 +1,15 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
+  TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { transporterStyles as styles } from '../transporterStyles';
 import { UserProfile, BidItem } from '../types';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../../../context/LanguageContext';
+import { apiFetch } from '../../../utils/api';
 
 interface EarningsTabProps {
   user?: UserProfile;
@@ -17,33 +20,74 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
   const { t } = useLanguage();
   const [payments, setPayments] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchData = useCallback(async (isManual = false) => {
+    if (isManual) setRefreshing(true);
+    else setLoading(true);
+
+    try {
+      // 1. Fetch payments ledger from backend
+      const targetUrl = user?.id
+        ? `/api/payments/ledger?transporterId=${user.id}`
+        : '/api/payments/ledger';
+      const payRes = await apiFetch(targetUrl);
+      if (payRes.ok) {
+        const payData = await payRes.json();
+        const serverPayments = payData.payments || [];
+        if (serverPayments.length > 0) {
+          setPayments(serverPayments);
+        } else {
+          // If query by transporterId was empty, fetch general ledger and match locally
+          const allRes = await apiFetch('/api/payments/ledger');
+          if (allRes.ok) {
+            const allData = await allRes.json();
+            const allPayments = allData.payments || [];
+            const matched = allPayments.filter(
+              (p: any) =>
+                p.transporterId === user?.id ||
+                p.transporter?.id === user?.id ||
+                (user?.phone && p.transporter?.phone === user.phone) ||
+                (user?.companyName && p.transporter?.companyName === user.companyName)
+            );
+            setPayments(matched.length > 0 ? matched : allPayments);
+          }
+        }
+      } else {
+        const allRes = await apiFetch('/api/payments/ledger');
+        if (allRes.ok) {
+          const allData = await allRes.json();
+          setPayments(allData.payments || []);
+        }
+      }
+    } catch (e) {
+      console.warn('Error fetching earnings ledger in EarningsTab:', e);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+
+    try {
+      const ratingUrl = user?.id ? `/api/portal/ratings?userId=${user.id}` : '/api/portal/ratings';
+      const revRes = await apiFetch(ratingUrl);
+      if (revRes.ok) {
+        const revData = await revRes.json();
+        if (revData.ratings && Array.isArray(revData.ratings)) {
+          setReviews(revData.ratings);
+        }
+      }
+    } catch (e) {}
+  }, [user?.id, user?.phone, user?.companyName]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const payRes = await apiFetch('/api/payments/ledger');
-        if (payRes.ok) {
-          const payData = await payRes.json();
-          if (payData.payments && Array.isArray(payData.payments)) {
-            setPayments(payData.payments);
-          }
-        }
-      } catch (e) {}
-
-      try {
-        const ratingUrl = user?.id ? `/api/portal/ratings?userId=${user.id}` : '/api/portal/ratings';
-        const revRes = await apiFetch(ratingUrl);
-        if (revRes.ok) {
-          const revData = await revRes.json();
-          if (revData.ratings && Array.isArray(revData.ratings)) {
-            setReviews(revData.ratings);
-          }
-        }
-      } catch (e) {}
-    };
-
     fetchData();
-  }, [user?.id]);
+    // Poll every 8 seconds to automatically catch settlements when driver completes e-POD
+    const interval = setInterval(() => {
+      fetchData();
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
   const totalNetPayoutEtb = useMemo(() => {
     return payments.reduce(
@@ -72,6 +116,21 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
   const ratingAvg = reviews.length > 0
     ? (reviews.reduce((acc, r) => acc + (r.scoreStars || 0), 0) / reviews.length).toFixed(1)
     : (user?.totalRatingsCount && user.totalRatingsCount > 0 && user?.ratingAvg ? user.ratingAvg.toFixed(1) : '0.0');
+
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return '';
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return dateStr;
+    }
+  };
 
   return (
     <View style={styles.sectionContainer}>
@@ -106,57 +165,99 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
             <Text style={styles.cardTitle}>{t('smartEscrowSettlements')}</Text>
             <Text style={styles.emptySub}>{t('verifiedPayoutsSub')}</Text>
           </View>
-          <Text style={{ fontSize: 10, fontWeight: '800', color: '#0284C7' }}>
-            {payments.length} Transactions
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            {refreshing && <ActivityIndicator size="small" color="#0284C7" />}
+            <TouchableOpacity
+              onPress={() => fetchData(true)}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 4,
+                backgroundColor: '#F0F9FF',
+                paddingHorizontal: 8,
+                paddingVertical: 4,
+                borderRadius: 6,
+                borderWidth: 1,
+                borderColor: '#BAE6FD',
+              }}
+            >
+              <Ionicons name="refresh" size={11} color="#0284C7" />
+              <Text style={{ fontSize: 9.5, fontWeight: '700', color: '#0284C7' }}>
+                Refresh
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {payments.length === 0 ? (
           <View style={{ backgroundColor: '#F8FAFC', borderRadius: 10, padding: 14, alignItems: 'center' }}>
-            <Text style={{ fontSize: 11, fontWeight: '700', color: '#64748B' }}>
-              {t('noPaymentsYet')}
-            </Text>
-            <Text style={{ fontSize: 9.5, color: '#94A3B8', marginTop: 2, textAlign: 'center' }}>
-              {t('noPaymentsYetSub')}
-            </Text>
+            {loading ? (
+              <ActivityIndicator size="small" color="#0284C7" style={{ marginVertical: 8 }} />
+            ) : (
+              <>
+                <Text style={{ fontSize: 11, fontWeight: '700', color: '#64748B' }}>
+                  {t('noPaymentsYet')}
+                </Text>
+                <Text style={{ fontSize: 9.5, color: '#94A3B8', marginTop: 2, textAlign: 'center' }}>
+                  {t('noPaymentsYetSub')}
+                </Text>
+              </>
+            )}
           </View>
         ) : (
-          payments.slice(0, 5).map((pay) => {
+          payments.map((pay) => {
             const isSettled = pay.status === 'SETTLED';
             const netAmount = Number(pay.netTransporterPayoutEtb || pay.carrierPayoutEtb || pay.netPayoutEtb) || 0;
             const grossAmount = Number(pay.grossAmountEtb || pay.amountEtb) || 0;
+            const commission = Number(pay.platformCommissionEtb) || Math.round(grossAmount * 0.05);
             const prefix = pay.paymentMethod === 'CBE_BIRR' ? 'CBE-TF-' : 'TB-TF-';
             const txNo = pay.telebirrTransactionNo || pay.telebirrTxId || `${prefix}${pay.id.slice(0, 6)}`;
+            const cargoTitle = pay.shipment?.load?.title || pay.shipment?.load?.cargoType || 'Corridor Freight';
+            const destLocation = pay.shipment?.load?.destName || 'Addis Ababa';
+            const originLocation = pay.shipment?.load?.originName || 'Djibouti';
+            const settledDate = pay.settledAt || pay.paidAt || pay.createdAt;
 
             return (
               <View
                 key={pay.id}
                 style={{
-                  backgroundColor: '#F8FAFC',
+                  backgroundColor: '#FFFFFF',
                   borderRadius: 12,
-                  padding: 10,
-                  marginBottom: 6,
-                  borderWidth: 1,
-                  borderColor: isSettled ? '#BBF7D0' : '#E2E8F0',
+                  padding: 11,
+                  marginBottom: 8,
+                  borderWidth: 1.5,
+                  borderColor: isSettled ? '#86EFAC' : '#E2E8F0',
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 2,
+                  elevation: 1,
                 }}
               >
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 11, fontFamily: 'monospace', fontWeight: '800', color: '#0F172A' }}>
-                    {txNo}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Ionicons
+                      name={pay.paymentMethod === 'CBE_BIRR' ? 'business' : 'phone-portrait'}
+                      size={13}
+                      color="#0284C7"
+                    />
+                    <Text style={{ fontSize: 11, fontFamily: 'monospace', fontWeight: '800', color: '#0F172A' }}>
+                      {txNo}
+                    </Text>
+                  </View>
                   <View
                     style={{
-                      paddingHorizontal: 7,
-                      paddingVertical: 2,
+                      paddingHorizontal: 8,
+                      paddingVertical: 3,
                       borderRadius: 6,
                       backgroundColor: isSettled ? '#DCFCE7' : '#FEF3C7',
                     }}
                   >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                       {isSettled ? (
-                        <Ionicons name="checkmark-circle" size={10} color="#166534" />
+                        <Ionicons name="checkmark-circle" size={11} color="#166534" />
                       ) : (
-                        <Ionicons name="lock-closed" size={9} color="#92400E" />
+                        <Ionicons name="lock-closed" size={10} color="#92400E" />
                       )}
                       <Text
                         style={{
@@ -171,13 +272,34 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
                   </View>
                 </View>
 
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-                  <Text style={{ fontSize: 10, color: '#64748B' }}>
-                    Gross: {grossAmount.toLocaleString()} ETB (5% fee)
+                {/* Cargo & Route details */}
+                <View style={{ marginTop: 6, paddingVertical: 4, borderTopWidth: 1, borderTopColor: '#F1F5F9' }}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#1E293B' }} numberOfLines={1}>
+                    Cargo: {cargoTitle}
                   </Text>
-                  <Text style={{ fontSize: 11, fontWeight: '900', color: isSettled ? '#059669' : '#0284C7' }}>
-                    Net: {netAmount.toLocaleString()} ETB
+                  <Text style={{ fontSize: 9.5, color: '#64748B' }} numberOfLines={1}>
+                    {originLocation.split(',')[0]} → {destLocation.split(',')[0]}
                   </Text>
+                </View>
+
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 4, paddingTop: 6, borderTopWidth: 1, borderTopColor: '#F1F5F9' }}>
+                  <View>
+                    <Text style={{ fontSize: 9.5, color: '#64748B' }}>
+                      Gross: {grossAmount.toLocaleString()} ETB (5% fee)
+                    </Text>
+                    {settledDate && (
+                      <Text style={{ fontSize: 9, color: '#94A3B8', marginTop: 1 }}>
+                        {isSettled ? 'Settled: ' : 'Deposited: '}
+                        {formatDate(settledDate)}
+                      </Text>
+                    )}
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={{ fontSize: 8.5, color: '#64748B', fontWeight: '600' }}>Transporter Net</Text>
+                    <Text style={{ fontSize: 13, fontWeight: '900', color: isSettled ? '#059669' : '#0284C7' }}>
+                      {netAmount.toLocaleString()} ETB
+                    </Text>
+                  </View>
                 </View>
               </View>
             );

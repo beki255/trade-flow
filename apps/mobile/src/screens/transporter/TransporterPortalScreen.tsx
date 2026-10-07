@@ -1192,7 +1192,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
 
         {/* 5. EARNINGS TAB */}
         {activeTab === 'earnings' && (
-          <EarningsTab user={user} submittedBids={submittedBids} />
+          <EarningsTab user={currentUser || user} submittedBids={submittedBids} />
         )}
       </ScrollView>
 
