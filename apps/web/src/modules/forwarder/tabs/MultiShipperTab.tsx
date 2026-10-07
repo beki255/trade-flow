@@ -14,6 +14,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { ForwarderStats, ForwarderClientItem } from '../types';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface MultiShipperTabProps {
   stats: ForwarderStats;
@@ -30,6 +31,7 @@ export const MultiShipperTab: React.FC<MultiShipperTabProps> = ({
   onRefresh,
   onNavigateConsolidation,
 }) => {
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredClients = clients.filter((c) => {
@@ -50,10 +52,10 @@ export const MultiShipperTab: React.FC<MultiShipperTabProps> = ({
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 rounded-full bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-transparent blur-3xl pointer-events-none" />
         <div className="space-y-1 relative z-10">
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-            Multi-Shipper Cargo Portfolio
+            {t('forwarder.multiShipperTitle')}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
-            Consolidated overview across multiple cargo clients along the Djibouti–Modjo–Addis corridor. Coordinate LTL cargo bundling, batch customs filings, and end-to-end multimodal transport.
+            {t('forwarder.multiShipperSubtitle')}
           </p>
         </div>
 
@@ -72,7 +74,7 @@ export const MultiShipperTab: React.FC<MultiShipperTabProps> = ({
             className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
           >
             <Layers className="w-4 h-4" />
-            <span>Launch LTL Consolidation ➔</span>
+            <span>{t('forwarder.launchConsolidation')} ➔</span>
           </button>
         </div>
       </div>
@@ -82,7 +84,7 @@ export const MultiShipperTab: React.FC<MultiShipperTabProps> = ({
         <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-1">
           <div className="text-[10.5px] font-bold text-indigo-700 uppercase tracking-wider flex items-center gap-1.5">
             <Users className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Active Client Accounts</span>
+            <span>{t('forwarder.activeClients')}</span>
           </div>
           <div className="text-2xl font-black text-slate-900">{stats.activeClients}</div>
           <div className="text-[10px] text-indigo-600 font-semibold">
@@ -93,7 +95,7 @@ export const MultiShipperTab: React.FC<MultiShipperTabProps> = ({
         <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-1">
           <div className="text-[10.5px] font-bold text-purple-700 uppercase tracking-wider flex items-center gap-1.5">
             <Package className="w-3.5 h-3.5 text-purple-600" />
-            <span>Total Loads Tracked</span>
+            <span>{t('forwarder.totalLoads')}</span>
           </div>
           <div className="text-2xl font-black text-purple-700 font-mono">
             {stats.totalLoadsManaged}
@@ -106,7 +108,7 @@ export const MultiShipperTab: React.FC<MultiShipperTabProps> = ({
         <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-1">
           <div className="text-[10.5px] font-bold text-emerald-700 uppercase tracking-wider flex items-center gap-1.5">
             <TrendingDown className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Average Haulage Savings</span>
+            <span>{t('forwarder.avgSavings')}</span>
           </div>
           <div className="text-2xl font-black text-emerald-600">
             {stats.averageSavingsPct}%
@@ -198,10 +200,7 @@ export const MultiShipperTab: React.FC<MultiShipperTabProps> = ({
                       className="p-2 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between text-xs"
                     >
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-[10px] font-bold text-slate-600 bg-white px-1.5 py-0.5 rounded border border-slate-200">
-                          {l.loadCode}
-                        </span>
-                        <span className="font-medium text-slate-900 truncate max-w-[160px]">{l.title}</span>
+                        <span className="font-semibold text-slate-900 truncate max-w-[200px]">{l.title}</span>
                       </div>
                       <span className="text-[10.5px] font-mono font-bold text-indigo-600">{l.weightTons}T</span>
                     </div>

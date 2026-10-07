@@ -1,6 +1,43 @@
 import React, { createContext, useContext, useState } from 'react';
+import en from '../locales/en.json';
+import am from '../locales/am.json';
+import om from '../locales/om.json';
 
-type Language = 'EN' | 'AM';
+export type Language = 'EN' | 'AM' | 'OM';
+
+const dictionaries: Record<Language, any> = {
+  EN: en,
+  AM: am,
+  OM: om,
+};
+
+// Helper to look up key by dot notation or search
+function resolveKey(obj: any, path: string): string | undefined {
+  if (!obj || typeof obj !== 'object') return undefined;
+
+  // Direct dot notation lookup
+  const parts = path.split('.');
+  let current = obj;
+  let found = true;
+  for (const part of parts) {
+    if (current && typeof current === 'object' && part in current) {
+      current = current[part];
+    } else {
+      found = false;
+      break;
+    }
+  }
+  if (found && typeof current === 'string') {
+    return current;
+  }
+
+  // Fallback: check flat key
+  if (typeof obj[path] === 'string') {
+    return obj[path];
+  }
+
+  return undefined;
+}
 
 interface LanguageContextType {
   language: Language;
@@ -8,107 +45,6 @@ interface LanguageContextType {
   toggleLanguage: () => void;
   t: (key: string) => string;
 }
-
-const translations: Record<Language, Record<string, string>> = {
-  EN: {
-    tradeflow: 'TradeFlow',
-    welcome: 'Welcome',
-    logout: 'Logout',
-    back: 'Back',
-    or: 'OR',
-    submit: 'Submit',
-    cancel: 'Cancel',
-    verified: 'Verified',
-    loading: 'Loading...',
-
-    // Auth & Roles
-    mobileLogin: 'Mobile Login',
-    mobileLoginSub: 'Dedicated mobile portal for freight drivers and fleet transporters.',
-    driver: 'Driver',
-    transporter: 'Transporter',
-    phoneOrEmail: 'Phone Number or Email',
-    password: 'Password',
-    loginButton: 'Log In',
-    register: 'Register',
-
-    // Transporter Portal Tabs
-    fleetTab: 'Fleet',
-    loadBoardTab: 'Load Board',
-    quickBidTab: 'Quick Bid',
-    myBidsTab: 'My Bids',
-    myQuotesTitle: 'My Quotes & Bids',
-    earningsTab: 'Earnings',
-    fleetOverview: 'Fleet Status Overview',
-    loadBoardTitle: 'Corridor Load Board',
-    earningsTitle: 'Earnings & Settlements',
-
-    // Driver Portal Tabs
-    activeTripTab: 'Active Trip',
-    offlineNavTab: 'Offline Nav',
-    checkinTab: 'Check-in',
-    incidentTab: 'Incident',
-    podTab: 'Digital POD',
-    sosEmergency: 'SOS EMERGENCY CALL',
-    currentSpeed: 'Current Speed',
-    remainingTime: 'Remaining Transit Time',
-    origin: 'Origin',
-    destination: 'Destination',
-    confirmCheckin: 'Confirm Location Check-In',
-    incidentTitle: 'Report Emergency / Route Delay',
-    podTitle: 'Digital Proof of Delivery (e-POD)',
-    recipientName: 'Recipient Full Name',
-    signAndComplete: 'Sign and Complete Trip',
-  },
-  AM: {
-    tradeflow: 'TradeFlow',
-    welcome: 'Welcome',
-    logout: 'Logout',
-    back: 'Back',
-    or: 'OR',
-    submit: 'Submit',
-    cancel: 'Cancel',
-    verified: 'Verified',
-    loading: 'Loading...',
-
-    // Auth & Roles
-    mobileLogin: 'Mobile Login',
-    mobileLoginSub: 'Dedicated mobile portal for freight drivers and fleet transporters.',
-    driver: 'Driver',
-    transporter: 'Transporter',
-    phoneOrEmail: 'Phone Number or Email',
-    password: 'Password',
-    loginButton: 'Log In',
-    register: 'Register',
-
-    // Transporter Portal Tabs
-    fleetTab: 'Fleet',
-    loadBoardTab: 'Load Board',
-    quickBidTab: 'Quick Bid',
-    myBidsTab: 'My Bids',
-    myQuotesTitle: 'My Quotes & Bids',
-    earningsTab: 'Earnings',
-    fleetOverview: 'Fleet Status Overview',
-    loadBoardTitle: 'Corridor Load Board',
-    earningsTitle: 'Earnings & Settlements',
-
-    // Driver Portal Tabs
-    activeTripTab: 'Active Trip',
-    offlineNavTab: 'Offline Nav',
-    checkinTab: 'Check-in',
-    incidentTab: 'Incident',
-    podTab: 'Digital POD',
-    sosEmergency: 'SOS EMERGENCY CALL',
-    currentSpeed: 'Current Speed',
-    remainingTime: 'Remaining Transit Time',
-    origin: 'Origin',
-    destination: 'Destination',
-    confirmCheckin: 'Confirm Location Check-In',
-    incidentTitle: 'Report Emergency / Route Delay',
-    podTitle: 'Digital Proof of Delivery (e-POD)',
-    recipientName: 'Recipient Full Name',
-    signAndComplete: 'Sign and Complete Trip',
-  },
-};
 
 const LanguageContext = createContext<LanguageContextType>({
   language: 'EN',
@@ -118,19 +54,47 @@ const LanguageContext = createContext<LanguageContextType>({
 });
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [language, setLanguage] = useState<Language>('EN');
+  const [language, setLanguageState] = useState<Language>(() => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const saved = window.localStorage.getItem('tradeflow_lang');
+        if (saved === 'AM' || saved === 'OM' || saved === 'EN') return saved;
+      }
+    } catch {
+      // ignore
+    }
+    return 'EN';
+  });
+
+  const setLanguage = (lang: Language) => {
+    setLanguageState(lang);
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem('tradeflow_lang', lang);
+      }
+    } catch {
+      // ignore
+    }
+  };
 
   const toggleLanguage = () => {
-    // Strictly English only across the system
-    setLanguage('EN');
+    if (language === 'EN') setLanguage('AM');
+    else if (language === 'AM') setLanguage('OM');
+    else setLanguage('EN');
   };
 
   const t = (key: string): string => {
-    return translations.EN[key] || key;
+    const val = resolveKey(dictionaries[language], key);
+    if (val !== undefined) return val;
+
+    const fallback = resolveKey(dictionaries.EN, key);
+    if (fallback !== undefined) return fallback;
+
+    return key;
   };
 
   return (
-    <LanguageContext.Provider value={{ language: 'EN', setLanguage, toggleLanguage, t }}>
+    <LanguageContext.Provider value={{ language, setLanguage, toggleLanguage, t }}>
       {children}
     </LanguageContext.Provider>
   );

@@ -1,14 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   ScrollView,
+  StyleSheet,
+  Platform,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { transporterStyles as styles } from '../transporterStyles';
 import { LoadItem, BidItem } from '../types';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface LoadsTabProps {
   loadsList: LoadItem[];
@@ -27,6 +29,8 @@ interface LoadsTabProps {
   onRespondDirectOffer: (bidId: string, action: 'ACCEPT' | 'REJECT') => void;
   onDeleteBid?: (bid: BidItem) => void;
   onViewBidInMyBids?: (bid: BidItem) => void;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
 }
 
 export const LoadsTab: React.FC<LoadsTabProps> = ({
@@ -36,117 +40,113 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
   submittedBids = [],
   loadSearchQuery,
   setLoadSearchQuery,
-  selectedRouteFilter = 'ALL',
-  setSelectedRouteFilter,
-  selectedCargoFilter = 'ALL',
-  setSelectedCargoFilter,
-  selectedTonnageFilter = 'ALL',
-  setSelectedTonnageFilter,
   onSelectLoadForQuote,
   onRespondDirectOffer,
   onDeleteBid,
   onViewBidInMyBids,
+  onRefresh,
+  isRefreshing,
 }) => {
+  const { t, language } = useLanguage();
+  const [expandedLoadId, setExpandedLoadId] = useState<string | null>(null);
+  const [corridorFilter, setCorridorFilter] = useState<'ALL' | 'DJI_TO_ADDIS' | 'ADDIS_TO_DJI' | 'HEAVY'>('ALL');
+
+  // Filter loads by quick corridor segment
+  const displayedLoads = filteredLoads.filter((item) => {
+    if (corridorFilter === 'ALL') return true;
+    const lowerRoute = (item.route || '').toLowerCase();
+    const lowerOrigin = (item.origin || '').toLowerCase();
+    if (corridorFilter === 'DJI_TO_ADDIS') {
+      return lowerRoute.includes('dji') || lowerOrigin.includes('dji') || lowerOrigin.includes('djibouti');
+    }
+    if (corridorFilter === 'ADDIS_TO_DJI') {
+      return lowerRoute.includes('addis') || lowerOrigin.includes('addis') || lowerOrigin.includes('modjo');
+    }
+    if (corridorFilter === 'HEAVY') {
+      const weightNum = parseFloat(item.weight || '0');
+      return weightNum >= 40 || (item.weight || '').toLowerCase().includes('100');
+    }
+    return true;
+  });
+
   return (
-    <View style={styles.sectionContainer}>
-      {/* Header */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-        <View style={{ flex: 1, marginRight: 10 }}>
-          <Text style={styles.sectionTitle}>Corridor Load Board</Text>
-          <Text style={styles.sectionSubtitle}>Browse available freight consignments along trade corridors</Text>
+    <View style={styles.container}>
+      {/* Header Row: Title & Active Count */}
+      <View style={styles.headerRow}>
+        <View style={{ flex: 1, marginRight: 8 }}>
+          <Text style={styles.pageTitle}>{t('loadBoardTitle') || 'Corridor Load Board'}</Text>
+          <Text style={styles.pageSubtitle}>
+            {displayedLoads.length} available consignment{displayedLoads.length === 1 ? '' : 's'} on corridor
+          </Text>
         </View>
-        <View style={[styles.statusBadge, styles.statusAvailable, { flexShrink: 0, marginTop: 2 }]}>
-          <Text style={styles.statusText}>{filteredLoads.length} / {loadsList.length} Active</Text>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          {onRefresh && (
+            <TouchableOpacity
+              onPress={onRefresh}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                backgroundColor: '#F0F9FF',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: 1,
+                borderColor: '#BAE6FD',
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="reload"
+                size={16}
+                color={isRefreshing ? '#94A3B8' : '#0284C7'}
+              />
+            </TouchableOpacity>
+          )}
+
+          <View style={styles.activePill}>
+            <View style={styles.activeDot} />
+            <Text style={styles.activePillText}>{displayedLoads.length} Active</Text>
+          </View>
         </View>
       </View>
 
-      {/* Direct AI Instant Match Requests Section (Option A from Shipper) */}
+      {/* Direct AI Instant Match Requests (Compact Alert Banner) */}
       {directMatchRequests.length > 0 && (
         <View style={{ gap: 8, marginVertical: 4 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Ionicons name="flash" size={16} color="#0284C7" />
-            <Text style={{ fontSize: 12.5, fontWeight: '900', color: '#0F172A', textTransform: 'uppercase' }}>
-              Direct AI Instant Match Requests (Option A)
-            </Text>
-          </View>
-
           {directMatchRequests.map((req) => (
-            <View
-              key={req.id}
-              style={[styles.card, { borderColor: '#38BDF8', backgroundColor: '#F0F9FF' }]}
-            >
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-                <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                    <Text style={[styles.truckPlate, { color: '#0369A1' }]}>Direct Spot Offer</Text>
-                    <View style={[styles.statusBadge, { backgroundColor: '#FEF3C7' }]}>
-                      <Text style={[styles.statusText, { color: '#B45309' }]}>ACTION REQUIRED</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.infoLabel}>Corridor Shipment</Text>
-                </View>
-                <View style={{ alignItems: 'flex-end', flexShrink: 0 }}>
-                  <Text style={[styles.kpiValue, { fontSize: 16, color: '#0284C7' }]}>
-                    {req.price}
+            <View key={req.id} style={styles.aiMatchCard}>
+              <View style={styles.aiMatchTopRow}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                  <Ionicons name="flash" size={15} color="#D97706" />
+                  <Text style={styles.aiMatchTitle} numberOfLines={1}>
+                    AI Match: {req.loadTitle}
                   </Text>
-                  <Text style={{ fontSize: 9.5, color: '#64748B', fontWeight: '700' }}>Fixed Spot Rate</Text>
                 </View>
+                <Text style={styles.aiMatchPrice}>{req.price}</Text>
               </View>
 
-              <View style={styles.cardDivider} />
-
-              <View style={{ marginVertical: 2 }}>
-                <Text style={styles.infoLabel}>Consignment:</Text>
-                <Text style={[styles.infoValue, { fontWeight: '800', marginTop: 1 }]}>{req.loadTitle}</Text>
-              </View>
-
-              <View style={[styles.infoRow, { marginVertical: 2, alignItems: 'center' }]}>
-                <Text style={styles.infoLabel}>Shipper Client:</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                  <Ionicons name="business" size={13} color="#0284C7" />
-                  <Text style={[styles.infoValue, { color: '#0F172A', fontWeight: '800' }]}>
-                    {req.shipperName || 'Verified Shipper'}
-                  </Text>
-                  {req.shipperPhone ? (
-                    <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '600' }}>
-                      • {req.shipperPhone}
-                    </Text>
-                  ) : null}
-                </View>
-              </View>
-
-              <View style={{ marginVertical: 3 }}>
-                <Text style={styles.infoLabel}>Corridor Route:</Text>
-                <Text style={[styles.infoValue, { color: '#0F172A', fontWeight: '800', marginTop: 2, lineHeight: 18 }]}>
-                  {req.route}
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 5 }}>
+                <Ionicons name="location-outline" size={13} color="#0284C7" style={{ marginTop: 2 }} />
+                <Text style={styles.aiMatchRoute}>
+                  {req.route} • {req.weight || 'Full Load'}
                 </Text>
               </View>
 
-              <View style={[styles.infoRow, { marginTop: 2 }]}>
-                <Text style={styles.infoLabel}>Payload Weight:</Text>
-                <Text style={[styles.infoValue, { color: '#0284C7', fontWeight: '800' }]}>{req.weight}</Text>
-              </View>
-
-              <View style={{ backgroundColor: '#E0F2FE', borderRadius: 10, padding: 8, marginVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Ionicons name="sparkles" size={14} color="#0284C7" />
-                <Text style={{ fontSize: 11, color: '#0369A1', fontWeight: '700', flex: 1 }}>
-                  Shipper selected your fleet via AI Instant Match. Escrow deposit is funded. Accept to lock trip.
-                </Text>
-              </View>
-
-              {/* Direct Action Buttons */}
-              <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+              <View style={styles.aiMatchActionsRow}>
                 <TouchableOpacity
-                  style={[styles.submitBidBtn, { flex: 1, backgroundColor: '#16A34A' }]}
+                  style={styles.aiAcceptBtn}
                   onPress={() => onRespondDirectOffer(req.rawId || req.id, 'ACCEPT')}
+                  activeOpacity={0.85}
                 >
-                  <Text style={styles.submitBidBtnText}>Accept Match & Dispatch</Text>
+                  <Text style={styles.aiAcceptBtnText}>Accept & Dispatch ➔</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.submitBidBtn, { width: 90, backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0' }]}
+                  style={styles.aiDeclineBtn}
                   onPress={() => onRespondDirectOffer(req.rawId || req.id, 'REJECT')}
+                  activeOpacity={0.7}
                 >
-                  <Text style={[styles.submitBidBtnText, { color: '#64748B' }]}>Decline</Text>
+                  <Text style={styles.aiDeclineBtnText}>Decline</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -154,280 +154,762 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
         </View>
       )}
 
-      {/* Interactive Search Bar (Filtered by typing only) */}
-      <View style={[styles.searchBarContainer, { marginTop: 4, marginBottom: 8 }]}>
-        <Ionicons name="search-outline" size={18} color="#64748B" style={{ marginLeft: 4 }} />
+      {/* Sleek Search Bar */}
+      <View style={styles.searchBar}>
+        <Ionicons name="search" size={16} color="#64748B" />
         <TextInput
-          style={styles.searchBarInput}
-          placeholder="Search by city, route, cargo, or weight..."
+          style={styles.searchInput}
+          placeholder="Search by cargo, route, or weight..."
           placeholderTextColor="#94A3B8"
           value={loadSearchQuery}
           onChangeText={setLoadSearchQuery}
           returnKeyType="search"
-          clearButtonMode="while-editing"
         />
         {loadSearchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setLoadSearchQuery('')}>
-            <Ionicons name="close-circle" size={18} color="#94A3B8" />
+          <TouchableOpacity onPress={() => setLoadSearchQuery('')} style={{ padding: 4 }}>
+            <Ionicons name="close-circle" size={16} color="#94A3B8" />
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Real-time search indicator */}
-      {loadSearchQuery.trim().length > 0 && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 6, marginBottom: 8, backgroundColor: '#F8FAFC', paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0' }}>
-          <Text style={{ fontSize: 11, color: '#475569', fontWeight: '700' }}>
-            Found {filteredLoads.length} of {loadsList.length} loads for "{loadSearchQuery}"
-          </Text>
-          <TouchableOpacity onPress={() => setLoadSearchQuery('')}>
-            <Text style={{ fontSize: 11, color: '#0284C7', fontWeight: '800' }}>Clear ✕</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Load Board Cards List */}
-      {filteredLoads.map((item, idx) => (
-        <View key={item.id || idx} style={styles.card}>
-
-          {/* Header Row */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.truckPlate} numberOfLines={1}>{item.title}</Text>
-              <Text style={styles.infoLabel}>{item.cargoType || 'Corridor Freight'}</Text>
-            </View>
-            <View style={{ alignItems: 'flex-end', flexShrink: 0 }}>
-              {item.budget ? (
-                <>
-                  <Text style={[styles.kpiValue, { fontSize: 15, color: '#0284C7' }]}>
-                    {item.budget}
-                  </Text>
-                  <Text style={{ fontSize: 9.5, color: '#64748B', fontWeight: '700' }}>Target Budget</Text>
-                </>
-              ) : (
-                <View style={[styles.statusBadge, { backgroundColor: '#F0F9FF', borderColor: '#BAE6FD', borderWidth: 1 }]}>
-                  <Text style={[styles.statusText, { color: '#0284C7', fontWeight: '800' }]}>Open for Quotes</Text>
-                </View>
-              )}
-            </View>
-          </View>
-
-          <View style={styles.cardDivider} />
-
-          {/* Corridor Route - Clean vertical block so long route texts wrap without overlapping */}
-          <View style={{ marginVertical: 3 }}>
-            <Text style={styles.infoLabel}>Corridor Route:</Text>
-            <Text style={[styles.infoValue, { color: '#0F172A', fontWeight: '800', marginTop: 2, lineHeight: 18 }]}>
-              {item.route}
-            </Text>
-          </View>
-
-          {/* Shipper Client Details (matches Driver Portal) */}
-          <View style={[styles.infoRow, { marginTop: 4, alignItems: 'center' }]}>
-            <Text style={styles.infoLabel}>Shipper Client:</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-              <Ionicons name="business" size={13} color="#0284C7" />
-              <Text style={[styles.infoValue, { color: '#0F172A', fontWeight: '800' }]}>
-                {item.shipperName || 'Verified Shipper'}
+      {/* Quick Corridor Filter Pills (Scalable for 10-100 loads) */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterPillsRow}
+      >
+        {(
+          [
+            { key: 'ALL', label: `All Loads (${loadsList.length})` },
+            { key: 'DJI_TO_ADDIS', label: 'Djibouti ➔ Addis' },
+            { key: 'ADDIS_TO_DJI', label: 'Addis ➔ Djibouti' },
+            { key: 'HEAVY', label: 'Heavy (>40t)' },
+          ] as const
+        ).map((f) => {
+          const active = corridorFilter === f.key;
+          return (
+            <TouchableOpacity
+              key={f.key}
+              onPress={() => setCorridorFilter(f.key)}
+              style={[styles.filterPill, active && styles.filterPillActive]}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.filterPillText, active && styles.filterPillTextActive]}>
+                {f.label}
               </Text>
-              {item.shipperPhone ? (
-                <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '600' }}>
-                  • {item.shipperPhone}
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
+      {/* High-Density, Scalable Loads List */}
+      {displayedLoads.length === 0 ? (
+        <View style={styles.emptyCard}>
+          <Ionicons name="cube-outline" size={38} color="#94A3B8" />
+          <Text style={styles.emptyTitle}>No Consignments Found</Text>
+          <Text style={styles.emptySubtitle}>
+            {loadSearchQuery
+              ? `No corridor freight matching "${loadSearchQuery}". Try clearing search.`
+              : 'New freight postings along the corridor will display here in real-time.'}
+          </Text>
+          {loadSearchQuery ? (
+            <TouchableOpacity onPress={() => setLoadSearchQuery('')} style={styles.clearBtn}>
+              <Text style={styles.clearBtnText}>Clear Search Filters</Text>
+            </TouchableOpacity>
+          ) : (
+            onRefresh && (
+              <TouchableOpacity
+                onPress={onRefresh}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  backgroundColor: '#0284C7',
+                  paddingHorizontal: 16,
+                  paddingVertical: 9,
+                  borderRadius: 12,
+                  marginTop: 6,
+                }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="reload" size={16} color="#FFFFFF" />
+                <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 13 }}>
+                  {language === 'am' ? 'ጭነቶችን አድስ' : 'Refresh Loads'}
                 </Text>
-              ) : null}
-              {item.shipperVerified && (
-                <Ionicons name="shield-checkmark" size={13} color="#16A34A" />
-              )}
-            </View>
-          </View>
+              </TouchableOpacity>
+            )
+          )}
+        </View>
+      ) : (
+        displayedLoads.map((item, idx) => {
+          const isExpanded = expandedLoadId === (item.id || String(idx));
+          const existingBid = submittedBids.find(
+            (b) =>
+              (b.loadId === item.id ||
+               (b.rawLoadId && item.rawId && b.rawLoadId === item.rawId) ||
+               b.rawId === item.id ||
+               (item.title && b.loadTitle === item.title)) &&
+              b.status !== 'REJECTED'
+          );
 
-          {/* Cargo Specifications */}
-          <View style={[styles.infoRow, { marginTop: 4 }]}>
-            <Text style={styles.infoLabel}>Payload Weight:</Text>
-            <Text style={[styles.infoValue, { color: '#0284C7', fontWeight: '800' }]}>{item.weight}</Text>
-          </View>
+          const isAccepted = existingBid?.status === 'ACCEPTED';
+          const isBidDispatched = Boolean(existingBid?.dispatchedTruck && existingBid?.dispatchedDriver);
+          const isLoadBooked =
+            item.isDispatched ||
+            ((item.status === 'IN_TRANSIT' || item.status === 'COMPLETED') && !!item.dispatchedTruck);
 
-          {/* Handling Tags */}
-          <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
-            <View style={styles.complianceBadge}>
-              <Text style={styles.complianceText}>40ft High-Cube</Text>
-            </View>
-            <View style={styles.complianceBadge}>
-              <Text style={styles.complianceText}>GIT Insured</Text>
-            </View>
-            <View style={[styles.complianceBadge, { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' }]}>
-              <Text style={[styles.complianceText, { color: '#065F46' }]}>Smart Escrow Ready</Text>
-            </View>
-          </View>
-
-          {/* Bid Action or Existing Bid Status */}
-          {(() => {
-            const existingBid = submittedBids.find(
-              (b) =>
-                (b.loadId === item.id || b.rawId === item.id || (item.title && b.loadTitle === item.title)) &&
-                b.status !== 'REJECTED'
-            );
-
-            const isItemDispatched =
-              item.isDispatched ||
-              ((item.status === 'IN_TRANSIT' || item.status === 'COMPLETED') && !!item.dispatchedTruck);
-
-            if (existingBid) {
-              const isAccepted = existingBid.status === 'ACCEPTED';
-              const isBidDispatched = Boolean(existingBid.dispatchedTruck && existingBid.dispatchedDriver);
-
-              return (
-                <View
-                  style={{
-                    backgroundColor: isAccepted ? '#DCFCE7' : '#ECFDF5',
-                    borderRadius: 10,
-                    padding: 10,
-                    marginTop: 12,
-                    borderWidth: 1,
-                    borderColor: isAccepted ? '#86EFAC' : '#A7F3D0',
-                    gap: 6,
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                      {isAccepted ? (
-                        <Ionicons name="trophy-outline" size={14} color="#166534" />
-                      ) : (
-                        <Ionicons name="checkmark-circle-outline" size={14} color="#065F46" />
-                      )}
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          fontWeight: '800',
-                          color: isAccepted ? '#166534' : '#065F46',
-                        }}
-                      >
-                        {isAccepted ? 'Quote Won:' : 'Active Quote:'} {existingBid.price}
-                      </Text>
-                    </View>
-                    <View
-                      style={[
-                        styles.statusBadge,
-                        isAccepted ? { backgroundColor: '#BBF7D0' } : styles.statusAvailable,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.statusText,
-                          isAccepted ? { color: '#166534', fontWeight: '800' } : {},
-                        ]}
-                      >
-                        {isBidDispatched ? 'DISPATCHED' : isAccepted ? 'ACCEPTED' : 'PENDING REVIEW'}
-                      </Text>
+          return (
+            <View key={item.id || idx} style={styles.loadCard}>
+              {/* Card Header: Cargo, Weight & Budget */}
+              <View style={styles.loadCardHeader}>
+                <View style={{ flex: 1, marginRight: 8 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={styles.cargoTitle} numberOfLines={2}>
+                      {item.title}
+                    </Text>
+                    <View style={styles.weightBadge}>
+                      <Text style={styles.weightBadgeText}>{item.weight || 'Full Load'}</Text>
                     </View>
                   </View>
+                  <Text style={styles.cargoTypeSub} numberOfLines={1}>
+                    {item.cargoType || 'General Freight'}
+                  </Text>
+                </View>
 
-                  {isBidDispatched && (
-                    <View style={{ backgroundColor: '#FFFFFF', borderRadius: 6, padding: 6, borderWidth: 1, borderColor: '#BBF7D0', flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                      <MaterialCommunityIcons name="truck" size={13} color="#166534" />
-                      <Text style={{ fontSize: 10.5, color: '#166534', fontWeight: '700' }}>
-                        Fleet: {existingBid.dispatchedTruck || item.dispatchedTruck || 'Assigned'} • Driver: {existingBid.dispatchedDriver || item.dispatchedDriver || 'Assigned'}
+                {/* Price / Budget */}
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={styles.budgetText}>
+                    {item.budget || (existingBid ? existingBid.price : 'Open Bidding')}
+                  </Text>
+                  <Text style={styles.budgetLabel}>
+                    {item.budget ? 'Target Budget' : existingBid ? 'Your Bid' : 'Est. Rate'}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Key Tags & Details Toggle Row */}
+              <View style={styles.tagsRow}>
+                <View style={styles.miniTag}>
+                  <Text style={styles.miniTagText}>{item.shipperName || (language === 'AM' ? 'የተረጋገጠ ላኪ' : 'Direct Shipper')}</Text>
+                </View>
+                <View style={styles.miniTag}>
+                  <Text style={styles.miniTagText}>40ft High-Cube</Text>
+                </View>
+                <View style={[styles.miniTag, styles.escrowTag]}>
+                  <Ionicons name="shield-checkmark" size={10} color="#059669" />
+                  <Text style={styles.escrowTagText}>
+                    {language === 'AM' ? 'የተረጋገጠ ክፍያ' : language === 'OM' ? 'Kaffaltii Qophaa\'e' : 'Escrow Ready'}
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  onPress={() => setExpandedLoadId(isExpanded ? null : (item.id || String(idx)))}
+                  style={styles.expandToggle}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Text style={styles.expandToggleText}>
+                    {isExpanded
+                      ? (language === 'AM' ? 'አሳንስ' : language === 'OM' ? 'Gabaabsi' : 'Less')
+                      : (language === 'AM' ? 'ዝርዝር' : language === 'OM' ? 'Bal\'ina' : 'Details')}
+                  </Text>
+                  <Ionicons
+                    name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                    size={11}
+                    color="#0284C7"
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {/* Collapsible Details Drawer (Origin, Destination & Info - ONLY shown when Details is clicked) */}
+              {isExpanded && (() => {
+                const originAddr =
+                  item.origin && item.origin.trim().length > 0
+                    ? item.origin
+                    : item.route?.split(/[➔→\->]+/)[0]?.trim() || 'Addis Ababa Kaliti Hub';
+
+                const destAddr =
+                  item.destination && item.destination.trim().length > 0
+                    ? item.destination
+                    : item.route?.split(/[➔→\->]+/)[1]?.trim() || 'Djibouti Doraleh Port';
+
+                return (
+                  <View style={styles.expandedDetailsBox}>
+                    {/* Full Waypoint Route Display - Never Truncated */}
+                    <View style={styles.waypointRouteCard}>
+                      {/* Origin */}
+                      <View style={styles.waypointRow}>
+                        <View style={styles.waypointIndicator}>
+                          <View style={styles.originMarkerDot} />
+                          <View style={styles.waypointConnectingLine} />
+                        </View>
+                        <View style={styles.waypointContent}>
+                          <Text style={styles.waypointTypeLabel}>
+                            {language === 'AM' ? 'መነሻ ቦታ (ORIGIN)' : language === 'OM' ? 'Ka\'umsa (Origin)' : 'ORIGIN / PICKUP'}
+                          </Text>
+                          <Text style={styles.waypointAddressText}>
+                            {originAddr}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* Destination */}
+                      <View style={styles.waypointRow}>
+                        <View style={styles.waypointIndicator}>
+                          <View style={styles.destMarkerDot} />
+                        </View>
+                        <View style={styles.waypointContent}>
+                          <Text style={styles.waypointTypeLabel}>
+                            {language === 'AM' ? 'መድረሻ ቦታ (DESTINATION)' : language === 'OM' ? 'Gahumsa (Destination)' : 'DELIVERY DESTINATION'}
+                          </Text>
+                          <Text style={styles.waypointAddressText}>
+                            {destAddr}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    {/* Shipper & Guarantee Row */}
+                    <View style={styles.secondaryDetailsRow}>
+                      <View style={styles.secondaryDetailItem}>
+                        <Ionicons name="business" size={12} color="#0284C7" />
+                        <Text style={styles.secondaryDetailText} numberOfLines={1}>
+                          {item.shipperName || 'Direct Shipper'}{item.shipperPhone ? ` • ${item.shipperPhone}` : ''}
+                        </Text>
+                      </View>
+                      <View style={styles.secondaryDetailItem}>
+                        <Ionicons name="shield-checkmark" size={12} color="#059669" />
+                        <Text style={styles.secondaryDetailText} numberOfLines={1}>
+                          {language === 'AM' ? 'የተሟላ የዕቃ ዋስትና' : 'GIT Insured'}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })()}
+
+              {/* Action / Status Footer (Single clean row, no nested boxes!) */}
+              <View style={styles.cardFooter}>
+                {existingBid ? (
+                  isBidDispatched ? (
+                    /* Dispatched: Clean compact green indicator */
+                    <View style={styles.statusPillDispatched}>
+                      <Ionicons name="checkmark-circle" size={14} color="#15803D" />
+                      <Text style={styles.statusPillDispatchedText} numberOfLines={1}>
+                        Dispatched: {existingBid.dispatchedTruck} • {existingBid.dispatchedDriver}
                       </Text>
                     </View>
-                  )}
-
-                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 2 }}>
-                    {!isAccepted && !isBidDispatched && onDeleteBid && (
-                      <TouchableOpacity
-                        style={{
-                          flex: 1,
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          backgroundColor: '#FEE2E2',
-                          borderWidth: 1,
-                          borderColor: '#FECACA',
-                          paddingVertical: 7,
-                          borderRadius: 8,
-                          gap: 4,
-                        }}
-                        onPress={() => onDeleteBid(existingBid)}
-                      >
-                        <Ionicons name="trash-outline" size={13} color="#DC2626" />
-                        <Text style={{ fontSize: 11, fontWeight: '800', color: '#DC2626' }}>Withdraw</Text>
-                      </TouchableOpacity>
-                    )}
+                  ) : isAccepted ? (
+                    /* Won: Clean CTA button to dispatch */
                     <TouchableOpacity
-                      style={{
-                        flex: 1,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: isAccepted ? '#16A34A' : '#0284C7',
-                        paddingVertical: 7,
-                        borderRadius: 8,
-                      }}
+                      style={styles.assignFleetBtn}
                       onPress={() =>
                         onViewBidInMyBids ? onViewBidInMyBids(existingBid) : onSelectLoadForQuote(item)
                       }
+                      activeOpacity={0.85}
                     >
-                      <Text style={{ fontSize: 11, fontWeight: '800', color: '#FFFFFF' }}>
-                        {isBidDispatched ? 'View in My Bids (Locked)' : isAccepted ? 'View & Dispatch ➔' : 'View in My Bids'}
-                      </Text>
+                      <Ionicons name="trophy" size={13} color="#FFFFFF" />
+                      <Text style={styles.assignFleetBtnText}>Won! Assign Truck & Driver ➔</Text>
                     </TouchableOpacity>
+                  ) : (
+                    /* Pending Bid */
+                    <View style={styles.statusPillPending}>
+                      <Ionicons name="time" size={13} color="#B45309" />
+                      <Text style={styles.statusPillPendingText}>
+                        Quote Placed: {existingBid.price} (Pending)
+                      </Text>
+                      {onDeleteBid && (
+                        <TouchableOpacity
+                          onPress={() => onDeleteBid(existingBid)}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <Text style={styles.withdrawLink}>Withdraw</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )
+                ) : isLoadBooked ? (
+                  <View style={styles.statusPillLocked}>
+                    <Ionicons name="lock-closed" size={12} color="#64748B" />
+                    <Text style={styles.statusPillLockedText}>Assigned to Fleet</Text>
                   </View>
-                </View>
-              );
-            }
-
-            // If the load is already booked / dispatched by another carrier or already assigned
-            if (isItemDispatched || item.status === 'BOOKED' || item.status === 'IN_TRANSIT') {
-              return (
-                <View
-                  style={{
-                    backgroundColor: '#F1F5F9',
-                    borderRadius: 10,
-                    padding: 10,
-                    marginTop: 12,
-                    borderWidth: 1,
-                    borderColor: '#CBD5E1',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 6,
-                  }}
-                >
-                  <Ionicons name="lock-closed" size={14} color="#64748B" />
-                  <Text style={{ fontSize: 11.5, fontWeight: '800', color: '#64748B' }}>
-                    Consignment Dispatched & Booked (Closed)
-                  </Text>
-                </View>
-              );
-            }
-
-            return (
-              <TouchableOpacity
-                style={[styles.submitBidBtn, { marginTop: 12 }]}
-                onPress={() => onSelectLoadForQuote(item)}
-              >
-                <Text style={styles.submitBidBtnText}>
-                  Submit Quotation ➔
-                </Text>
-              </TouchableOpacity>
-            );
-          })()}
-
-        </View>
-      ))}
-
-      {filteredLoads.length === 0 && (
-        <View style={styles.emptyCard}>
-          <MaterialCommunityIcons name="package-variant-closed" size={40} color="#94A3B8" />
-          <Text style={styles.emptyTitle}>No matching loads found</Text>
-          <Text style={styles.emptySub}>
-            Try clearing your search query to view all active corridor consignments.
-          </Text>
-          <TouchableOpacity
-            style={[styles.typeChip, { alignSelf: 'center', marginTop: 8 }]}
-            onPress={() => setLoadSearchQuery('')}
-          >
-            <Text style={styles.typeChipText}>Clear Search</Text>
-          </TouchableOpacity>
-        </View>
+                ) : (
+                  /* Available to Quote: Sleek Primary Button */
+                  <TouchableOpacity
+                    style={styles.quoteBtn}
+                    onPress={() => onSelectLoadForQuote(item)}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={styles.quoteBtnText}>Quote Freight Rate ➔</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          );
+        })
       )}
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 24,
+    gap: 10,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  pageTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#0F172A',
+    letterSpacing: -0.4,
+  },
+  pageSubtitle: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  activePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  activeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10B981',
+  },
+  activePillText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#047857',
+  },
+  aiMatchCard: {
+    backgroundColor: '#FFFBEB',
+    borderRadius: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    gap: 6,
+  },
+  aiMatchTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  aiMatchTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#92400E',
+  },
+  aiMatchPrice: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#B45309',
+  },
+  aiMatchRoute: {
+    fontSize: 11.5,
+    color: '#78350F',
+    fontWeight: '600',
+    flex: 1,
+    flexWrap: 'wrap',
+    lineHeight: 16,
+  },
+  aiMatchActionsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 2,
+  },
+  aiAcceptBtn: {
+    flex: 1,
+    backgroundColor: '#16A34A',
+    paddingVertical: 7,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  aiAcceptBtnText: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  aiDeclineBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+  },
+  aiDeclineBtnText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    height: 42,
+    gap: 8,
+    ...Platform.select({
+      web: { boxShadow: '0 1px 3px rgba(0,0,0,0.03)' } as any,
+      default: { elevation: 1 },
+    }),
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 12.5,
+    color: '#0F172A',
+    paddingVertical: 6,
+  },
+  filterPillsRow: {
+    flexDirection: 'row',
+    gap: 6,
+    paddingVertical: 2,
+  },
+  filterPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  filterPillActive: {
+    backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
+  },
+  filterPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  filterPillTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
+  loadCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 8,
+    ...Platform.select({
+      web: { boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)' } as any,
+      default: { elevation: 1 },
+    }),
+  },
+  loadCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  cargoTitle: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#0F172A',
+    letterSpacing: -0.3,
+  },
+  weightBadge: {
+    backgroundColor: '#E0F2FE',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 5,
+  },
+  weightBadgeText: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: '#0369A1',
+  },
+  cargoTypeSub: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  budgetText: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#0284C7',
+  },
+  budgetLabel: {
+    fontSize: 9.5,
+    fontWeight: '600',
+    color: '#94A3B8',
+  },
+  routeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  routeText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#334155',
+    flex: 1,
+  },
+  tagsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  miniTag: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+  },
+  miniTagText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  escrowTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#ECFDF5',
+  },
+  escrowTagText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#047857',
+  },
+  expandToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    marginLeft: 'auto',
+  },
+  expandToggleText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#0284C7',
+  },
+  expandedDetailsBox: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 8,
+    marginTop: 4,
+  },
+  waypointRouteCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 8,
+  },
+  waypointRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  waypointIndicator: {
+    alignItems: 'center',
+    width: 14,
+    paddingTop: 3,
+  },
+  originMarkerDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 4.5,
+    backgroundColor: '#10B981',
+    borderWidth: 1.5,
+    borderColor: '#059669',
+  },
+  waypointConnectingLine: {
+    width: 2,
+    height: 20,
+    backgroundColor: '#CBD5E1',
+    marginVertical: 2,
+    borderRadius: 1,
+  },
+  destMarkerDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 4.5,
+    backgroundColor: '#EF4444',
+    borderWidth: 1.5,
+    borderColor: '#DC2626',
+  },
+  waypointContent: {
+    flex: 1,
+  },
+  waypointTypeLabel: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: '#64748B',
+    letterSpacing: 0.3,
+    marginBottom: 2,
+  },
+  waypointAddressText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F172A',
+    lineHeight: 17,
+    flexWrap: 'wrap',
+  },
+  secondaryDetailsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    paddingHorizontal: 2,
+  },
+  secondaryDetailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flex: 1,
+  },
+  secondaryDetailText: {
+    fontSize: 10.5,
+    fontWeight: '600',
+    color: '#475569',
+    flex: 1,
+  },
+  cardFooter: {
+    marginTop: 2,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  quoteBtn: {
+    backgroundColor: '#0284C7',
+    borderRadius: 12,
+    paddingVertical: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      web: { boxShadow: '0 2px 6px rgba(2, 132, 199, 0.25)' } as any,
+      default: { elevation: 2 },
+    }),
+  },
+  quoteBtnText: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  statusPillDispatched: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 10,
+  },
+  statusPillDispatchedText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#15803D',
+    flex: 1,
+  },
+  assignFleetBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#16A34A',
+    paddingVertical: 9,
+    borderRadius: 12,
+  },
+  assignFleetBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  statusPillPending: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 10,
+  },
+  statusPillPendingText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#92400E',
+  },
+  withdrawLink: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#DC2626',
+  },
+  statusPillLocked: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    backgroundColor: '#F1F5F9',
+    paddingVertical: 7,
+    borderRadius: 10,
+  },
+  statusPillLockedText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  emptyCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginTop: 10,
+    gap: 8,
+  },
+  emptyTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  emptySubtitle: {
+    fontSize: 12,
+    color: '#64748B',
+    textAlign: 'center',
+  },
+  clearBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#F1F5F9',
+    marginTop: 4,
+  },
+  clearBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0284C7',
+  },
+});

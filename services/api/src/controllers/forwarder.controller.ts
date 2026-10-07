@@ -44,7 +44,7 @@ export const getForwarderClients = async (req: Request, res: Response): Promise<
         verificationStatus: s.verificationStatus,
         recentLoads: loads.slice(0, 3).map((l) => ({
           id: l.id,
-          loadCode: `TF-SH-${l.id.slice(0, 6).toUpperCase()}`,
+          loadCode: l.title || 'Consignment',
           title: l.title,
           weightTons: l.weightTons,
           route: `${l.originName} ➔ ${l.destName}`,
@@ -280,7 +280,7 @@ export const getMultimodalTracking = async (req: Request, res: Response): Promis
         id: s.id,
         containerNo: `MSKU-${s.id.slice(0, 4).toUpperCase()}-40HC`,
         shipmentId: s.id,
-        consignmentCode: `TF-SH-${s.load.id.slice(0, 6).toUpperCase()}`,
+        consignmentCode: s.load.title || 'Freight Consignment',
         title: s.load.title,
         cargoType: s.load.cargoType,
         weightTons: s.load.weightTons,

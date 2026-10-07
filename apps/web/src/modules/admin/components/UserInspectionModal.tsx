@@ -172,16 +172,7 @@ export const UserInspectionModal: React.FC<UserInspectionModalProps> = ({
 
         {/* Submitted Verification Documents */}
         {(() => {
-          const docs: Array<{
-            title: string;
-            docType: string;
-            docNumber: string;
-            issuer: string;
-            fileName: string;
-            status: string;
-            issuedDate: string;
-            ownerName: string;
-          }> = [];
+          const docs: DocumentPreviewData[] = [];
 
           const parseDocumentValue = (val?: string | null, fallbackName: string = 'Document.pdf') => {
             if (!val) return null;

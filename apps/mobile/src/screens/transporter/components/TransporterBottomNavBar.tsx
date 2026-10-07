@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { TabIcon } from '../../../components/TabIcon';
 import { transporterStyles as styles } from '../transporterStyles';
 import { TransporterTabType, BidItem } from '../types';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface TransporterBottomNavBarProps {
   activeTab: TransporterTabType;
@@ -16,9 +17,10 @@ export const TransporterBottomNavBar: React.FC<TransporterBottomNavBarProps> = (
   activeTab,
   onSelectTab,
   submittedBids,
-  language,
   onSelectBidsTab,
 }) => {
+  const { t } = useLanguage();
+
   return (
     <View style={styles.bottomNavContainer}>
       <TouchableOpacity
@@ -32,7 +34,7 @@ export const TransporterBottomNavBar: React.FC<TransporterBottomNavBarProps> = (
           color={activeTab === 'overview' ? '#0284C7' : '#94A3B8'}
         />
         <Text style={[styles.navLabel, activeTab === 'overview' && styles.navLabelActive]}>
-          Overview
+          {t('overviewTab') || 'Overview'}
         </Text>
       </TouchableOpacity>
 
@@ -47,7 +49,7 @@ export const TransporterBottomNavBar: React.FC<TransporterBottomNavBarProps> = (
           color={activeTab === 'fleet' ? '#0284C7' : '#94A3B8'}
         />
         <Text style={[styles.navLabel, activeTab === 'fleet' && styles.navLabelActive]}>
-          Fleet
+          {t('fleetTab')}
         </Text>
       </TouchableOpacity>
 
@@ -62,7 +64,7 @@ export const TransporterBottomNavBar: React.FC<TransporterBottomNavBarProps> = (
           color={activeTab === 'loads' ? '#0284C7' : '#94A3B8'}
         />
         <Text style={[styles.navLabel, activeTab === 'loads' && styles.navLabelActive]}>
-          Loads
+          {t('loadBoardTab')}
         </Text>
       </TouchableOpacity>
 
@@ -99,7 +101,7 @@ export const TransporterBottomNavBar: React.FC<TransporterBottomNavBarProps> = (
           )}
         </View>
         <Text style={[styles.navLabel, activeTab === 'bidding' && styles.navLabelActive]}>
-          My Bids
+          {t('myBidsTab')}
         </Text>
       </TouchableOpacity>
 
@@ -114,7 +116,7 @@ export const TransporterBottomNavBar: React.FC<TransporterBottomNavBarProps> = (
           color={activeTab === 'earnings' ? '#0284C7' : '#94A3B8'}
         />
         <Text style={[styles.navLabel, activeTab === 'earnings' && styles.navLabelActive]}>
-          Earnings
+          {t('earningsTab')}
         </Text>
       </TouchableOpacity>
     </View>

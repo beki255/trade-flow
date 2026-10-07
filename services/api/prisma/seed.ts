@@ -43,8 +43,8 @@ async function main() {
       tin: 'GOV-ECC-4482',
       tradeLicenseNo: 'ECC-OFFICER-77',
       verificationStatus: VerificationStatus.VERIFIED,
-      ratingAvg: 5.0,
-      totalRatingsCount: 1,
+      ratingAvg: 0.0,
+      totalRatingsCount: 0,
     },
   });
 
@@ -61,8 +61,8 @@ async function main() {
       tin: 'TF-ADMIN-0001',
       tradeLicenseNo: 'TF-HQ-2026',
       verificationStatus: VerificationStatus.VERIFIED,
-      ratingAvg: 5.0,
-      totalRatingsCount: 1,
+      ratingAvg: 0.0,
+      totalRatingsCount: 0,
     },
   });
 

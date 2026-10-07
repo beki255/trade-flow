@@ -199,7 +199,8 @@ export const calculateAIMatches = async (req: Request, res: Response): Promise<v
       const costScorePct = Math.round(costRatio * 100);
 
       // 2. Reliability Score (S_reliability): Historical on-time delivery & user rating
-      const ratingNormalized = (carrier.ratingAvg || 5.0) / 5.0;
+      const hasRatings = (carrier.totalRatingsCount || 0) > 0;
+      const ratingNormalized = hasRatings ? (carrier.ratingAvg / 5.0) : 0.75;
       const reliabilityScorePct = Math.round(ratingNormalized * 99);
 
       // 3. Fuel Eco Score (S_fuel): Fleet optimization & capacity fit
@@ -225,8 +226,8 @@ export const calculateAIMatches = async (req: Request, res: Response): Promise<v
         companyName: carrier.companyName || carrier.fullName,
         driverName: carrier.fullName,
         phone: carrier.phone || 'N/A',
-        ratingStars: carrier.ratingAvg || 5.0,
-        totalCompletedTrips: carrier.totalRatingsCount || 12,
+        ratingStars: hasRatings ? carrier.ratingAvg : 0.0,
+        totalCompletedTrips: carrier.totalRatingsCount || 0,
         assignedTruckPlate: primaryVehicle?.plateNumber || 'No Truck Registered',
         vehicleType: primaryVehicle?.vehicleType || 'Fleet Vehicle',
         payloadCapacityTons: primaryVehicle?.capacityTons || 35,

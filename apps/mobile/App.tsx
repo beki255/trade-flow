@@ -16,6 +16,7 @@ import { DriverPortalScreen } from './src/screens/driver/DriverPortalScreen';
 import { useFonts } from 'expo-font';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LanguageProvider } from './src/context/LanguageContext';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { getApiBaseUrl } from './src/utils/api';
 
 function MainApp() {
@@ -265,6 +266,25 @@ function MainApp() {
   return <DriverPortalScreen onLogout={handleLogout} user={currentUser} />;
 }
 
+function ThemedAppContainer({ isDesktopWeb }: { isDesktopWeb: boolean }) {
+  const { colors, isDark } = useTheme();
+
+  return (
+    <View style={[styles.outerRoot, !isDesktopWeb && { backgroundColor: colors.background }]}>
+      <View
+        style={[
+          styles.appContainer,
+          { backgroundColor: colors.background },
+          isDesktopWeb ? styles.desktopDeviceFrame : styles.mobileFullViewport,
+          isDesktopWeb && isDark && { borderColor: '#334155' },
+        ]}
+      >
+        <MainApp />
+      </View>
+    </View>
+  );
+}
+
 export default function App() {
   const { width } = useWindowDimensions();
   const isDesktopWeb = Platform.OS === 'web' && width > 480;
@@ -299,18 +319,11 @@ export default function App() {
   }, []);
 
   return (
-    <LanguageProvider>
-      <View style={[styles.outerRoot, !isDesktopWeb && { backgroundColor: '#F4F9FD' }]}>
-        <View
-          style={[
-            styles.appContainer,
-            isDesktopWeb ? styles.desktopDeviceFrame : styles.mobileFullViewport,
-          ]}
-        >
-          <MainApp />
-        </View>
-      </View>
-    </LanguageProvider>
+    <ThemeProvider>
+      <LanguageProvider>
+        <ThemedAppContainer isDesktopWeb={isDesktopWeb} />
+      </LanguageProvider>
+    </ThemeProvider>
   );
 }
 

@@ -97,7 +97,7 @@ export const DocumentsTab: React.FC = () => {
             uploadedAt: new Date(d.uploadedAt || d.createdAt || Date.now()).toLocaleString(),
             shipmentId: d.shipmentId,
             shipmentTitle: d.shipment?.load?.title || 'Corridor Freight Consignment',
-            loadCode: d.shipment?.load?.id ? `TF-SH-${d.shipment.load.id.slice(0, 6).toUpperCase()}` : 'TF-SH-CORRIDOR',
+            loadCode: d.shipment?.load?.title || 'Corridor Freight Consignment',
           }));
           setDocuments(mapped);
         } else {
@@ -122,7 +122,7 @@ export const DocumentsTab: React.FC = () => {
         if (data.loads && Array.isArray(data.loads)) {
           const list = data.loads.map((l: any) => ({
             id: l.shipment?.id || l.id,
-            loadCode: `TF-SH-${l.id.slice(0, 6).toUpperCase()}`,
+            loadCode: l.title || 'Freight Consignment',
             title: l.title || 'Freight Consignment',
           }));
           setAvailableShipments(list);

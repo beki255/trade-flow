@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { LanguageProvider } from './context/LanguageContext';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
@@ -13,8 +14,9 @@ import { AdminPortalPage } from './pages/AdminPortalPage';
 
 export const App: React.FC = () => {
   return (
-    <LanguageProvider>
-      <AuthProvider>
+    <ThemeProvider>
+      <LanguageProvider>
+        <AuthProvider>
         <BrowserRouter
           future={{
             v7_startTransition: true,
@@ -51,5 +53,6 @@ export const App: React.FC = () => {
         </BrowserRouter>
       </AuthProvider>
     </LanguageProvider>
+    </ThemeProvider>
   );
 };

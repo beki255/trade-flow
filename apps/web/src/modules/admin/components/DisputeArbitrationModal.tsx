@@ -68,8 +68,8 @@ export const DisputeArbitrationModal: React.FC<DisputeArbitrationModalProps> = (
               <span className="font-mono text-xs font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
                 {activeTicket.ticketNumber}
               </span>
-              <span className="text-xs font-bold text-slate-400">
-                Consignment: {activeTicket.loadCode}
+              <span className="text-xs font-bold text-slate-500">
+                {activeTicket.title}
               </span>
             </div>
             <h3 className="text-lg font-black text-slate-900 mt-1">

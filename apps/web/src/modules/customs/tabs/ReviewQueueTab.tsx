@@ -17,6 +17,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { CustomsStats, CustomsDossierItem } from '../types';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface ReviewQueueTabProps {
   stats: CustomsStats;
@@ -37,6 +38,7 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
   onQuickApprove,
   onViewCertificate,
 }) => {
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'CLEARED' | 'REVISION'>('ALL');
   const [approvingId, setApprovingId] = useState<string | null>(null);
@@ -85,10 +87,10 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 rounded-full bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent blur-3xl pointer-events-none" />
         <div className="relative z-10 space-y-1">
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-            Customs Document Review Queue
+            {t('customs.title')}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
-            Inspect international trade documents (Commercial Invoice, Packing List, Bill of Lading, Certificate of Origin) for Djibouti–Addis Ababa corridor consignments, conduct automated compliance cross-checks, and issue single-window Green Line electronic releases.
+            {t('customs.subtitle')}
           </p>
         </div>
 
@@ -99,7 +101,7 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
             className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs hover:shadow flex items-center gap-2 cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Sync Queue</span>
+            <span>{t('customs.syncQueue')}</span>
           </button>
         </div>
       </div>
@@ -109,7 +111,7 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
         <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-1">
           <div className="text-[10.5px] font-bold text-amber-700 uppercase tracking-wider flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5 text-amber-600" />
-            <span>Pending Reviews</span>
+            <span>{t('customs.pendingReviews')}</span>
           </div>
           <div className="text-2xl font-black text-amber-600">
             {stats.pendingReviews}
@@ -122,7 +124,7 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
         <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-1">
           <div className="text-[10.5px] font-bold text-emerald-700 uppercase tracking-wider flex items-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Green Line Cleared</span>
+            <span>{t('customs.greenLineCleared')}</span>
           </div>
           <div className="text-2xl font-black text-emerald-600">
             {stats.greenLineCleared}
@@ -135,7 +137,7 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
         <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-1">
           <div className="text-[10.5px] font-bold text-rose-700 uppercase tracking-wider flex items-center gap-1.5">
             <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
-            <span>Revisions / Holds</span>
+            <span>{t('customs.revisionsHolds')}</span>
           </div>
           <div className="text-2xl font-black text-rose-600">
             {stats.revisionsRequested}
@@ -148,7 +150,7 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
         <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-1">
           <div className="text-[10.5px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-sky-600" />
-            <span>Average Processing</span>
+            <span>{t('customs.avgProcessing')}</span>
           </div>
           <div className="text-2xl font-black text-slate-900">
             {stats.averageProcessingMins || 14} mins
@@ -212,7 +214,7 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search by Code, Shipper TIN, or Route..."
+            placeholder="Search by Cargo, Shipper TIN, or Route..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3.5 py-1.5 text-xs rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium"
@@ -256,9 +258,11 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
                   {/* Left Column: Consignment Info */}
                   <div className="space-y-2 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono text-xs font-black text-slate-900 bg-slate-100 px-2.5 py-0.5 rounded-md border border-slate-200">
-                        {dossier.loadCode}
-                      </span>
+                      {dossier.cargoType && (
+                        <span className="text-[10px] font-bold text-slate-700 bg-slate-100 px-2.5 py-0.5 rounded-md border border-slate-200 uppercase">
+                          {dossier.cargoType.replace('_', ' ')}
+                        </span>
+                      )}
                       <span
                         className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border ${
                           isCleared

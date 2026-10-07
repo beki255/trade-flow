@@ -5,6 +5,7 @@ import { AdminKpiCards } from '../components/AdminKpiCards';
 import { CommissionCustomsModal } from '../components/CommissionCustomsModal';
 import { VerificationFilterBar } from '../components/VerificationFilterBar';
 import { VerificationTable } from '../components/VerificationTable';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface VerificationQueueTabProps {
   stats: AdminStats;
@@ -45,6 +46,7 @@ export const VerificationQueueTab: React.FC<VerificationQueueTabProps> = ({
   verifiedCount,
   suspendedCount,
 }) => {
+  const { t } = useLanguage();
   const [isProvisionOpen, setIsProvisionOpen] = React.useState(false);
   const [provisionNotice, setProvisionNotice] = React.useState('');
 
@@ -55,10 +57,10 @@ export const VerificationQueueTab: React.FC<VerificationQueueTabProps> = ({
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 rounded-full bg-gradient-to-br from-sky-500/10 via-indigo-500/5 to-transparent blur-3xl pointer-events-none" />
         <div className="space-y-1 relative z-10">
           <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
-            User Verification & KYC Queue
+            {t('admin.verificationsTitle')}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
-            Review submitted TIN numbers, Trade Licenses, Insurance, and Roadworthiness documents for Shippers, Forwarders, Transporters, and Drivers.
+            {t('admin.verificationsSubtitle')}
           </p>
         </div>
         <div className="relative z-10 px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold flex items-center gap-2 shrink-0">

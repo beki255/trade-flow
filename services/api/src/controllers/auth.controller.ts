@@ -686,4 +686,68 @@ export const completeProfile = async (req: Request, res: Response): Promise<void
   }
 };
 
+// 10. Update Profile (for Shipper, Freight Forwarder, Transporter, Customs, Admin)
+export const updateProfile = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { userId, email, fullName, companyName, phone, tin, tradeLicenseNo } = req.body;
+
+    let user: any = null;
+    if (userId) {
+      try {
+        user = await prisma.user.findUnique({ where: { id: userId } });
+      } catch (e) {}
+    }
+    if (!user && email) {
+      user = await prisma.user.findFirst({ where: { email: email.toLowerCase().trim() } });
+    }
+    if (!user && phone) {
+      const cleanDigits = phone.replace(/[^0-9]/g, '');
+      user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { phone: phone.trim() },
+            ...(cleanDigits.length >= 8 ? [{ phone: { contains: cleanDigits.slice(-8) } }] : []),
+          ],
+        },
+      });
+    }
+
+    if (!user) {
+      res.status(404).json({ error: 'User account not found.' });
+      return;
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        ...(fullName && fullName.trim() ? { fullName: fullName.trim() } : {}),
+        ...(companyName && companyName.trim() ? { companyName: companyName.trim() } : {}),
+        ...(phone && phone.trim() ? { phone: phone.trim() } : {}),
+        ...(tin && tin.trim() ? { tin: tin.trim() } : {}),
+        ...(tradeLicenseNo && tradeLicenseNo.trim() ? { tradeLicenseNo: tradeLicenseNo.trim() } : {}),
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully!',
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        username: updatedUser.username,
+        fullName: updatedUser.fullName,
+        companyName: updatedUser.companyName,
+        phone: updatedUser.phone,
+        role: updatedUser.role,
+        tin: updatedUser.tin,
+        tradeLicenseNo: updatedUser.tradeLicenseNo,
+        verificationStatus: updatedUser.verificationStatus,
+      },
+    });
+  } catch (error: any) {
+    console.error('updateProfile error:', error);
+    res.status(500).json({ error: error.message || 'Failed to update profile.' });
+  }
+};
+
 

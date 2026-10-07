@@ -4,7 +4,6 @@ import {
   CheckCircle,
   FileCheck,
   CreditCard,
-  ShieldCheck,
   Package,
   PlusCircle,
 } from 'lucide-react';
@@ -120,16 +119,6 @@ export const DeliveredHandoverCard: React.FC<DeliveredHandoverCardProps> = ({
         </div>
       </div>
 
-      {/* Logistics Explanation Notice */}
-      <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-600 leading-relaxed flex items-start gap-3">
-        <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-        <div>
-          <span className="font-extrabold text-slate-900">
-            Live Telematics Note:{' '}
-          </span>
-          The shipment has reached its destination and handover is complete. Live GPS streaming has stopped. Full payment records can be reviewed in the <strong>"Payments"</strong> tab, and consignment details in <strong>"My Consignments"</strong>.
-        </div>
-      </div>
 
       {/* Quick Action Navigation Buttons */}
       <div className="flex flex-wrap items-center gap-3 pt-2">

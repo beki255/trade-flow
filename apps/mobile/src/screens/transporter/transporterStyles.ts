@@ -20,6 +20,7 @@ export const transporterStyles = StyleSheet.create({
     justifyContent: 'space-between',
     borderBottomWidth: 1,
     borderBottomColor: '#1E293B',
+    zIndex: 100,
   },
   brandTitle: {
     fontSize: 18,

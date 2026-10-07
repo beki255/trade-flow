@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
+import { useLanguage } from '../../../context/LanguageContext';
 import { GoogleAuthButton } from '../../../components/auth/GoogleAuthButton';
-import { Eye, EyeOff, CheckCircle2 } from 'lucide-react';
+import { Eye, EyeOff, CheckCircle2, Globe } from 'lucide-react';
+import { Logo } from '../../../components/Logo';
+import { LanguageDropdown } from '../../../components/LanguageDropdown';
 
 interface LoginFormProps {
   onAuthSuccess: (role: string) => void;
@@ -10,6 +13,7 @@ interface LoginFormProps {
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onAuthSuccess }) => {
   const { loginUser, googleAuthUser } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
 
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
@@ -22,7 +26,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onAuthSuccess }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      setErrorMsg('Please fill all required fields');
+      setErrorMsg(t('auth.requiredFields'));
       return;
     }
 
@@ -60,29 +64,41 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onAuthSuccess }) => {
   };
 
   return (
-    <div className="w-full h-full min-h-screen bg-[#F0F6FB] p-6 sm:p-10 lg:p-14 flex flex-col justify-center items-center overflow-y-auto">
+    <div className="w-full h-full min-h-screen bg-[#F0F6FB] p-4 sm:p-8 lg:p-12 flex flex-col justify-center items-center overflow-y-auto relative">
+      
+      {/* Top Bar with Language Switcher */}
+      <div className="w-full max-w-md flex items-center justify-end mb-4">
+        {/* Floating Language Dropdown */}
+        <LanguageDropdown />
+      </div>
+
       {/* Main Floating Login Card */}
       <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 flex flex-col gap-5">
-        {/* Card Title */}
+        
+        {/* Brand Icon & Card Title */}
         <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Logo className="w-6 h-6 text-[#0284C7]" />
+            <span className="text-base font-black text-slate-900">TradeFlow</span>
+          </div>
           <h2 className="text-2xl sm:text-[26px] font-black text-[#0F172A] tracking-tight">
-            Log In to TradeFlow
+            {t('auth.loginHeading')}
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            Access your corridor freight dashboard and active shipments.
+            {t('auth.loginSubheading')}
           </p>
         </div>
 
         {/* Tab Switcher: Login active, Register link */}
         <div className="w-full p-1 bg-slate-100 rounded-full flex items-center border border-slate-200">
           <span className="flex-1 py-2 text-xs sm:text-sm font-bold rounded-full bg-[#111C2D] text-white text-center shadow-md">
-            Log In
+            {t('auth.loginTab')}
           </span>
           <Link
             to="/register"
             className="flex-1 py-2 text-xs sm:text-sm font-bold rounded-full text-slate-600 hover:text-slate-900 text-center transition-all"
           >
-            Register
+            {t('auth.registerTab')}
           </Link>
         </div>
 
@@ -104,21 +120,21 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onAuthSuccess }) => {
         <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Email Address *
+              {t('auth.emailLabel')}
             </label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="e.g. shipper@tradeflow.et"
+              placeholder={t('auth.emailPlaceholder')}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#0284C7] outline-none text-xs font-medium text-slate-900"
             />
           </div>
 
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Password *
+              {t('auth.passwordLabel')}
             </label>
             <div className="relative flex items-center">
               <input
@@ -126,7 +142,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onAuthSuccess }) => {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password"
+                placeholder={t('auth.passwordPlaceholder')}
                 autoComplete="current-password"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#0284C7] outline-none text-xs font-medium text-slate-900 pr-10"
               />
@@ -149,10 +165,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onAuthSuccess }) => {
                 onChange={(e) => setRememberMe(e.target.checked)}
                 className="rounded border-slate-300 text-[#0284C7] focus:ring-[#0284C7]"
               />
-              <span>Remember me</span>
+              <span>{t('auth.rememberMe')}</span>
             </label>
             <a href="#forgot" className="text-[#0284C7] hover:underline">
-              Forgot password?
+              {t('auth.forgotPassword')}
             </a>
           </div>
 
@@ -160,16 +176,16 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onAuthSuccess }) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 mt-1 bg-[#111C2D] hover:bg-[#1E293B] text-white font-bold text-sm rounded-xl transition-all shadow-md active:scale-[0.99] disabled:opacity-50"
+            className="w-full py-3 mt-1 bg-[#111C2D] hover:bg-[#1E293B] text-white font-bold text-sm rounded-xl transition-all shadow-md active:scale-[0.99] disabled:opacity-50 cursor-pointer"
           >
-            {loading ? 'Authenticating...' : 'Sign In'}
+            {loading ? t('auth.authenticating') : t('auth.signIn')}
           </button>
         </form>
 
         {/* Divider */}
         <div className="flex items-center gap-3">
           <div className="flex-1 h-[1px] bg-slate-200" />
-          <span className="text-[11px] font-bold text-slate-400 uppercase">Or Continue With</span>
+          <span className="text-[11px] font-bold text-slate-400 uppercase">{t('auth.orContinueWith')}</span>
           <div className="flex-1 h-[1px] bg-slate-200" />
         </div>
 
@@ -182,9 +198,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onAuthSuccess }) => {
 
         {/* Footer Link to Register */}
         <div className="text-center text-xs text-slate-500">
-          Don't have an account?{' '}
+          {t('auth.dontHaveAccount')}{' '}
           <Link to="/register" className="font-bold text-[#0284C7] hover:underline">
-            Register Organization
+            {t('auth.registerOrg')}
           </Link>
         </div>
       </div>

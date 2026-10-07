@@ -9,6 +9,7 @@ import {
   StatusBar,
   Platform,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 
 export const LandingScreen: React.FC = () => {
@@ -22,7 +23,7 @@ export const LandingScreen: React.FC = () => {
         {/* Brand Header */}
         <View style={styles.header}>
           <View style={styles.logoBadge}>
-            <Text style={styles.logoIcon}>⚡</Text>
+            <Ionicons name="flash" size={22} color="#38BDF8" />
           </View>
           <View>
             <Text style={styles.brandTitle}>TradeFlow Mobile</Text>
@@ -73,7 +74,7 @@ export const LandingScreen: React.FC = () => {
           onPress={() => setSelectedRole('DRIVER')}
         >
           <View style={styles.roleHeader}>
-            <Text style={styles.roleIcon}>🚚</Text>
+            <Ionicons name="navigate-outline" size={26} color="#38BDF8" />
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={styles.roleName}>Driver Portal</Text>
               <Text style={styles.roleAmharic}>Offline-First Mobile Dispatch</Text>
@@ -100,7 +101,7 @@ export const LandingScreen: React.FC = () => {
           onPress={() => setSelectedRole('TRANSPORTER')}
         >
           <View style={styles.roleHeader}>
-            <Text style={styles.roleIcon}>🚛</Text>
+            <Ionicons name="bus-outline" size={26} color="#10B981" />
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={styles.roleName}>Transporter Portal</Text>
               <Text style={styles.roleAmharic}>Fleet & Bidding Manager</Text>

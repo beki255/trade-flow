@@ -9,6 +9,8 @@ export interface UserProfile {
   tradeLicenseNo?: string;
   verificationStatus?: 'PENDING' | 'VERIFIED' | 'SUSPENDED';
   isVerified?: boolean;
+  ratingAvg?: number;
+  totalRatingsCount?: number;
 }
 
 export interface TruckItem {
@@ -68,6 +70,7 @@ export interface BidItem {
   id: string;
   rawId?: string;
   loadId: string;
+  rawLoadId?: string;
   loadTitle: string;
   route: string;
   weight?: string;
@@ -79,6 +82,15 @@ export interface BidItem {
   dispatchedTruck?: string;
   dispatchedDriver?: string;
   isDispatched?: boolean;
+  loadStatus?: string;
+  shipperId?: string;
+  shipmentId?: string;
+  isRatedByTransporter?: boolean;
+  hasRatedShipper?: boolean;
+  shipperRatingScore?: number | null;
+  hasRatedDriver?: boolean;
+  driverRatingScore?: number | null;
+  driverUserId?: string | null;
   shipperName?: string;
   shipperCompany?: string;
   shipperPhone?: string;

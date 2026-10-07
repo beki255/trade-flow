@@ -37,6 +37,7 @@ import { PodTab } from './tabs/PodTab';
 import { DriverTopHeader } from './components/DriverTopHeader';
 import { DriverBottomNavBar } from './components/DriverBottomNavBar';
 import { DriverProfileModal } from './modals/DriverProfileModal';
+import { useTheme } from '../../context/ThemeContext';
 
 interface DriverPortalScreenProps {
   onLogout: () => void;
@@ -44,6 +45,7 @@ interface DriverPortalScreenProps {
 }
 
 export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout, user }) => {
+  const { colors } = useTheme();
   const [currentUser, setCurrentUser] = useState<any>(user);
   const [activeTab, setActiveTab] = useState<DriverTabType>(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
@@ -84,6 +86,7 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
   // Active Trip Dynamic State
   const [activeTrip, setActiveTrip] = useState<ActiveTripDetails | null>(null);
   const [lastDeliveredTrip, setLastDeliveredTrip] = useState<ActiveTripDetails | null>(null);
+  const [deliveredHistory, setDeliveredHistory] = useState<any[]>([]);
 
   // Offline Telemetry Queue Buffer (NFR 7.2)
   const [offlineQueue, setOfflineQueue] = useState<any[]>([]);
@@ -113,13 +116,13 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
           setRealGpsLocation(updatedLoc);
         });
         Alert.alert(
-          '🟢 GPS Location Active!',
+          'GPS Location Active',
           'Device GPS is active; live telemetry will now broadcast along the corridor route.',
           [{ text: 'OK' }]
         );
       } else {
         Alert.alert(
-          '⚠️ Location Permission Required',
+          'Location Permission Required',
           'Please enable Location Services in device Settings to stream live GPS telemetry to the shipper.',
           [{ text: 'OK' }]
         );
@@ -311,6 +314,12 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
           setActiveTrip(null);
         }
 
+        if (data.deliveredHistory && Array.isArray(data.deliveredHistory)) {
+          setDeliveredHistory(data.deliveredHistory);
+        } else {
+          setDeliveredHistory([]);
+        }
+
         if (data.latestPod) {
           setLastDeliveredTrip(data.latestPod);
           setRecipientName(data.latestPod.recipientName || '');
@@ -333,7 +342,7 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
 
   const [actionLoading, setActionLoading] = useState(false);
 
-  // 🚀 Start Trip Handler (Milestone 1: Departed Origin)
+  // Start Trip Handler (Milestone 1: Departed Origin)
   const handleStartTrip = async () => {
     // If GPS is not yet granted, request GPS right before starting trip
     if (gpsStatus !== 'GRANTED') {
@@ -380,7 +389,7 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
           source: 'DRIVER_DEPART_ORIGIN',
         });
         Alert.alert(
-          '🚀 Trip Started!',
+          'Trip Started',
           'Your corridor trip has commenced. Live GPS telemetry is now broadcasting to the shipper.',
           [{ text: 'OK' }]
         );
@@ -471,9 +480,13 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await syncOfflineQueues();
-    await fetchActiveTrip();
-    setRefreshing(false);
+    try {
+      await Promise.allSettled([syncOfflineQueues(), fetchActiveTrip()]);
+    } catch (err) {
+      console.warn('Driver onRefresh error:', err);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   // Check-in state
@@ -568,7 +581,7 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
     setTimeout(() => setCheckedInSuccess(''), 3500);
   };
 
-  // 🚨 Handle Driver Geotagged Incident Reporting with Offline Queuing (NFR 7.2)
+  // Handle Driver Geotagged Incident Reporting with Offline Queuing (NFR 7.2)
   const handleSendIncident = async () => {
     if (!incidentType) return;
     const activeWp = waypoints.find((w) => w.status === 'ACTIVE_NOW') || waypoints[0];
@@ -630,7 +643,7 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
     setTimeout(() => setIncidentSent(false), 3500);
   };
 
-  // 🔄 Handle Dynamic Reroute Confirmation (SRS FR-05.3)
+  // Handle Dynamic Reroute Confirmation (SRS FR-05.3)
   const handleConfirmReroute = async (action: 'ACCEPT' | 'DECLINE') => {
     if (!pendingReroute) return;
     try {
@@ -664,7 +677,7 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
     }
   };
 
-  // 🏁 Mark as Delivered from Trip Tab -> Navigates to e-POD Tab & Records Arrival
+  // Mark as Delivered from Trip Tab -> Navigates to e-POD Tab & Records Arrival
   const handleMarkDelivered = async () => {
     setActiveTab('pod');
     if (activeTrip?.id) {
@@ -685,17 +698,17 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
 
   const handleSignPOD = async () => {
     if (!recipientName) {
-      Alert.alert('⚠️ Name Required', 'Please enter the full name of the receiving consignee.');
+      Alert.alert('Name Required', 'Please enter the full name of the receiving consignee.');
       return;
     }
     if (!signedPOD) {
-      Alert.alert('⚠️ Signature Required', 'Please capture or confirm the consignee signature.');
+      Alert.alert('Signature Required', 'Please capture or confirm the consignee signature.');
       return;
     }
 
     setActionLoading(true);
     try {
-      const sigData = `✍️ ${recipientName} [TradeFlow Verified Cryptographic e-POD Handover Signature]`;
+      const sigData = `${recipientName} [TradeFlow Verified Cryptographic e-POD Handover Signature]`;
       // Auto-trigger delivery milestone & smart escrow release
       const res = await apiFetch('/api/payments/settle', {
         method: 'POST',
@@ -727,27 +740,27 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
         setActiveTrip(null);
         await fetchActiveTrip();
         Alert.alert(
-          '🎉 Delivery Confirmed!',
+          'Delivery Confirmed',
           'Digital e-POD has been permanently recorded. Escrow payment has been released to the transporter, and the shipper notified.',
           [{ text: 'OK' }]
         );
       } else {
         const errJson = await res.json().catch(() => ({}));
         Alert.alert(
-          '⚠️ Unable to Confirm e-POD',
+          'Unable to Confirm e-POD',
           errJson.error || 'Failed to persist delivery record. Please retry.'
         );
       }
     } catch (e: any) {
       console.warn('e-POD payment settlement error:', e);
-      Alert.alert('⚠️ Connection Issue', 'Could not reach server. Please check your internet connection and retry.');
+      Alert.alert('Connection Issue', 'Could not reach server. Please check your internet connection and retry.');
     } finally {
       setActionLoading(false);
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
 
       {/* Modular Top Mobile Header & Emergency SOS */}
@@ -790,6 +803,7 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
             onToggleDriving={handleToggleDriving}
             onMarkDelivered={handleMarkDelivered}
             onNavigateToPod={() => setActiveTab('pod')}
+            onRefresh={fetchActiveTrip}
             actionLoading={actionLoading}
             gpsStatus={gpsStatus}
             realGpsLocation={realGpsLocation}
@@ -839,6 +853,7 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
         {activeTab === 'pod' && (
           <PodTab
             activeTrip={activeTrip || lastDeliveredTrip}
+            deliveredHistory={deliveredHistory}
             recipientName={recipientName}
             setRecipientName={setRecipientName}
             signedPOD={signedPOD}
@@ -856,12 +871,13 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
         onSelectTab={(tab) => setActiveTab(tab)}
       />
 
-      {/* Driver Profile & Password Change Modal */}
+      {/* Driver Profile & Password Change Drawer */}
       <DriverProfileModal
         visible={showProfileModal}
         onClose={() => setShowProfileModal(false)}
         user={currentUser}
         onPhotoUpdated={handlePhotoUpdated}
+        onLogout={onLogout}
       />
     </SafeAreaView>
   );

@@ -13,6 +13,8 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import { transporterStyles as styles } from '../transporterStyles';
 import { TruckItem } from '../types';
+import { isValidImageUri, uriToDataUrl } from '../../../utils/imageUtils';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface AddDriverModalProps {
   visible: boolean;
@@ -73,6 +75,7 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({
   onGenerateNewPassword,
   onSubmit,
 }) => {
+  const { language } = useLanguage();
   // Real Native & Web Device Photo Picker for Driver Face/ID
   const pickDriverPhoto = async () => {
     try {
@@ -98,17 +101,8 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({
         });
         if (!res.canceled && res.assets && res.assets.length > 0) {
           const asset = res.assets[0];
-          try {
-            const resp = await fetch(asset.uri);
-            const blob = await resp.blob();
-            const reader = new FileReader();
-            reader.onload = () => {
-              setDriverPhoto(reader.result as string);
-            };
-            reader.readAsDataURL(blob);
-          } catch {
-            setDriverPhoto(asset.uri);
-          }
+          const dataUrl = await uriToDataUrl(asset.uri);
+          setDriverPhoto(dataUrl);
         }
       }
     } catch (err) {
@@ -194,7 +188,7 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({
                 onPress={pickDriverPhoto}
                 activeOpacity={0.8}
               >
-                {driverPhoto ? (
+                {isValidImageUri(driverPhoto) ? (
                   <Image source={{ uri: driverPhoto }} style={styles.driverPhotoPreview} />
                 ) : (
                   <View style={styles.driverPhotoPlaceholder}>
@@ -208,9 +202,12 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({
               </TouchableOpacity>
               <View style={{ flex: 1, gap: 2 }}>
                 <Text style={styles.photoTitle}>Driver Portrait / Face Photo</Text>
-                <Text style={styles.photoSubtitle}>
-                  {driverPhoto ? '✅ Photo attached for FTA & Checkpoint ID' : 'Required for Galafi / Djibouti Checkpoint ID and Platform Verification'}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  {driverPhoto && <Ionicons name="checkmark-circle" size={13} color="#059669" />}
+                  <Text style={[styles.photoSubtitle, driverPhoto && { color: '#059669', fontWeight: '700' }]}>
+                    {driverPhoto ? 'Photo attached for FTA & Checkpoint ID' : 'Required for Galafi / Djibouti Checkpoint ID and Platform Verification'}
+                  </Text>
+                </View>
                 <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
                   <TouchableOpacity style={styles.pickPhotoBtn} onPress={pickDriverPhoto}>
                     <Ionicons name="image-outline" size={13} color="#0284C7" />
@@ -253,7 +250,13 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({
             {/* 4. One-Time Temporary Password for Driver */}
             <View style={styles.inputGroup}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={styles.inputLabel}>One-Time Temporary Password (ጊዜያዊ የይለፍ ቃል):</Text>
+                <Text style={styles.inputLabel}>
+                  {language === 'AM'
+                    ? 'ጊዜያዊ የይለፍ ቃል:'
+                    : language === 'OM'
+                    ? 'Jecha Darbii Yeroo:'
+                    : 'One-Time Temporary Password:'}
+                </Text>
                 <TouchableOpacity
                   onPress={onGenerateNewPassword}
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 2, paddingHorizontal: 6, backgroundColor: '#E0F2FE', borderRadius: 6 }}
@@ -269,9 +272,12 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({
                 value={driverTemporaryPassword}
                 onChangeText={setDriverTemporaryPassword}
               />
-              <Text style={{ fontSize: 10, color: '#64748B', marginTop: 2 }}>
-                🔑 Share this code with the driver for their first login. The driver will change it in their Profile.
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
+                <Ionicons name="key-outline" size={13} color="#64748B" />
+                <Text style={{ fontSize: 10, color: '#64748B', flex: 1 }}>
+                  Share this code with the driver for their first login. The driver will change it in their Profile.
+                </Text>
+              </View>
             </View>
 
             {/* 4. Commercial Driving License No */}

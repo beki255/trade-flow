@@ -5,6 +5,10 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+  }
   body {
     @apply bg-[#F8FAFC] text-slate-900 antialiased selection:bg-blue-600 selection:text-white;
     font-family: 'Inter', 'Outfit', sans-serif;

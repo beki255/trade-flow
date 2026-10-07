@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { DisputeTicketItem, DisputeStats } from '../types';
 import { DisputeArbitrationModal } from '../components/DisputeArbitrationModal';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface DisputesTabProps {
   tickets: DisputeTicketItem[];
@@ -43,6 +44,7 @@ export const DisputesTab: React.FC<DisputesTabProps> = ({
   onRefresh,
   onArbitrate,
 }) => {
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'OPEN' | 'SETTLED' | 'REFUNDED'>('ALL');
 
@@ -80,10 +82,10 @@ export const DisputesTab: React.FC<DisputesTabProps> = ({
 
         <div className="space-y-1 relative z-10">
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-            Escrow Dispute Arbitration Workbench
+            {t('admin.disputesTitle')}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
-            Mediate contested freight payments, review cargo condition discrepancy claims, assess delay penalties, and execute binding financial disbursements or smart escrow refunds.
+            {t('admin.disputesSubtitle')}
           </p>
         </div>
 
@@ -260,9 +262,6 @@ export const DisputesTab: React.FC<DisputesTabProps> = ({
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-mono text-xs font-black text-slate-900 bg-slate-100 px-2.5 py-0.5 rounded-md border border-slate-200">
                         {ticket.ticketNumber}
-                      </span>
-                      <span className="font-mono text-xs font-bold text-sky-800 bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
-                        {ticket.loadCode}
                       </span>
                       <span
                         className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border ${

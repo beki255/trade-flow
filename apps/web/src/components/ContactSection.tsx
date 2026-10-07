@@ -1,0 +1,160 @@
+import React, { useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
+import {
+  Mail,
+  Phone,
+  MapPin,
+  Send,
+  CheckCircle2,
+} from 'lucide-react';
+
+export const ContactSection: React.FC = () => {
+  const { t } = useLanguage();
+  const [formData, setFormData] = useState({
+    fullName: '',
+    contactInfo: '',
+    message: '',
+  });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittedTicket, setSubmittedTicket] = useState<string | null>(null);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.fullName.trim() || !formData.contactInfo.trim()) return;
+
+    setIsSubmitting(true);
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setSubmittedTicket(`TF-${Math.floor(100000 + Math.random() * 900000)}`);
+    }, 600);
+  };
+
+  return (
+    <section id="contact" className="w-full max-w-[1240px] mx-auto px-4 sm:px-8 py-12 sm:py-16">
+      
+      {/* Header */}
+      <div className="text-center max-w-xl mx-auto mb-10 space-y-2">
+        <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+          {t('contact.title')}
+        </h2>
+        <p className="text-xs sm:text-sm text-slate-500">
+          {t('contact.subtitle')}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+        
+        {/* Left: Contact Info */}
+        <div className="md:col-span-5 space-y-3">
+          <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+              <Phone className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-[10px] font-bold text-slate-400 uppercase">{t('contact.hotlineLabel')}</div>
+              <div className="text-sm font-black text-sky-700">{t('contact.hotlinePhone')}</div>
+              <div className="text-xs text-slate-600">{t('contact.deskPhone')}</div>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+              <Mail className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-[10px] font-bold text-slate-400 uppercase">{t('contact.emailLabel')}</div>
+              <div className="text-xs sm:text-sm font-black text-slate-900">{t('contact.emailAddress')}</div>
+              <div className="text-[11px] text-slate-500">{t('contact.emailResponse')}</div>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+              <MapPin className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-[10px] font-bold text-slate-400 uppercase">{t('contact.hubsLabel')}</div>
+              <div className="text-xs sm:text-sm font-black text-slate-900">{t('contact.hubsCity')}</div>
+              <div className="text-[11px] text-slate-500">{t('contact.hubsDetail')}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Clean Compact Form */}
+        <div className="md:col-span-7 bg-white rounded-2xl border border-slate-200 p-6 shadow-2xs">
+          {submittedTicket ? (
+            <div className="text-center py-6 space-y-2.5">
+              <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto" />
+              <h3 className="text-base font-black text-slate-900">{t('contact.form.successTitle')}</h3>
+              <p className="text-xs text-slate-500">
+                {t('contact.form.successDesc')} <strong className="text-sky-700">{submittedTicket}</strong>
+              </p>
+              <button
+                type="button"
+                onClick={() => setSubmittedTicket(null)}
+                className="mt-2 px-4 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-bold"
+              >
+                {t('contact.form.sendAnother')}
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">{t('contact.form.nameLabel')}</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.fullName}
+                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                    placeholder={t('contact.form.namePlaceholder')}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-900 focus:bg-white focus:border-sky-500 outline-none transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">{t('contact.form.contactLabel')}</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.contactInfo}
+                    onChange={(e) => setFormData({ ...formData, contactInfo: e.target.value })}
+                    placeholder={t('contact.form.contactPlaceholder')}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-900 focus:bg-white focus:border-sky-500 outline-none transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">{t('contact.form.messageLabel')}</label>
+                <textarea
+                  rows={3}
+                  value={formData.message}
+                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                  placeholder={t('contact.form.messagePlaceholder')}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-900 focus:bg-white focus:border-sky-500 outline-none transition-all resize-none"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-60 shadow-xs"
+              >
+                {isSubmitting ? <span>{t('contact.form.sending')}</span> : (
+                  <>
+                    <Send className="w-3.5 h-3.5" />
+                    <span>{t('contact.form.submitButton')}</span>
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+        </div>
+
+      </div>
+
+    </section>
+  );
+};

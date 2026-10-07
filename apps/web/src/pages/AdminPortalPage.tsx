@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '../components/layout/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import {
   VerificationUser,
   DocumentPreviewData,
@@ -11,6 +12,8 @@ import {
   DisputeStats,
 } from '../modules/admin/types';
 
+import { ArrowLeft } from 'lucide-react';
+
 // Modular Tabs
 import { VerificationQueueTab } from '../modules/admin/tabs/VerificationQueueTab';
 import { DisputesTab } from '../modules/admin/tabs/DisputesTab';
@@ -18,7 +21,9 @@ import { SystemHealthTab } from '../modules/admin/tabs/SystemHealthTab';
 import { FraudDetectionTab } from '../modules/admin/tabs/FraudDetectionTab';
 import { AuditLogsTab } from '../modules/admin/tabs/AuditLogsTab';
 import { ReviewQueueTab } from '../modules/customs/tabs/ReviewQueueTab';
-import { CustomsStats, CustomsDossierItem } from '../modules/customs/types';
+import { ComplianceTab } from '../modules/customs/tabs/ComplianceTab';
+import { ClearanceTab } from '../modules/customs/tabs/ClearanceTab';
+import { CustomsStats, CustomsDossierItem, ClearanceLedgerItem } from '../modules/customs/types';
 
 // Modular Modals
 import { UserInspectionModal } from '../modules/admin/components/UserInspectionModal';
@@ -26,11 +31,15 @@ import { DocumentPreviewModal } from '../modules/admin/components/DocumentPrevie
 
 export const AdminPortalPage: React.FC = () => {
   const { user } = useAuth();
+  const { language } = useLanguage();
   const { tab } = useParams<{ tab?: string }>();
   const navigate = useNavigate();
   const activeTab = tab || 'verifications';
 
   const handleTabChange = (newTab: string) => {
+    if (newTab !== 'customs-oversight') {
+      setCustomsSubView('queue');
+    }
     navigate(`/admin/${newTab}`);
   };
   const [verificationList, setVerificationList] = useState<VerificationUser[]>([]);
@@ -71,6 +80,10 @@ export const AdminPortalPage: React.FC = () => {
 
   // Customs Oversight State
   const [customsDossiers, setCustomsDossiers] = useState<CustomsDossierItem[]>([]);
+  const [customsLedger, setCustomsLedger] = useState<ClearanceLedgerItem[]>([]);
+  const [selectedCustomsDossier, setSelectedCustomsDossier] = useState<CustomsDossierItem | null>(null);
+  const [selectedCertShipmentId, setSelectedCertShipmentId] = useState<string | null>(null);
+  const [customsSubView, setCustomsSubView] = useState<'queue' | 'compliance' | 'clearance'>('queue');
   const [customsStats, setCustomsStats] = useState<CustomsStats>({
     totalDossiers: 0,
     pendingReviews: 0,
@@ -87,13 +100,54 @@ export const AdminPortalPage: React.FC = () => {
       const queueRes = await fetch('/api/customs/queue');
       if (queueRes.ok) {
         const queueData = await queueRes.json();
-        if (queueData.dossiers) setCustomsDossiers(queueData.dossiers);
+        if (queueData.dossiers) {
+          setCustomsDossiers(queueData.dossiers);
+          if (selectedCustomsDossier) {
+            const updated = queueData.dossiers.find((d: any) => d.id === selectedCustomsDossier.id);
+            if (updated) setSelectedCustomsDossier(updated);
+          }
+        }
         if (queueData.stats) setCustomsStats(queueData.stats);
+      }
+      const ledgerRes = await fetch('/api/customs/ledger');
+      if (ledgerRes.ok) {
+        const ledgerData = await ledgerRes.json();
+        if (ledgerData.ledger) {
+          setCustomsLedger(ledgerData.ledger);
+        }
       }
     } catch (err) {
       console.warn('Failed to fetch customs dossiers in admin:', err);
     } finally {
       setCustomsLoading(false);
+    }
+  };
+
+  const handleUpdateCustomsClearance = async (
+    shipmentId: string,
+    clearanceStatus: 'CLEARED' | 'REVISION_REQUESTED' | 'REJECTED',
+    officerNotes: string,
+    clearingStation: string
+  ) => {
+    try {
+      const res = await fetch(`/api/customs/shipments/${shipmentId}/clearance`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clearanceStatus,
+          officerNotes: officerNotes || 'Admin Regulatory Oversight Clearance Action',
+          clearingStation,
+          officerId: user?.email ? `ADMIN (${user.email})` : 'ADMIN-SUPERVISOR',
+        }),
+      });
+      if (res.ok) {
+        await fetchCustomsData();
+      } else {
+        const errJson = await res.json();
+        alert(errJson.error || 'Failed to update clearance');
+      }
+    } catch (err) {
+      console.error('Error updating customs clearance in admin:', err);
     }
   };
 
@@ -322,47 +376,85 @@ export const AdminPortalPage: React.FC = () => {
         {/* 1.1 CUSTOMS & BORDER OVERSIGHT */}
         {activeTab === 'customs-oversight' && (
           <div className="space-y-4">
-            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-xl">
-                  🏛️
-                </div>
-                <div>
-                  <h3 className="text-sm font-black text-slate-900">
-                    Corridor Customs & Single-Window Oversight
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    Live regulatory oversight of customs clearance dossiers, certificates, and border inspections across Ethiopian trade corridors.
-                  </p>
+            {customsSubView !== 'queue' && (
+              <div className="flex items-center justify-between pb-1">
+                <button
+                  type="button"
+                  onClick={() => setCustomsSubView('queue')}
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-xs cursor-pointer"
+                >
+                  <ArrowLeft className="w-4 h-4 text-slate-500" />
+                  <span>
+                    {language === 'AM'
+                      ? 'ወደ ወረፋ ተመለስ'
+                      : language === 'OM'
+                      ? 'Gara Tarree Deebi\'i'
+                      : 'Back to Queue'}
+                  </span>
+                </button>
+
+                <div className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
+                  {customsSubView === 'compliance'
+                    ? language === 'AM'
+                      ? 'የተገዢነት ክትትል'
+                      : language === 'OM'
+                      ? 'Hordoffii Qulqullinaa'
+                      : 'Admin Compliance Inspection'
+                    : language === 'AM'
+                    ? 'የኤሌክትሮኒክስ ፍቃድ ሰነድ'
+                    : language === 'OM'
+                    ? 'Waraqaa Hayyamaa'
+                    : 'Clearance Certificate'}
                 </div>
               </div>
-            </div>
+            )}
 
-            <ReviewQueueTab
-              stats={customsStats}
-              dossiers={customsDossiers}
-              loading={customsLoading}
-              onRefresh={fetchCustomsData}
-              onSelectDossierForCompliance={() => {
-                navigate('/customs/compliance');
-              }}
-              onQuickApprove={async (shipmentId, station) => {
-                await fetch(`/api/customs/shipments/${shipmentId}/clearance`, {
-                  method: 'PATCH',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    clearanceStatus: 'CLEARED',
-                    officerNotes: 'Super-Admin Expedited Green Line Clearance Approved',
-                    clearingStation: station,
-                    officerId: user?.email || 'ADMIN-SUPERVISOR',
-                  }),
-                });
-                fetchCustomsData();
-              }}
-              onViewCertificate={() => {
-                navigate('/customs/clearance');
-              }}
-            />
+            {customsSubView === 'queue' && (
+              <ReviewQueueTab
+                stats={customsStats}
+                dossiers={customsDossiers}
+                loading={customsLoading}
+                onRefresh={fetchCustomsData}
+                onSelectDossierForCompliance={(dossier) => {
+                  setSelectedCustomsDossier(dossier);
+                  setCustomsSubView('compliance');
+                }}
+                onQuickApprove={async (shipmentId, station) => {
+                  await handleUpdateCustomsClearance(
+                    shipmentId,
+                    'CLEARED',
+                    'Super-Admin Expedited Green Line Clearance Approved',
+                    station
+                  );
+                }}
+                onViewCertificate={(shipmentId) => {
+                  setSelectedCertShipmentId(shipmentId);
+                  setCustomsSubView('clearance');
+                }}
+              />
+            )}
+
+            {customsSubView === 'compliance' && (
+              <ComplianceTab
+                dossiers={customsDossiers}
+                selectedDossier={selectedCustomsDossier}
+                onSelectDossier={(dossier) => setSelectedCustomsDossier(dossier)}
+                onUpdateClearance={handleUpdateCustomsClearance}
+                onViewCertificate={(shipmentId) => {
+                  setSelectedCertShipmentId(shipmentId);
+                  setCustomsSubView('clearance');
+                }}
+              />
+            )}
+
+            {customsSubView === 'clearance' && (
+              <ClearanceTab
+                ledger={customsLedger}
+                loading={customsLoading}
+                onRefresh={fetchCustomsData}
+                selectedCertificateShipmentId={selectedCertShipmentId}
+              />
+            )}
           </div>
         )}
 

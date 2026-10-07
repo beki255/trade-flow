@@ -13,6 +13,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { MultimodalContainerItem } from '../types';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface MultimodalTabProps {
   containers: MultimodalContainerItem[];
@@ -25,6 +26,8 @@ export const MultimodalTab: React.FC<MultimodalTabProps> = ({
   loading,
   onRefresh,
 }) => {
+  const { t } = useLanguage();
+
   return (
     <div className="space-y-6">
       {/* 1. Header Banner */}
@@ -32,10 +35,10 @@ export const MultimodalTab: React.FC<MultimodalTabProps> = ({
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 rounded-full bg-gradient-to-br from-sky-500/10 via-blue-500/5 to-transparent blur-3xl pointer-events-none" />
         <div className="space-y-1 relative z-10">
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-            Port to Dry Port to Regional Warehouse Tracking
+            {t('forwarder.multimodalTitle')}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
-            Monitor container freight progression across the 4 key intermodal transport legs: Red Sea Ocean Discharge ➔ Ethio-Djibouti Rail/Corridor Haulage ➔ Modjo Dry Port Customs Terminal ➔ Final Regional Delivery.
+            {t('forwarder.multimodalSubtitle')}
           </p>
         </div>
 

@@ -5,10 +5,12 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
+  StyleSheet,
+  Platform,
 } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { transporterStyles as styles } from '../transporterStyles';
+import { Ionicons } from '@expo/vector-icons';
 import { LoadItem, BidItem } from '../types';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface BiddingTabProps {
   loadsList: LoadItem[];
@@ -25,9 +27,9 @@ interface BiddingTabProps {
   bidSuccess: string;
   submittedBids: BidItem[];
   biddingSubTab?: 'create' | 'history';
-  setBiddingSubTab?: (val: 'create' | 'history') => void;
   onSubmitBid: () => void;
   onOpenDispatchModal: (bid: BidItem) => void;
+  onOpenRatingModal?: (bid: BidItem) => void;
   onDeleteBid?: (bid: BidItem) => void;
   onNavigateToLoads?: () => void;
 }
@@ -48,9 +50,11 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
   submittedBids,
   onSubmitBid,
   onOpenDispatchModal,
+  onOpenRatingModal,
   onDeleteBid,
   onNavigateToLoads,
 }) => {
+  const { t } = useLanguage();
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'ACCEPTED' | 'REJECTED'>('ALL');
 
   const selectedLoadObj = loadsList.find((l) => l.id === selectedLoadId);
@@ -71,118 +75,72 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
     return b.status === statusFilter;
   });
 
+  const formatTransitTime = (hoursStr?: string) => {
+    if (!hoursStr) return '18h transit';
+    const num = hoursStr.match(/\d+/);
+    return num ? `${num[0]}h transit` : '18h transit';
+  };
+
+  const formatSubmittedTime = (timeStr?: string) => {
+    if (!timeStr) return '';
+    return timeStr.replace(/:(\d{2}):(\d{2})(\s+[AP]M)/i, ':$1$3').replace(/:\d{2}(\s+[AP]M)/i, '$1');
+  };
+
   return (
-    <View style={styles.sectionContainer}>
+    <View style={styles.container}>
       {/* Success Notification Banner */}
       {bidSuccess ? (
         <View style={styles.successBox}>
-          <Text style={styles.successText}>✓ {bidSuccess}</Text>
+          <Ionicons name="checkmark-circle" size={16} color="#15803D" />
+          <Text style={styles.successText}>{bidSuccess}</Text>
         </View>
       ) : null}
 
-      {/* VIEW A: QUOTE SUBMISSION FORM (Rendered when a load is selected from Loads Board) */}
+      {/* VIEW A: QUOTE SUBMISSION FORM (When a load is selected) */}
       {selectedLoadObj ? (
-        <View style={{ gap: 10 }}>
-          {/* Back to My Quotes Button */}
+        <View style={styles.formContainer}>
+          {/* Back Button */}
           <TouchableOpacity
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 6,
-              alignSelf: 'flex-start',
-              paddingVertical: 7,
-              paddingHorizontal: 12,
-              backgroundColor: '#E2E8F0',
-              borderRadius: 10,
-            }}
+            style={styles.backBtn}
             onPress={() => setSelectedLoadId('')}
+            activeOpacity={0.7}
           >
             <Ionicons name="arrow-back" size={16} color="#0F172A" />
-            <Text style={{ fontSize: 12, fontWeight: '800', color: '#0F172A' }}>
-              ← Back to My Quotes & Bids
-            </Text>
+            <Text style={styles.backBtnText}>Back to My Quotes</Text>
           </TouchableOpacity>
 
           <View style={{ marginBottom: 4 }}>
-            <Text style={styles.sectionTitle}>Submit Freight Rate Quote</Text>
-            <Text style={styles.sectionSubtitle}>
-              Propose custom pricing & transit timelines for this consignment
+            <Text style={styles.pageTitle}>Submit Freight Quote</Text>
+            <Text style={styles.pageSubtitle}>
+              Propose rate & transit timeline for this corridor load
             </Text>
           </View>
 
-          {/* Selected Load Preview Card */}
-          <View style={styles.loadPreviewBox}>
+          {/* Selected Load Summary Card */}
+          <View style={styles.loadSummaryCard}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={styles.loadPreviewTitle}>{selectedLoadObj.title}</Text>
-              <View style={[styles.statusBadge, { backgroundColor: '#E0F2FE' }]}>
-                <Text style={[styles.statusText, { color: '#0369A1' }]}>{selectedLoadObj.cargoType || 'Consignment'}</Text>
+              <Text style={styles.loadTitle}>{selectedLoadObj.title}</Text>
+              <View style={styles.cargoBadge}>
+                <Text style={styles.cargoBadgeText}>{selectedLoadObj.cargoType || 'Consignment'}</Text>
               </View>
             </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginVertical: 4 }}>
-              <Ionicons name="location-outline" size={13} color="#0284C7" />
-              <Text style={styles.loadPreviewRoute}>{selectedLoadObj.route}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 4 }}>
+              <Ionicons name="location-outline" size={14} color="#0284C7" style={{ marginTop: 2 }} />
+              <Text style={styles.routeText}>{selectedLoadObj.route}</Text>
             </View>
-            {selectedLoadObj.shipperName ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 4 }}>
-                <Ionicons name="business" size={13} color="#0284C7" />
-                <Text style={{ fontSize: 11.5, color: '#334155', fontWeight: '700' }}>
-                  Shipper: {selectedLoadObj.shipperName}
-                </Text>
-                {selectedLoadObj.shipperPhone ? (
-                  <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '600' }}>
-                    • {selectedLoadObj.shipperPhone}
-                  </Text>
-                ) : null}
-                {selectedLoadObj.shipperVerified && (
-                  <Ionicons name="shield-checkmark" size={12} color="#16A34A" />
-                )}
-              </View>
-            ) : null}
-            <View style={styles.loadPreviewFooter}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <MaterialCommunityIcons name="scale" size={13} color="#64748B" />
-                <Text style={styles.loadPreviewWeight}>Weight: {selectedLoadObj.weight}</Text>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <MaterialCommunityIcons name="cash-multiple" size={13} color="#64748B" />
-                <Text style={styles.loadPreviewBudget}>
-                  {selectedLoadObj.budget ? `Target: ${selectedLoadObj.budget}` : 'Open for Quotes'}
-                </Text>
-              </View>
+            <View style={styles.metaRow}>
+              <Text style={styles.metaText}>Weight: {selectedLoadObj.weight}</Text>
+              <Text style={styles.metaText}>Budget: {selectedLoadObj.budget}</Text>
             </View>
-
-            {existingBidForSelectedLoad && (
-              <View
-                style={{
-                  backgroundColor: '#FEF3C7',
-                  borderWidth: 1,
-                  borderColor: '#FCD34D',
-                  borderRadius: 10,
-                  padding: 10,
-                  marginTop: 8,
-                  gap: 2,
-                }}
-              >
-                <Text style={{ fontSize: 11.5, fontWeight: '800', color: '#92400E' }}>
-                  ✓ Quote Already Placed: {existingBidForSelectedLoad.price} ({existingBidForSelectedLoad.status})
-                </Text>
-                <Text style={{ fontSize: 10.5, color: '#B45309' }}>
-                  You have already submitted an active bid for this load. Shipper will review your offer.
-                </Text>
-              </View>
-            )}
           </View>
 
-          {/* The Input Fields Form */}
-          <View style={styles.card}>
+          {/* Input Fields */}
+          <View style={styles.inputCard}>
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Proposed Rate (ETB) *</Text>
+              <Text style={styles.inputLabel}>{t('bidPriceLabel') || 'Your Bid Price (ETB) *'}</Text>
               <TextInput
-                style={[
-                  styles.input,
-                  existingBidForSelectedLoad && { backgroundColor: '#F1F5F9', color: '#64748B' },
-                ]}
-                placeholder="e.g. 175000"
+                style={styles.inputField}
+                placeholder="e.g. 1,000,000 ETB"
                 placeholderTextColor="#94A3B8"
                 value={bidPrice}
                 onChangeText={setBidPrice}
@@ -192,16 +150,10 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Estimated Corridor Transit Time (Hours):</Text>
-              <Text style={{ fontSize: 11, color: '#64748B', marginBottom: 4 }}>
-                ⏱️ Trip Duration: How many driving hours the truck takes to deliver the cargo.
-              </Text>
+              <Text style={styles.inputLabel}>{t('transitHoursLabel') || 'Estimated Transit Time (Hours) *'}</Text>
               <TextInput
-                style={[
-                  styles.input,
-                  existingBidForSelectedLoad && { backgroundColor: '#F1F5F9', color: '#64748B' },
-                ]}
-                placeholder="e.g. 18"
+                style={styles.inputField}
+                placeholder="e.g. 18 Hours"
                 placeholderTextColor="#94A3B8"
                 value={transitHours}
                 onChangeText={setTransitHours}
@@ -210,41 +162,11 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
               />
             </View>
 
-            {/* Validity Period */}
-            <View style={{ marginTop: 2, marginBottom: 8 }}>
-              <Text style={styles.fieldLabel}>Quote Validity Period</Text>
-              <Text style={{ fontSize: 11, color: '#64748B', marginBottom: 6 }}>
-                ⏳ Offer Expiry: How long this price stays valid for the shipper before expiring.
-              </Text>
-              <View style={styles.typeSelectorRow}>
-                {[24, 48, 72].map((hrs) => (
-                  <TouchableOpacity
-                    key={hrs}
-                    style={[
-                      styles.typeChip,
-                      bidValidityHours === hrs && styles.typeChipActive,
-                      existingBidForSelectedLoad && { opacity: 0.6 },
-                    ]}
-                    onPress={() => !existingBidForSelectedLoad && setBidValidityHours(hrs)}
-                    disabled={!!existingBidForSelectedLoad}
-                  >
-                    <Text style={[styles.typeChipText, bidValidityHours === hrs && styles.typeChipTextActive]}>
-                      {hrs} Hours
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Transporter Operational Notes:</Text>
+              <Text style={styles.inputLabel}>{t('bidNotesLabel') || 'Notes / Assigned Fleet'}</Text>
               <TextInput
-                style={[
-                  styles.input,
-                  { height: 60, textAlignVertical: 'top' },
-                  existingBidForSelectedLoad && { backgroundColor: '#F1F5F9', color: '#64748B' },
-                ]}
-                placeholder="e.g. GPS live telematics enabled. Double-driver crew for express dispatch."
+                style={[styles.inputField, { height: 70, textAlignVertical: 'top', paddingTop: 8 }]}
+                placeholder="Specify truck plate, driver availability, or special terms..."
                 placeholderTextColor="#94A3B8"
                 value={bidNotes}
                 onChangeText={setBidNotes}
@@ -255,225 +177,112 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
 
             <TouchableOpacity
               style={[
-                styles.submitBidBtn,
+                styles.primaryActionBtn,
                 existingBidForSelectedLoad
                   ? { backgroundColor: '#64748B' }
-                  : (!selectedLoadId || !bidPrice) && { opacity: 0.5 },
+                  : (!selectedLoadId || !bidPrice) && { opacity: 0.6 },
               ]}
               onPress={onSubmitBid}
               disabled={!selectedLoadId || !bidPrice || !!existingBidForSelectedLoad}
+              activeOpacity={0.85}
             >
-              <Text style={styles.submitBidBtnText}>
+              <Text style={styles.primaryActionBtnText}>
                 {existingBidForSelectedLoad
-                  ? `✓ Bid Already Placed (${existingBidForSelectedLoad.status})`
-                  : 'Submit Competitive Freight Quote'}
+                  ? `✓ Bid Placed (${existingBidForSelectedLoad.status})`
+                  : t('sendBidButton') || 'Submit Quote ➔'}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={{
-                alignItems: 'center',
-                paddingVertical: 10,
-                marginTop: 4,
-              }}
+              style={styles.cancelLink}
               onPress={() => setSelectedLoadId('')}
             >
-              <Text style={{ fontSize: 12, fontWeight: '700', color: '#64748B' }}>
-                Cancel & Return to My Quotes
-              </Text>
+              <Text style={styles.cancelLinkText}>Cancel & Return</Text>
             </TouchableOpacity>
           </View>
         </View>
       ) : (
-        /* VIEW B: DEDICATED "MY QUOTES & BIDS" DASHBOARD (Default view) */
+        /* VIEW B: DEDICATED CLEAN "MY QUOTES & BIDS" DASHBOARD */
         <View style={{ gap: 12 }}>
-          {/* Header */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <View style={{ flex: 1, marginRight: 8 }}>
-              <Text style={styles.sectionTitle}>My Quotes & Bids</Text>
-              <Text style={styles.sectionSubtitle}>
-                Track your active freight offers, shipper acceptances, and vehicle assignments
+          {/* Header Row: Title & Find Loads */}
+          <View style={styles.headerRow}>
+            <View>
+              <Text style={styles.pageTitle}>{t('myQuotesTitle') || 'My Quotes & Bids'}</Text>
+              <Text style={styles.pageSubtitle}>
+                {submittedBids.length} total quotation{submittedBids.length === 1 ? '' : 's'} placed
               </Text>
             </View>
+
             {onNavigateToLoads && (
               <TouchableOpacity
                 onPress={onNavigateToLoads}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 4,
-                  backgroundColor: '#0284C7',
-                  paddingHorizontal: 10,
-                  paddingVertical: 6,
-                  borderRadius: 10,
-                  marginTop: 2,
-                }}
+                style={styles.findLoadsBtn}
+                activeOpacity={0.85}
               >
-                <Ionicons name="add-circle-outline" size={14} color="#FFFFFF" />
-                <Text style={{ fontSize: 11, fontWeight: '800', color: '#FFFFFF' }}>Find Loads</Text>
+                <Ionicons name="search" size={13} color="#FFFFFF" />
+                <Text style={styles.findLoadsBtnText}>Find Loads</Text>
               </TouchableOpacity>
             )}
           </View>
 
-          {/* Quick Stats Summary Strip */}
-          <View style={{ flexDirection: 'row', gap: 6 }}>
-            <TouchableOpacity
-              onPress={() => setStatusFilter('ALL')}
-              style={{
-                flex: 1,
-                backgroundColor: statusFilter === 'ALL' ? '#0F172A' : '#F8FAFC',
-                borderWidth: 1,
-                borderColor: statusFilter === 'ALL' ? '#0F172A' : '#E2E8F0',
-                borderRadius: 10,
-                paddingVertical: 8,
-                paddingHorizontal: 6,
-                alignItems: 'center',
-              }}
-            >
-              <Text style={{ fontSize: 16, fontWeight: '900', color: statusFilter === 'ALL' ? '#FFFFFF' : '#0F172A' }}>
-                {submittedBids.length}
-              </Text>
-              <Text style={{ fontSize: 9.5, fontWeight: '700', color: statusFilter === 'ALL' ? '#94A3B8' : '#64748B' }}>
-                Total Quotes
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => setStatusFilter('PENDING')}
-              style={{
-                flex: 1,
-                backgroundColor: statusFilter === 'PENDING' ? '#FEF3C7' : '#F8FAFC',
-                borderWidth: 1,
-                borderColor: statusFilter === 'PENDING' ? '#F59E0B' : '#E2E8F0',
-                borderRadius: 10,
-                paddingVertical: 8,
-                paddingHorizontal: 6,
-                alignItems: 'center',
-              }}
-            >
-              <Text style={{ fontSize: 16, fontWeight: '900', color: '#D97706' }}>
-                {pendingBids.length}
-              </Text>
-              <Text style={{ fontSize: 9.5, fontWeight: '700', color: '#B45309' }}>
-                Pending
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => setStatusFilter('ACCEPTED')}
-              style={{
-                flex: 1,
-                backgroundColor: statusFilter === 'ACCEPTED' ? '#DCFCE7' : '#F8FAFC',
-                borderWidth: 1,
-                borderColor: statusFilter === 'ACCEPTED' ? '#22C55E' : '#E2E8F0',
-                borderRadius: 10,
-                paddingVertical: 8,
-                paddingHorizontal: 6,
-                alignItems: 'center',
-              }}
-            >
-              <Text style={{ fontSize: 16, fontWeight: '900', color: '#16A34A' }}>
-                {acceptedBids.length}
-              </Text>
-              <Text style={{ fontSize: 9.5, fontWeight: '700', color: '#15803D' }}>
-                Won / Accepted
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => setStatusFilter('REJECTED')}
-              style={{
-                flex: 1,
-                backgroundColor: statusFilter === 'REJECTED' ? '#FEE2E2' : '#F8FAFC',
-                borderWidth: 1,
-                borderColor: statusFilter === 'REJECTED' ? '#EF4444' : '#E2E8F0',
-                borderRadius: 10,
-                paddingVertical: 8,
-                paddingHorizontal: 6,
-                alignItems: 'center',
-              }}
-            >
-              <Text style={{ fontSize: 16, fontWeight: '900', color: '#DC2626' }}>
-                {rejectedBids.length}
-              </Text>
-              <Text style={{ fontSize: 9.5, fontWeight: '700', color: '#B91C1C' }}>
-                Declined
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Filter Chips Bar */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingVertical: 2 }}>
+          {/* Single Sleek Filter Segment Row (Robinhood/Linear Style) */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ marginHorizontal: -16, marginBottom: 2 }}
+            contentContainerStyle={styles.filterBar}
+          >
             {(
               [
-                { key: 'ALL', label: `All Quotes (${submittedBids.length})`, icon: 'list-outline' },
-                { key: 'PENDING', label: `Pending (${pendingBids.length})`, icon: 'time-outline' },
-                { key: 'ACCEPTED', label: `Won / Accepted (${acceptedBids.length})`, icon: 'checkmark-circle-outline' },
-                { key: 'REJECTED', label: `Declined (${rejectedBids.length})`, icon: 'close-circle-outline' },
+                { key: 'ALL', label: `All (${submittedBids.length})` },
+                { key: 'PENDING', label: `Pending (${pendingBids.length})` },
+                { key: 'ACCEPTED', label: `Won (${acceptedBids.length})` },
+                { key: 'REJECTED', label: `Declined (${rejectedBids.length})` },
               ] as const
-            ).map((chip) => {
-              const active = statusFilter === chip.key;
+            ).map((item) => {
+              const active = statusFilter === item.key;
               return (
                 <TouchableOpacity
-                  key={chip.key}
-                  onPress={() => setStatusFilter(chip.key)}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 5,
-                    paddingHorizontal: 12,
-                    paddingVertical: 6,
-                    borderRadius: 12,
-                    backgroundColor: active ? '#0284C7' : '#FFFFFF',
-                    borderWidth: 1,
-                    borderColor: active ? '#0284C7' : '#E2E8F0',
-                  }}
+                  key={item.key}
+                  onPress={() => setStatusFilter(item.key)}
+                  style={[
+                    styles.filterChip,
+                    active && styles.filterChipActive,
+                  ]}
+                  activeOpacity={0.7}
                 >
-                  <Ionicons
-                    name={chip.icon as any}
-                    size={13}
-                    color={active ? '#FFFFFF' : '#64748B'}
-                  />
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: active ? '#FFFFFF' : '#475569' }}>
-                    {chip.label}
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      active && styles.filterChipTextActive,
+                    ]}
+                  >
+                    {item.label}
                   </Text>
                 </TouchableOpacity>
               );
             })}
           </ScrollView>
 
-          {/* Bids List */}
+          {/* Quotes Cards List */}
           {filteredBids.length === 0 ? (
             <View style={styles.emptyCard}>
-              <Ionicons name="pricetag-outline" size={44} color="#94A3B8" />
+              <Ionicons name="pricetag-outline" size={38} color="#94A3B8" />
               <Text style={styles.emptyTitle}>
                 {statusFilter === 'ALL'
                   ? 'No Quotes Submitted Yet'
-                  : `No ${statusFilter.toLowerCase()} quotes found`}
+                  : `No ${statusFilter.toLowerCase()} quotes`}
               </Text>
-              <Text style={styles.emptySub}>
-                {statusFilter === 'ALL'
-                  ? 'Browse active corridor consignments on the Load Board to place competitive quotes and win freight jobs.'
-                  : `You currently have no quotes with "${statusFilter.toLowerCase()}" status.`}
+              <Text style={styles.emptySubtitle}>
+                Browse corridor freight on the Load Board to place quotes.
               </Text>
               {onNavigateToLoads && (
                 <TouchableOpacity
-                  style={[
-                    styles.submitBidBtn,
-                    {
-                      marginTop: 12,
-                      paddingHorizontal: 20,
-                      alignSelf: 'center',
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 6,
-                    },
-                  ]}
+                  style={styles.browseBtn}
                   onPress={onNavigateToLoads}
+                  activeOpacity={0.85}
                 >
-                  <MaterialCommunityIcons name="package-variant" size={15} color="#FFFFFF" />
-                  <Text style={styles.submitBidBtnText}>Browse Available Loads</Text>
-                  <Ionicons name="arrow-forward" size={13} color="#FFFFFF" />
+                  <Text style={styles.browseBtnText}>Browse Load Board ➔</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -481,167 +290,199 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
             filteredBids.map((b) => {
               const isAccepted = b.status === 'ACCEPTED';
               const isRejected = b.status === 'REJECTED';
+              const isDispatched = !!(b.dispatchedTruck && b.dispatchedDriver);
+
               return (
                 <View
                   key={b.id}
                   style={[
-                    styles.card,
-                    isAccepted && { borderColor: '#86EFAC', backgroundColor: '#F0FDF4' },
-                    isRejected && { borderColor: '#FECACA', backgroundColor: '#FEF2F2' },
+                    styles.quoteCard,
+                    isAccepted && styles.quoteCardAccepted,
+                    isRejected && styles.quoteCardRejected,
                   ]}
                 >
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.truckPlate} numberOfLines={1}>
+                  {/* Top Card Row: Title & Price */}
+                  <View style={styles.quoteCardTop}>
+                    <View style={{ flex: 1, marginRight: 10 }}>
+                      <Text style={styles.quoteTitle} numberOfLines={1}>
                         {b.loadTitle || b.loadId}
                       </Text>
-                      <Text style={styles.infoLabel}>
-                        {b.shipperName ? `Shipper: ${b.shipperName}${b.shipperPhone ? ` • ${b.shipperPhone}` : ''}` : 'Corridor Shipment'}
+                      <Text style={styles.shipperSubText} numberOfLines={1}>
+                        Shipper: {b.shipperName || 'Verified Shipper'}
+                        {b.shipperPhone ? ` • ${b.shipperPhone}` : ''}
                       </Text>
                     </View>
-                    <View style={{ alignItems: 'flex-end', flexShrink: 0 }}>
-                      <Text style={[styles.kpiValue, { fontSize: 16, color: isAccepted ? '#16A34A' : '#0284C7' }]}>
+
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={styles.quotePrice}>
                         {b.price}
                       </Text>
+                      {/* Compact status badge with dot */}
                       <View
                         style={[
-                          styles.statusBadge,
-                          isAccepted
-                            ? { backgroundColor: '#DCFCE7' }
+                          styles.miniBadge,
+                          isDispatched
+                            ? styles.miniBadgeDispatched
+                            : isAccepted
+                            ? styles.miniBadgeWon
                             : isRejected
-                            ? { backgroundColor: '#FEE2E2' }
-                            : styles.statusAvailable,
-                          { marginTop: 4 },
+                            ? styles.miniBadgeRejected
+                            : styles.miniBadgePending,
                         ]}
                       >
+                        <View
+                          style={[
+                            styles.statusDot,
+                            {
+                              backgroundColor: isDispatched
+                                ? '#059669'
+                                : isAccepted
+                                ? '#16A34A'
+                                : isRejected
+                                ? '#DC2626'
+                                : '#D97706',
+                            },
+                          ]}
+                        />
                         <Text
                           style={[
-                            styles.statusText,
-                            isAccepted
-                              ? { color: '#166534' }
+                            styles.miniBadgeText,
+                            isDispatched
+                              ? { color: '#047857' }
+                              : isAccepted
+                              ? { color: '#15803D' }
                               : isRejected
-                              ? { color: '#991B1B' }
-                              : {},
+                              ? { color: '#DC2626' }
+                              : { color: '#B45309' },
                           ]}
                         >
-                          {b.dispatchedTruck && b.dispatchedDriver
-                            ? 'DISPATCHED & LOCKED'
+                          {isDispatched
+                            ? 'Dispatched'
                             : isAccepted
-                            ? 'BID ACCEPTED'
+                            ? 'Won'
                             : isRejected
-                            ? 'REJECTED'
-                            : 'PENDING REVIEW'}
+                            ? 'Declined'
+                            : 'Pending'}
                         </Text>
                       </View>
                     </View>
                   </View>
 
-                  <View style={styles.cardDivider} />
+                  {/* Route Row */}
+                  <View style={styles.routeRow}>
+                    <Ionicons name="location-sharp" size={13} color="#0284C7" style={{ marginTop: 2 }} />
+                    <Text style={styles.routeValueText}>
+                      {b.route}
+                    </Text>
+                  </View>
 
-                  {/* Shipper Acceptance Action Box */}
-                  {isAccepted && (
-                    <View style={{ backgroundColor: '#DCFCE7', borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: '#86EFAC', gap: 6 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Ionicons name="trophy-outline" size={16} color="#166534" />
-                        <Text style={{ fontSize: 12, color: '#166534', fontWeight: '800' }}>
-                          Congratulations! Shipper accepted your quote!
-                        </Text>
-                      </View>
-                      <Text style={{ fontSize: 11, color: '#166534' }}>
-                        {b.dispatchedTruck && b.dispatchedDriver
-                          ? 'Quote accepted & locked. Fleet dispatched for corridor transit (No duplicate assignments allowed).'
-                          : 'Quote accepted! Assign your fleet vehicle and licensed driver to dispatch.'}
-                      </Text>
+                  {/* Transit & Timing */}
+                  <View style={styles.metaDetailsRow}>
+                    <Ionicons name="time-outline" size={12} color="#94A3B8" />
+                    <Text style={styles.metaDetailsText}>
+                      {formatTransitTime(b.hours)} • Submitted {formatSubmittedTime(b.submittedAt)}
+                    </Text>
+                  </View>
 
-                      {b.dispatchedTruck && b.dispatchedDriver ? (
-                        <View style={{ backgroundColor: '#FFFFFF', borderRadius: 8, padding: 10, marginTop: 4, borderWidth: 1, borderColor: '#BBF7D0', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                          <Ionicons name="lock-closed" size={16} color="#166534" />
-                          <View style={{ flex: 1 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                              <MaterialCommunityIcons name="truck" size={14} color="#166534" />
-                              <Text style={{ fontSize: 11.5, color: '#166534', fontWeight: '800' }}>
-                                Assigned Fleet: {b.dispatchedTruck} • Driver: {b.dispatchedDriver}
-                              </Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
-                              <Ionicons name="checkmark-circle" size={11} color="#15803D" />
-                              <Text style={{ fontSize: 10, color: '#15803D', fontWeight: '600' }}>
-                                Consignment Dispatched • Live GPS Active • Locked
-                              </Text>
-                            </View>
-                          </View>
+                  {/* ACTION OR DISPATCH STATUS BOX */}
+                  {b.loadStatus === 'DELIVERED' ? (
+                    /* DELIVERED: Completed e-POD and Rate Shipper CTA */
+                    <View style={[styles.dispatchFooter, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
+                      <View style={styles.fleetInfoRow}>
+                        <View style={[styles.truckIconBadge, { backgroundColor: '#DCFCE7' }]}>
+                          <Ionicons name="checkmark-done" size={14} color="#16A34A" />
                         </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.fleetPlateText, { color: '#166534' }]} numberOfLines={1}>
+                            Delivered • Handed Over via e-POD
+                          </Text>
+                          <Text style={[styles.fleetStatusSubText, { color: '#15803D' }]}>
+                            {b.dispatchedTruck ? `Fleet: ${b.dispatchedTruck} • ` : ''}Escrow Payout Settled
+                          </Text>
+                        </View>
+                        {onOpenRatingModal && (
+                          b.hasRatedShipper ? (
+                            <View
+                              style={[
+                                styles.dispatchActionBtn,
+                                { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0', borderWidth: 1, paddingVertical: 6, paddingHorizontal: 10 },
+                              ]}
+                            >
+                              <Ionicons name="checkmark-circle" size={12} color="#059669" />
+                              <Text style={[styles.dispatchActionBtnText, { fontSize: 11, color: '#047857', fontWeight: '700' }]}>
+                                Rated {b.shipperRatingScore ? `★ ${b.shipperRatingScore}.0` : 'Recorded'}
+                              </Text>
+                            </View>
+                          ) : (
+                            <TouchableOpacity
+                              style={[
+                                styles.dispatchActionBtn,
+                                { backgroundColor: '#D97706', paddingVertical: 6, paddingHorizontal: 10 },
+                              ]}
+                              onPress={() => onOpenRatingModal(b)}
+                              activeOpacity={0.85}
+                            >
+                              <Ionicons name="star" size={12} color="#FFFFFF" />
+                              <Text style={[styles.dispatchActionBtnText, { fontSize: 11 }]}>
+                                Rate Shipper ★
+                              </Text>
+                            </TouchableOpacity>
+                          )
+                        )}
+                      </View>
+                    </View>
+                  ) : isDispatched ? (
+                    /* Dispatched: Clean Single-Level Fleet Row */
+                    <View style={styles.dispatchFooter}>
+                      <View style={styles.fleetInfoRow}>
+                        <View style={styles.truckIconBadge}>
+                          <Ionicons name="car" size={14} color="#059669" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.fleetPlateText} numberOfLines={1}>
+                            Fleet: {b.dispatchedTruck} • {b.dispatchedDriver}
+                          </Text>
+                          <Text style={styles.fleetStatusSubText}>
+                            Consignment Dispatched • Live GPS Active • Escrow Locked
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  ) : isAccepted ? (
+                    /* Won but Needs Dispatch: Prominent Clean CTA Button */
+                    <TouchableOpacity
+                      style={styles.dispatchActionBtn}
+                      onPress={() => onOpenDispatchModal(b)}
+                      activeOpacity={0.85}
+                    >
+                      <Ionicons name="paper-plane" size={13} color="#FFFFFF" />
+                      <Text style={styles.dispatchActionBtnText}>
+                        Assign Truck & Driver to Dispatch ➔
+                      </Text>
+                    </TouchableOpacity>
+                  ) : (
+                    /* Pending or Declined: Note + Withdraw Button */
+                    <View style={styles.cardFooterActions}>
+                      {b.notes ? (
+                        <Text style={styles.notesText} numberOfLines={1}>
+                          Note: "{b.notes}"
+                        </Text>
                       ) : (
+                        <View />
+                      )}
+                      {onDeleteBid && (
                         <TouchableOpacity
-                          style={[
-                            styles.submitBidBtn,
-                            {
-                              backgroundColor: '#16A34A',
-                              marginTop: 4,
-                              paddingVertical: 10,
-                              flexDirection: 'row',
-                              justifyContent: 'center',
-                              alignItems: 'center',
-                              gap: 6,
-                            },
-                          ]}
-                          onPress={() => onOpenDispatchModal(b)}
+                          style={styles.withdrawBtn}
+                          onPress={() => onDeleteBid(b)}
+                          activeOpacity={0.7}
                         >
-                          <Text style={styles.submitBidBtnText}>Assign Vehicle & Driver to Dispatch</Text>
-                          <Ionicons name="arrow-forward" size={13} color="#FFFFFF" />
+                          <Ionicons name="trash-outline" size={12} color="#DC2626" />
+                          <Text style={styles.withdrawBtnText}>
+                            {b.status === 'PENDING' ? 'Withdraw Quote' : 'Remove'}
+                          </Text>
                         </TouchableOpacity>
                       )}
                     </View>
-                  )}
-
-                  {/* Route & Cargo */}
-                  <View style={{ marginVertical: 2 }}>
-                    <Text style={styles.infoLabel}>Corridor Route:</Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                      <Ionicons name="location-outline" size={13} color="#0284C7" />
-                      <Text style={[styles.infoValue, { color: '#0F172A', fontWeight: '800', lineHeight: 18 }]}>
-                        {b.route}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={[styles.infoRow, { marginTop: 4 }]}>
-                    <Text style={styles.infoLabel}>Transit & Validity:</Text>
-                    <Text style={styles.infoValue}>{b.hours} • Submitted {b.submittedAt}</Text>
-                  </View>
-
-                  {b.notes ? (
-                    <View style={{ marginTop: 4, backgroundColor: '#F8FAFC', padding: 8, borderRadius: 8, borderWidth: 1, borderColor: '#F1F5F9' }}>
-                      <Text style={styles.infoLabel}>Quote Notes:</Text>
-                      <Text style={[styles.infoValue, { marginTop: 2, fontStyle: 'italic', color: '#334155' }]}>
-                        "{b.notes}"
-                      </Text>
-                    </View>
-                  ) : null}
-
-                  {/* Delete / Withdraw Button (Non-accepted quotes) */}
-                  {b.status !== 'ACCEPTED' && onDeleteBid && (
-                    <TouchableOpacity
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        paddingVertical: 9,
-                        paddingHorizontal: 12,
-                        borderRadius: 10,
-                        backgroundColor: '#FEF2F2',
-                        borderWidth: 1,
-                        borderColor: '#FECACA',
-                        marginTop: 10,
-                        gap: 6,
-                      }}
-                      onPress={() => onDeleteBid(b)}
-                    >
-                      <Ionicons name="trash-outline" size={14} color="#DC2626" />
-                      <Text style={{ fontSize: 11, fontWeight: '800', color: '#DC2626' }}>
-                        {b.status === 'PENDING' ? 'Withdraw / Delete Quotation' : 'Remove Record'}
-                      </Text>
-                    </TouchableOpacity>
                   )}
                 </View>
               );
@@ -652,3 +493,420 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 24,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  pageTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#0F172A',
+    letterSpacing: -0.4,
+  },
+  pageSubtitle: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  findLoadsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#0284C7',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    ...Platform.select({
+      web: { boxShadow: '0 2px 4px rgba(2, 132, 199, 0.2)' } as any,
+      default: { elevation: 2 },
+    }),
+  },
+  findLoadsBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  filterBar: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+  },
+  filterChip: {
+    paddingHorizontal: 13,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  filterChipActive: {
+    backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
+  },
+  filterChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  filterChipTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
+  quoteCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 8,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)',
+      } as any,
+      default: { elevation: 1 },
+    }),
+  },
+  quoteCardAccepted: {
+    borderLeftWidth: 3.5,
+    borderLeftColor: '#10B981',
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
+  },
+  quoteCardRejected: {
+    borderLeftWidth: 3.5,
+    borderLeftColor: '#EF4444',
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
+  },
+  quoteCardTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  quoteTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.2,
+    textTransform: 'capitalize',
+  },
+  shipperSubText: {
+    fontSize: 11.5,
+    color: '#64748B',
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  quotePrice: {
+    fontSize: 15.5,
+    fontWeight: '900',
+    color: '#0F172A',
+  },
+  miniBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4.5,
+    paddingHorizontal: 8,
+    paddingVertical: 2.5,
+    borderRadius: 12,
+    marginTop: 3,
+  },
+  miniBadgeDispatched: {
+    backgroundColor: '#ECFDF5',
+  },
+  miniBadgeWon: {
+    backgroundColor: '#DCFCE7',
+  },
+  miniBadgePending: {
+    backgroundColor: '#FEF3C7',
+  },
+  miniBadgeRejected: {
+    backgroundColor: '#F1F5F9',
+  },
+  statusDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+  },
+  miniBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.2,
+  },
+  routeRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 5,
+    paddingTop: 1,
+  },
+  routeValueText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#1E293B',
+    flex: 1,
+    flexWrap: 'wrap',
+    lineHeight: 18,
+  },
+  metaDetailsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  metaDetailsText: {
+    fontSize: 11,
+    color: '#94A3B8',
+    fontWeight: '500',
+  },
+  dispatchFooter: {
+    marginTop: 2,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  fleetInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  truckIconBadge: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#ECFDF5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fleetPlateText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  fleetStatusSubText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#059669',
+    marginTop: 1,
+  },
+  dispatchActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#16A34A',
+    borderRadius: 10,
+    paddingVertical: 9,
+    marginTop: 4,
+    ...Platform.select({
+      web: { boxShadow: '0 2px 6px rgba(22, 163, 74, 0.25)' } as any,
+      default: { elevation: 2 },
+    }),
+  },
+  dispatchActionBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  cardFooterActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 2,
+  },
+  notesText: {
+    fontSize: 11,
+    fontStyle: 'italic',
+    color: '#64748B',
+    flex: 1,
+    marginRight: 8,
+  },
+  withdrawBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 2,
+  },
+  withdrawBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#DC2626',
+  },
+  emptyCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginTop: 10,
+    gap: 8,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  emptySubtitle: {
+    fontSize: 12,
+    color: '#64748B',
+    textAlign: 'center',
+  },
+  browseBtn: {
+    backgroundColor: '#0284C7',
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 12,
+    marginTop: 6,
+  },
+  browseBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  successBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 10,
+  },
+  successText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#047857',
+  },
+  formContainer: {
+    gap: 12,
+  },
+  backBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  backBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  loadSummaryCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 4,
+  },
+  loadTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  cargoBadge: {
+    backgroundColor: '#E0F2FE',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  cargoBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#0369A1',
+    textTransform: 'uppercase',
+  },
+  routeText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#1E293B',
+    flex: 1,
+    flexWrap: 'wrap',
+    lineHeight: 18,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 6,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  metaText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  inputCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 12,
+  },
+  inputGroup: {
+    gap: 6,
+  },
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  inputField: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    fontSize: 13,
+    color: '#0F172A',
+  },
+  primaryActionBtn: {
+    backgroundColor: '#0284C7',
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  primaryActionBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  cancelLink: {
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+  cancelLinkText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+});

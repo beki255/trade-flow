@@ -8,6 +8,8 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { transporterStyles as styles } from '../transporterStyles';
 import { TruckItem, DriverItem } from '../types';
+import { useLanguage } from '../../../context/LanguageContext';
+import { isValidImageUri } from '../../../utils/imageUtils';
 
 interface FleetTabProps {
   fleetList: TruckItem[];
@@ -26,6 +28,7 @@ export const FleetTab: React.FC<FleetTabProps> = ({
   fleetSubTab,
   setFleetSubTab,
 }) => {
+  const { t } = useLanguage();
   const [internalSubTab, setInternalSubTab] = useState<'vehicles' | 'drivers'>('vehicles');
   const activeSubTab = fleetSubTab !== undefined ? fleetSubTab : internalSubTab;
   const changeSubTab = (tab: 'vehicles' | 'drivers') => {
@@ -119,9 +122,9 @@ export const FleetTab: React.FC<FleetTabProps> = ({
       {activeSubTab === 'vehicles' && (
         <View style={{ gap: 10 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={styles.sectionTitle}>Fleet Vehicles</Text>
+            <Text style={styles.sectionTitle}>{t('fleetOverview')}</Text>
             <TouchableOpacity style={styles.addBtn} onPress={openAddTruckModal}>
-              <Text style={styles.addBtnText}>+ Add Truck</Text>
+              <Text style={styles.addBtnText}>+ {t('addTruck')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -261,9 +264,9 @@ export const FleetTab: React.FC<FleetTabProps> = ({
       {activeSubTab === 'drivers' && (
         <View style={{ gap: 10 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={styles.sectionTitle}>Authorized Fleet Drivers</Text>
+            <Text style={styles.sectionTitle}>{t('driverRole')}</Text>
             <TouchableOpacity style={styles.addBtn} onPress={openAddDriverModal}>
-              <Text style={styles.addBtnText}>+ Add Driver</Text>
+              <Text style={styles.addBtnText}>+ {t('addDriver')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -290,7 +293,7 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                   <View style={styles.cardHeader}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, marginRight: 6 }}>
                       <View style={styles.driverAvatarBox}>
-                        {drv.photoUrl ? (
+                        {isValidImageUri(drv.photoUrl) ? (
                           <Image source={{ uri: drv.photoUrl }} style={styles.driverAvatarImg} />
                         ) : (
                           <Ionicons name="person" size={20} color={isPending ? "#D97706" : "#0284C7"} />

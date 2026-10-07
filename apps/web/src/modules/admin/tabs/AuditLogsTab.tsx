@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { History, TrendingUp, ShieldCheck, Scale, RefreshCw, FileText } from 'lucide-react';
 import { AuditLogItem } from '../types';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface AuditLogsTabProps {
   auditLogs: AuditLogItem[];
@@ -8,6 +9,7 @@ interface AuditLogsTabProps {
 }
 
 export const AuditLogsTab: React.FC<AuditLogsTabProps> = ({ auditLogs, onRefresh }) => {
+  const { t } = useLanguage();
   const [activeLogSection, setActiveLogSection] = useState<'SYSTEM' | 'PRICING'>('SYSTEM');
   const [pricingLogs, setPricingLogs] = useState<any[]>([]);
   const [pricingLoading, setPricingLoading] = useState<boolean>(false);
@@ -36,10 +38,10 @@ export const AuditLogsTab: React.FC<AuditLogsTabProps> = ({ auditLogs, onRefresh
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-black text-slate-900 tracking-tight">
-            Immutable Audit Trail & Compliance Archive
+            {t('admin.auditTitle')}
           </h2>
           <p className="text-xs text-slate-500">
-            Comprehensive timestamped logs for status transitions, document validations, and dynamic spot price calculations.
+            {t('admin.auditSubtitle')}
           </p>
         </div>
 

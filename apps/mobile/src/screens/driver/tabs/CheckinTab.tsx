@@ -7,6 +7,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { driverStyles as styles } from '../driverStyles';
 import { CheckinRecord, ActiveTripDetails } from '../types';
+import { useLanguage } from '../../../context/LanguageContext';
+import { formatCleanLocation } from './TripTab';
+import { CheckIcon } from '../../../components/AppIcons';
 
 interface CheckinTabProps {
   checkedInSuccess: string;
@@ -25,6 +28,7 @@ export const CheckinTab: React.FC<CheckinTabProps> = ({
   activeWaypoint,
   realGpsLocation,
 }) => {
+  const { t } = useLanguage();
   const hasTrip = !!activeTrip;
 
   // Resolve current coordinates dynamically from actual trip or live device GPS
@@ -40,9 +44,11 @@ export const CheckinTab: React.FC<CheckinTabProps> = ({
     activeWaypoint?.lng ??
     activeTrip?.originLng;
 
+  const cleanOrigin = formatCleanLocation(activeTrip?.origin);
+  const cleanDest = formatCleanLocation(activeTrip?.destination);
   const checkpointName =
     activeWaypoint?.name ||
-    (activeTrip ? (activeTrip.route || `${activeTrip.origin} ➔ ${activeTrip.destination}`) : null);
+    (activeTrip ? (activeTrip.route || `${cleanOrigin} ➔ ${cleanDest}`) : null);
 
   const coordsDisplay =
     currentLat !== undefined && currentLng !== undefined
@@ -51,11 +57,12 @@ export const CheckinTab: React.FC<CheckinTabProps> = ({
 
   return (
     <View style={styles.sectionContainer}>
-      <Text style={styles.sectionTitle}>Corridor Waypoint GPS Check-in</Text>
+      <Text style={styles.sectionTitle}>{t('confirmCheckin')}</Text>
 
       {checkedInSuccess ? (
-        <View style={styles.successBox}>
-          <Text style={styles.successText}>✓ {checkedInSuccess}</Text>
+        <View style={[styles.successBox, { flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
+          <CheckIcon size={14} color="#059669" />
+          <Text style={styles.successText}>{checkedInSuccess}</Text>
         </View>
       ) : null}
 
@@ -71,9 +78,12 @@ export const CheckinTab: React.FC<CheckinTabProps> = ({
           </View>
 
           <View style={{ backgroundColor: '#F8FAFC', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0', gap: 4 }}>
-            <Text style={{ fontSize: 13, fontWeight: '900', color: '#0F172A' }}>
-              📍 {checkpointName}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="location-sharp" size={16} color="#0284C7" />
+              <Text style={{ fontSize: 13, fontWeight: '900', color: '#0F172A', flex: 1 }}>
+                {checkpointName}
+              </Text>
+            </View>
             {coordsDisplay ? (
               <Text style={[styles.coordsText, { marginTop: 4, fontFamily: 'monospace' }]}>
                 {coordsDisplay} {realGpsLocation ? '• (Phone GPS)' : '• (Corridor GPS)'}

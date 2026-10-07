@@ -5,21 +5,24 @@ import {
 } from 'react-native';
 import { driverStyles as styles } from '../driverStyles';
 import { WaypointItem } from '../types';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface WaypointsTabProps {
   waypoints: WaypointItem[];
 }
 
 export const WaypointsTab: React.FC<WaypointsTabProps> = ({ waypoints }) => {
+  const { t } = useLanguage();
+
   return (
     <View style={styles.sectionContainer}>
-      <Text style={styles.sectionTitle}>Corridor Waypoints & Checkpoints</Text>
+      <Text style={styles.sectionTitle}>{t('corridorWaypoints')}</Text>
       
       {waypoints.length === 0 ? (
         <View style={styles.emptyCard}>
-          <Text style={styles.emptyTitle}>No Active Route Assigned</Text>
+          <Text style={styles.emptyTitle}>{t('noActiveRoute')}</Text>
           <Text style={styles.emptySub}>
-            Corridor waypoints and checkpoint clearance milestones will display here when a shipment is dispatched.
+            {t('noActiveRouteDesc')}
           </Text>
         </View>
       ) : (
@@ -48,13 +51,13 @@ export const WaypointsTab: React.FC<WaypointsTabProps> = ({ waypoints }) => {
                     ]}
                   >
                     {wp.status === 'COMPLETED'
-                      ? 'PASSED ✓'
+                      ? t('passedStatus')
                       : wp.status === 'ACTIVE_NOW'
-                      ? 'CURRENT'
-                      : 'UPCOMING'}
+                      ? t('currentStatus')
+                      : t('upcomingStatus')}
                   </Text>
                 </View>
-                <Text style={styles.wpTime}>Status: {wp.time}</Text>
+                <Text style={styles.wpTime}>{t('statusLabel')}: {wp.time}</Text>
               </View>
             </View>
           ))}

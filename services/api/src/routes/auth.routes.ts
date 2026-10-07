@@ -9,6 +9,7 @@ import {
   changePassword,
   updatePhoto,
   completeProfile,
+  updateProfile,
 } from '../controllers/auth.controller';
 
 const router = Router();
@@ -23,5 +24,7 @@ router.patch('/users/:id/verification', updateVerification);
 router.post('/change-password', changePassword);
 router.post('/update-photo', updatePhoto);
 router.post('/complete-profile', completeProfile);
+router.put('/update-profile', updateProfile);
+router.post('/update-profile', updateProfile);
 
 export default router;

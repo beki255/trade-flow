@@ -24,6 +24,7 @@ import {
   Percent,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
+import { useLanguage } from '../../../context/LanguageContext';
 import { BidItem, ShipmentItem } from '../types';
 import { DisputeEscrowModal } from '../components/DisputeEscrowModal';
 import { PayWithTelebirrModal } from '../components/PayWithTelebirrModal';
@@ -52,6 +53,7 @@ interface PaymentsTabProps {
 
 export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments = [] }) => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [activeSubView, setActiveSubView] = useState<'LEDGER' | 'BENCHMARKS'>('LEDGER');
@@ -247,12 +249,12 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
         <div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
             {activeSubView === 'LEDGER'
-              ? 'Payment & Carrier Settlement Ledger'
+              ? t('shipper.paymentsTitle')
               : 'Transporter Performance & Corridor Benchmarking'}
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
             {activeSubView === 'LEDGER'
-              ? 'Multi-gateway escrow checkouts (TeleBirr, CBE Birr), automated 5.0% commission deductions, accessorial reconciliation, and dispute mediation.'
+              ? t('shipper.paymentsSubtitle')
               : 'Self-service performance dashboard comparing carrier on-time rates, fuel economy, and customer ratings against corridor leaders.'}
           </p>
         </div>
@@ -295,14 +297,14 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
                 }}
                 className="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-rose-700 hover:bg-rose-50 transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
-                <Scale className="w-3.5 h-3.5" /> File Dispute
+                <Scale className="w-3.5 h-3.5" /> {t('shipper.disputeEscrow')}
               </button>
 
               <button
                 onClick={() => setPayModalOpen(true)}
                 className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
               >
-                <CreditCard className="w-3.5 h-3.5" /> Authorize Escrow
+                <CreditCard className="w-3.5 h-3.5" /> {t('shipper.depositEscrow')}
               </button>
             </>
           )}

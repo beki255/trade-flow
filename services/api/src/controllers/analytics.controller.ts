@@ -129,7 +129,7 @@ export const getFuelAnalytics = async (req: Request, res: Response): Promise<voi
 
       return {
         id: s.id,
-        shipmentCode: `TF-SH-${s.load.id.slice(0, 6).toUpperCase()}`,
+        shipmentCode: s.load.title || 'Freight Consignment',
         origin: s.load.originName,
         destination: s.load.destName,
         cargoTitle: s.load.title,

@@ -17,8 +17,10 @@ import {
   Wifi,
 } from 'lucide-react';
 import { SystemHealthData, ServiceStatus } from '../types';
+import { useLanguage } from '../../../context/LanguageContext';
 
 export const SystemHealthTab: React.FC = () => {
+  const { t } = useLanguage();
   const [healthData, setHealthData] = useState<SystemHealthData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -89,7 +91,7 @@ export const SystemHealthTab: React.FC = () => {
         <div>
           <div className="flex items-center gap-2.5">
             <h2 className="text-xl font-black text-slate-900 tracking-tight">
-              Platform Infrastructure & Microservices Telemetry
+              {t('admin.healthTitle')}
             </h2>
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1.5 shadow-xs">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -97,7 +99,7 @@ export const SystemHealthTab: React.FC = () => {
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Real-time health monitoring of PostgreSQL/PostGIS spatial latency, CVRP matching SLA compliance, and distributed message queues.
+            {t('admin.healthSubtitle')}
           </p>
         </div>
 

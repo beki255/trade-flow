@@ -12,6 +12,7 @@ import {
   Stamp
 } from 'lucide-react';
 import { ForwarderClientItem } from '../types';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface CustomsCoordinationTabProps {
   clients: ForwarderClientItem[];
@@ -24,6 +25,7 @@ export const CustomsCoordinationTab: React.FC<CustomsCoordinationTabProps> = ({
   loading,
   onRefresh,
 }) => {
+  const { t } = useLanguage();
   const [transmitting, setTransmitting] = useState(false);
   const [transmittedNotice, setTransmittedNotice] = useState('');
 
@@ -43,10 +45,10 @@ export const CustomsCoordinationTab: React.FC<CustomsCoordinationTabProps> = ({
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 rounded-full bg-gradient-to-br from-teal-500/10 via-emerald-500/5 to-transparent blur-3xl pointer-events-none" />
         <div className="space-y-1 relative z-10">
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-            Batch Customs Document Filing & Single Window Clearance
+            {t('forwarder.customsCoordTitle')}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
-            Coordinate customs clearance filings across multi-shipper consolidated containers. Assemble master transit declarations, commercial invoices, and packing lists for Galafi and Modjo customs inspection.
+            {t('forwarder.customsCoordSubtitle')}
           </p>
         </div>
 

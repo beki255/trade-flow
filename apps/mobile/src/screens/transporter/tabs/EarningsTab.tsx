@@ -5,8 +5,8 @@ import {
 } from 'react-native';
 import { transporterStyles as styles } from '../transporterStyles';
 import { UserProfile, BidItem } from '../types';
-import { apiFetch } from '../../../utils/api';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface EarningsTabProps {
   user?: UserProfile;
@@ -14,6 +14,7 @@ interface EarningsTabProps {
 }
 
 export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = [] }) => {
+  const { t } = useLanguage();
   const [payments, setPayments] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
 
@@ -30,7 +31,8 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
       } catch (e) {}
 
       try {
-        const revRes = await apiFetch('/api/portal/ratings');
+        const ratingUrl = user?.id ? `/api/portal/ratings?userId=${user.id}` : '/api/portal/ratings';
+        const revRes = await apiFetch(ratingUrl);
         if (revRes.ok) {
           const revData = await revRes.json();
           if (revData.ratings && Array.isArray(revData.ratings)) {
@@ -41,7 +43,7 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
     };
 
     fetchData();
-  }, []);
+  }, [user?.id]);
 
   const totalNetPayoutEtb = useMemo(() => {
     return payments.reduce(
@@ -66,60 +68,43 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
     return submittedBids.filter((b) => b.status === 'ACCEPTED').length;
   }, [submittedBids]);
 
-  const ratingAvg = user?.ratingAvg || (reviews.length > 0 ? (reviews.reduce((acc, r) => acc + (r.scoreStars || 5), 0) / reviews.length).toFixed(1) : '0.0');
+  const hasRatings = (Boolean(user?.totalRatingsCount && user.totalRatingsCount > 0)) || reviews.length > 0;
+  const ratingAvg = reviews.length > 0
+    ? (reviews.reduce((acc, r) => acc + (r.scoreStars || 0), 0) / reviews.length).toFixed(1)
+    : (user?.totalRatingsCount && user.totalRatingsCount > 0 && user?.ratingAvg ? user.ratingAvg.toFixed(1) : '0.0');
 
   return (
     <View style={styles.sectionContainer}>
-      <Text style={styles.sectionTitle}>Earnings & Payouts</Text>
+      <Text style={styles.sectionTitle}>{t('earningsPayouts')}</Text>
 
       <View style={styles.kpiGrid}>
         <View style={styles.kpiCard}>
-          <Text style={styles.kpiLabel}>Disbursed Payouts</Text>
+          <Text style={styles.kpiLabel}>{t('disbursedPayouts')}</Text>
           <Text style={[styles.kpiValue, { color: '#10B981' }]}>
             {settledPayoutEtb.toLocaleString()} ETB
           </Text>
           <Text style={{ fontSize: 9.5, color: '#059669', fontWeight: '700', marginTop: 1 }}>
-            Escrow Disbursed
+            {t('escrowDisbursedSub')}
           </Text>
         </View>
 
         <View style={styles.kpiCard}>
-          <Text style={styles.kpiLabel}>Locked in Escrow</Text>
+          <Text style={styles.kpiLabel}>{t('lockedEscrow')}</Text>
           <Text style={[styles.kpiValue, { color: '#0284C7' }]}>
             {heldInEscrowEtb.toLocaleString()} ETB
           </Text>
           <Text style={{ fontSize: 9.5, color: '#0284C7', fontWeight: '700', marginTop: 1 }}>
-            Pending e-POD sign-off
+            {t('pendingPodSub')}
           </Text>
         </View>
-      </View>
-
-      {/* Fuel Efficiency & Corridor Benchmark */}
-      <View style={{ backgroundColor: '#F0F9FF', borderWidth: 1, borderColor: '#BAE6FD', borderRadius: 14, padding: 12, marginBottom: 12 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-            <MaterialCommunityIcons name="gas-station" size={14} color="#0369A1" />
-            <Text style={{ fontSize: 11, fontWeight: '800', color: '#0369A1' }}>
-              Fleet Fuel Efficiency Benchmark
-            </Text>
-          </View>
-          <Text style={{ fontSize: 11, fontWeight: '900', color: '#0284C7' }}>
-            {completedTripsCount > 0 ? 'Active Telematics' : 'Baseline Standby'}
-          </Text>
-        </View>
-        <Text style={{ fontSize: 10, color: '#0369A1', marginTop: 3 }}>
-          {completedTripsCount > 0
-            ? 'Corridor telematics calculating fuel cost optimization in real-time.'
-            : 'Telematics benchmark starts recording when your first trip is dispatched.'}
-        </Text>
       </View>
 
       {/* Smart Escrow Transaction Ledger */}
       <View style={styles.card}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <View>
-            <Text style={styles.cardTitle}>Smart Escrow Settlements</Text>
-            <Text style={styles.emptySub}>Verified digital freight payouts</Text>
+            <Text style={styles.cardTitle}>{t('smartEscrowSettlements')}</Text>
+            <Text style={styles.emptySub}>{t('verifiedPayoutsSub')}</Text>
           </View>
           <Text style={{ fontSize: 10, fontWeight: '800', color: '#0284C7' }}>
             {payments.length} Transactions
@@ -129,10 +114,10 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
         {payments.length === 0 ? (
           <View style={{ backgroundColor: '#F8FAFC', borderRadius: 10, padding: 14, alignItems: 'center' }}>
             <Text style={{ fontSize: 11, fontWeight: '700', color: '#64748B' }}>
-              No payments recorded yet
+              {t('noPaymentsYet')}
             </Text>
             <Text style={{ fontSize: 9.5, color: '#94A3B8', marginTop: 2, textAlign: 'center' }}>
-              Smart escrow locks and settlements will appear here.
+              {t('noPaymentsYetSub')}
             </Text>
           </View>
         ) : (
@@ -167,15 +152,22 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
                       backgroundColor: isSettled ? '#DCFCE7' : '#FEF3C7',
                     }}
                   >
-                    <Text
-                      style={{
-                        fontSize: 8.5,
-                        fontWeight: '900',
-                        color: isSettled ? '#166534' : '#92400E',
-                      }}
-                    >
-                      {isSettled ? '✓ SETTLED' : '🔒 IN ESCROW'}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                      {isSettled ? (
+                        <Ionicons name="checkmark-circle" size={10} color="#166534" />
+                      ) : (
+                        <Ionicons name="lock-closed" size={9} color="#92400E" />
+                      )}
+                      <Text
+                        style={{
+                          fontSize: 8.5,
+                          fontWeight: '900',
+                          color: isSettled ? '#166534' : '#92400E',
+                        }}
+                      >
+                        {isSettled ? 'SETTLED' : 'IN ESCROW'}
+                      </Text>
+                    </View>
                   </View>
                 </View>
 
@@ -197,27 +189,32 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
       <View style={styles.card}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <View>
-            <Text style={styles.cardTitle}>Carrier Performance & Rating</Text>
+            <Text style={styles.cardTitle}>{t('carrierRatingTitle')}</Text>
             <Text style={styles.emptySub}>Bidirectional shipper reviews score</Text>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
-            <Text style={{ fontSize: 18, fontWeight: '900', color: '#D97706' }}>{ratingAvg} ★</Text>
-            <Text style={{ fontSize: 10, color: '#64748B' }}>{reviews.length} verified reviews</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Text style={{ fontSize: 18, fontWeight: '900', color: hasRatings ? '#D97706' : '#94A3B8' }}>{ratingAvg}</Text>
+              <Ionicons name="star" size={16} color={hasRatings ? '#F59E0B' : '#CBD5E1'} />
+            </View>
+            <Text style={{ fontSize: 10, color: '#64748B' }}>
+              {hasRatings ? `${reviews.length} verified reviews` : 'New Carrier (Unrated)'}
+            </Text>
           </View>
         </View>
 
         <View style={styles.cardDivider} />
 
         <Text style={{ fontSize: 11, fontWeight: '800', color: '#1E293B', marginTop: 2, marginBottom: 6 }}>
-          Recent Shipper Reviews:
+          {t('recentReviews')}
         </Text>
         {reviews.length === 0 ? (
           <View style={{ backgroundColor: '#F8FAFC', borderRadius: 10, padding: 14, alignItems: 'center' }}>
             <Text style={{ fontSize: 11, fontWeight: '700', color: '#64748B' }}>
-              No shipper reviews yet
+              {t('noReviewsYet')}
             </Text>
             <Text style={{ fontSize: 9.5, color: '#94A3B8', marginTop: 2, textAlign: 'center' }}>
-              Shipper ratings and feedback will appear here after completing deliveries.
+              {t('noReviewsYetSub')}
             </Text>
           </View>
         ) : (
@@ -226,9 +223,17 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
               <Text style={{ fontSize: 11, fontWeight: '700', color: '#1E293B' }}>
                 "{rev.comment || rev.reviewText || 'Delivered on time.'}"
               </Text>
-              <Text style={{ fontSize: 9.5, color: '#64748B', marginTop: 2 }}>
-                — {rev.fromUser?.companyName || rev.fromUser?.fullName || 'Verified Shipper'} • ★★★★★ ({rev.scoreStars || 5}.0)
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                <Text style={{ fontSize: 9.5, color: '#64748B' }}>
+                  — {rev.fromUser?.companyName || rev.fromUser?.fullName || 'Verified Shipper'} •
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Ionicons key={s} name="star" size={10} color="#F59E0B" />
+                  ))}
+                </View>
+                <Text style={{ fontSize: 9.5, color: '#64748B' }}>({rev.scoreStars || 5}.0)</Text>
+              </View>
             </View>
           ))
         )}
@@ -236,9 +241,9 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
 
       {/* Smart Escrow Safety Summary */}
       <View style={[styles.card, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
-        <Text style={[styles.cardTitle, { color: '#166534' }]}>Digital Smart Escrow Protected</Text>
+        <Text style={[styles.cardTitle, { color: '#166534' }]}>{t('escrowProtectedBoxTitle')}</Text>
         <Text style={{ fontSize: 11, color: '#166534', lineHeight: 16 }}>
-          100% of freight payments are locked in digital escrow upon booking acceptance. Milestone payouts are released automatically upon digital proof-of-delivery (e-POD) confirmation.
+          {t('escrowProtectedBoxDesc')}
         </Text>
       </View>
     </View>

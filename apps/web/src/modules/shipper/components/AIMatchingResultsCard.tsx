@@ -75,7 +75,9 @@ export const AIMatchingResultsCard: React.FC<AIMatchingResultsCardProps> = ({
                 <div>
                   <div className="text-xs font-black text-slate-900 flex items-center gap-1.5">
                     <span>#{idx + 1} {carrier.companyName}</span>
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" title="Verified Carrier" />
+                    <span title="Verified Carrier">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    </span>
                   </div>
                   <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
                     <span>Rating: {carrier.ratingStars}/5.0 ({carrier.totalCompletedTrips} trips)</span>

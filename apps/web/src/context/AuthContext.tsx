@@ -10,6 +10,8 @@ interface AuthContextType {
   googleAuthUser: (email: string, fullName: string, role: string, mode?: 'login' | 'register') => Promise<any>;
   loginWithGoogle: (data: { email: string; fullName: string; role?: string; mode?: 'login' | 'register'; credential?: string }) => Promise<any>;
   logout: () => void;
+  updateUser: (updatedFields: Partial<User>) => void;
+  refreshUser: () => Promise<void>;
   isAuthenticated: boolean;
   isVerifyingSession: boolean;
 }
@@ -38,6 +40,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setToken(null);
     localStorage.removeItem('tradeflow_user');
     localStorage.removeItem('tradeflow_token');
+  };
+
+  const updateUser = (updatedFields: Partial<User>) => {
+    if (!currentUser) return;
+    const updated = { ...currentUser, ...updatedFields };
+    setCurrentUser(updated);
+    localStorage.setItem('tradeflow_user', JSON.stringify(updated));
+  };
+
+  const refreshUser = async () => {
+    const storedToken = localStorage.getItem('tradeflow_token') || token;
+    if (!storedToken) return;
+    try {
+      const res = await fetch('/api/auth/me', {
+        headers: {
+          Authorization: `Bearer ${storedToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.user) {
+          setCurrentUser(data.user);
+          localStorage.setItem('tradeflow_user', JSON.stringify(data.user));
+        }
+      }
+    } catch (err) {
+      console.warn('Could not refresh user profile:', err);
+    }
   };
 
   // STRICT REAL DATABASE VERIFICATION (PostgreSQL via /api/auth/me):
@@ -192,6 +223,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         googleAuthUser,
         loginWithGoogle: (data) => googleAuthUser(data.email, data.fullName, data.role || 'SHIPPER', data.mode || 'login'),
         logout,
+        updateUser,
+        refreshUser,
         isAuthenticated: !!currentUser,
         isVerifyingSession,
       }}

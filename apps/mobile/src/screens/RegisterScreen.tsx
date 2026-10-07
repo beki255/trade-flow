@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../context/LanguageContext';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { apiFetch } from '../utils/api';
 
 interface RegisterScreenProps {
@@ -27,21 +28,40 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
   onRegisterSuccess,
 }) => {
   const { t } = useLanguage();
+  const [step, setStep] = useState<1 | 2>(1);
 
-  // Streamlined Initial Registration (Phone, Email, Password, Name)
+  // Step 1 Fields
   const [ownerName, setOwnerName] = useState('');
-  const [companyName, setCompanyName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+
+  // Step 2 Fields
   const [password, setPassword] = useState('');
+  const [companyName, setCompanyName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
+  // Validate Step 1 -> Step 2
+  const handleContinueToStep2 = () => {
+    if (!ownerName.trim()) {
+      setErrorMsg('Please enter your full legal name.');
+      return;
+    }
+    if (!phone.trim()) {
+      setErrorMsg('Please enter your mobile phone number.');
+      return;
+    }
+    setErrorMsg('');
+    setStep(2);
+  };
+
+  // Submit Registration
   const handleRegister = async () => {
-    if (!ownerName.trim() || !phone.trim() || !password) {
-      setErrorMsg('Please enter your full name, phone number, and password.');
+    if (!password) {
+      setErrorMsg('Please create a password for your account.');
       return;
     }
 
@@ -54,9 +74,10 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
     setErrorMsg('');
 
     const cleanPhone = phone.trim();
-    const cleanEmail = email && email.trim()
-      ? email.trim().toLowerCase()
-      : `${cleanPhone.replace(/[^0-9]/g, '') || 'transporter'}@tradeflow.et`;
+    const cleanEmail =
+      email && email.trim()
+        ? email.trim().toLowerCase()
+        : `${cleanPhone.replace(/[^0-9]/g, '') || 'transporter'}@tradeflow.et`;
 
     const finalCompanyName = companyName.trim() || `${ownerName.trim()} Transport`;
 
@@ -86,7 +107,16 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
       }
     } catch (err: any) {
       setLoading(false);
-      setErrorMsg('Cannot connect to TradeFlow API server. Please check your connection and retry.');
+      setErrorMsg('Cannot connect to TradeFlow API server. Please check your connection.');
+    }
+  };
+
+  const handleHeaderBack = () => {
+    if (step === 2) {
+      setErrorMsg('');
+      setStep(1);
+    } else {
+      onBack();
     }
   };
 
@@ -94,22 +124,60 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#F4F9FD" />
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        
         {/* Top Header Bar */}
         <View style={styles.topBar}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
-            <Text style={styles.backArrow}>←</Text>
+          <TouchableOpacity
+            onPress={handleHeaderBack}
+            style={styles.backButton}
+            activeOpacity={0.7}
+            accessibilityLabel="Back"
+          >
+            <Ionicons name="arrow-back" size={20} color="#0F172A" />
           </TouchableOpacity>
-          <Text style={styles.brandTitle}>TradeFlow</Text>
+          <Text style={[styles.brandTitle, { flex: 1 }]}>TradeFlow</Text>
+          <LanguageSwitcher variant="light" />
         </View>
 
-        {/* Form Card */}
+        {/* Polished Card */}
         <View style={styles.card}>
-          
-          <Text style={styles.screenHeading}>Transporter Sign Up</Text>
-          <Text style={styles.screenSubtitle}>
-            Create your carrier account in seconds. You will complete your business credentials on the next step.
-          </Text>
+          {/* Integrated Modern 2-Segment Stepper */}
+          <View style={styles.stepperContainer}>
+            <View style={styles.stepperBars}>
+              <View style={[styles.stepBar, styles.stepBarActive]} />
+              <View
+                style={[
+                  styles.stepBar,
+                  step === 2 ? styles.stepBarActive : styles.stepBarInactive,
+                ]}
+              />
+            </View>
+            <View style={styles.stepMetaRow}>
+              <View style={styles.stepBadge}>
+                <Text style={styles.stepBadgeText}>
+                  {step === 1 ? t('step1Of2') || 'Step 1 of 2' : t('step2Of2') || 'Step 2 of 2'}
+                </Text>
+              </View>
+              <Text style={styles.stepMetaTitle}>
+                {step === 1
+                  ? t('basicInfo') || 'Basic Info'
+                  : t('securityAndFleet') || 'Password & Fleet'}
+              </Text>
+            </View>
+          </View>
+
+          {/* Heading */}
+          <View style={styles.headingBox}>
+            <Text style={styles.screenHeading}>
+              {step === 1
+                ? t('carrierSignUp') || 'Carrier Sign Up'
+                : t('securityAndFleet') || 'Set Password & Fleet'}
+            </Text>
+            <Text style={styles.screenSubtitle}>
+              {step === 1
+                ? t('carrierSignUpSub') || 'Enter your name and mobile number to begin.'
+                : t('setPasswordSub') || 'Set a secure password for your carrier account.'}
+            </Text>
+          </View>
 
           {/* Error Message */}
           {errorMsg ? (
@@ -119,111 +187,254 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
             </View>
           ) : null}
 
-          {/* 1. Full Legal Name */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Managing Owner / Director Full Name *</Text>
-            <TextInput
-              style={styles.textInput}
-              value={ownerName}
-              onChangeText={setOwnerName}
-              placeholder="e.g. Sara Haile"
-              placeholderTextColor="#94A3B8"
-              autoCapitalize="words"
-            />
-          </View>
+          {/* STEP 1: Basic Identity & Phone */}
+          {step === 1 ? (
+            <View style={{ gap: 15 }}>
+              {/* Owner Full Name */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Full Name *</Text>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    focusedField === 'name' && styles.inputWrapperFocused,
+                  ]}
+                >
+                  <Ionicons
+                    name="person-outline"
+                    size={18}
+                    color={focusedField === 'name' ? '#0284C7' : '#64748B'}
+                    style={{ marginLeft: 14, marginRight: 8 }}
+                  />
+                  <TextInput
+                    style={styles.cleanInput}
+                    value={ownerName}
+                    onFocus={() => setFocusedField('name')}
+                    onBlur={() => setFocusedField(null)}
+                    onChangeText={(val) => {
+                      setOwnerName(val);
+                      if (errorMsg) setErrorMsg('');
+                    }}
+                    placeholder="e.g. Sara Haile"
+                    placeholderTextColor="#94A3B8"
+                    autoCapitalize="words"
+                    returnKeyType="next"
+                  />
+                </View>
+              </View>
 
-          {/* 2. Company / Business Name */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Transport Company Name (Optional)</Text>
-            <TextInput
-              style={styles.textInput}
-              value={companyName}
-              onChangeText={setCompanyName}
-              placeholder="e.g. Red Sea Freight Logistics (or leave empty)"
-              placeholderTextColor="#94A3B8"
-            />
-          </View>
+              {/* Mobile Phone Number */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Phone Number *</Text>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    focusedField === 'phone' && styles.inputWrapperFocused,
+                  ]}
+                >
+                  <Ionicons
+                    name="call-outline"
+                    size={18}
+                    color={focusedField === 'phone' ? '#0284C7' : '#64748B'}
+                    style={{ marginLeft: 14, marginRight: 8 }}
+                  />
+                  <TextInput
+                    style={styles.cleanInput}
+                    value={phone}
+                    onFocus={() => setFocusedField('phone')}
+                    onBlur={() => setFocusedField(null)}
+                    onChangeText={(val) => {
+                      setPhone(val);
+                      if (errorMsg) setErrorMsg('');
+                    }}
+                    placeholder="+251 91 123 4567"
+                    placeholderTextColor="#94A3B8"
+                    keyboardType="phone-pad"
+                    returnKeyType="next"
+                  />
+                </View>
+              </View>
 
-          {/* 3. Phone Number */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Mobile Phone Number *</Text>
-            <TextInput
-              style={styles.textInput}
-              value={phone}
-              onChangeText={setPhone}
-              placeholder="+251 91 123 4567"
-              placeholderTextColor="#94A3B8"
-              keyboardType="phone-pad"
-            />
-          </View>
+              {/* Email Address (Optional) */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Email Address (Optional)</Text>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    focusedField === 'email' && styles.inputWrapperFocused,
+                  ]}
+                >
+                  <Ionicons
+                    name="mail-outline"
+                    size={18}
+                    color={focusedField === 'email' ? '#0284C7' : '#64748B'}
+                    style={{ marginLeft: 14, marginRight: 8 }}
+                  />
+                  <TextInput
+                    style={styles.cleanInput}
+                    value={email}
+                    onFocus={() => setFocusedField('email')}
+                    onBlur={() => setFocusedField(null)}
+                    onChangeText={setEmail}
+                    placeholder="sara@tradeflow.et"
+                    placeholderTextColor="#94A3B8"
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    returnKeyType="done"
+                    onSubmitEditing={handleContinueToStep2}
+                  />
+                </View>
+              </View>
 
-          {/* 4. Email Address */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Email Address (Optional)</Text>
-            <TextInput
-              style={styles.textInput}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="transporter@tradeflow.et"
-              placeholderTextColor="#94A3B8"
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-          </View>
-
-          {/* 5. Password */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Create Password *</Text>
-            <View style={styles.passwordWrapper}>
-              <TextInput
-                style={[styles.textInput, { flex: 1, borderWidth: 0, backgroundColor: 'transparent' }]}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                placeholder="Minimum 6 characters"
-                placeholderTextColor="#94A3B8"
-              />
+              {/* Continue to Step 2 Button */}
               <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
-                style={styles.eyeBtn}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                style={styles.primaryBtn}
+                onPress={handleContinueToStep2}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.primaryBtnText}>{t('continue') || 'Continue ➔'}</Text>
+              </TouchableOpacity>
+
+              {/* Switch to Login */}
+              <View style={styles.promptRow}>
+                <Text style={styles.promptText}>
+                  {t('alreadyHaveAccount') || 'Already have an account?'}{' '}
+                </Text>
+                <TouchableOpacity
+                  onPress={onNavigateLogin}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Text style={styles.promptLink}>{t('loginButton') || 'Log In'}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            /* STEP 2: Password & Company Name */
+            <View style={{ gap: 15 }}>
+              {/* Summary Chip of Step 1 */}
+              <View style={styles.summaryBadge}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                  <Ionicons name="checkmark-circle" size={18} color="#0284C7" />
+                  <Text style={styles.summaryBadgeText} numberOfLines={1}>
+                    {ownerName} • {phone}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => {
+                    setErrorMsg('');
+                    setStep(1);
+                  }}
+                  style={styles.editBtn}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.editBtnText}>{t('changeAccount') || 'Edit'}</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Password */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Create Password *</Text>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    focusedField === 'password' && styles.inputWrapperFocused,
+                  ]}
+                >
+                  <Ionicons
+                    name="lock-closed-outline"
+                    size={18}
+                    color={focusedField === 'password' ? '#0284C7' : '#64748B'}
+                    style={{ marginLeft: 14, marginRight: 8 }}
+                  />
+                  <TextInput
+                    style={styles.cleanInput}
+                    value={password}
+                    onFocus={() => setFocusedField('password')}
+                    onBlur={() => setFocusedField(null)}
+                    onChangeText={(val) => {
+                      setPassword(val);
+                      if (errorMsg) setErrorMsg('');
+                    }}
+                    secureTextEntry={!showPassword}
+                    placeholder="Minimum 6 characters"
+                    placeholderTextColor="#94A3B8"
+                    returnKeyType="next"
+                    autoFocus={true}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={styles.eyeBtn}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={showPassword ? 'eye-off' : 'eye'}
+                      size={18}
+                      color={showPassword ? '#0284C7' : '#64748B'}
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Transport Company Name (Optional) */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Company Name (Optional)</Text>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    focusedField === 'company' && styles.inputWrapperFocused,
+                  ]}
+                >
+                  <Ionicons
+                    name="business-outline"
+                    size={18}
+                    color={focusedField === 'company' ? '#0284C7' : '#64748B'}
+                    style={{ marginLeft: 14, marginRight: 8 }}
+                  />
+                  <TextInput
+                    style={styles.cleanInput}
+                    value={companyName}
+                    onFocus={() => setFocusedField('company')}
+                    onBlur={() => setFocusedField(null)}
+                    onChangeText={setCompanyName}
+                    placeholder="e.g. Red Sea Freight (or leave empty)"
+                    placeholderTextColor="#94A3B8"
+                    returnKeyType="done"
+                    onSubmitEditing={handleRegister}
+                  />
+                </View>
+              </View>
+
+              {/* Submit Registration Button */}
+              <TouchableOpacity
+                style={styles.primaryBtn}
+                onPress={handleRegister}
+                disabled={loading}
+                activeOpacity={0.85}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.primaryBtnText}>
+                    {t('completeRegistration') || 'Complete Registration ➔'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              {/* Back to Step 1 */}
+              <TouchableOpacity
+                onPress={() => {
+                  setErrorMsg('');
+                  setStep(1);
+                }}
+                style={styles.backStepBtn}
                 activeOpacity={0.7}
               >
-                <Ionicons
-                  name={showPassword ? 'eye-off' : 'eye'}
-                  size={20}
-                  color={showPassword ? '#0284C7' : '#64748B'}
-                />
+                <Ionicons name="arrow-back" size={14} color="#64748B" />
+                <Text style={styles.backStepText}>{t('backToStep1') || 'Back to Step 1'}</Text>
               </TouchableOpacity>
             </View>
-          </View>
-
-          {/* Submit Button */}
-          <TouchableOpacity
-            style={styles.primaryRegisterBtn}
-            onPress={handleRegister}
-            disabled={loading}
-            activeOpacity={0.85}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <>
-                <Text style={styles.primaryRegisterBtnText}>Create Account ➔</Text>
-              </>
-            )}
-          </TouchableOpacity>
-
-          {/* Bottom Switch to Login */}
-          <View style={styles.loginPrompt}>
-            <Text style={styles.promptText}>Already have an account? </Text>
-            <TouchableOpacity onPress={onNavigateLogin}>
-              <Text style={styles.promptLink}>Log In</Text>
-            </TouchableOpacity>
-          </View>
-
+          )}
         </View>
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -232,155 +443,259 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F4F9FD',
+    backgroundColor: '#F8FAFC',
   },
   scrollContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 40,
+    paddingHorizontal: 20,
+    paddingBottom: 35,
   },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 14,
     gap: 12,
+    zIndex: 100,
   },
   backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-  },
-  backArrow: {
-    fontSize: 18,
-    color: '#0F172A',
-    fontWeight: '700',
+    ...Platform.select({
+      web: { boxShadow: '0 1px 3px rgba(0,0,0,0.04)' } as any,
+      default: { elevation: 1 },
+    }),
   },
   brandTitle: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: 22,
+    fontWeight: '900',
     color: '#0F172A',
+    letterSpacing: -0.5,
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 22,
+    borderRadius: 28,
+    padding: 24,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    marginTop: 6,
     ...Platform.select({
       web: {
-        boxShadow: '0 4px 10px rgba(15, 23, 42, 0.04)',
+        boxShadow: '0 10px 30px -5px rgba(15, 23, 42, 0.06), 0 4px 6px -2px rgba(15, 23, 42, 0.02)',
       } as any,
       default: {
         shadowColor: '#0F172A',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.04,
-        shadowRadius: 10,
-        elevation: 2,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.06,
+        shadowRadius: 16,
+        elevation: 3,
       },
     }),
-    gap: 14,
+  },
+  stepperContainer: {
+    marginBottom: 16,
+    gap: 8,
+  },
+  stepperBars: {
+    flexDirection: 'row',
+    gap: 6,
+    width: '100%',
+  },
+  stepBar: {
+    flex: 1,
+    height: 4,
+    borderRadius: 2,
+  },
+  stepBarActive: {
+    backgroundColor: '#0284C7',
+  },
+  stepBarInactive: {
+    backgroundColor: '#E2E8F0',
+  },
+  stepMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  stepBadge: {
+    backgroundColor: '#F0F9FF',
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    paddingHorizontal: 8,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+  },
+  stepBadgeText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#0284C7',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  stepMetaTitle: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  headingBox: {
+    alignItems: 'center',
+    textAlign: 'center',
+    marginBottom: 18,
   },
   screenHeading: {
     fontSize: 22,
-    fontWeight: '800',
+    fontWeight: '900',
     color: '#0F172A',
+    textAlign: 'center',
+    letterSpacing: -0.4,
+    marginBottom: 4,
   },
   screenSubtitle: {
     fontSize: 12.5,
     color: '#64748B',
+    textAlign: 'center',
     lineHeight: 18,
-    marginTop: -4,
-    marginBottom: 4,
+    paddingHorizontal: 6,
   },
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
     borderWidth: 1,
-    borderColor: '#FCA5A5',
-    borderRadius: 12,
-    padding: 10,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 14,
   },
   errorText: {
-    fontSize: 11.5,
-    color: '#DC2626',
-    fontWeight: '700',
     flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#DC2626',
+    lineHeight: 16,
   },
   inputGroup: {
-    gap: 5,
+    gap: 7,
   },
   inputLabel: {
-    fontSize: 11.5,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '800',
     color: '#334155',
+    letterSpacing: 0.2,
   },
-  textInput: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-    fontSize: 13,
-    color: '#0F172A',
-  },
-  passwordWrapper: {
+  inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 12,
-    paddingRight: 6,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 16,
+    height: 50,
+  },
+  inputWrapperFocused: {
+    borderColor: '#0284C7',
+    backgroundColor: '#FFFFFF',
+  },
+  cleanInput: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    fontSize: 14,
+    color: '#0F172A',
+    fontWeight: '600',
   },
   eyeBtn: {
-    padding: 8,
+    padding: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  primaryRegisterBtn: {
+  primaryBtn: {
     backgroundColor: '#0284C7',
-    borderRadius: 14,
-    paddingVertical: 14,
+    borderRadius: 16,
+    height: 50,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 6,
+    marginTop: 4,
     ...Platform.select({
       web: {
-        boxShadow: '0 4px 8px rgba(2, 132, 199, 0.25)',
+        boxShadow: '0 4px 14px rgba(2, 132, 199, 0.3)',
       } as any,
       default: {
         shadowColor: '#0284C7',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.25,
-        shadowRadius: 8,
-        elevation: 3,
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        elevation: 4,
       },
     }),
   },
-  primaryRegisterBtnText: {
-    fontSize: 14,
-    fontWeight: '800',
+  primaryBtnText: {
     color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '900',
+    letterSpacing: 0.3,
   },
-  loginPrompt: {
+  promptRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 6,
+    justifyContent: 'center',
+    marginTop: 8,
   },
   promptText: {
-    fontSize: 12,
+    fontSize: 12.5,
     color: '#64748B',
+    fontWeight: '500',
   },
   promptLink: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#0284C7',
+  },
+  summaryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F0F9FF',
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+  },
+  summaryBadgeText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0369A1',
+  },
+  editBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+  },
+  editBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#0284C7',
+  },
+  backStepBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    marginTop: 2,
+  },
+  backStepText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#0284C7',
+    color: '#64748B',
   },
 });

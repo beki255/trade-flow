@@ -172,7 +172,6 @@ npm run prisma:push
 # Seed official System Admin and Customs Officer accounts
 npm run prisma:seed
 ```
-
 ---
 
 ### 4. Launch the Applications
@@ -239,7 +238,6 @@ npm run prisma:studio
 # Seed demo users and initial corridor consignments
 npm run prisma:seed
 ```
-
 ---
 
 ## 🔒 Seeded System Credentials (from `prisma/seed.ts`)

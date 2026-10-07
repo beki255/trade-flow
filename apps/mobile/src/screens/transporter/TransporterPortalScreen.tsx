@@ -29,11 +29,13 @@ import { AddTruckModal } from './modals/AddTruckModal';
 import { AddDriverModal } from './modals/AddDriverModal';
 import { DispatchModal } from './modals/DispatchModal';
 import { ProfileModal } from './modals/ProfileModal';
+import { RatingModal } from './modals/RatingModal';
 
 // Modular Screen Components
 import { TransporterHeader } from './components/TransporterHeader';
 import { TransporterBottomNavBar } from './components/TransporterBottomNavBar';
 import { CompleteProfileGate } from './components/CompleteProfileGate';
+import { useTheme } from '../../context/ThemeContext';
 
 interface TransporterPortalScreenProps {
   onLogout: () => void;
@@ -45,6 +47,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
   user,
 }) => {
   const { language, toggleLanguage } = useLanguage();
+  const { colors } = useTheme();
   const [currentUser, setCurrentUser] = useState<any>(user);
 
   useEffect(() => {
@@ -101,6 +104,8 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
   const [showAddDriver, setShowAddDriver] = useState(false);
   const [showDispatchModal, setShowDispatchModal] = useState(false);
   const [selectedAcceptedBid, setSelectedAcceptedBid] = useState<BidItem | null>(null);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [selectedRatingBid, setSelectedRatingBid] = useState<BidItem | null>(null);
 
   // Add Truck Form State
   const [truckPlate, setTruckPlate] = useState('');
@@ -155,183 +160,224 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
   const [dispatchTruck, setDispatchTruck] = useState('');
   const [dispatchDriver, setDispatchDriver] = useState('');
 
-  // Fetch real corridor loads, vehicles, and drivers
+  // Fetch real corridor loads, vehicles, and drivers concurrently
   const refreshAllData = async () => {
     try {
-      // 1. Fetch Loads
-      const loadsRes = await apiFetch('/api/portal/loads');
-      if (loadsRes.ok) {
-        const data = await loadsRes.json();
-        if (data.loads) {
-          setLoadsList(
-            data.loads.map((l: any) => ({
-              id: l.id ? `LD-${l.id.slice(-4).toUpperCase()}` : 'LD-9901',
-              rawId: l.id,
-              title: l.title || 'Corridor Consignment',
-              origin: l.originName || 'Addis Ababa',
-              destination: l.destName || 'Djibouti Port',
-              route: `${l.originName || 'Addis Ababa'} ➔ ${l.destName || 'Djibouti Port'}`,
-              cargoType: l.cargoType || 'General Freight',
-              weight: `${l.weightTons || 28.0} Tons`,
-              weightTons: parseFloat(l.weightTons) || 28.0,
-              pickupDate: l.pickupWindowStart ? new Date(l.pickupWindowStart).toLocaleDateString() : '',
-              budget: l.targetBudgetEtb ? `${Number(l.targetBudgetEtb).toLocaleString()} ETB` : '',
-              status: l.status || 'OPEN',
-              isDispatched:
-                Boolean(
-                  l.shipment &&
-                  l.shipment.status !== 'ASSIGNED' &&
-                  (l.shipment.status === 'DISPATCHED' || l.shipment.status === 'IN_TRANSIT' || l.status === 'IN_TRANSIT' || l.status === 'COMPLETED') &&
-                  l.shipment.vehicle?.plateNumber &&
-                  l.shipment.driver?.user?.fullName
-                ),
-              dispatchedTruck:
-                l.shipment && l.shipment.status !== 'ASSIGNED' ? (l.shipment.vehicle?.plateNumber || '') : '',
-              dispatchedDriver:
-                l.shipment && l.shipment.status !== 'ASSIGNED' ? (l.shipment.driver?.user?.fullName || '') : '',
-              shipperName: l.shipper?.companyName || l.shipper?.fullName || 'Verified Shipper',
-              shipperCompany: l.shipper?.companyName || '',
-              shipperPhone: l.shipper?.phone || '',
-              shipperEmail: l.shipper?.email || '',
-              shipperTin: l.shipper?.tin || '',
-              shipperRating: l.shipper?.ratingAvg || 5.0,
-              shipperVerified: l.shipper?.verificationStatus === 'VERIFIED',
-            }))
-          );
-        }
-      }
-
-      // 2. Fetch Fleet Vehicles (Strictly Scoped to this Transporter)
-      const fleetRes = await apiFetch(
-        `/api/portal/vehicles?transporterId=${user?.id || ''}&transporterEmail=${encodeURIComponent(user?.email || '')}`
-      );
-      if (fleetRes.ok) {
-        const data = await fleetRes.json();
-        if (data.vehicles && data.vehicles.length > 0) {
-          const mappedVehicles = data.vehicles.map((v: any) => ({
-            id: v.id,
-            rawId: v.id,
-            plate: v.plateNumber || 'No Plate',
-            type: v.model || v.type || v.vehicleType || 'Commercial Freight',
-            fuelType: v.fuelType || 'DIESEL',
-            capacity: v.capacityTons ? `${v.capacityTons} Tons` : '',
-            status: v.status === 'IN_TRANSIT' ? 'IN_TRANSIT' : 'AVAILABLE',
-            insuranceStatus: v.insurancePolicyNo ? 'VERIFIED' : 'PENDING',
-            driver: v.drivers?.[0]?.user?.fullName || v.driver?.fullName || 'Unassigned',
-            gpsEnabled: true,
-          }));
-          setFleetList(mappedVehicles);
-        } else {
-          setFleetList([]);
-        }
-      }
-
-      // 3. Fetch Authorized Drivers (Strictly Scoped to this Transporter)
-      const driversRes = await apiFetch(
-        `/api/portal/drivers?transporterId=${user?.id || ''}&transporterEmail=${encodeURIComponent(user?.email || '')}`
-      );
-      if (driversRes.ok) {
-        const data = await driversRes.json();
-        if (data.drivers && data.drivers.length > 0) {
-          const mappedDrivers = data.drivers.map((d: any) => {
-            const isPending =
-              d.status === 'PENDING' ||
-              d.verificationStatus === 'PENDING' ||
-              d.user?.verificationStatus === 'PENDING';
-            return {
-              id: d.id || d.rawId || `DRV-${Date.now()}`,
-              rawId: d.id || d.profileId || d.userId,
-              fullName: d.fullName || d.user?.fullName || 'Authorized Driver',
-              phone: d.phone || d.user?.phone || '',
-              licenseNumber: d.licenseNumber || d.driverLicenseNo || d.driverProfile?.driverLicenseNo || 'Unspecified',
-              licenseCategory: d.licenseCategory || d.licenseClass || d.driverProfile?.licenseClass || 'Grade 5 Heavy',
-              experienceYears: `${d.experienceYears || d.driverProfile?.experienceYears || 4}`,
-              status: isPending ? 'PENDING' : (d.status === 'ON_TRIP' ? 'ON_TRIP' : 'ACTIVE'),
-              verificationStatus: isPending ? 'PENDING' : (d.verificationStatus || d.user?.verificationStatus || 'VERIFIED'),
-              assignedTruckPlate: d.assignedTruckPlate || d.assignedVehicle?.plateNumber || d.driverProfile?.assignedVehicle?.plateNumber || '',
-              photoUrl: d.photoUrl || d.user?.roadworthinessDoc || d.user?.insuranceDoc || '',
-              licenseDocUrl: d.licenseDocUrl || d.user?.tradeLicenseDoc || '',
-            };
-          });
-          setDriversList(mappedDrivers);
-        } else {
-          setDriversList([]);
-        }
-      }
-
-      // 4. Fetch Quotes
-      const bidsRes = await apiFetch(
-        `/api/portal/bids?transporterId=${user?.id || ''}&transporterEmail=${encodeURIComponent(user?.email || '')}`
-      );
-      if (bidsRes.ok) {
-        const data = await bidsRes.json();
-        if (data.bids && data.bids.length > 0) {
-          const mappedBids = data.bids.map((b: any) => {
-            const isActualDispatched = Boolean(
-              b.isDispatched ||
-              (b.proposalNotes && b.proposalNotes.startsWith('Dispatched')) ||
-              (b.load?.shipment &&
-                b.load.shipment.status !== 'ASSIGNED' &&
-                (b.load.shipment.status === 'DISPATCHED' || b.load.shipment.status === 'IN_TRANSIT'))
-            );
-
-            const truck = isActualDispatched
-              ? (b.dispatchedTruck || (b.proposalNotes?.match(/Vehicle:\s*([^\s•]+)/)?.[1]) || '')
-              : '';
-
-            const driver = isActualDispatched
-              ? (b.dispatchedDriver || (b.proposalNotes?.match(/Driver:\s*([^•\n]+)/)?.[1]?.trim()) || '')
-              : '';
-
-            const isDispatched = Boolean(truck && driver && isActualDispatched);
-
-            // Instant Acceptance/Rejection Status Detection (SRS 4.2.4)
-            const prev = prevBidStatusesRef.current[b.id];
-            if (prev && prev === 'PENDING' && b.status === 'ACCEPTED') {
-              setBidAlertNotification({
-                type: 'ACCEPTED',
-                title: '🎉 QUOTE ACCEPTED BY SHIPPER!',
-                message: `Your quote for "${b.load?.title || 'Corridor Consignment'}" was accepted! Digital Escrow deposit is funded. Dispatch your fleet now.`,
-                bidId: b.id,
-                amount: `${Number(b.proposedRateEtb).toLocaleString()} ETB`,
-              });
-            } else if (prev && prev === 'PENDING' && b.status === 'REJECTED') {
-              setBidAlertNotification({
-                type: 'REJECTED',
-                title: 'Quote Update: Declined',
-                message: `The shipper accepted another quote for "${b.load?.title || 'Consignment'}". Explore other loads on the corridor board.`,
-                bidId: b.id,
-              });
+      await Promise.allSettled([
+        // 1. Fetch Loads
+        (async () => {
+          try {
+            const loadsRes = await apiFetch('/api/portal/loads');
+            if (loadsRes.ok) {
+              const data = await loadsRes.json();
+              if (data.loads) {
+                setLoadsList(
+                  data.loads.map((l: any) => ({
+                    id: l.id ? `LD-${l.id.slice(-4).toUpperCase()}` : 'LD-9901',
+                    rawId: l.id,
+                    title: l.title || 'Corridor Consignment',
+                    origin: l.originAddress || l.originName || 'Addis Ababa',
+                    destination: l.destinationAddress || l.destName || 'Djibouti Port',
+                    route: `${l.originAddress || l.originName || 'Addis Ababa'} ➔ ${l.destinationAddress || l.destName || 'Djibouti Port'}`,
+                    cargoType: l.cargoType || 'General Freight',
+                    weight: `${l.weightTons || 28.0} Tons`,
+                    weightTons: parseFloat(l.weightTons) || 28.0,
+                    pickupDate: l.pickupWindowStart ? new Date(l.pickupWindowStart).toLocaleDateString() : '',
+                    budget: l.targetBudgetEtb ? `${Number(l.targetBudgetEtb).toLocaleString()} ETB` : '',
+                    status: l.status || 'OPEN',
+                    isDispatched:
+                      Boolean(
+                        l.shipment &&
+                        l.shipment.status !== 'ASSIGNED' &&
+                        (l.shipment.status === 'DISPATCHED' || l.shipment.status === 'IN_TRANSIT' || l.status === 'IN_TRANSIT' || l.status === 'COMPLETED') &&
+                        l.shipment.vehicle?.plateNumber &&
+                        l.shipment.driver?.user?.fullName
+                      ),
+                    dispatchedTruck:
+                      l.shipment && l.shipment.status !== 'ASSIGNED' ? (l.shipment.vehicle?.plateNumber || '') : '',
+                    dispatchedDriver:
+                      l.shipment && l.shipment.status !== 'ASSIGNED' ? (l.shipment.driver?.user?.fullName || '') : '',
+                    shipperName: l.shipper?.companyName || l.shipper?.fullName || 'Verified Shipper',
+                    shipperCompany: l.shipper?.companyName || '',
+                    shipperPhone: l.shipper?.phone || '',
+                    shipperEmail: l.shipper?.email || '',
+                    shipperTin: l.shipper?.tin || '',
+                    shipperRating: (l.shipper?.totalRatingsCount && l.shipper.totalRatingsCount > 0) ? l.shipper.ratingAvg : 0.0,
+                    shipperVerified: l.shipper?.verificationStatus === 'VERIFIED',
+                  }))
+                );
+              }
             }
-            prevBidStatusesRef.current[b.id] = b.status;
+          } catch (e) {
+            console.warn('Loads fetch error:', e);
+          }
+        })(),
 
-            return {
-              id: `BID-${b.id.slice(-4).toUpperCase()}`,
-              rawId: b.id,
-              loadId: b.loadId ? `LD-${b.loadId.slice(-4).toUpperCase()}` : 'LD-9901',
-              loadTitle: b.load?.title || 'Corridor Freight Consignment',
-              route: b.load?.originName ? `${b.load.originName} ➔ ${b.load.destName}` : 'Addis Ababa ➔ Djibouti Port',
-              weight: `${b.load?.weightTons || 28.0} Tons`,
-              price: `${Number(b.proposedRateEtb).toLocaleString()} ETB`,
-              hours: `${b.pickupEstimatedHours || 18} Hours Transit`,
-              notes: b.proposalNotes || '',
-              status: b.status || 'PENDING',
-              submittedAt: new Date(b.createdAt).toLocaleTimeString(),
-              dispatchedTruck: truck,
-              dispatchedDriver: driver,
-              isDispatched,
-              shipperName: b.load?.shipper?.companyName || b.load?.shipper?.fullName || 'Verified Shipper',
-              shipperCompany: b.load?.shipper?.companyName || '',
-              shipperPhone: b.load?.shipper?.phone || '',
-              shipperEmail: b.load?.shipper?.email || '',
-              shipperTin: b.load?.shipper?.tin || '',
-              shipperRating: b.load?.shipper?.ratingAvg || 5.0,
-              shipperVerified: b.load?.shipper?.verificationStatus === 'VERIFIED',
-            };
-          });
-          setSubmittedBids(mappedBids);
-        }
-      }
+        // 2. Fetch Fleet Vehicles (Strictly Scoped to this Transporter)
+        (async () => {
+          try {
+            const fleetRes = await apiFetch(
+              `/api/portal/vehicles?transporterId=${user?.id || ''}&transporterEmail=${encodeURIComponent(user?.email || '')}`
+            );
+            if (fleetRes.ok) {
+              const data = await fleetRes.json();
+              if (data.vehicles && data.vehicles.length > 0) {
+                const mappedVehicles = data.vehicles.map((v: any) => ({
+                  id: v.id,
+                  rawId: v.id,
+                  plate: v.plateNumber || 'No Plate',
+                  type: v.model || v.type || v.vehicleType || 'Commercial Freight',
+                  fuelType: v.fuelType || 'DIESEL',
+                  capacity: v.capacityTons ? `${v.capacityTons} Tons` : '',
+                  status: v.status === 'IN_TRANSIT' ? 'IN_TRANSIT' : 'AVAILABLE',
+                  insuranceStatus: v.insurancePolicyNo ? 'VERIFIED' : 'PENDING',
+                  driver: v.drivers?.[0]?.user?.fullName || v.driver?.fullName || 'Unassigned',
+                  gpsEnabled: true,
+                }));
+                setFleetList(mappedVehicles);
+              } else {
+                setFleetList([]);
+              }
+            }
+          } catch (e) {
+            console.warn('Fleet fetch error:', e);
+          }
+        })(),
+
+        // 3. Fetch Authorized Drivers (Strictly Scoped to this Transporter)
+        (async () => {
+          try {
+            const driversRes = await apiFetch(
+              `/api/portal/drivers?transporterId=${user?.id || ''}&transporterEmail=${encodeURIComponent(user?.email || '')}`
+            );
+            if (driversRes.ok) {
+              const data = await driversRes.json();
+              if (data.drivers && data.drivers.length > 0) {
+                const mappedDrivers = data.drivers.map((d: any) => {
+                  const isPending =
+                    d.status === 'PENDING' ||
+                    d.verificationStatus === 'PENDING' ||
+                    d.user?.verificationStatus === 'PENDING';
+                  return {
+                    id: d.id || d.rawId || `DRV-${Date.now()}`,
+                    rawId: d.id || d.profileId || d.userId,
+                    fullName: d.fullName || d.user?.fullName || 'Authorized Driver',
+                    phone: d.phone || d.user?.phone || '',
+                    licenseNumber: d.licenseNumber || d.driverLicenseNo || d.driverProfile?.driverLicenseNo || 'Unspecified',
+                    licenseCategory: d.licenseCategory || d.licenseClass || d.driverProfile?.licenseClass || 'Grade 5 Heavy',
+                    experienceYears: `${d.experienceYears || d.driverProfile?.experienceYears || 4}`,
+                    status: isPending ? 'PENDING' : (d.status === 'ON_TRIP' ? 'ON_TRIP' : 'ACTIVE'),
+                    verificationStatus: isPending ? 'PENDING' : (d.verificationStatus || d.user?.verificationStatus || 'VERIFIED'),
+                    assignedTruckPlate: d.assignedTruckPlate || d.assignedVehicle?.plateNumber || d.driverProfile?.assignedVehicle?.plateNumber || '',
+                    photoUrl: d.photoUrl || d.user?.roadworthinessDoc || d.user?.insuranceDoc || '',
+                    licenseDocUrl: d.licenseDocUrl || d.user?.tradeLicenseDoc || '',
+                  };
+                });
+                setDriversList(mappedDrivers);
+              } else {
+                setDriversList([]);
+              }
+            }
+          } catch (e) {
+            console.warn('Drivers fetch error:', e);
+          }
+        })(),
+
+        // 4. Fetch Quotes
+        (async () => {
+          try {
+            const bidsRes = await apiFetch(
+              `/api/portal/bids?transporterId=${user?.id || ''}&transporterEmail=${encodeURIComponent(user?.email || '')}`
+            );
+            if (bidsRes.ok) {
+              const data = await bidsRes.json();
+              if (data.bids && data.bids.length > 0) {
+                const mappedBids = data.bids.map((b: any) => {
+                  const isActualDispatched = Boolean(
+                    b.isDispatched ||
+                    (b.proposalNotes && b.proposalNotes.startsWith('Dispatched')) ||
+                    (b.load?.shipment &&
+                      b.load.shipment.status !== 'ASSIGNED' &&
+                      (b.load.shipment.status === 'DISPATCHED' || b.load.shipment.status === 'IN_TRANSIT'))
+                  );
+
+                  const truck = isActualDispatched
+                    ? (b.dispatchedTruck || (b.proposalNotes?.match(/Vehicle:\s*([^\s•]+)/)?.[1]) || '')
+                    : '';
+
+                  const driver = isActualDispatched
+                    ? (b.dispatchedDriver || (b.proposalNotes?.match(/Driver:\s*([^•\n]+)/)?.[1]?.trim()) || '')
+                    : '';
+
+                  const isDispatched = Boolean(truck && driver && isActualDispatched);
+
+                  // Instant Acceptance/Rejection Status Detection (SRS 4.2.4)
+                  const prev = prevBidStatusesRef.current[b.id];
+                  if (prev && prev === 'PENDING' && b.status === 'ACCEPTED') {
+                    setBidNotification({
+                      type: 'ACCEPTED',
+                      title: 'QUOTE ACCEPTED BY SHIPPER!',
+                      message: `Your quote for "${b.load?.title || 'Corridor Consignment'}" was accepted! Digital Escrow deposit is funded. Dispatch your fleet now.`,
+                      bidId: b.id,
+                      amount: `${Number(b.proposedRateEtb).toLocaleString()} ETB`,
+                    });
+                  } else if (prev && prev === 'PENDING' && b.status === 'REJECTED') {
+                    setBidNotification({
+                      type: 'REJECTED',
+                      title: 'Quote Update: Declined',
+                      message: `The shipper accepted another quote for "${b.load?.title || 'Consignment'}". Explore other loads on the corridor board.`,
+                      bidId: b.id,
+                    });
+                  }
+                  prevBidStatusesRef.current[b.id] = b.status;
+
+                  return {
+                    id: `BID-${b.id.slice(-4).toUpperCase()}`,
+                    rawId: b.id,
+                    loadId: b.loadId ? `LD-${b.loadId.slice(-4).toUpperCase()}` : 'LD-9901',
+                    rawLoadId: b.loadId || b.load?.id,
+                    loadTitle: b.load?.title || 'Corridor Freight Consignment',
+                    route: (b.load?.originAddress && b.load?.destinationAddress)
+                      ? `${b.load.originAddress} ➔ ${b.load.destinationAddress}`
+                      : b.load?.originName
+                      ? `${b.load.originName} ➔ ${b.load.destName}`
+                      : 'Addis Ababa ➔ Djibouti Port',
+                    weight: `${b.load?.weightTons || 28.0} Tons`,
+                    price: `${Number(b.proposedRateEtb).toLocaleString()} ETB`,
+                    hours: `${b.pickupEstimatedHours || 18}h`,
+                    notes: b.proposalNotes || '',
+                    status: b.status || 'PENDING',
+                    submittedAt: new Date(b.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    dispatchedTruck: truck,
+                    dispatchedDriver: driver,
+                    isDispatched,
+                    loadStatus: b.load?.status || (b.load?.shipment?.status === 'DELIVERED' ? 'DELIVERED' : ''),
+                    shipperId: b.load?.shipperId || b.load?.shipper?.id,
+                    shipmentId: b.load?.shipment?.id,
+                    hasRatedShipper: b.hasRatedShipper,
+                    shipperRatingScore: b.shipperRatingScore,
+                    hasRatedDriver: b.hasRatedDriver,
+                    driverRatingScore: b.driverRatingScore,
+                    driverUserId: b.driverUserId,
+                    shipperName: b.load?.shipper?.companyName || b.load?.shipper?.fullName || 'Verified Shipper',
+                    shipperCompany: b.load?.shipper?.companyName || '',
+                    shipperPhone: b.load?.shipper?.phone || '',
+                    shipperEmail: b.load?.shipper?.email || '',
+                    shipperTin: b.load?.shipper?.tin || '',
+                    shipperRating: (b.load?.shipper?.totalRatingsCount && b.load.shipper.totalRatingsCount > 0) ? b.load.shipper.ratingAvg : 0.0,
+                    shipperVerified: b.load?.shipper?.verificationStatus === 'VERIFIED',
+                  };
+                });
+                setSubmittedBids(mappedBids);
+              } else {
+                setSubmittedBids([]);
+              }
+            }
+          } catch (e) {
+            console.warn('Bids fetch error:', e);
+          }
+        })(),
+      ]);
     } catch (err) {
       console.warn('API sync error:', err);
     }
@@ -365,7 +411,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
 
   useEffect(() => {
     refreshAllData();
-    const interval = setInterval(refreshAllData, 3500);
+    const interval = setInterval(refreshAllData, 2500);
     return () => clearInterval(interval);
   }, [user?.id]);
 
@@ -380,8 +426,13 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([checkLiveVerificationStatus(), refreshAllData()]);
-    setRefreshing(false);
+    try {
+      await Promise.allSettled([checkLiveVerificationStatus(), refreshAllData()]);
+    } catch (err) {
+      console.warn('Pull-to-refresh error:', err);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   // Real-time Text Keyword Search across all load fields (typing only)
@@ -568,8 +619,8 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
     setActiveTab('fleet');
     setFleetSubTab('drivers');
     Alert.alert(
-      '✅ Driver Registered Successfully!',
-      `Driver: ${newDriver.fullName}\nPhone: ${newDriver.phone}\n🔑 One-Time Password: ${oneTimePass}\n\nPlease share this temporary password with the driver. They can sign in on the TradeFlow Driver app and update it in their Profile.`
+      'Driver Registered Successfully',
+      `Driver: ${newDriver.fullName}\nPhone: ${newDriver.phone}\nOne-Time Password: ${oneTimePass}\n\nPlease share this temporary password with the driver. They can sign in on the TradeFlow Driver app and update it in their Profile.`
     );
   };
 
@@ -577,7 +628,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
   const handleSubmitBid = async () => {
     if (carrierStatus === 'PENDING') {
       Alert.alert(
-        '⚠️ Verification Required',
+        'Verification Required',
         'Your carrier account is currently PENDING verification. You cannot submit bids until Platform Administrators approve your Trade License.'
       );
       return;
@@ -585,7 +636,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
 
     if (carrierStatus === 'SUSPENDED') {
       Alert.alert(
-        '🚫 Account Suspended',
+        'Account Suspended',
         'Your carrier account has been suspended by platform administration. Access to submit bids or accept consignments is revoked.'
       );
       return;
@@ -633,10 +684,10 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
       route: selectedLoadObj?.route || 'Addis Ababa ➔ Djibouti Port',
       weight: selectedLoadObj?.weight || '28.0 Tons',
       price: `${Number(bidPrice.replace(/[^0-9.]/g, '')).toLocaleString()} ETB`,
-      hours: `${transitHours || '18'} Hours Transit`,
+      hours: `${transitHours ? parseInt(transitHours) || 18 : 18}h`,
       notes: bidNotes || 'GPS live tracking enabled. Ready for immediate corridor dispatch.',
       status: 'PENDING',
-      submittedAt: new Date().toLocaleTimeString(),
+      submittedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
     setSubmittedBids((prev) => [newBid, ...prev.filter((b) => b.id !== newBid.id)]);
@@ -692,7 +743,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
           )
         );
         Alert.alert(
-          action === 'ACCEPT' ? '🎉 Match Confirmed!' : 'Offer Declined',
+          action === 'ACCEPT' ? 'Match Confirmed' : 'Offer Declined',
           action === 'ACCEPT'
             ? 'You have officially accepted the AI Instant Match! Smart Escrow deposit is locked.'
             : 'You declined the instant match request.'
@@ -774,7 +825,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
     // Strict Guard: 1 load cannot be dispatched more than once
     if (selectedAcceptedBid?.dispatchedTruck && selectedAcceptedBid?.dispatchedDriver) {
       Alert.alert(
-        '⚠️ Already Dispatched',
+        'Already Dispatched',
         'This consignment has already been assigned and dispatched. A load cannot be assigned or dispatched multiple times.'
       );
       setShowDispatchModal(false);
@@ -876,7 +927,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
       setDispatchDriver('');
 
       Alert.alert(
-        '🚀 Fleet Dispatched!',
+        'Fleet Dispatched',
         `Vehicle ${dispatchTruck} and Driver ${dispatchDriver} have been officially assigned and dispatched for shipment ${targetLoadId}. Smart escrow is locked and live GPS tracking is now streaming!`
       );
 
@@ -915,7 +966,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
 
       {/* Modular Top Header */}
@@ -944,7 +995,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
             alignItems: 'center',
             marginBottom: 10,
           }}>
-            <Text style={{ fontSize: 24 }}>🎉</Text>
+            <Ionicons name="checkmark-circle" size={26} color="#059669" />
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 13, fontWeight: '900', color: '#065F46' }}>
                 Carrier Account Verified & Approved in Real Time!
@@ -959,7 +1010,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
         {/* Verification Alert Banner */}
         {carrierStatus === 'PENDING' && (
           <View style={styles.verificationBanner}>
-            <Text style={styles.verificationIcon}>⏳</Text>
+            <Ionicons name="time" size={24} color="#D97706" style={{ marginRight: 6 }} />
             <View style={{ flex: 1 }}>
               <Text style={styles.verificationTitle}>Carrier Verification Pending (Live Sync)</Text>
               <Text style={styles.verificationSub}>
@@ -989,7 +1040,11 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
               elevation: 2,
             }}
           >
-            <Text style={{ fontSize: 24 }}>{bidNotification.type === 'ACCEPTED' ? '🏆' : 'ℹ️'}</Text>
+            <Ionicons
+              name={bidNotification.type === 'ACCEPTED' ? 'trophy' : 'information-circle'}
+              size={26}
+              color={bidNotification.type === 'ACCEPTED' ? '#059669' : '#E11D48'}
+            />
             <View style={{ flex: 1 }}>
               <Text
                 style={{
@@ -1090,6 +1145,8 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
               setSelectedLoadId('');
               setActiveTab('bidding');
             }}
+            onRefresh={onRefresh}
+            isRefreshing={refreshing}
           />
         )}
 
@@ -1120,6 +1177,10 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
               }
               setSelectedAcceptedBid(bid);
               setShowDispatchModal(true);
+            }}
+            onOpenRatingModal={(bid) => {
+              setSelectedRatingBid(bid);
+              setShowRatingModal(true);
             }}
             onDeleteBid={handleDeleteBid}
             onNavigateToLoads={() => {
@@ -1225,6 +1286,17 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
         language={language}
         toggleLanguage={toggleLanguage}
         onLogout={onLogout}
+      />
+
+      {/* MODAL 5: Post-Delivery Rating Modal (Bidirectional Reviews) */}
+      <RatingModal
+        visible={showRatingModal}
+        onClose={() => setShowRatingModal(false)}
+        selectedBid={selectedRatingBid}
+        currentUser={currentUser}
+        onRatingSubmitted={async () => {
+          await refreshAllData();
+        }}
       />
     </SafeAreaView>
   );

@@ -588,7 +588,7 @@ export const getLiveTracking = async (req: Request, res: Response): Promise<void
         message: 'Consignment posted and open for bidding. Live tracking will activate once a driver is dispatched and departs from origin.',
         shipment: {
           id: targetLoad.id,
-          loadId: `TF-SH-${targetLoad.id.slice(0, 6).toUpperCase()}`,
+          loadId: targetLoad.title || 'Freight Consignment',
           rawLoadId: targetLoad.id,
           title: targetLoad.title,
           cargoType: targetLoad.cargoType,
@@ -641,7 +641,7 @@ export const getLiveTracking = async (req: Request, res: Response): Promise<void
           const km = calculateCorridorRoadDistanceKm(l.originName, l.destName, oLat, oLng, dLat, dLng);
           return {
             id: l.id,
-            loadCode: `TF-SH-${l.id.slice(0, 6).toUpperCase()}`,
+            loadCode: l.title || 'Freight Consignment',
             title: l.title,
             origin: l.originName,
             originLat: oLat,
@@ -690,7 +690,7 @@ export const getLiveTracking = async (req: Request, res: Response): Promise<void
         defaultLoad: null,
         allLoads: allLoads.map((l) => ({
           id: l.id,
-          loadCode: `TF-SH-${l.id.slice(0, 6).toUpperCase()}`,
+          loadCode: l.title || 'Freight Consignment',
           title: l.title,
           origin: l.originName,
           originLat: l.originLat,
@@ -803,7 +803,7 @@ export const getLiveTracking = async (req: Request, res: Response): Promise<void
         : `Consignment in transit • Driver stationary / resting at checkpoint.`,
       shipment: {
         id: shipment.id,
-        loadId: `TF-SH-${shipment.load?.id?.slice(0, 6)?.toUpperCase() || '9901'}`,
+        loadId: shipment.load?.title || 'Freight Consignment',
         rawLoadId: shipment.load?.id,
         title: shipment.load?.title || 'Heavy Freight Consignment',
         cargoType: shipment.load?.cargoType || 'GENERAL_CONTAINER',
@@ -906,7 +906,7 @@ export const getLiveTracking = async (req: Request, res: Response): Promise<void
       },
       allLoads: allLoads.map((l) => ({
         id: l.id,
-        loadCode: `TF-SH-${l.id.slice(0, 6).toUpperCase()}`,
+        loadCode: l.title || 'Freight Consignment',
         title: l.title,
         origin: l.originName,
         originLat: l.originLat,

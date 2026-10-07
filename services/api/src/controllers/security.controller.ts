@@ -362,7 +362,7 @@ export const getProactiveGeofenceAlerts = async (req: Request, res: Response): P
           generatedAlerts.push({
             id: `ALERT-${rz.id}-${s.id.slice(0, 4)}`,
             shipmentId: s.id,
-            shipmentCode: `TF-SH-${s.load.id.slice(0, 6).toUpperCase()}`,
+            shipmentCode: s.load.title || 'Freight Consignment',
             cargoTitle: s.load.title,
             vehiclePlate: s.vehicle?.plateNumber || `ET-3-${88210 + sIdx}`,
             driverName: s.driver?.user?.fullName || 'Verified Corridor Driver',

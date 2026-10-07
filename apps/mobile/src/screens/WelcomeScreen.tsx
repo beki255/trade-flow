@@ -13,6 +13,7 @@ import {
   Platform,
 } from 'react-native';
 import { useLanguage } from '../context/LanguageContext';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { Ionicons } from '@expo/vector-icons';
 import { CorridorIsometricIllustration } from '../components/CorridorIsometricIllustration';
 import { CorridorRouteMapIllustration } from '../components/CorridorRouteMapIllustration';
@@ -28,7 +29,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   onNavigateRegister,
 }) => {
   const [activeDot, setActiveDot] = useState(0);
-  const { toggleLanguage } = useLanguage();
+  const { t } = useLanguage();
   const { width } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
 
@@ -37,16 +38,16 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
 
   const slideData = [
     {
-      title: 'AI-Powered Logistics',
-      desc: 'Intelligent freight matching and real-time corridor telematics connecting Djibouti Port to Addis Ababa.',
+      title: t('welcomeSlide1Title'),
+      desc: t('welcomeSlide1Desc'),
     },
     {
-      title: 'Interactive Corridor Map',
-      desc: 'Live tracking across Lake Abbe, Galafi border customs, and Modjo Dry Port checkpoints.',
+      title: t('welcomeSlide2Title'),
+      desc: t('welcomeSlide2Desc'),
     },
     {
-      title: 'Cross-Border Cargo & Journey',
-      desc: 'Track your freight journey along the Ethiopia–Djibouti corridor, record check-ins offline, and receive digital payments instantly.',
+      title: t('welcomeSlide3Title'),
+      desc: t('welcomeSlide3Desc'),
     },
   ];
 
@@ -74,9 +75,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
         <View style={styles.header}>
           <View style={styles.headerSpacer} />
           <Text style={styles.brandTitle}>TradeFlow</Text>
-          <View style={styles.langBtn}>
-            <Text style={styles.langBtnText}>🌐 English</Text>
-          </View>
+          <LanguageSwitcher variant="light" />
         </View>
 
         {/* Center Illustration Area: Full Edge-to-Edge Cross-Platform Carousel */}
@@ -148,7 +147,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
             onPress={onNavigateLogin}
             activeOpacity={0.85}
           >
-            <Text style={styles.loginButtonText}>Log In</Text>
+            <Text style={styles.loginButtonText}>{t('loginButton')}</Text>
           </TouchableOpacity>
 
           {/* Secondary Outlined Button: Create Account */}
@@ -157,7 +156,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
             onPress={onNavigateRegister}
             activeOpacity={0.85}
           >
-            <Text style={styles.registerButtonText}>Create Account</Text>
+            <Text style={styles.registerButtonText}>{t('createAccount')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -185,6 +184,7 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
     paddingHorizontal: 22,
     width: '100%',
+    zIndex: 100,
   },
   headerSpacer: {
     width: 65,

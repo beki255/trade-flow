@@ -14,6 +14,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import Svg, { Circle, Polyline, Rect, Text as SvgText, G, Path } from 'react-native-svg';
+import { Ionicons } from '@expo/vector-icons';
 import { getDynamicCorridorWaypoints, calculateCorridorRoadDistanceKm, resolveCorridorCoordinates } from '@tradeflow/shared';
 import { getCorridorRoadPolylineLocal, fetchOsmHighwayRoute, RoadCoordinate } from '../utils/corridorRoads';
 import { ActiveTripDetails } from '../screens/driver/types';
@@ -66,8 +67,83 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
 }) => {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
 
-  // Default to 'roads' (ArcGIS World Street Map) - 100% reliable, zero 403 blocks on any mobile carrier
-  const [layer, setLayer] = useState<'roads' | 'osm' | 'sat'>('roads');
+  // Default to 'osm' (OpenStreetMap) when online; automatically falls back to 'roads' when offline
+  const [isOffline, setIsOffline] = useState<boolean>(() => {
+    if (typeof navigator !== 'undefined' && 'onLine' in navigator) {
+      return !navigator.onLine;
+    }
+    return false;
+  });
+  const [layer, setLayer] = useState<'roads' | 'osm' | 'sat'>('osm');
+  const userManuallySelectedLayerRef = useRef<boolean>(false);
+
+  // Auto-switch between OSM (online) and Roads (offline fallback)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.addEventListener) {
+      const handleOffline = () => {
+        setIsOffline(true);
+        if (!userManuallySelectedLayerRef.current || layer === 'osm') {
+          setLayer('roads');
+        }
+      };
+      const handleOnline = () => {
+        setIsOffline(false);
+        if (!userManuallySelectedLayerRef.current) {
+          setLayer('osm');
+        }
+      };
+      window.addEventListener('offline', handleOffline);
+      window.addEventListener('online', handleOnline);
+
+      return () => {
+        window.removeEventListener('offline', handleOffline);
+        window.removeEventListener('online', handleOnline);
+      };
+    }
+  }, [layer]);
+
+  // Periodic network connectivity probe to ensure field offline detection
+  useEffect(() => {
+    let isMounted = true;
+    const testConnectivity = async () => {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3500);
+        await fetch('https://a.tile.openstreetmap.fr/osmfr/0/0/0.png', {
+          method: 'HEAD',
+          mode: 'no-cors',
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+        if (isMounted && isOffline) {
+          setIsOffline(false);
+          if (!userManuallySelectedLayerRef.current) {
+            setLayer('osm');
+          }
+        }
+      } catch {
+        if (isMounted && !isOffline) {
+          setIsOffline(true);
+          if (!userManuallySelectedLayerRef.current || layer === 'osm') {
+            setLayer('roads');
+          }
+        }
+      }
+    };
+
+    const interval = setInterval(testConnectivity, 15000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [isOffline, layer]);
+
+  const handleTileError = () => {
+    if (layer === 'osm' && !userManuallySelectedLayerRef.current) {
+      setIsOffline(true);
+      setLayer('roads');
+    }
+  };
 
   // Navigation Modal State (Authentic 3D Google Maps Turn-by-Turn View)
   const [isNavActive, setIsNavActive] = useState<boolean>(false);
@@ -76,15 +152,20 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
   const [showSearchModal, setShowSearchModal] = useState<boolean>(false);
   const [nav3DZoom, setNav3DZoom] = useState<number>(1.0);
   const [nav3DPanOffset, setNav3DPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [navModalFollowTruck, setNavModalFollowTruck] = useState<boolean>(true);
   const [manualHeading, setManualHeading] = useState<number | null>(null);
   const manualHeadingRef = useRef<number | null>(null);
   const truckHeadingRef = useRef<number>(0);
+  const nav3DStartPanRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  // Auto-transition to 3D Navigation Modal when driver starts trip
+  // Auto-transition to close-up Follow Truck view when driver starts trip
   const prevStatusRef = useRef(activeTrip?.status);
   useEffect(() => {
     if (prevStatusRef.current !== 'IN_TRANSIT' && activeTrip?.status === 'IN_TRANSIT') {
-      setIsNavActive(true);
+      setIsFollowTruck(true);
+      setZoom(1.0);
+      setPanOffset({ x: 0, y: 0 });
+      setNavModalFollowTruck(true);
       setIsNorthUp(false);
     }
     prevStatusRef.current = activeTrip?.status;
@@ -94,10 +175,11 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
   const [containerW, setContainerW] = useState<number>(340);
   const [zoom, setZoom] = useState<number>(1.0);
   const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [isFollowTruck, setIsFollowTruck] = useState<boolean>(false);
+  const startPanOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isFollowTruck, setIsFollowTruck] = useState<boolean>(true);
   const [selectedWp, setSelectedWp] = useState<any>(null);
 
-  const H = 270;
+  const H = 295;
   const W = Math.max(280, containerW);
   const navW = windowWidth || 360;
   const navH = windowHeight || 640;
@@ -205,6 +287,8 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
     }
   }, [activeTrip?.progressPercentage, isDispatchedOnly, isInTransit]);
 
+
+
   // Live genuine OpenStreetMap / Google Maps road coordinates fetched via OSRM
   const [liveOsmRoad, setLiveOsmRoad] = useState<RoadCoordinate[] | null>(null);
 
@@ -222,6 +306,15 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
     fetchOsmHighwayRoute(oLat, oLng, dLat, dLng).then((route) => {
       if (isMounted && route && route.length >= 10) {
         setLiveOsmRoad(route);
+        setIsOffline(false);
+      } else if (isMounted && !route) {
+        // Fall back gracefully when offline
+        if (typeof navigator !== 'undefined' && 'onLine' in navigator && !navigator.onLine) {
+          setIsOffline(true);
+          if (!userManuallySelectedLayerRef.current) {
+            setLayer('roads');
+          }
+        }
       }
     });
 
@@ -378,33 +471,43 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
     curPan: { x: number; y: number },
     followTruck: boolean
   ) => {
-    // Dynamic tile zoom level increments smoothly as user zooms in
-    let effectiveZ = routeCenter.baseZ;
-    let localScale = curZoom;
+    // When following truck, use street/highway navigation driving zoom level (Z=15) centered on vehicle
+    // When in overview, use comfortable corridor zoom level (Z=10 or 11) centered between vehicle and destination
+    let effectiveZ: number;
+    let localScale: number;
 
-    if (curZoom >= 2.0) {
-      effectiveZ = Math.min(14, routeCenter.baseZ + 1);
-      localScale = curZoom / 2.0;
-    } else if (curZoom < 0.65) {
-      effectiveZ = Math.max(6, routeCenter.baseZ - 1);
-      localScale = curZoom * 2.0;
+    if (followTruck) {
+      // True turn-by-turn driving zoom (Z=15) - crisp OSM tiles and sharp highway curves
+      effectiveZ = 15;
+      localScale = curZoom * 1.15;
+    } else {
+      // Comfortable corridor overview towards destination (Z=10 or 11)
+      const latDiff = Math.abs(truckGeo.lat - destCoords.lat);
+      const lngDiff = Math.abs(truckGeo.lng - destCoords.lng);
+      const span = Math.max(latDiff, lngDiff);
+      const overviewBaseZ = span < 0.8 ? 12 : span < 1.8 ? 11 : span < 3.5 ? 10 : 9;
+      effectiveZ = overviewBaseZ;
+      localScale = curZoom;
     }
-
-    const centerCoord = followTruck ? truckGeo : routeCenter;
+    const centerCoord = followTruck
+      ? truckGeo
+      : {
+          lat: (truckGeo.lat + destCoords.lat) / 2,
+          lng: (truckGeo.lng + destCoords.lng) / 2,
+        };
     const centerMerc = toMercator(centerCoord.lat, centerCoord.lng, effectiveZ);
 
     const geo2px = (lat: number, lng: number) => {
       const pt = toMercator(lat, lng, effectiveZ);
-      const x = (pt.x - centerMerc.x) * localScale + curW / 2 + (followTruck ? 0 : curPan.x);
-      const y = (pt.y - centerMerc.y) * localScale + curH / 2 + (followTruck ? 0 : curPan.y);
+      const x = (pt.x - centerMerc.x) * localScale + curW / 2 + curPan.x;
+      const y = (pt.y - centerMerc.y) * localScale + curH / 2 + curPan.y;
       return { x, y };
     };
-
     // Calculate tiles covering visible screen with zero seams
     const halfW = curW / 2;
     const halfH = curH / 2;
-    const effPanX = followTruck ? 0 : curPan.x;
-    const effPanY = followTruck ? 0 : curPan.y;
+    const effPanX = curPan.x;
+    const effPanY = curPan.y;
 
     const leftMerc = centerMerc.x + (-halfW - effPanX) / localScale;
     const rightMerc = centerMerc.x + (halfW - effPanX) / localScale;
@@ -447,7 +550,7 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
 
   const inlineProj = useMemo(
     () => createMercatorProjector(W, H, zoom, panOffset, isFollowTruck),
-    [W, H, zoom, panOffset, isFollowTruck, routeCenter, truckGeo]
+    [W, H, zoom, panOffset, isFollowTruck, destCoords, truckGeo]
   );
 
   // Compute pixel points for corridor polyline (Inline) following authentic curving highway geometry
@@ -502,46 +605,138 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
     return 'A2';
   }, [activeTrip?.origin, activeTrip?.destination]);
 
-  // Turn-by-Turn Maneuver guidance matching Google Maps navigation
-  const upcomingManeuver = useMemo(() => {
-    if (!nextWaypoint) {
+  // Dynamic Live Position Intelligence (Resolves exact real town/corridor location of the truck)
+  const driverCurrentLocation = useMemo(() => {
+    const cleanOrigin = (origin || 'Origin Hub').split(',')[0].trim();
+    const cleanDest = (dest || 'Destination Hub').split(',')[0].trim();
+
+    if (!WAYPOINTS || WAYPOINTS.length === 0) {
       return {
-        arrow: '⬆',
-        mainText: 'towards',
-        shield: highwayShield,
-        thenArrow: '↰',
-        subText: `Arriving at ${dest}`,
+        townName: cleanOrigin,
+        shortTown: cleanOrigin,
+        subText: 'At Dispatch Terminal',
+        nextStopName: cleanDest,
+        distToNext: totalRoadKm,
       };
     }
 
-    const distKm = Math.max(1, Math.round(calculateCorridorRoadDistanceKm(
+    // 1. If at start / awaiting departure
+    if (!isInTransit || tick <= 0) {
+      const firstWp = WAYPOINTS[1] ? WAYPOINTS[1].name.split(',')[0].trim() : cleanDest;
+      const distToFirst = Math.max(1, Math.round(calculateCorridorRoadDistanceKm(
+        origin,
+        WAYPOINTS[1]?.name || dest,
+        originCoords.lat,
+        originCoords.lng,
+        WAYPOINTS[1]?.lat || destCoords.lat,
+        WAYPOINTS[1]?.lng || destCoords.lng
+      )));
+      return {
+        townName: `${cleanOrigin} Terminal`,
+        shortTown: cleanOrigin,
+        subText: 'Vehicle at Origin Station · Ready to roll',
+        nextStopName: firstWp,
+        distToNext: distToFirst,
+      };
+    }
+
+    // 2. If completed / reached destination
+    if (tick >= 100) {
+      return {
+        townName: `${cleanDest} Hub`,
+        shortTown: cleanDest,
+        subText: 'Trip Completed · At Destination',
+        nextStopName: 'Delivered',
+        distToNext: 0,
+      };
+    }
+
+    // 3. Find closest waypoint along route to current truck coordinate
+    let closestWp = WAYPOINTS[0];
+    let minWpDist = 999999;
+    let closestIdx = 0;
+
+    WAYPOINTS.forEach((wp, idx) => {
+      const d = calculateCorridorRoadDistanceKm(
+        origin,
+        wp.name,
+        truckGeo.lat,
+        truckGeo.lng,
+        wp.lat,
+        wp.lng
+      );
+      if (d < minWpDist) {
+        minWpDist = d;
+        closestWp = wp;
+        closestIdx = idx;
+      }
+    });
+
+    const cleanClosest = closestWp.name.split(',')[0].trim();
+    const nextWp = WAYPOINTS[closestIdx + 1] || WAYPOINTS[WAYPOINTS.length - 1];
+    const cleanNext = nextWp.name.split(',')[0].trim();
+
+    const distToNext = Math.max(1, Math.round(calculateCorridorRoadDistanceKm(
       origin,
-      nextWaypoint.name,
+      nextWp.name,
       truckGeo.lat,
       truckGeo.lng,
-      nextWaypoint.lat,
-      nextWaypoint.lng
+      nextWp.lat,
+      nextWp.lng
     )));
+
+    if (minWpDist <= 4.0) {
+      return {
+        townName: `${cleanClosest} Corridor`,
+        shortTown: cleanClosest,
+        subText: `At checkpoint · ${remainingKm} km left to ${cleanDest}`,
+        nextStopName: cleanNext,
+        distToNext: distToNext,
+      };
+    }
+
+    return {
+      townName: `${cleanClosest} Highway Sector`,
+      shortTown: cleanClosest,
+      subText: `Near ${cleanClosest} (${Math.round(minWpDist)} km) · heading to ${cleanNext}`,
+      nextStopName: cleanNext,
+      distToNext: distToNext,
+    };
+  }, [WAYPOINTS, isInTransit, tick, truckGeo, origin, dest, originCoords, destCoords, totalRoadKm, remainingKm]);
+
+  // Turn-by-Turn Maneuver guidance matching Google Maps navigation
+  const upcomingManeuver = useMemo(() => {
+    if (!navModalFollowTruck) {
+      return {
+        arrow: '⤊',
+        mainText: 'Corridor Overview',
+        shield: highwayShield,
+        thenArrow: 'B',
+        subText: `${origin} ➔ ${dest} · ${remainingKm} km remaining`,
+      };
+    }
 
     let maneuverArrow = '⬆';
     let thenTurn = '↰';
 
-    if (nextWaypoint.type === 'SCALE_CHECK') {
-      thenTurn = '⚖️';
-    } else if (nextWaypoint.type === 'CHECKPOINT') {
-      thenTurn = '🛂';
-    } else if (nextWaypoint.name.toLowerCase().includes('sina') || nextWaypoint.name.toLowerCase().includes('tunnel')) {
-      thenTurn = '↱';
+    if (nextWaypoint) {
+      if (nextWaypoint.type === 'SCALE_CHECK') {
+        thenTurn = '↳';
+      } else if (nextWaypoint.type === 'CHECKPOINT') {
+        thenTurn = '↰';
+      } else if (nextWaypoint.name.toLowerCase().includes('sina') || nextWaypoint.name.toLowerCase().includes('tunnel')) {
+        thenTurn = '↱';
+      }
     }
 
     return {
       arrow: maneuverArrow,
-      mainText: 'towards',
+      mainText: driverCurrentLocation.nextStopName,
       shield: highwayShield,
       thenArrow: thenTurn,
-      subText: `${nextWaypoint.name.split(',')[0]} in ${distKm} km`,
+      subText: `Currently: ${driverCurrentLocation.townName} • ${driverCurrentLocation.distToNext} km ahead`,
     };
-  }, [nextWaypoint, highwayShield, origin, dest, truckGeo]);
+  }, [driverCurrentLocation, nextWaypoint, highwayShield, origin, dest, navModalFollowTruck, remainingKm]);
 
   // Dynamic ETA Duration and Clock Arrival Time (e.g. "4 hr 20 min" • "5:14 am")
   const { etaDurationText, arrivalClockTime } = useMemo(() => {
@@ -566,17 +761,30 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
   const nav3DH = Math.max(1400, Math.round(navH * 3.0));
 
   const nav3DProj = useMemo(() => {
-    let targetZ = 13;
-    let localScale = nav3DZoom;
-    if (nav3DZoom >= 2.2) {
-      targetZ = 14;
-      localScale = nav3DZoom / 2.0;
-    } else if (nav3DZoom < 0.65) {
-      targetZ = 12;
-      localScale = nav3DZoom * 2.0;
+    // When following truck, use street/highway driving navigation level (Z=15) centered on vehicle
+    // When in overview, use comfortable corridor level (Z=10 or 11) centered towards destination
+    let targetZ: number;
+    let localScale: number;
+
+    if (navModalFollowTruck) {
+      targetZ = 15;
+      localScale = nav3DZoom * 1.35;
+    } else {
+      const latDiff = Math.abs(truckGeo.lat - destCoords.lat);
+      const lngDiff = Math.abs(truckGeo.lng - destCoords.lng);
+      const span = Math.max(latDiff, lngDiff);
+      const overviewBaseZ = span < 0.8 ? 12 : span < 1.8 ? 11 : span < 3.5 ? 10 : 9;
+      targetZ = overviewBaseZ;
+      localScale = nav3DZoom;
     }
 
-    const centerMerc = toMercator(truckGeo.lat, truckGeo.lng, targetZ);
+    const centerCoord = navModalFollowTruck
+      ? truckGeo
+      : {
+          lat: (truckGeo.lat + destCoords.lat) / 2,
+          lng: (truckGeo.lng + destCoords.lng) / 2,
+        };
+    const centerMerc = toMercator(centerCoord.lat, centerCoord.lng, targetZ);
 
     const geo2px = (lat: number, lng: number) => {
       const pt = toMercator(lat, lng, targetZ);
@@ -628,7 +836,7 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
     }
 
     return { geo2px, tiles, effectiveZ: targetZ };
-  }, [nav3DW, nav3DH, nav3DZoom, nav3DPanOffset, truckGeo]);
+  }, [nav3DW, nav3DH, nav3DZoom, nav3DPanOffset, truckGeo, navModalFollowTruck, destCoords]);
 
   const nav3DRoutePoints = useMemo(() => {
     const pts = ROAD_POINTS.length >= 2 ? ROAD_POINTS : WAYPOINTS;
@@ -649,9 +857,10 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
       const pt = nav3DProj.geo2px(p.lat, p.lng);
       return `${pt.x},${pt.y}`;
     });
-    pts.push(`${nav3DW / 2 + nav3DPanOffset.x},${nav3DH / 2 + nav3DPanOffset.y}`);
+    const truckPt = nav3DProj.geo2px(truckGeo.lat, truckGeo.lng);
+    pts.push(`${truckPt.x},${truckPt.y}`);
     return pts.join(' ');
-  }, [isInTransit, tick, ROAD_POINTS, WAYPOINTS, nav3DProj, nav3DW, nav3DH, nav3DPanOffset]);
+  }, [isInTransit, tick, ROAD_POINTS, WAYPOINTS, nav3DProj, truckGeo]);
 
   // ── 3D Navigation Multi-Touch Handlers, Pinch Zoom & Wheel Listeners ──
   const nav3DLastPinchDistRef = useRef<number | null>(null);
@@ -688,7 +897,7 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
         const now = Date.now();
         if (now - lastTap < 320) {
           e.preventDefault();
-          setNav3DZoom((z) => Math.min(3.5, Math.max(0.4, Math.round(z * 1.35 * 100) / 100)));
+          setNav3DZoom((z) => Math.min(8.0, Math.max(0.35, Math.round(z * 1.35 * 100) / 100)));
           lastTap = 0;
         } else {
           lastTap = now;
@@ -699,12 +908,20 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
     const handleTouchMove = (e: TouchEvent) => {
       if (e.touches.length >= 2) {
         e.preventDefault();
+        const curDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        const curAngle = (Math.atan2(
+          e.touches[1].clientY - e.touches[0].clientY,
+          e.touches[1].clientX - e.touches[0].clientX
+        ) * 180) / Math.PI;
+
         // 1. Two-finger twist 360° hand rotation
-        if (initialAngle !== null) {
-          const curAngle = (Math.atan2(
-            e.touches[1].clientY - e.touches[0].clientY,
-            e.touches[1].clientX - e.touches[0].clientX
-          ) * 180) / Math.PI;
+        if (initialAngle === null) {
+          initialAngle = curAngle;
+          startHeading = manualHeadingRef.current !== null ? manualHeadingRef.current : truckHeadingRef.current;
+        } else {
           let deltaAngle = curAngle - initialAngle;
           if (deltaAngle > 180) deltaAngle -= 360;
           if (deltaAngle < -180) deltaAngle += 360;
@@ -715,17 +932,15 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
           }
         }
 
-        // 2. Two-finger pinch zoom in & out
-        if (initialPinchDist !== null && initialPinchDist > 5) {
-          const curDist = Math.hypot(
-            e.touches[0].clientX - e.touches[1].clientX,
-            e.touches[0].clientY - e.touches[1].clientY
-          );
+        // 2. Two-finger continuous pinch to zoom in & zoom out (Smooth & Flexible up to 800%)
+        if (initialPinchDist === null || initialPinchDist <= 5) {
+          initialPinchDist = curDist;
+        } else {
           const factor = curDist / initialPinchDist;
-          if (Number.isFinite(factor) && factor > 0.5 && factor < 2.0) {
+          if (Number.isFinite(factor) && factor > 0.4 && factor < 2.5) {
             setNav3DZoom((prevZoom) => {
               const next = prevZoom * factor;
-              return Math.min(3.5, Math.max(0.4, next));
+              return Math.min(8.0, Math.max(0.35, next));
             });
           }
           initialPinchDist = curDist;
@@ -740,8 +955,8 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
         if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
           e.preventDefault();
           setNav3DPanOffset((prev) => ({
-            x: Math.max(-600, Math.min(600, prev.x + dx * 0.85)),
-            y: Math.max(-600, Math.min(600, prev.y + dy * 0.85)),
+            x: Math.max(-800, Math.min(800, prev.x + dx * 0.85)),
+            y: Math.max(-800, Math.min(800, prev.y + dy * 0.85)),
           }));
           startX = e.touches[0].clientX;
           startY = e.touches[0].clientY;
@@ -759,14 +974,14 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
     // Wheel zoom on desktop mouse and trackpad pinch
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      const factor = e.deltaY < 0 ? 1.12 : 0.89;
-      setNav3DZoom((z) => Math.min(3.5, Math.max(0.4, Math.round(z * factor * 1000) / 1000)));
+      const factor = e.deltaY < 0 ? 1.15 : 0.87;
+      setNav3DZoom((z) => Math.min(8.0, Math.max(0.35, Math.round(z * factor * 1000) / 1000)));
     };
 
     // Double-click zoom on desktop
     const handleDblClick = (e: MouseEvent) => {
       e.preventDefault();
-      setNav3DZoom((z) => Math.min(3.5, Math.max(0.4, Math.round(z * 1.35 * 100) / 100)));
+      setNav3DZoom((z) => Math.min(8.0, Math.max(0.35, Math.round(z * 1.35 * 100) / 100)));
     };
 
     el.addEventListener('touchstart', handleTouchStart, { passive: false });
@@ -804,13 +1019,14 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
           return !!(evt.nativeEvent.touches && evt.nativeEvent.touches.length >= 2);
         },
         onPanResponderGrant: (evt) => {
+          nav3DStartPanRef.current = { ...nav3DPanOffset };
           const touches = evt.nativeEvent.touches;
           const now = Date.now();
 
           // 1-Finger Double-Tap to Zoom In
           if (!touches || touches.length <= 1) {
             if (now - nav3DLastTapTimeRef.current < 320) {
-              setNav3DZoom((prevZoom) => Math.min(3.5, Math.max(0.4, prevZoom * 1.35)));
+              setNav3DZoom((prevZoom) => Math.min(8.0, Math.max(0.35, prevZoom * 1.35)));
               nav3DLastTapTimeRef.current = 0;
             } else {
               nav3DLastTapTimeRef.current = now;
@@ -836,12 +1052,19 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
           const touches = evt.nativeEvent.touches;
 
           if (touches && touches.length >= 2) {
+            const currentDist = Math.hypot(
+              touches[0].pageX - touches[1].pageX,
+              touches[0].pageY - touches[1].pageY
+            );
+            const currentAngle = (Math.atan2(
+              touches[1].pageY - touches[0].pageY,
+              touches[1].pageX - touches[0].pageX
+            ) * 180) / Math.PI;
+
             // 1. Two-finger twist 360° hand rotation
-            if (nav3DLastAngleRef.current !== null) {
-              const currentAngle = (Math.atan2(
-                touches[1].pageY - touches[0].pageY,
-                touches[1].pageX - touches[0].pageX
-              ) * 180) / Math.PI;
+            if (nav3DLastAngleRef.current === null) {
+              nav3DLastAngleRef.current = currentAngle;
+            } else {
               let delta = currentAngle - nav3DLastAngleRef.current;
               if (delta > 180) delta -= 360;
               if (delta < -180) delta += 360;
@@ -855,22 +1078,19 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
               }
             }
 
-            // 2. Two-finger continuous pinch to zoom in & zoom out
-            const currentDist = Math.hypot(
-              touches[0].pageX - touches[1].pageX,
-              touches[0].pageY - touches[1].pageY
-            );
-
-            if (nav3DLastPinchDistRef.current !== null && nav3DLastPinchDistRef.current > 10) {
+            // 2. Two-finger continuous pinch to zoom in & zoom out (Smooth & Flexible up to 800%)
+            if (nav3DLastPinchDistRef.current === null || nav3DLastPinchDistRef.current <= 5) {
+              nav3DLastPinchDistRef.current = currentDist;
+            } else {
               const factor = currentDist / nav3DLastPinchDistRef.current;
-              if (Number.isFinite(factor) && factor > 0.5 && factor < 2.0) {
+              if (Number.isFinite(factor) && factor > 0.4 && factor < 2.5) {
                 setNav3DZoom((prevZoom) => {
                   const next = prevZoom * factor;
-                  return Math.min(3.5, Math.max(0.4, next));
+                  return Math.min(8.0, Math.max(0.35, next));
                 });
               }
+              nav3DLastPinchDistRef.current = currentDist;
             }
-            nav3DLastPinchDistRef.current = currentDist;
             return;
           }
 
@@ -878,10 +1098,10 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
           nav3DLastAngleRef.current = null;
 
           // Single-finger smooth panning with boundary clamping
-          setNav3DPanOffset((prev) => ({
-            x: Math.max(-600, Math.min(600, prev.x + g.dx * 0.85)),
-            y: Math.max(-600, Math.min(600, prev.y + g.dy * 0.85)),
-          }));
+          setNav3DPanOffset({
+            x: Math.max(-800, Math.min(800, nav3DStartPanRef.current.x + g.dx)),
+            y: Math.max(-800, Math.min(800, nav3DStartPanRef.current.y + g.dy)),
+          });
         },
         onPanResponderRelease: () => {
           nav3DLastPinchDistRef.current = null;
@@ -904,15 +1124,99 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
 
   useEffect(() => {
     const el = inlineMapRef.current as unknown as HTMLElement;
-    if (el && typeof el.addEventListener === 'function') {
-      const handleWheel = (e: WheelEvent) => {
+    if (!el || typeof el.addEventListener !== 'function') return;
+
+    let inlinePinchDist: number | null = null;
+    let startX: number | null = null;
+    let startY: number | null = null;
+    let lastTap = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length >= 2) {
         e.preventDefault();
-        const factor = e.deltaY < 0 ? 1.15 : 0.87;
-        setZoom((z) => Math.min(5.0, Math.max(0.5, z * factor)));
-      };
-      el.addEventListener('wheel', handleWheel, { passive: false });
-      return () => el.removeEventListener('wheel', handleWheel);
-    }
+        inlinePinchDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+      } else if (e.touches.length === 1) {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        const now = Date.now();
+        if (now - lastTap < 320) {
+          e.preventDefault();
+          setZoom((z) => Math.min(8.0, Math.max(0.35, Math.round(z * 1.35 * 100) / 100)));
+          lastTap = 0;
+        } else {
+          lastTap = now;
+        }
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      // 1. Two-finger continuous pinch to zoom in & out (Smooth & Flexible up to 800%)
+      if (e.touches.length >= 2) {
+        e.preventDefault();
+        const curDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        if (inlinePinchDist === null || inlinePinchDist <= 5) {
+          inlinePinchDist = curDist;
+        } else {
+          const factor = curDist / inlinePinchDist;
+          if (Number.isFinite(factor) && factor > 0.4 && factor < 2.5) {
+            setZoom((prevZoom) => {
+              const next = prevZoom * factor;
+              return Math.min(8.0, Math.max(0.35, next));
+            });
+          }
+          inlinePinchDist = curDist;
+        }
+        return;
+      }
+
+      // 2. Single-finger drag panning
+      if (e.touches.length === 1 && startX !== null && startY !== null) {
+        const dx = e.touches[0].clientX - startX;
+        const dy = e.touches[0].clientY - startY;
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+          e.preventDefault();
+          setIsFollowTruck(false);
+          setPanOffset((prev) => ({
+            x: Math.max(-800, Math.min(800, prev.x + dx * 0.9)),
+            y: Math.max(-800, Math.min(800, prev.y + dy * 0.9)),
+          }));
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+        }
+      }
+    };
+
+    const handleTouchEnd = () => {
+      inlinePinchDist = null;
+      startX = null;
+      startY = null;
+    };
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const factor = e.deltaY < 0 ? 1.15 : 0.87;
+      setZoom((z) => Math.min(8.0, Math.max(0.35, z * factor)));
+    };
+
+    el.addEventListener('touchstart', handleTouchStart, { passive: false });
+    el.addEventListener('touchmove', handleTouchMove, { passive: false });
+    el.addEventListener('touchend', handleTouchEnd);
+    el.addEventListener('touchcancel', handleTouchEnd);
+    el.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      el.removeEventListener('touchstart', handleTouchStart);
+      el.removeEventListener('touchmove', handleTouchMove);
+      el.removeEventListener('touchend', handleTouchEnd);
+      el.removeEventListener('touchcancel', handleTouchEnd);
+      el.removeEventListener('wheel', handleWheel);
+    };
   }, []);
 
   // Inline Pan Responder with Double-Tap Zoom & High-Sensitivity Pinch
@@ -931,6 +1235,7 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
           return !!(evt.nativeEvent.touches && evt.nativeEvent.touches.length >= 2);
         },
         onPanResponderGrant: (evt) => {
+          startPanOffsetRef.current = { ...panOffset };
           setIsFollowTruck(false);
           onMapInteractionChange?.(true);
 
@@ -940,7 +1245,7 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
           // 1-Finger Double-Tap to Zoom In (Google Maps standard)
           if (!touches || touches.length <= 1) {
             if (now - lastTapTimeRef.current < 320) {
-              setZoom((prevZoom) => Math.min(4.5, Math.max(0.6, prevZoom * 1.35)));
+              setZoom((prevZoom) => Math.min(8.0, Math.max(0.35, prevZoom * 1.35)));
               lastTapTimeRef.current = 0;
             } else {
               lastTapTimeRef.current = now;
@@ -960,23 +1265,25 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
         onPanResponderMove: (evt, g) => {
           const touches = evt.nativeEvent.touches;
 
-          // Two-finger continuous pinch to zoom in & zoom out
+          // Two-finger continuous pinch to zoom in & zoom out (Smooth & Flexible up to 800%)
           if (touches && touches.length >= 2) {
             const currentDist = Math.hypot(
               touches[0].pageX - touches[1].pageX,
               touches[0].pageY - touches[1].pageY
             );
 
-            if (lastPinchDistRef.current !== null && lastPinchDistRef.current > 10) {
+            if (lastPinchDistRef.current === null || lastPinchDistRef.current <= 5) {
+              lastPinchDistRef.current = currentDist;
+            } else {
               const factor = currentDist / lastPinchDistRef.current;
-              if (Number.isFinite(factor) && factor > 0.5 && factor < 2.0) {
+              if (Number.isFinite(factor) && factor > 0.4 && factor < 2.5) {
                 setZoom((prevZoom) => {
                   const next = prevZoom * factor;
-                  return Math.min(5.0, Math.max(0.5, next));
+                  return Math.min(8.0, Math.max(0.35, next));
                 });
               }
+              lastPinchDistRef.current = currentDist;
             }
-            lastPinchDistRef.current = currentDist;
             return;
           }
 
@@ -985,10 +1292,10 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
           // Single-finger smooth panning with boundary clamping
           const maxPanX = W * 1.5;
           const maxPanY = H * 1.5;
-          setPanOffset((prev) => ({
-            x: Math.max(-maxPanX, Math.min(maxPanX, prev.x + g.dx * 0.85)),
-            y: Math.max(-maxPanY, Math.min(maxPanY, prev.y + g.dy * 0.85)),
-          }));
+          setPanOffset({
+            x: Math.max(-maxPanX, Math.min(maxPanX, startPanOffsetRef.current.x + g.dx)),
+            y: Math.max(-maxPanY, Math.min(maxPanY, startPanOffsetRef.current.y + g.dy)),
+          });
         },
         onPanResponderRelease: () => {
           lastPinchDistRef.current = null;
@@ -999,22 +1306,20 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
           onMapInteractionChange?.(false);
         },
       }),
-    [onMapInteractionChange]
+    [onMapInteractionChange, W, H, panOffset]
   );
 
-  // Zoom Button Handlers (Inline Map)
+  // Zoom Button Handlers (Inline Map up to 800%)
   const handleZoomIn = () => {
-    setIsFollowTruck(false);
-    setZoom((z) => Math.min(4.5, Math.round((z + 0.3) * 10) / 10));
+    setZoom((z) => Math.min(8.0, Math.round((z + 0.35) * 100) / 100));
   };
 
   const handleZoomOut = () => {
-    setIsFollowTruck(false);
-    setZoom((z) => Math.max(0.6, Math.round((z - 0.3) * 10) / 10));
+    setZoom((z) => Math.max(0.35, Math.round((z - 0.35) * 100) / 100));
   };
 
   const handleFollowTruck = () => {
-    setZoom(1.4);
+    setZoom(1.0);
     setIsFollowTruck(true);
     setPanOffset({ x: 0, y: 0 });
     setSelectedWp(null);
@@ -1028,7 +1333,10 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
   };
 
   const handleStartTripWith3D = () => {
-    setIsNavActive(true);
+    setIsFollowTruck(true);
+    setZoom(1.0);
+    setPanOffset({ x: 0, y: 0 });
+    setNavModalFollowTruck(true);
     setIsNorthUp(false);
     onStartTrip?.();
   };
@@ -1039,7 +1347,8 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
         <View style={s.headerRow}>
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={s.title}>🗺️ REALTIME CORRIDOR MAP</Text>
+              <Ionicons name="map-outline" size={15} color="#0284C7" />
+              <Text style={s.title}>REALTIME CORRIDOR MAP</Text>
               <View style={[s.badgeLive, { backgroundColor: '#374151' }]}>
                 <Text style={s.badgeLiveTxt}>AWAITING DISPATCH</Text>
               </View>
@@ -1048,7 +1357,7 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
           </View>
         </View>
         <View style={{ height: 160, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0B1120', borderRadius: 12, marginVertical: 8, padding: 16 }}>
-          <Text style={{ fontSize: 32, marginBottom: 8 }}>🚚</Text>
+          <Ionicons name="bus-outline" size={36} color="#64748B" style={{ marginBottom: 8 }} />
           <Text style={{ color: '#F9FAFB', fontSize: 14, fontWeight: '700', textAlign: 'center' }}>
             No Active Trip Dispatched
           </Text>
@@ -1066,7 +1375,8 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
       <View style={s.headerRow}>
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={s.title}>🗺️ REALTIME CORRIDOR MAP</Text>
+            <Ionicons name="map-outline" size={15} color="#0284C7" />
+            <Text style={s.title}>REALTIME CORRIDOR MAP</Text>
             <View
               style={[
                 s.badgeLive,
@@ -1101,7 +1411,10 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
             }}
             activeOpacity={0.8}
           >
-            <Text style={s.nav3dLaunchTxt}>🧭 3D Navigation</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Ionicons name="compass" size={12} color="#FFFFFF" />
+              <Text style={s.nav3dLaunchTxt}>3D Navigation</Text>
+            </View>
           </TouchableOpacity>
 
           <View style={s.switcher}>
@@ -1109,10 +1422,13 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
               <TouchableOpacity
                 key={l}
                 style={[s.btn, layer === l && s.btnActive]}
-                onPress={() => setLayer(l)}
+                onPress={() => {
+                  userManuallySelectedLayerRef.current = true;
+                  setLayer(l);
+                }}
               >
                 <Text style={[s.btnTxt, layer === l && s.btnTxtActive]}>
-                  {l === 'osm' ? 'OSM' : l === 'roads' ? 'Roads' : 'Sat'}
+                  {l === 'osm' ? 'OSM' : l === 'roads' ? (isOffline ? 'Roads · Offline' : 'Roads') : 'Sat'}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -1130,24 +1446,36 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
         }}
         {...panResponder.panHandlers}
       >
-        {/* Real-time Device GPS Status Overlay Badge */}
-        <View style={s.gpsBadgeOverlay} pointerEvents="none">
-          <View
-            style={{
-              width: 7,
-              height: 7,
-              borderRadius: 3.5,
-              backgroundColor: driverGpsLocation ? '#10B981' : '#F59E0B',
-            }}
-          />
-          <Text style={s.gpsBadgeTxt}>
-            {driverGpsLocation
-              ? `GPS: ${driverGpsLocation.latitude.toFixed(4)}°N, ${driverGpsLocation.longitude.toFixed(4)}°E`
-              : (isInTransit && activeTrip?.currentLat
-                  ? `GPS: ${activeTrip.currentLat.toFixed(4)}°N, ${activeTrip.currentLng?.toFixed(4)}°E`
-                  : 'GPS: Origin')}
+        {/* Real-time Driver Current Location & Next Milestone Overlay Banner */}
+        <View style={s.driverLiveLocationBar} pointerEvents="none">
+          <View style={s.driverLiveLocationRow}>
+            <View
+              style={[
+                s.locationPulseDot,
+                { backgroundColor: isMoving ? '#10B981' : '#F59E0B' },
+              ]}
+            />
+            <Ionicons name="location" size={11} color="#38BDF8" />
+            <Text style={s.driverLiveLocationTitle} numberOfLines={1}>
+              {driverCurrentLocation.townName}
+            </Text>
+          </View>
+          <Text style={s.driverLiveLocationSub} numberOfLines={1}>
+            {driverCurrentLocation.subText} • Next: {driverCurrentLocation.nextStopName} ({driverCurrentLocation.distToNext} km)
           </Text>
         </View>
+
+        {/* Floating Recenter Button when panned away or in overview */}
+        {(panOffset.x !== 0 || panOffset.y !== 0 || !isFollowTruck) && (
+          <TouchableOpacity
+            style={s.inlineRecenterBtn}
+            onPress={handleFollowTruck}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="locate" size={12} color="#FFFFFF" />
+            <Text style={s.inlineRecenterTxt}>Recenter</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Compact Zoom Control Pill (Bottom-left, never collides with route!) */}
         <View style={s.inlineZoomControl} pointerEvents="box-none">
@@ -1183,6 +1511,7 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
               }}
               resizeMode="cover"
               fadeDuration={100}
+              onError={handleTileError}
             />
           ))}
         </View>
@@ -1214,17 +1543,17 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
                 points={corridorRoutePoints}
                 fill="none"
                 stroke="#1E3A8A"
-                strokeWidth={7.0}
+                strokeWidth={isFollowTruck ? 10.0 : 7.0}
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                opacity={0.85}
+                opacity={0.88}
               />
               {/* Solid Vibrant Google Maps Navigation Blue Core Line */}
               <Polyline
                 points={corridorRoutePoints}
                 fill="none"
                 stroke="#2563EB"
-                strokeWidth={4.5}
+                strokeWidth={isFollowTruck ? 6.5 : 4.5}
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
@@ -1238,78 +1567,138 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
                 points={donePoints}
                 fill="none"
                 stroke="#064E3B"
-                strokeWidth={7.5}
+                strokeWidth={isFollowTruck ? 10.5 : 7.5}
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                opacity={0.9}
+                opacity={0.92}
               />
               <Polyline
                 points={donePoints}
                 fill="none"
                 stroke="#10B981"
-                strokeWidth={4.8}
+                strokeWidth={isFollowTruck ? 6.8 : 4.8}
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
             </>
           )}
 
-          {/* 3. Key Intermediate Checkpoint Markers (Circular Badges with Icons - EXACT MATCH with Web App) */}
+          {/* 3. Key Intermediate Checkpoint & Town Markers (with Visible Place Names) */}
           {WAYPOINTS.slice(1, -1).map((wp, idx) => {
             const p = inlineProj.geo2px(wp.lat, wp.lng);
             const isScale = wp.type === 'SCALE_CHECK' || wp.name.toLowerCase().includes('weighbridge');
             const isCustoms = wp.type === 'CHECKPOINT' || wp.name.toLowerCase().includes('customs');
-            const iconBg = isCustoms ? '#0284C7' : isScale ? '#D97706' : '#0F172A';
-            const iconSymbol = isCustoms ? '🛂' : isScale ? '⚖️' : '📍';
+            const iconBg = isCustoms ? '#0284C7' : isScale ? '#D97706' : '#334155';
+            const townName = wp.name.split(',')[0].trim();
+            const boxW = Math.max(74, Math.min(150, townName.length * 6.4 + 20));
 
             return (
-              <G key={`wp-${wp.id}`}>
-                <Circle cx={p.x} cy={p.y} r={11} fill={iconBg} stroke="#FFFFFF" strokeWidth={1.8} />
-                <SvgText x={p.x} y={p.y + 3.5} textAnchor="middle" fontSize={9.5}>
-                  {iconSymbol}
+              <G key={`wp-${wp.id}`} x={p.x} y={p.y}>
+                {/* Pointer tip pointing directly to asphalt */}
+                <Path d="M -3 -2 L 0 3 L 3 -2 Z" fill={iconBg} />
+                {/* Checkpoint circular badge with index */}
+                <Circle cx={0} cy={-13} r={11} fill={iconBg} stroke="#FFFFFF" strokeWidth={1.8} />
+                <SvgText x={0} y={-9.5} textAnchor="middle" fontSize={8.5} fontWeight="900" fill="#FFFFFF">
+                  {idx + 1}
+                </SvgText>
+                {/* High-Contrast Place Name Badge */}
+                <Rect
+                  x={-boxW / 2}
+                  y={-41}
+                  width={boxW}
+                  height={16}
+                  rx={4}
+                  fill="#0F172A"
+                  stroke={iconBg}
+                  strokeWidth={1.2}
+                />
+                <SvgText
+                  x={0}
+                  y={-29}
+                  textAnchor="middle"
+                  fontSize={8.5}
+                  fontWeight="800"
+                  fill="#FFFFFF"
+                >
+                  {townName}
                 </SvgText>
               </G>
             );
           })}
 
-          {/* 4. POSTED ORIGIN MARKER (Green Pill + Circle - EXACT MATCH with Web App) */}
+          {/* 4. POSTED ORIGIN MARKER (with Full Origin Place Name) */}
           {WAYPOINTS.length > 0 && (() => {
             const p0 = inlineProj.geo2px(WAYPOINTS[0].lat, WAYPOINTS[0].lng);
+            const label = `Origin: ${origin}`;
+            const boxW = Math.max(90, Math.min(180, label.length * 6.5 + 20));
             return (
               <G x={p0.x} y={p0.y}>
-                <Rect x={-27} y={-40} width={54} height={15} rx={4} fill="#065F46" stroke="#10B981" strokeWidth={1} />
-                <SvgText x={0} y={-29} textAnchor="middle" fill="#A7F3D0" fontSize={8.5} fontWeight="900">
-                  ORIGIN
-                </SvgText>
-                <Circle cx={0} cy={-12} r={13} fill="#10B981" stroke="#FFFFFF" strokeWidth={2} />
-                <SvgText x={0} y={-7.5} textAnchor="middle" fontSize={11}>
-                  🏢
-                </SvgText>
                 <Path d="M -3 -1 L 0 3 L 3 -1 Z" fill="#10B981" />
+                <Circle cx={0} cy={-13} r={13} fill="#10B981" stroke="#FFFFFF" strokeWidth={2} />
+                <SvgText x={0} y={-9} textAnchor="middle" fontSize={10} fontWeight="900" fill="#FFFFFF">
+                  A
+                </SvgText>
+                <Rect x={-boxW / 2} y={-44} width={boxW} height={18} rx={5} fill="#064E3B" stroke="#10B981" strokeWidth={1.2} />
+                <SvgText x={0} y={-31} textAnchor="middle" fill="#FFFFFF" fontSize={9} fontWeight="900">
+                  {label}
+                </SvgText>
               </G>
             );
           })()}
 
-          {/* 5. POSTED DESTINATION MARKER (Sky Blue Pill + Checkered Flag - EXACT MATCH with Web App) */}
+          {/* 5. POSTED DESTINATION MARKER (with Full Destination Place Name) */}
           {WAYPOINTS.length > 1 && (() => {
             const pd = inlineProj.geo2px(WAYPOINTS[WAYPOINTS.length - 1].lat, WAYPOINTS[WAYPOINTS.length - 1].lng);
+            const label = `Dest: ${dest}`;
+            const boxW = Math.max(90, Math.min(180, label.length * 6.5 + 20));
             return (
               <G x={pd.x} y={pd.y}>
-                <Rect x={-36} y={-40} width={72} height={15} rx={4} fill="#0369A1" stroke="#38BDF8" strokeWidth={1} />
-                <SvgText x={0} y={-29} textAnchor="middle" fill="#BAE6FD" fontSize={8.5} fontWeight="900">
-                  DESTINATION
-                </SvgText>
-                <Circle cx={0} cy={-12} r={13} fill="#0284C7" stroke="#FFFFFF" strokeWidth={2} />
-                <SvgText x={0} y={-7.5} textAnchor="middle" fontSize={11}>
-                  🏁
-                </SvgText>
                 <Path d="M -3 -1 L 0 3 L 3 -1 Z" fill="#0284C7" />
+                <Circle cx={0} cy={-13} r={13} fill="#0284C7" stroke="#FFFFFF" strokeWidth={2} />
+                <SvgText x={0} y={-9} textAnchor="middle" fontSize={10} fontWeight="900" fill="#FFFFFF">
+                  B
+                </SvgText>
+                <Rect x={-boxW / 2} y={-44} width={boxW} height={18} rx={5} fill="#0369A1" stroke="#38BDF8" strokeWidth={1.2} />
+                <SvgText x={0} y={-31} textAnchor="middle" fill="#FFFFFF" fontSize={9} fontWeight="900">
+                  {label}
+                </SvgText>
               </G>
             );
           })()}
 
           {/* 6. LIVE VEHICLE MARKER (Rotating Vehicle with White Arrow & Speed Tag - EXACT MATCH with Web App) */}
           <G x={truckInlinePt.x} y={truckInlinePt.y}>
+            {/* Live Location Speech Bubble Tag above truck */}
+            {(() => {
+              const label = driverCurrentLocation.shortTown;
+              const tagW = Math.max(70, Math.min(180, label.length * 7.2 + 16));
+              return (
+                <G>
+                  <Path d="M -4 -17 L 0 -13 L 4 -17 Z" fill="#0F172A" />
+                  <Rect
+                    x={-tagW / 2}
+                    y={-37}
+                    width={tagW}
+                    height={20}
+                    rx={6}
+                    fill="#0F172A"
+                    stroke="#38BDF8"
+                    strokeWidth={1.4}
+                  />
+                  <SvgText
+                    x={0}
+                    y={-23}
+                    textAnchor="middle"
+                    fill="#FFFFFF"
+                    fontSize={9.5}
+                    fontWeight="900"
+                  >
+                    {label}
+                  </SvgText>
+                </G>
+              );
+            })()}
+
             <Circle
               cx={0}
               cy={0}
@@ -1368,6 +1757,18 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
             </TouchableOpacity>
           </View>
         )}
+
+        {/* Floating Recenter Pill when panned or exploring overview */}
+        {(!isFollowTruck || panOffset.x !== 0 || panOffset.y !== 0) && (
+          <TouchableOpacity
+            style={s.inlineRecenterBtn}
+            onPress={handleFollowTruck}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="navigate-circle" size={13} color="#FFFFFF" />
+            <Text style={s.inlineRecenterTxt}>Follow Vehicle</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* ── Inline Action Bar (Cleanly placed BELOW map, NEVER overlapping the route!) ── */}
@@ -1377,19 +1778,25 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
           onPress={handleFollowTruck}
           activeOpacity={0.7}
         >
-          <Text style={[s.cleanActionPillTxt, isFollowTruck && s.cleanActionPillTxtActive]}>
-            🎯 Follow Truck
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+            <Ionicons name="navigate-circle" size={14} color={isFollowTruck ? '#FFFFFF' : '#94A3B8'} />
+            <Text style={[s.cleanActionPillTxt, isFollowTruck && s.cleanActionPillTxtActive]}>
+              Follow Vehicle (Close-Up)
+            </Text>
+          </View>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={s.cleanActionPill}
+          style={[s.cleanActionPill, !isFollowTruck && s.cleanActionPillActive]}
           onPress={handleResetRoute}
           activeOpacity={0.7}
         >
-          <Text style={s.cleanActionPillTxt}>
-            🗺️ Route Overview
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+            <Ionicons name="map" size={14} color={!isFollowTruck ? '#FFFFFF' : '#94A3B8'} />
+            <Text style={[s.cleanActionPillTxt, !isFollowTruck && s.cleanActionPillTxtActive]}>
+              Route Overview (Full Corridor)
+            </Text>
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -1403,7 +1810,7 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
               { left: `${Math.min(94, Math.max(0, tick))}%` },
             ]}
           >
-            <Text style={{ fontSize: 9 }}>🚛</Text>
+            <Ionicons name="bus" size={10} color="#FFFFFF" />
           </View>
         </View>
         <View style={s.routeRow}>
@@ -1428,9 +1835,12 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
             disabled={actionLoading}
             activeOpacity={0.85}
           >
-            <Text style={s.startTripMapTxt}>
-              {actionLoading ? 'Starting Trip...' : '🚀 Start Trip'}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <Ionicons name="play" size={13} color="#FFFFFF" />
+              <Text style={s.startTripMapTxt}>
+                {actionLoading ? 'Starting Trip...' : 'Start Trip'}
+              </Text>
+            </View>
           </TouchableOpacity>
         )}
       </View>
@@ -1457,13 +1867,13 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
               style={{
                 position: 'absolute',
                 left: Math.round(navW / 2 - nav3DW / 2),
-                top: Math.round(navH * 0.70 - nav3DH / 2),
+                top: Math.round((navModalFollowTruck ? navH * 0.70 : navH * 0.50) - nav3DH / 2),
                 width: nav3DW,
                 height: nav3DH,
                 transform: [
-                  { perspective: 850 },
-                  { rotateX: isNorthUp ? '0deg' : '52deg' },
-                  { rotateZ: `${-activeHeading}deg` },
+                  { perspective: navModalFollowTruck ? 950 : 0 },
+                  { rotateX: !navModalFollowTruck || isNorthUp ? '0deg' : '58deg' },
+                  { rotateZ: navModalFollowTruck ? `${-activeHeading}deg` : '0deg' },
                 ],
               }}
               pointerEvents="none"
@@ -1488,6 +1898,7 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
                   }}
                   resizeMode="cover"
                   fadeDuration={80}
+                  onError={handleTileError}
                 />
               ))}
 
@@ -1503,16 +1914,16 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
                       points={nav3DRoutePoints}
                       fill="none"
                       stroke="#082F49"
-                      strokeWidth={14}
+                      strokeWidth={26}
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      opacity={0.88}
+                      opacity={0.92}
                     />
                     <Polyline
                       points={nav3DRoutePoints}
                       fill="none"
                       stroke="#00D2FF"
-                      strokeWidth={8.5}
+                      strokeWidth={16}
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
@@ -1526,73 +1937,97 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
                       points={nav3DDonePoints}
                       fill="none"
                       stroke="#064E3B"
-                      strokeWidth={14}
+                      strokeWidth={26}
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      opacity={0.9}
+                      opacity={0.94}
                     />
                     <Polyline
                       points={nav3DDonePoints}
                       fill="none"
                       stroke="#10B981"
-                      strokeWidth={8.5}
+                      strokeWidth={16}
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
                   </>
                 )}
 
-                {/* Intermediate Checkpoints */}
+                {/* 3D Highway Overhead Checkpoints & Place Name Billboards */}
                 {WAYPOINTS.map((wp, idx) => {
                   const p = nav3DProj.geo2px(wp.lat, wp.lng);
-                  if (p.x < 50 || p.x > nav3DW - 50 || p.y < 50 || p.y > nav3DH - 50) return null;
+                  if (p.x < 20 || p.x > nav3DW - 20 || p.y < 20 || p.y > nav3DH - 20) return null;
                   const isDest = idx === WAYPOINTS.length - 1;
                   const isOrigin = idx === 0;
+                  const cleanName = wp.name.split(',')[0].trim();
+                  const badgeColor = isDest ? '#0284C7' : isOrigin ? '#10B981' : '#F59E0B';
+                  const badgeBorder = isDest ? '#38BDF8' : isOrigin ? '#34D399' : '#FBBF24';
+                  const badgeTitle = isDest ? `B · ${cleanName}` : isOrigin ? `A · ${cleanName}` : `${idx + 1} · ${cleanName}`;
+                  const badgeW = Math.max(110, Math.min(240, badgeTitle.length * 9.5 + 24));
+
                   return (
                     <G key={`wp-3d-${wp.id}`} x={p.x} y={p.y}>
+                      {/* Pointer needle to the road surface */}
+                      <Path d="M -6 -12 L 0 0 L 6 -12 Z" fill={badgeColor} />
+                      
+                      {/* Circular pin badge */}
                       <Circle
                         cx={0}
-                        cy={0}
-                        r={14}
-                        fill={isDest ? '#0284C7' : isOrigin ? '#10B981' : '#F59E0B'}
+                        cy={-26}
+                        r={18}
+                        fill={badgeColor}
                         stroke="#FFFFFF"
-                        strokeWidth={2.2}
+                        strokeWidth={2.8}
                       />
-                      <SvgText x={0} y={4.5} textAnchor="middle" fontSize={11}>
-                        {isDest ? '🏁' : isOrigin ? '🏢' : '📍'}
+                      <SvgText x={0} y={-20} textAnchor="middle" fontSize={14} fontWeight="900" fill="#FFFFFF">
+                        {isDest ? 'B' : isOrigin ? 'A' : String(idx + 1)}
                       </SvgText>
+
+                      {/* Prominent Highway Billboard with Clear Town / Place Name */}
                       <Rect
-                        x={-34}
-                        y={17}
-                        width={68}
-                        height={17}
-                        rx={4}
+                        x={-badgeW / 2}
+                        y={-68}
+                        width={badgeW}
+                        height={32}
+                        rx={7}
                         fill="#0F172A"
-                        stroke="#475569"
-                        strokeWidth={1}
+                        stroke={badgeBorder}
+                        strokeWidth={1.8}
                       />
-                      <SvgText x={0} y={29} textAnchor="middle" fontSize={8.5} fontWeight="bold" fill="#FFFFFF">
-                        {wp.name.split(',')[0]}
+                      <SvgText
+                        x={0}
+                        y={-47}
+                        textAnchor="middle"
+                        fontSize={13}
+                        fontWeight="900"
+                        fill="#FFFFFF"
+                      >
+                        {badgeTitle}
                       </SvgText>
                     </G>
                   );
                 })}
 
-                {/* ── LIVE VEHICLE NAVIGATION PUCK AT EXACT FOCAL PIVOT ── */}
-                <G x={nav3DW / 2 + nav3DPanOffset.x} y={nav3DH / 2 + nav3DPanOffset.y}>
-                  {/* Pulsing beacon aura */}
-                  <Circle cx={0} cy={0} r={34} fill="rgba(37, 99, 235, 0.25)" />
-                  <Circle cx={0} cy={0} r={22} fill="rgba(56, 189, 248, 0.45)" stroke="#38BDF8" strokeWidth={1.5} />
-                  
-                  {/* Google Maps White Ring & Deep Blue Puck */}
-                  <Circle cx={0} cy={0} r={14} fill="#2563EB" stroke="#FFFFFF" strokeWidth={3.5} />
-                  <Circle cx={0} cy={0} r={6} fill="#FFFFFF" />
+                {/* ── LIVE VEHICLE NAVIGATION PUCK AT EXACT FOCAL POSITION ── */}
+                {(() => {
+                  const pTruck = nav3DProj.geo2px(truckGeo.lat, truckGeo.lng);
+                  return (
+                    <G x={pTruck.x} y={pTruck.y}>
+                      {/* Pulsing beacon aura */}
+                      <Circle cx={0} cy={0} r={52} fill="rgba(37, 99, 235, 0.22)" />
+                      <Circle cx={0} cy={0} r={34} fill="rgba(56, 189, 248, 0.40)" stroke="#38BDF8" strokeWidth={2.0} />
+                      
+                      {/* Google Maps White Ring & Deep Blue Puck */}
+                      <Circle cx={0} cy={0} r={20} fill="#2563EB" stroke="#FFFFFF" strokeWidth={4.5} />
+                      <Circle cx={0} cy={0} r={8} fill="#FFFFFF" />
 
-                  {/* Forward Navigation Arrow (oriented towards vehicle's true travel heading in SVG canvas) */}
-                  <G transform={`rotate(${truckGeo.heading}, 0, 0)`}>
-                    <Path d="M 0 -25 L 7 -14 L 0 -17 L -7 -14 Z" fill="#FFFFFF" />
-                  </G>
-                </G>
+                      {/* Forward Navigation Arrow */}
+                      <G transform={`rotate(${truckGeo.heading}, 0, 0)`}>
+                        <Path d="M 0 -36 L 10 -20 L 0 -24 L -10 -20 Z" fill="#FFFFFF" />
+                      </G>
+                    </G>
+                  );
+                })()}
               </Svg>
             </View>
 
@@ -1623,7 +2058,7 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
                     onPress={() => setShowSearchModal(true)}
                     activeOpacity={0.8}
                   >
-                    <Text style={{ fontSize: 16 }}>✦</Text>
+                    <Ionicons name="sparkles" size={15} color="#38BDF8" />
                   </TouchableOpacity>
                 </View>
 
@@ -1647,6 +2082,31 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
 
             {/* 3. FLOATING RIGHT COLUMN CONTROLS */}
             <View style={s.navRightControls} pointerEvents="box-none">
+              {/* Route Overview ⟷ Follow Vehicle Toggle */}
+              <TouchableOpacity
+                style={[
+                  s.navFloatingCircleBtn,
+                  !navModalFollowTruck && { borderColor: '#38BDF8', backgroundColor: '#0284C7' },
+                ]}
+                onPress={() => {
+                  setNavModalFollowTruck(!navModalFollowTruck);
+                  setNav3DPanOffset({ x: 0, y: 0 });
+                  setNav3DZoom(1.0);
+                  if (navModalFollowTruck) {
+                    setIsNorthUp(true);
+                  } else {
+                    setIsNorthUp(false);
+                  }
+                }}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name={navModalFollowTruck ? 'map-outline' : 'navigate-circle'}
+                  size={19}
+                  color={!navModalFollowTruck ? '#FFFFFF' : '#38BDF8'}
+                />
+              </TouchableOpacity>
+
               {/* Compass Needle Button (Shows True North; tap to reset manual rotation or toggle North-Up) */}
               <TouchableOpacity
                 style={[
@@ -1709,7 +2169,7 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
                 onPress={() => setShowSearchModal(true)}
                 activeOpacity={0.8}
               >
-                <Text style={{ fontSize: 16 }}>🔍</Text>
+                <Ionicons name="search" size={16} color="#FFFFFF" />
               </TouchableOpacity>
 
               {/* Sound Guidance Toggle */}
@@ -1718,7 +2178,7 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
                 onPress={() => setIsMuted(!isMuted)}
                 activeOpacity={0.8}
               >
-                <Text style={{ fontSize: 16 }}>{isMuted ? '🔇' : '🔊'}</Text>
+                <Ionicons name={isMuted ? 'volume-mute' : 'volume-high'} size={16} color="#FFFFFF" />
               </TouchableOpacity>
 
               {/* 3D / 2D Perspective Toggle */}
@@ -1732,11 +2192,12 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
                 </Text>
               </TouchableOpacity>
 
-              {/* Recenter button when panned, zoomed, or manually rotated */}
-              {(nav3DPanOffset.x !== 0 || nav3DPanOffset.y !== 0 || nav3DZoom !== 1.0 || manualHeading !== null) && (
+              {/* Recenter button when panned, zoomed, in overview, or manually rotated */}
+              {(!navModalFollowTruck || nav3DPanOffset.x !== 0 || nav3DPanOffset.y !== 0 || nav3DZoom !== 1.0 || manualHeading !== null) && (
                 <TouchableOpacity
                   style={[s.navFloatingCircleBtn, { borderColor: '#10B981', backgroundColor: '#064E3B' }]}
                   onPress={() => {
+                    setNavModalFollowTruck(true);
                     setNav3DPanOffset({ x: 0, y: 0 });
                     setNav3DZoom(1.0);
                     setManualHeading(null);
@@ -1744,14 +2205,14 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
                   }}
                   activeOpacity={0.8}
                 >
-                  <Text style={{ fontSize: 16 }}>🎯</Text>
+                  <Ionicons name="locate" size={16} color="#34D399" />
                 </TouchableOpacity>
               )}
 
               {/* Zoom In */}
               <TouchableOpacity
                 style={s.navFloatingCircleBtn}
-                onPress={() => setNav3DZoom((z) => Math.min(3.5, Math.round((z + 0.25) * 100) / 100))}
+                onPress={() => setNav3DZoom((z) => Math.min(8.0, Math.round((z + 0.35) * 100) / 100))}
                 activeOpacity={0.8}
               >
                 <Text style={{ fontSize: 18, color: '#FFFFFF', fontWeight: 'bold' }}>＋</Text>
@@ -1765,7 +2226,7 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
               {/* Zoom Out */}
               <TouchableOpacity
                 style={s.navFloatingCircleBtn}
-                onPress={() => setNav3DZoom((z) => Math.max(0.4, Math.round((z - 0.25) * 100) / 100))}
+                onPress={() => setNav3DZoom((z) => Math.max(0.35, Math.round((z - 0.35) * 100) / 100))}
                 activeOpacity={0.8}
               >
                 <Text style={{ fontSize: 18, color: '#FFFFFF', fontWeight: 'bold' }}>－</Text>
@@ -1801,18 +2262,37 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
                   {/* ETA & Distance Info */}
                   <View style={s.navEtaCol}>
                     <Text style={s.navEtaBigTxt}>{etaDurationText}</Text>
-                    <Text style={s.navSubEtaTxt}>
-                      {remainingKm} km • {arrivalClockTime}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Ionicons name="location" size={11} color="#38BDF8" />
+                      <Text style={s.navSubEtaTxt} numberOfLines={1}>
+                        {driverCurrentLocation.townName} • Next: {driverCurrentLocation.nextStopName} ({driverCurrentLocation.distToNext} km)
+                      </Text>
+                    </View>
                   </View>
 
-                  {/* Alternate Route / Perspective Toggle */}
+                  {/* Route Overview vs Follow Toggle */}
                   <TouchableOpacity
-                    style={s.navAltRouteBtn}
-                    onPress={() => setIsNorthUp(!isNorthUp)}
+                    style={[
+                      s.navAltRouteBtn,
+                      !navModalFollowTruck && { backgroundColor: '#0284C7', borderColor: '#38BDF8' },
+                    ]}
+                    onPress={() => {
+                      setNavModalFollowTruck(!navModalFollowTruck);
+                      setNav3DPanOffset({ x: 0, y: 0 });
+                      setNav3DZoom(1.0);
+                      if (navModalFollowTruck) {
+                        setIsNorthUp(true);
+                      } else {
+                        setIsNorthUp(false);
+                      }
+                    }}
                     activeOpacity={0.8}
                   >
-                    <Text style={{ fontSize: 18, color: '#FFFFFF' }}>🔀</Text>
+                    <Ionicons
+                      name={navModalFollowTruck ? 'map-outline' : 'navigate-circle'}
+                      size={18}
+                      color="#FFFFFF"
+                    />
                   </TouchableOpacity>
                 </View>
 
@@ -1827,7 +2307,10 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
                     {actionLoading ? (
                       <ActivityIndicator size="small" color="#FFFFFF" />
                     ) : (
-                      <Text style={s.navStartTripBtnTxt}>🚀 Start Trip</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        <Ionicons name="play" size={14} color="#FFFFFF" />
+                        <Text style={s.navStartTripBtnTxt}>Start Trip</Text>
+                      </View>
                     )}
                   </TouchableOpacity>
                 )}
@@ -1850,9 +2333,12 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
               >
                 <View style={s.searchModalSheet} onStartShouldSetResponder={() => true}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                    <Text style={{ fontSize: 15, fontWeight: '900', color: '#FFFFFF' }}>
-                      🔍 Corridor Stops along {highwayShield}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Ionicons name="search" size={15} color="#38BDF8" />
+                      <Text style={{ fontSize: 15, fontWeight: '900', color: '#FFFFFF' }}>
+                        Corridor Stops along {highwayShield}
+                      </Text>
+                    </View>
                     <TouchableOpacity onPress={() => setShowSearchModal(false)}>
                       <Text style={{ color: '#94A3B8', fontSize: 18, fontWeight: 'bold' }}>✕</Text>
                     </TouchableOpacity>
@@ -1860,7 +2346,7 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
 
                   <View style={{ gap: 10 }}>
                     <View style={s.searchStopCard}>
-                      <Text style={{ fontSize: 20 }}>⛽</Text>
+                      <Ionicons name="speedometer-outline" size={20} color="#38BDF8" />
                       <View style={{ flex: 1 }}>
                         <Text style={s.searchStopTitle}>TotalEnergies / Shell Station</Text>
                         <Text style={s.searchStopSub}>High-speed diesel & driver rest · 12 km ahead</Text>
@@ -1868,7 +2354,7 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
                     </View>
 
                     <View style={s.searchStopCard}>
-                      <Text style={{ fontSize: 20 }}>⚖️</Text>
+                      <Ionicons name="scale-outline" size={20} color="#F59E0B" />
                       <View style={{ flex: 1 }}>
                         <Text style={s.searchStopTitle}>National Weighbridge & Scale</Text>
                         <Text style={s.searchStopSub}>Axle load verification station · 28 km ahead</Text>
@@ -1876,7 +2362,7 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
                     </View>
 
                     <View style={s.searchStopCard}>
-                      <Text style={{ fontSize: 20 }}>🛂</Text>
+                      <Ionicons name="shield-checkmark-outline" size={20} color="#10B981" />
                       <View style={{ flex: 1 }}>
                         <Text style={s.searchStopTitle}>Customs Inspection Gate</Text>
                         <Text style={s.searchStopSub}>Transit clearance checkpoint · 45 km ahead</Text>
@@ -1884,7 +2370,7 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
                     </View>
 
                     <View style={s.searchStopCard}>
-                      <Text style={{ fontSize: 20 }}>🛏️</Text>
+                      <Ionicons name="bed-outline" size={20} color="#818CF8" />
                       <View style={{ flex: 1 }}>
                         <Text style={s.searchStopTitle}>Safe Driver Rest Area & Parking</Text>
                         <Text style={s.searchStopSub}>Secure truck parking & cafeteria · 62 km ahead</Text>
@@ -1937,26 +2423,71 @@ const s = StyleSheet.create({
     position: 'relative',
     touchAction: 'none' as any,
   },
-  gpsBadgeOverlay: {
+  driverLiveLocationBar: {
     position: 'absolute',
     top: 8,
     left: 8,
-    backgroundColor: 'rgba(15, 23, 42, 0.9)',
-    paddingHorizontal: 8,
-    paddingVertical: 3.5,
-    borderRadius: 6,
+    maxWidth: '74%',
+    backgroundColor: 'rgba(15, 23, 42, 0.94)',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1.2,
+    borderColor: '#0284C7',
+    zIndex: 999,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  driverLiveLocationRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    borderWidth: 1,
-    borderColor: '#334155',
-    zIndex: 999,
   },
-  gpsBadgeTxt: {
+  locationPulseDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: '#10B981',
+  },
+  driverLiveLocationTitle: {
+    fontSize: 10.5,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: 0.2,
+  },
+  driverLiveLocationSub: {
+    fontSize: 8.5,
+    fontWeight: '700',
+    color: '#38BDF8',
+    marginTop: 1.5,
+  },
+  inlineRecenterBtn: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: '#0284C7',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#38BDF8',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    zIndex: 999,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  inlineRecenterTxt: {
+    color: '#FFFFFF',
     fontSize: 9.5,
     fontWeight: '800',
-    color: '#FFFFFF',
-    fontFamily: 'monospace',
   },
   inlineZoomControl: {
     position: 'absolute',
@@ -2201,9 +2732,10 @@ const s = StyleSheet.create({
     gap: 8,
   },
   navTowardTxt: {
-    fontSize: 16,
+    fontSize: 17,
     color: '#FFFFFF',
-    fontWeight: '600',
+    fontWeight: '800',
+    flexShrink: 1,
   },
   navHighwayBadge: {
     backgroundColor: '#FBBF24',

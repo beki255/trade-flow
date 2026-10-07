@@ -17,6 +17,7 @@ import {
   ShieldAlert,
   Clock,
   MapPin,
+  ArrowRight,
   CheckCircle2,
   AlertTriangle,
   Radio,
@@ -406,6 +407,44 @@ const createIncidentMarkerIcon = (category: string, severity: string) => {
   });
 };
 
+// Smart location formatter to clean raw Nominatim reverse-geocoded tokens
+const formatCleanCity = (raw?: string): { city: string; detail: string } => {
+  if (!raw || typeof raw !== 'string') return { city: 'Corridor Hub', detail: 'Strategic Corridor' };
+  const parts = raw.split(',').map((p) => p.trim()).filter(Boolean);
+  if (parts.length <= 1) return { city: raw.trim(), detail: 'Strategic Corridor' };
+
+  const seen = new Set<string>();
+  const cleaned: string[] = [];
+
+  for (const part of parts) {
+    const base = part.replace(/\s*\(.*?\)\s*/g, '').trim();
+    if (!base) continue;
+
+    const normalized = base.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (normalized === 'ethiopia' || normalized === 'djibouti' || normalized === 'somalia') continue;
+
+    const firstWord = base.toLowerCase().split(/\s+/)[0];
+    const isDuplicate = Array.from(seen).some((s) => {
+      if (s === normalized) return true;
+      if (firstWord.length >= 4 && s.startsWith(firstWord)) return true;
+      if (normalized.includes(s) || s.includes(normalized)) return true;
+      return false;
+    });
+
+    if (isDuplicate) continue;
+    seen.add(normalized);
+    cleaned.push(base.replace(/\b\w/g, (c) => c.toUpperCase()));
+  }
+
+  const primary = cleaned[0] || parts[0];
+  const secondary = cleaned.slice(1).join(', ') || 'Corridor Route Point';
+
+  return {
+    city: primary,
+    detail: secondary,
+  };
+};
+
 export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, allLoads = [] }) => {
   const [activeTileLayer, setActiveTileLayer] = useState<'STREETS' | 'DARK' | 'SATELLITE'>('STREETS');
   const [activeWeather, setActiveWeather] = useState<'CLEAR' | 'RAIN' | 'DUST'>('CLEAR');
@@ -433,6 +472,7 @@ export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, 
     truckPlate: string;
     status: string;
     lastUpdated?: string;
+    telematicsCompliance?: any;
   }>({
     speedKmh: 0,
     isMoving: false,
@@ -469,7 +509,7 @@ export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, 
     if (shipmentData) {
       return {
         id: shipmentData.rawLoadId ?? shipmentData.id,
-        loadCode: shipmentData.loadId ?? 'TF-SH-??',
+        loadCode: shipmentData.title ?? 'Freight Consignment',
         title: shipmentData.title ?? 'Freight Consignment',
         // Use REAL coords entered by shipper — no fallback defaults
         origin: shipmentData.origin ?? '',
@@ -900,84 +940,80 @@ export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, 
 
   return (
     <div className="space-y-6">
-      
-      {/* Consignment Selection Bar (Allows tracking any posted load from database) */}
-      <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-700 font-bold shrink-0">
-            <Package className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-[10px] font-black uppercase tracking-widest text-sky-700">
-              Active Consignment Route
-            </div>
-            <h3 className="text-base font-black text-slate-900 leading-snug flex items-center gap-2 capitalize">
-              {activeLoad.title}
-            </h3>
-          </div>
-        </div>
-
-        {/* Load Selector Dropdown */}
-        {allLoads.length > 1 && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-500">Track Consignment:</span>
-            <div className="relative">
-              <select
-                value={selectedLoadId || activeLoad.id}
-                onChange={(e) => setSelectedLoadId(e.target.value)}
-                className="appearance-none pl-3 pr-8 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer outline-none focus:ring-2 focus:ring-sky-500"
-              >
-                {allLoads.map((load) => (
-                  <option key={load.id} value={load.id}>
-                    {load.title} ({load.origin.split(',')[0]} ➔ {load.destination.split(',')[0]})
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 top-3 pointer-events-none" />
-            </div>
-          </div>
-        )}
-      </div>
-
       {/* Posted Origin & Destination Address Route Banner */}
-      <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 via-sky-50 to-indigo-50 border border-sky-100 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-black shrink-0 shadow-sm">
-            A
-          </div>
-          <div>
-            <div className="text-[10px] font-black uppercase tracking-wider text-emerald-800">
-              Origin (Posted Pickup Point)
+      {(() => {
+        const originInfo = formatCleanCity(activeLoad.origin);
+        const destInfo = formatCleanCity(activeLoad.destination);
+        const estDurationHours = totalCorridorKm > 0 ? Math.round((totalCorridorKm / 48) * 10) / 10 : 0;
+
+        return (
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/* Origin Point */}
+            <div className="flex items-start gap-3.5 flex-1 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center font-black text-sm shrink-0 shadow-xs mt-0.5">
+                A
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] font-black uppercase tracking-wider text-emerald-700">
+                  Origin (Pickup Point)
+                </div>
+                <div className="text-sm sm:text-base font-black text-slate-900 leading-snug break-words">
+                  {originInfo.city}
+                </div>
+                {originInfo.detail ? (
+                  <div className="text-xs font-semibold text-slate-500 mt-0.5 leading-normal break-words">
+                    {originInfo.detail}
+                  </div>
+                ) : null}
+              </div>
             </div>
-            <div className="text-xs font-bold text-slate-900 line-clamp-1">{activeLoad.origin}</div>
-          </div>
-        </div>
 
-        <div className="hidden sm:flex items-center justify-center text-sky-600 font-bold text-sm px-2">
-          ➔ ➔ ➔
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-sky-600 text-white flex items-center justify-center text-xs font-black shrink-0 shadow-sm">
-            B
-          </div>
-          <div>
-            <div className="text-[10px] font-black uppercase tracking-wider text-sky-800">
-              Destination (Posted Delivery Point)
+            {/* Connecting Corridor Pathway */}
+            <div className="flex items-center justify-center shrink-0 px-2 py-1 md:py-0">
+              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200/80 px-3.5 py-1.5 rounded-full shadow-xs">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-xs font-black text-slate-800 tracking-tight">
+                  {totalCorridorKm > 0 ? `${totalCorridorKm} km` : 'Strategic'} Corridor
+                </span>
+                <ArrowRight className="w-3.5 h-3.5 text-sky-600" />
+              </div>
             </div>
-            <div className="text-xs font-bold text-slate-900 line-clamp-1">{activeLoad.destination}</div>
-          </div>
-        </div>
 
-        <div className="text-right sm:border-l sm:border-slate-200 sm:pl-4">
-          <div className="text-[10px] font-bold uppercase text-slate-400">Total Route Distance</div>
-          <div className="text-xs font-black text-slate-800">
-            {totalCorridorKm > 0
-              ? `${totalCorridorKm} km (~${Math.round((totalCorridorKm / 48) * 10) / 10} hrs)`
-              : '-- km'}
+            {/* Destination Point (Full Address Never Truncated) */}
+            <div className="flex items-start gap-3.5 flex-[1.4] min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-sky-50 border border-sky-200 text-sky-700 flex items-center justify-center font-black text-sm shrink-0 shadow-xs mt-0.5">
+                B
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] font-black uppercase tracking-wider text-sky-700">
+                  Destination (Delivery Point)
+                </div>
+                <div className="text-sm sm:text-base font-black text-slate-900 leading-snug break-words" title={activeLoad.destination}>
+                  {destInfo.city}
+                </div>
+                {destInfo.detail ? (
+                  <div className="text-xs font-semibold text-slate-500 mt-0.5 leading-normal break-words">
+                    {destInfo.detail}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            {/* Total Route Distance & Est Time */}
+            <div className="md:border-l md:border-slate-200 md:pl-5 flex md:flex-col justify-between items-center md:items-end border-t md:border-t-0 pt-3 md:pt-0 border-slate-100 shrink-0">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Corridor Distance
+              </div>
+              <div className="text-sm font-black text-slate-900">
+                {totalCorridorKm > 0 ? `${totalCorridorKm} km` : '-- km'}
+              </div>
+              <div className="text-[11px] font-bold text-sky-700">
+                {estDurationHours > 0 ? `~${estDurationHours} hrs transit` : ''}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* Exception Condition 6.10: Mobile App Offline > 1 Hour — Dispatcher Alert & SMS Milestone Fallback */}
       {serverTelemetry.telematicsCompliance?.status === 'OFFLINE_OVER_1_HOUR' && (
@@ -1007,74 +1043,159 @@ export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, 
       )}
 
       {/* 4.3 Live Telemetry & Dynamic ETA Telematics Banner (SRS 4.3.1, 4.3.2, 4.3.3) */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-        {/* KPI 1: Dynamic ETA with Confidence Margin (SRS 4.3.3) */}
-        <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        {/* KPI 1: Dynamic ETA with Confidence Margin */}
+        <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-sm flex flex-col justify-between space-y-2.5">
           <div className="flex items-center justify-between">
-            <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500">Dynamic ETA (P95)</span>
-            <Clock className="w-4 h-4 text-sky-600" />
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+              Dynamic ETA
+            </span>
+            <div className="w-7 h-7 rounded-lg bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-600">
+              <Clock className="w-4 h-4" />
+            </div>
           </div>
-          <div className="text-lg font-black text-slate-900 tracking-tight">
-            {serverTelemetry.status === 'DELIVERED'
-              ? 'Delivered ✓'
-              : !serverTelemetry.isInTransit
-              ? 'Awaiting Departure'
-              : dynamicEta.confidenceText}
+          <div>
+            <div className="text-xl font-black text-slate-900 tracking-tight flex items-baseline gap-2">
+              <span>
+                {serverTelemetry.status === 'DELIVERED'
+                  ? 'Delivered'
+                  : !serverTelemetry.isInTransit
+                  ? 'Awaiting'
+                  : dynamicEta.etaTime}
+              </span>
+              {serverTelemetry.isInTransit && (
+                <span className="text-xs font-bold text-slate-400">
+                  ±{dynamicEta.confidenceMargin}m
+                </span>
+              )}
+            </div>
+            <div className="mt-1 flex items-center gap-1.5">
+              <span
+                className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                  serverTelemetry.status === 'DELIVERED'
+                    ? 'bg-purple-50 text-purple-700 border-purple-200'
+                    : !serverTelemetry.isInTransit
+                    ? 'bg-slate-100 text-slate-700 border-slate-200'
+                    : currentTruckTelemetry.speedKmh > 0
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-amber-50 text-amber-700 border-amber-200'
+                }`}
+              >
+                {serverTelemetry.status === 'DELIVERED'
+                  ? 'Handover Ready'
+                  : !serverTelemetry.isInTransit
+                  ? 'At Origin'
+                  : currentTruckTelemetry.speedKmh > 0
+                  ? 'In Transit'
+                  : 'Rest / Stationary'}
+              </span>
+            </div>
           </div>
-          <div className="text-[11px] font-semibold text-slate-500 flex items-center justify-between">
+          <div className="text-[11px] font-medium text-slate-500 pt-2 border-t border-slate-100 flex items-center justify-between">
             <span>Remaining:</span>
             <span className="font-bold text-sky-700">{dynamicEta.formattedDuration}</span>
           </div>
         </div>
 
-        {/* KPI 2: Live Speed & Motion (SRS 4.3.1) */}
-        <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1">
+        {/* KPI 2: Live Speed & Motion */}
+        <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-sm flex flex-col justify-between space-y-2.5">
           <div className="flex items-center justify-between">
-            <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500">Vehicle Speed</span>
-            <Gauge className="w-4 h-4 text-emerald-600" />
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+              Live Speed
+            </span>
+            <div className="w-7 h-7 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
+              <Gauge className="w-4 h-4" />
+            </div>
           </div>
-          <div className="text-lg font-black text-emerald-700 tracking-tight flex items-baseline gap-1">
-            <span>{currentTruckTelemetry.speedKmh}</span>
-            <span className="text-xs font-bold text-slate-500">km/h</span>
+          <div>
+            <div className="text-xl font-black text-slate-900 tracking-tight flex items-baseline gap-1">
+              <span>{currentTruckTelemetry.speedKmh}</span>
+              <span className="text-xs font-bold text-slate-500">km/h</span>
+            </div>
+            <div className="mt-1 flex items-center gap-1.5">
+              <span
+                className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                  currentTruckTelemetry.speedKmh > 0
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-amber-50 text-amber-700 border-amber-200'
+                }`}
+              >
+                {currentTruckTelemetry.speedKmh > 0 ? 'Driving on Route' : 'Vehicle Resting'}
+              </span>
+            </div>
           </div>
-          <div className="text-[11px] font-semibold text-slate-500 flex items-center justify-between">
-            <span>Status:</span>
-            <span className={`font-bold ${currentTruckTelemetry.speedKmh > 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
-              {currentTruckTelemetry.speedKmh > 0 ? 'Moving on Highway' : 'Rest / Stationary'}
+          <div className="text-[11px] font-medium text-slate-500 pt-2 border-t border-slate-100 flex items-center justify-between">
+            <span>GPS Status:</span>
+            <span className="font-bold text-emerald-700">Active Live Ping</span>
+          </div>
+        </div>
+
+        {/* KPI 3: Fuel Level & Range */}
+        <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-sm flex flex-col justify-between space-y-2.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+              Fuel Tank
+            </span>
+            <div className="w-7 h-7 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
+              <Fuel className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <div className="text-xl font-black text-slate-900 tracking-tight flex items-baseline gap-1">
+              <span>{currentTruckTelemetry.fuelPct}%</span>
+              <span className="text-xs font-bold text-slate-500">Capacity</span>
+            </div>
+            {/* Visual Fuel Bar */}
+            <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-2">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${
+                  currentTruckTelemetry.fuelPct > 40
+                    ? 'bg-emerald-500'
+                    : currentTruckTelemetry.fuelPct > 20
+                    ? 'bg-amber-500'
+                    : 'bg-rose-500'
+                }`}
+                style={{ width: `${Math.min(100, Math.max(0, currentTruckTelemetry.fuelPct))}%` }}
+              />
+            </div>
+          </div>
+          <div className="text-[11px] font-medium text-slate-500 pt-2 border-t border-slate-100 flex items-center justify-between">
+            <span>Est. Range:</span>
+            <span className="font-bold text-slate-800">
+              ~{Math.round(currentTruckTelemetry.fuelPct * 5.2)} km
             </span>
           </div>
         </div>
 
-        {/* KPI 3: Fuel Level & Range (SRS 4.3.1) */}
-        <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1">
+        {/* KPI 4: Heading & Corridor Distance */}
+        <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-sm flex flex-col justify-between space-y-2.5">
           <div className="flex items-center justify-between">
-            <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500">Fuel Level</span>
-            <Fuel className="w-4 h-4 text-amber-500" />
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+              Trip Progress
+            </span>
+            <div className="w-7 h-7 rounded-lg bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600">
+              <Compass className="w-4 h-4" />
+            </div>
           </div>
-          <div className="text-lg font-black text-slate-900 tracking-tight flex items-baseline gap-1">
-            <span>{currentTruckTelemetry.fuelPct}</span>
-            <span className="text-xs font-bold text-slate-500">% Tank</span>
+          <div>
+            <div className="text-xl font-black text-slate-900 tracking-tight flex items-baseline gap-1.5">
+              <span>{Math.round(simProgress)}%</span>
+              <span className="text-xs font-bold text-slate-500">
+                ({currentTruckTelemetry.heading}° Bearing)
+              </span>
+            </div>
+            {/* Visual Progress Bar */}
+            <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-2">
+              <div
+                className="h-full bg-indigo-600 rounded-full transition-all duration-500"
+                style={{ width: `${Math.min(100, Math.max(0, simProgress))}%` }}
+              />
+            </div>
           </div>
-          <div className="text-[11px] font-semibold text-slate-500 flex items-center justify-between">
-            <span>Est. Range:</span>
-            <span className="font-bold text-slate-700">~{Math.round(currentTruckTelemetry.fuelPct * 5.2)} km</span>
-          </div>
-        </div>
-
-        {/* KPI 4: Heading & Corridor Distance (SRS 4.3.1) */}
-        <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500">Heading & Progress</span>
-            <Compass className="w-4 h-4 text-indigo-600" />
-          </div>
-          <div className="text-lg font-black text-indigo-900 tracking-tight flex items-baseline gap-1">
-            <span>{currentTruckTelemetry.heading}°</span>
-            <span className="text-xs font-bold text-slate-500">Bearing</span>
-          </div>
-          <div className="text-[11px] font-semibold text-slate-500 flex items-center justify-between">
-            <span>Progress:</span>
+          <div className="text-[11px] font-medium text-slate-500 pt-2 border-t border-slate-100 flex items-center justify-between">
+            <span>Covered:</span>
             <span className="font-bold text-indigo-700">
-              {Math.round((simProgress / 100) * totalCorridorKm)} / {totalCorridorKm} km ({Math.round(simProgress)}%)
+              {Math.round((simProgress / 100) * totalCorridorKm)} / {totalCorridorKm} km
             </span>
           </div>
         </div>

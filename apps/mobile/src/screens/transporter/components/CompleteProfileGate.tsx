@@ -149,7 +149,7 @@ export const CompleteProfileGate: React.FC<CompleteProfileGateProps> = ({
       if (res.ok && data.user) {
         onProfileCompleted(data.user);
         Alert.alert(
-          '✅ Profile Submitted!',
+          'Profile Submitted',
           'Your compliance credentials have been submitted for review. Your account will automatically unlock once approved by TradeFlow Administration.'
         );
       } else {
@@ -233,12 +233,18 @@ export const CompleteProfileGate: React.FC<CompleteProfileGateProps> = ({
 
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>GIT Cargo Insurance:</Text>
-                <Text style={[styles.summaryValue, { color: '#059669', fontWeight: '800' }]}>Attached & Submitted ✅</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Ionicons name="checkmark-circle" size={14} color="#059669" />
+                  <Text style={[styles.summaryValue, { color: '#059669', fontWeight: '800' }]}>Attached & Submitted</Text>
+                </View>
               </View>
 
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>FTA Roadworthiness:</Text>
-                <Text style={[styles.summaryValue, { color: '#059669', fontWeight: '800' }]}>Certified & Submitted ✅</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Ionicons name="checkmark-circle" size={14} color="#059669" />
+                  <Text style={[styles.summaryValue, { color: '#059669', fontWeight: '800' }]}>Certified & Submitted</Text>
+                </View>
               </View>
             </View>
 
@@ -347,7 +353,12 @@ export const CompleteProfileGate: React.FC<CompleteProfileGateProps> = ({
               })}
               activeOpacity={0.8}
             >
-              <Text style={styles.uploadCardIcon}>{insuranceDocName ? '✅' : '📄'}</Text>
+              <Ionicons
+                name={insuranceDocName ? 'checkmark-circle' : 'document-text-outline'}
+                size={22}
+                color={insuranceDocName ? '#059669' : '#64748B'}
+                style={{ marginRight: 10 }}
+              />
               <View style={{ flex: 1 }}>
                 <Text style={styles.uploadCardTitle}>Goods-in-Transit (GIT) Insurance *</Text>
                 <Text style={styles.uploadCardStatus} numberOfLines={1}>
@@ -368,7 +379,12 @@ export const CompleteProfileGate: React.FC<CompleteProfileGateProps> = ({
               })}
               activeOpacity={0.8}
             >
-              <Text style={styles.uploadCardIcon}>{roadworthinessDocName ? '✅' : '🛡️'}</Text>
+              <Ionicons
+                name={roadworthinessDocName ? 'checkmark-circle' : 'shield-outline'}
+                size={22}
+                color={roadworthinessDocName ? '#059669' : '#64748B'}
+                style={{ marginRight: 10 }}
+              />
               <View style={{ flex: 1 }}>
                 <Text style={styles.uploadCardTitle}>FTA Roadworthiness Certificate *</Text>
                 <Text style={styles.uploadCardStatus} numberOfLines={1}>

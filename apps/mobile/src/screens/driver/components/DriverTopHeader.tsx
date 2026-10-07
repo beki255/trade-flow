@@ -2,10 +2,14 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { driverStyles as styles } from '../driverStyles';
+import { LanguageSwitcher } from '../../../components/LanguageSwitcher';
+import { useLanguage } from '../../../context/LanguageContext';
+import { isValidImageUri } from '../../../utils/imageUtils';
+import { WarningIcon } from '../../../components/AppIcons';
 
 interface DriverTopHeaderProps {
   user?: any;
-  onLogout: () => void;
+  onLogout?: () => void;
   sosActive: boolean;
   onToggleSos: () => void;
   onOpenProfile: () => void;
@@ -18,6 +22,7 @@ export const DriverTopHeader: React.FC<DriverTopHeaderProps> = ({
   onToggleSos,
   onOpenProfile,
 }) => {
+  const { t } = useLanguage();
   const photoUrl = user?.photoUrl || user?.roadworthinessDoc || user?.insuranceDoc;
 
   return (
@@ -26,7 +31,7 @@ export const DriverTopHeader: React.FC<DriverTopHeaderProps> = ({
       <View style={styles.topHeader}>
         {/* Tapping driver info/avatar opens Profile Modal */}
         <TouchableOpacity
-          style={{ flex: 1, marginRight: 12 }}
+          style={{ flex: 1, marginRight: 8 }}
           onPress={onOpenProfile}
           activeOpacity={0.8}
         >
@@ -34,9 +39,9 @@ export const DriverTopHeader: React.FC<DriverTopHeaderProps> = ({
             {/* Circular Profile Photo / Avatar */}
             <View
               style={{
-                width: 42,
-                height: 42,
-                borderRadius: 21,
+                width: 40,
+                height: 40,
+                borderRadius: 20,
                 backgroundColor: '#0284C7',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -46,10 +51,10 @@ export const DriverTopHeader: React.FC<DriverTopHeaderProps> = ({
                 position: 'relative',
               }}
             >
-              {photoUrl ? (
+              {isValidImageUri(photoUrl) ? (
                 <Image
                   source={{ uri: photoUrl }}
-                  style={{ width: 42, height: 42, borderRadius: 21 }}
+                  style={{ width: 40, height: 40, borderRadius: 20 }}
                   resizeMode="cover"
                 />
               ) : (
@@ -73,12 +78,12 @@ export const DriverTopHeader: React.FC<DriverTopHeaderProps> = ({
               </View>
             </View>
 
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <Text style={styles.brandTitle} numberOfLines={1}>
-                  {user?.fullName || 'TradeFlow Driver'}
+            <View style={{ flex: 1, minWidth: 0, paddingRight: 4 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                <Text style={styles.brandTitle} numberOfLines={1} ellipsizeMode="tail">
+                  {user?.fullName || t('driverTitle')}
                 </Text>
-                <Ionicons name="chevron-forward" size={13} color="#94A3B8" />
+                <Ionicons name="chevron-forward" size={12} color="#94A3B8" />
               </View>
               <Text style={styles.truckSub} numberOfLines={1}>
                 {user?.driverProfile?.licenseClass || 'Grade 5 Heavy'} • {user?.driverProfile?.assignedVehicle?.plateNumber || 'Fleet Vehicle'}
@@ -87,12 +92,9 @@ export const DriverTopHeader: React.FC<DriverTopHeaderProps> = ({
           </View>
         </TouchableOpacity>
 
-        {/* Right side: ONLY Logout button (Profile button removed as requested) */}
+        {/* Right side: Language Switcher placed at far right */}
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <TouchableOpacity style={styles.logoutBtn} onPress={onLogout}>
-            <Ionicons name="log-out-outline" size={12} color="#FFFFFF" style={{ marginRight: 3 }} />
-            <Text style={styles.logoutText}>Logout</Text>
-          </TouchableOpacity>
+          <LanguageSwitcher dark={true} />
         </View>
       </View>
 
@@ -102,9 +104,12 @@ export const DriverTopHeader: React.FC<DriverTopHeaderProps> = ({
         onPress={onToggleSos}
         activeOpacity={0.85}
       >
-        <Ionicons name="warning" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
-        <Text style={styles.sosText}>
-          {sosActive ? 'SOS EMERGENCY SIGNAL ACTIVE (BROADCASTING)' : 'EMERGENCY SOS ASSISTANCE'}
+        <WarningIcon
+          size={14}
+          color={sosActive ? '#FFFFFF' : '#EF4444'}
+        />
+        <Text style={[styles.sosText, sosActive && styles.sosTextActive, { marginLeft: 6 }]}>
+          {sosActive ? t('sosActive') : t('sosEmergency')}
         </Text>
       </TouchableOpacity>
     </>

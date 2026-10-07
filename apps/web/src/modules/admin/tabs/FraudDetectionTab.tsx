@@ -18,8 +18,10 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { FraudAlertItem, FraudStats } from '../types';
+import { useLanguage } from '../../../context/LanguageContext';
 
 export const FraudDetectionTab: React.FC = () => {
+  const { t } = useLanguage();
   const [alerts, setAlerts] = useState<FraudAlertItem[]>([]);
   const [stats, setStats] = useState<FraudStats>({
     totalAlerts: 0,
@@ -195,7 +197,7 @@ export const FraudDetectionTab: React.FC = () => {
         <div>
           <div className="flex items-center gap-2.5">
             <h2 className="text-xl font-black text-slate-900 tracking-tight">
-              Corridor Fraud Detection & Security Intelligence
+              {t('admin.fraudTitle')}
             </h2>
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-300 flex items-center gap-1.5 shadow-xs">
               <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
@@ -203,7 +205,7 @@ export const FraudDetectionTab: React.FC = () => {
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Automated intelligence detecting predatory bidding, duplicate TIN identities, cross-document customs variances, and corridor geofence breaches.
+            {t('admin.fraudSubtitle')}
           </p>
         </div>
 

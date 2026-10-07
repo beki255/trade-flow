@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { Truck, Fuel } from 'lucide-react';
+import { Truck } from 'lucide-react';
 import { Logo } from './Logo';
 
 export const HeroMap: React.FC = () => {
@@ -20,34 +20,33 @@ export const HeroMap: React.FC = () => {
     <section id="home" className="w-full max-w-[1340px] mx-auto px-4 sm:px-8 lg:px-12 pt-4 pb-6 md:pt-6 md:pb-8">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center">
         
-        {/* Left Column: Bold Typography & Buttons */}
-        <div className="lg:col-span-5 flex flex-col items-start gap-4 lg:gap-5">
-          
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[46px] font-black tracking-tight text-[#0F172A] leading-[1.12]">
-            Digitize Your Trade<br />
-            Corridor. Real.<br />
-            Real-Time Tracking.<br />
-            Effortless Logistics.
+        {/* Left Column: Clean Typography & Quick Actions */}
+        <div className="lg:col-span-5 flex flex-col items-start gap-3.5 sm:gap-4">
+          <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-black tracking-tight text-slate-900 leading-[1.14]">
+            {t('hero.titlePart1')} <br className="hidden sm:block" />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-blue-700">
+              {t('hero.titlePart2')}
+            </span>
           </h1>
 
-          <p className="text-sm md:text-[15px] text-[#475569] leading-relaxed max-w-md">
-            Optimized Freight from Djibouti to <strong className="text-[#0F172A] font-bold">Addis Ababa</strong> with <strong className="text-[#0F172A] font-bold">AI Matching</strong>, <strong className="text-[#0F172A] font-bold">Live Telematics</strong>, and Integrated Customs Documents.
+          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-md">
+            {t('hero.subtitle')}
           </p>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-3.5 pt-1">
+          <div className="flex items-center gap-3 pt-1">
             <a
-              href="#features"
-              className="px-6 py-2.5 rounded-full text-xs sm:text-sm font-semibold text-[#0F172A] bg-white hover:bg-slate-50 border border-slate-300 shadow-sm transition-all hover:border-slate-400"
+              href="#pricing"
+              className="px-5 py-2.5 rounded-full text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 transition-all shadow-sm cursor-pointer"
             >
-              {t('exploreFeatures')}
+              {t('hero.viewPricing')}
             </a>
 
             <a
               href="/login"
-              className="px-6 py-2.5 rounded-full text-xs sm:text-sm font-semibold text-white bg-[#255779] hover:bg-[#1E4560] transition-all shadow-md hover:shadow-lg"
+              className="px-5 py-2.5 rounded-full text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 shadow-2xs transition-all cursor-pointer"
             >
-              {t('requestDemo')}
+              {t('hero.signInPortals')}
             </a>
           </div>
 
@@ -65,8 +64,8 @@ export const HeroMap: React.FC = () => {
             {/* Card Header Bar */}
             <div className="px-3.5 py-2 flex items-center gap-2 text-xs font-semibold text-slate-200">
               <Logo className="w-4 h-4 text-[#38BDF8]" size={18} />
-              <span className="text-white font-bold">TradeFlow</span>
-              <span className="text-slate-400 font-normal ml-2">Shipment Map and Operations Control</span>
+              <span className="text-white font-bold">{t('hero.mapTitle')}</span>
+              <span className="text-slate-400 font-normal ml-2">{t('hero.mapSubtitle')}</span>
             </div>
 
             {/* Map Body Area */}
@@ -99,19 +98,16 @@ export const HeroMap: React.FC = () => {
                 />
 
                 <circle cx="60" cy="330" r="6" fill="#1D4ED8" stroke="#FFFFFF" strokeWidth="2"/>
-                <text x="35" y="355" fill="#1E293B" fontSize="12" fontWeight="bold" fontFamily="sans-serif">Djibouti Port</text>
+                <text x="35" y="355" fill="#1E293B" fontSize="12" fontWeight="bold" fontFamily="sans-serif">{t('hero.djiboutiPort')}</text>
 
-                <text x="160" y="145" fill="#475569" fontSize="11" fontWeight="600">Diredawa</text>
-                <text x="320" y="150" fill="#475569" fontSize="11" fontWeight="600">Metehara</text>
+                <text x="160" y="145" fill="#475569" fontSize="11" fontWeight="600">{t('hero.diredawa')}</text>
+                <text x="320" y="150" fill="#475569" fontSize="11" fontWeight="600">{t('hero.metehara')}</text>
 
                 <circle cx="450" cy="170" r="5" fill="#10B981" stroke="#FFFFFF" strokeWidth="2"/>
-                <text x="440" y="155" fill="#0F172A" fontSize="12" fontWeight="bold">Mojo</text>
+                <text x="440" y="155" fill="#0F172A" fontSize="12" fontWeight="bold">{t('hero.mojo')}</text>
 
                 <circle cx="590" cy="120" r="7" fill="#0F172A" stroke="#FFFFFF" strokeWidth="2"/>
-                <text x="560" y="105" fill="#0F172A" fontSize="13" fontWeight="800">Addis Ababa</text>
-
-                <text x="540" y="275" fill="#64748B" fontSize="10">Naara</text>
-                <text x="480" y="350" fill="#64748B" fontSize="10">Dirtedawa</text>
+                <text x="560" y="105" fill="#0F172A" fontSize="13" fontWeight="800">{t('hero.addisAbaba')}</text>
 
                 <rect x="635" y="225" width="20" height="15" rx="3" fill="#FFFFFF" stroke="#94A3B8"/>
                 <text x="640" y="236" fill="#475569" fontSize="9" fontWeight="bold">39</text>
@@ -147,7 +143,7 @@ export const HeroMap: React.FC = () => {
               >
                 <div className="bg-white rounded-xl p-2.5 sm:p-3 shadow-xl border border-slate-200 min-w-[185px] sm:min-w-[200px]">
                   <div className="text-[11px] sm:text-[12px] font-bold text-[#0F172A] tracking-tight mb-1">
-                    {t('realtimeTracking')}
+                    {t('hero.realtimeTracking')}
                   </div>
                   
                   <div className="flex items-center gap-2.5">
@@ -157,61 +153,16 @@ export const HeroMap: React.FC = () => {
 
                     <div className="flex items-center gap-2.5 text-xs font-bold text-slate-800">
                       <div>
-                        <div className="text-[9px] text-slate-400 uppercase font-normal">{t('speed')}</div>
+                        <div className="text-[9px] text-slate-400 uppercase font-normal">{t('hero.speed')}</div>
                         <div className="text-[#0F172A] text-xs font-extrabold">{speed} km/h</div>
                       </div>
                       <div>
-                        <div className="text-[9px] text-slate-400 uppercase font-normal">{t('eta')}</div>
+                        <div className="text-[9px] text-slate-400 uppercase font-normal">{t('hero.eta')}</div>
                         <div className="text-[#0F172A] text-xs font-extrabold">1h 45m</div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-
-              {/* FLOATING OPERATIONS CONTROL HUD */}
-              <div className="absolute right-2 sm:right-3 top-2 sm:top-3 bottom-2 sm:bottom-3 w-36 sm:w-44 md:w-48 bg-[#0F172A] rounded-xl p-2.5 sm:p-3 flex flex-col justify-between shadow-2xl border border-slate-700/80">
-                
-                {/* 1. Active Shipments */}
-                <div className="bg-[#182335] rounded-lg p-2 border border-slate-700/40">
-                  <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">{t('activeShipments')}</div>
-                  <div className="flex items-end justify-between mt-0.5">
-                    <span className="text-xl sm:text-2xl font-black text-white">16</span>
-                    <svg className="w-12 sm:w-14 h-5 sm:h-6 text-[#10B981]" viewBox="0 0 60 25" fill="none">
-                      <path d="M2 18L14 22L24 10L36 16L48 4L58 12" stroke="#10B981" strokeWidth="2.2" strokeLinecap="round"/>
-                    </svg>
-                  </div>
-                </div>
-
-                {/* 2. Pending Bids */}
-                <div className="bg-[#182335] rounded-lg p-2 border border-slate-700/40">
-                  <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">{t('pendingBids')}</div>
-                  <div className="flex items-end justify-between mt-0.5">
-                    <span className="text-xl sm:text-2xl font-black text-white">5</span>
-                    <svg className="w-12 sm:w-14 h-5 sm:h-6 text-[#38BDF8]" viewBox="0 0 60 25" fill="none">
-                      <path d="M2 20L16 18L30 22L42 12L58 6" stroke="#38BDF8" strokeWidth="2.2" strokeLinecap="round"/>
-                    </svg>
-                  </div>
-                </div>
-
-                {/* 3. Fuel Status */}
-                <div className="bg-[#182335] rounded-lg p-2 border border-slate-700/40">
-                  <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] text-slate-300 font-medium">
-                    <Fuel className="w-3 h-3 text-[#38BDF8]" />
-                    <span>{t('fuelStatus')}</span>
-                  </div>
-                  <div className="w-full bg-slate-700 h-1.5 rounded-full mt-1 overflow-hidden">
-                    <div className="bg-[#10B981] h-full rounded-full" style={{ width: '85%' }}></div>
-                  </div>
-                  <div className="flex items-center justify-center mt-1">
-                    <svg className="w-12 sm:w-14 h-6 sm:h-7 text-[#10B981]" viewBox="0 0 60 30" fill="none">
-                      <path d="M6 28A24 24 0 0 1 54 28" stroke="#334155" strokeWidth="3.5" strokeLinecap="round"/>
-                      <path d="M6 28A24 24 0 0 1 48 14" stroke="#10B981" strokeWidth="3.5" strokeLinecap="round"/>
-                      <line x1="30" y1="28" x2="42" y2="16" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round"/>
-                    </svg>
-                  </div>
-                </div>
-
               </div>
 
             </div>

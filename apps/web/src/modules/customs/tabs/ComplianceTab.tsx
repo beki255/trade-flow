@@ -11,6 +11,7 @@ import {
 import { CustomsDossierItem, CustomsDocItem } from '../types';
 import { ComplianceMatrixTable } from '../components/ComplianceMatrixTable';
 import { DocumentPaperPreview } from '../components/DocumentPaperPreview';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface ComplianceTabProps {
   dossiers: CustomsDossierItem[];
@@ -32,6 +33,7 @@ export const ComplianceTab: React.FC<ComplianceTabProps> = ({
   onUpdateClearance,
   onViewCertificate,
 }) => {
+  const { t } = useLanguage();
   // If no dossier is explicitly selected, pick the first available pending one, or first overall
   const activeDossier =
     selectedDossier ||
@@ -106,10 +108,10 @@ export const ComplianceTab: React.FC<ComplianceTabProps> = ({
       <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <h2 className="text-xl font-black text-slate-900 tracking-tight">
-            Cross-Document Consistency Inspector
+            {t('customs.complianceTitle')}
           </h2>
           <p className="text-xs text-slate-500">
-            Select a consignment dossier below to cross-examine Commercial Invoice, Packing List, B/L, and Origin Certificate.
+            {t('customs.complianceSubtitle')}
           </p>
         </div>
 
@@ -126,7 +128,7 @@ export const ComplianceTab: React.FC<ComplianceTabProps> = ({
           >
             {dossiers.map((d) => (
               <option key={d.id} value={d.id}>
-                {d.loadCode} • {d.title} ({d.customsStatus})
+                {d.title} ({d.customsStatus})
               </option>
             ))}
           </select>
@@ -157,9 +159,11 @@ export const ComplianceTab: React.FC<ComplianceTabProps> = ({
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 rounded-full bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent blur-3xl pointer-events-none" />
         <div className="space-y-1.5 relative z-10">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono font-bold bg-emerald-50 text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-200">
-              {activeDossier.loadCode}
-            </span>
+            {activeDossier.cargoType && (
+              <span className="text-xs font-bold bg-emerald-50 text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-200 uppercase">
+                {activeDossier.cargoType.replace('_', ' ')}
+              </span>
+            )}
             <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
               Status: {activeDossier.customsStatus}
             </span>

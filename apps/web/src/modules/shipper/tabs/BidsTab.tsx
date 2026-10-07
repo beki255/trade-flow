@@ -16,6 +16,7 @@ import {
   Hourglass,
 } from 'lucide-react';
 import { BidItem } from '../types';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface BidsTabProps {
   bids: BidItem[];
@@ -30,6 +31,7 @@ export const BidsTab: React.FC<BidsTabProps> = ({
   onRejectBid,
   acceptedBidNotification,
 }) => {
+  const { t } = useLanguage();
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
@@ -99,10 +101,10 @@ export const BidsTab: React.FC<BidsTabProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-            Transporter Bids & Quotations
+            {t('shipper.bidsTitle')}
           </h2>
           <p className="text-xs text-slate-500 max-w-2xl mt-0.5">
-            Review competitive carrier quotations, assess driver ratings, and confirm assignments within the active validity window.
+            {t('shipper.bidsSubtitle')}
           </p>
         </div>
 
@@ -116,7 +118,7 @@ export const BidsTab: React.FC<BidsTabProps> = ({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            All ({processedBids.length})
+            {t('shipper.filterAll')} ({processedBids.length})
           </button>
           <button
             onClick={() => setStatusFilter('ACTIVE')}
@@ -126,7 +128,7 @@ export const BidsTab: React.FC<BidsTabProps> = ({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Active ({totalActive})
+            {t('shipper.filterOpen')} ({totalActive})
           </button>
           <button
             onClick={() => setStatusFilter('EXPIRED')}
@@ -323,13 +325,13 @@ export const BidsTab: React.FC<BidsTabProps> = ({
                         className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
                       >
                         <Check className="w-3.5 h-3.5" />
-                        <span>Accept Bid</span>
+                        <span>{t('shipper.acceptBid')}</span>
                       </button>
                       <button
                         onClick={() => onRejectBid(b.id)}
                         className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-600 text-xs font-bold transition-all border border-slate-200 cursor-pointer"
                       >
-                        Decline
+                        {t('shipper.declineBid')}
                       </button>
                     </div>
                   )}

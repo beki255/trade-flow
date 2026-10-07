@@ -18,7 +18,7 @@ import {
 import { LocationData, AIMatchCarrier, MatchingSLA, ShipmentItem } from '../types';
 import { AIMatchingResultsCard } from '../components/AIMatchingResultsCard';
 import { RouteLocationPickerCard } from '../components/RouteLocationPickerCard';
-import { DynamicSpotRateCard } from '../components/DynamicSpotRateCard';
+import { useLanguage } from '../../../context/LanguageContext';
 
 export type MatchingPreferenceType = 'BALANCED' | 'COST_PRIORITY' | 'SPEED_PRIORITY' | 'RELIABILITY_PRIORITY';
 
@@ -105,6 +105,8 @@ export const PostLoadTab: React.FC<PostLoadTabProps> = ({
   onSelectCarrier,
   onNavigateConsignments,
 }) => {
+  const { t, language } = useLanguage();
+
   // Local state fallbacks if props not wired
   const [localPref, setLocalPref] = useState<MatchingPreferenceType>('BALANCED');
   const activePref = propMatchingPreference || localPref;
@@ -132,23 +134,31 @@ export const PostLoadTab: React.FC<PostLoadTabProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
           <div>
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              {hasActiveLoad ? 'Consignment In Progress' : 'Post New Freight Consignment'}
-            </h2>
-            <p className="text-xs text-slate-500">
               {hasActiveLoad
-                ? 'Your active corridor consignment is currently in progress. TradeFlow allows one active freight load at a time.'
-                : 'Enter cargo specs, set locations with the GPS picker, configure matching preferences, and broadcast for quotes or instant AI matching.'}
+                ? (language === 'AM' ? 'በሂደት ላይ ያለ ጭነት' : language === 'OM' ? 'Fe\'isa Hojiirra Jiru' : 'Active Consignment')
+                : t('shipper.postLoadTitle')}
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {hasActiveLoad
+                ? (language === 'AM'
+                    ? 'አዲስ ጭነት ለመመዝገብ አሁን ያለውን ጭነት ማጠናቀቅ ወይም መሰረዝ ያስፈልጋል።'
+                    : language === 'OM'
+                    ? 'Fe\'isa haaraa galchuuf kan amma jiru xumuruu qabdu.'
+                    : 'Complete or cancel your current load before posting a new consignment.')
+                : t('shipper.postLoadSubtitle')}
             </p>
           </div>
 
-          {onNavigateConsignments && (
+          {!hasActiveLoad && onNavigateConsignments && (
             <button
               type="button"
               onClick={onNavigateConsignments}
               className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all flex items-center gap-2 cursor-pointer self-start sm:self-auto shrink-0"
             >
               <Package className="w-4 h-4 text-sky-600" />
-              <span>View My Consignments ➔</span>
+              <span>
+                {language === 'AM' ? 'የጭነት ዝርዝር ➔' : language === 'OM' ? 'Tarree Fe\'isaa ➔' : 'View My Consignments ➔'}
+              </span>
             </button>
           )}
         </div>
@@ -168,53 +178,64 @@ export const PostLoadTab: React.FC<PostLoadTabProps> = ({
         )}
 
         {hasActiveLoad ? (
-          <div className="p-6 rounded-3xl bg-amber-50/80 border border-amber-200/90 shadow-2xs space-y-4">
-            <div className="flex items-start gap-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-amber-100 border border-amber-200 text-amber-800 flex items-center justify-center shrink-0 mt-0.5">
-                <ShieldCheck className="w-6 h-6 text-amber-700" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-sm sm:text-base font-black text-slate-900">
-                    Active Consignment In Progress
-                  </h3>
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-200 text-amber-900 border border-amber-300">
-                    {activeShipment?.status}
-                  </span>
+          <div className="p-5 sm:p-6 rounded-2xl bg-amber-50/70 border border-amber-200 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center shrink-0">
+                  <Package className="w-5 h-5 text-amber-700" />
                 </div>
-                <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                  You already have an active freight consignment (<strong>{activeShipment?.title}</strong> — <span className="font-mono">{activeShipment?.id}</span>). In accordance with TradeFlow corridor freight regulations, shippers manage one active consignment at a time. You cannot post a new load until the current load is completed or cancelled.
-                </p>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 capitalize">
+                    {activeShipment?.title || (language === 'AM' ? 'ንቁ ጭነት' : 'Active Consignment')}
+                  </h3>
+                  <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                    ID: {activeShipment?.id}
+                  </div>
+                </div>
+              </div>
+
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-200 text-amber-900 border border-amber-300">
+                {activeShipment?.status}
+              </span>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-white border border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <span className="text-[10px] font-bold uppercase text-slate-400">
+                  {language === 'AM' ? 'የኮሪደር መስመር' : language === 'OM' ? 'Daandii Koriidaraa' : 'Corridor Route'}
+                </span>
+                <div className="font-bold text-slate-800 mt-0.5 truncate">
+                  {activeShipment?.route}
+                </div>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold uppercase text-slate-400">
+                  {language === 'AM' ? 'ክብደት እና በጀት' : language === 'OM' ? 'Ulfaatina fi Baajata' : 'Weight & Budget'}
+                </span>
+                <div className="font-bold text-slate-800 mt-0.5">
+                  {activeShipment?.weight} • {activeShipment?.budget}
+                </div>
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-white border border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs shadow-2xs">
-              <div>
-                <span className="text-[10px] font-bold uppercase text-slate-400">Consignment ID</span>
-                <div className="font-mono font-black text-slate-900 mt-0.5">{activeShipment?.id}</div>
-              </div>
-              <div>
-                <span className="text-[10px] font-bold uppercase text-slate-400">Corridor Route</span>
-                <div className="font-bold text-slate-800 mt-0.5 truncate">{activeShipment?.route}</div>
-              </div>
-              <div>
-                <span className="text-[10px] font-bold uppercase text-slate-400">Weight & Budget</span>
-                <div className="font-bold text-slate-800 mt-0.5">{activeShipment?.weight} • {activeShipment?.budget}</div>
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
-              {onNavigateConsignments && (
+            {onNavigateConsignments && (
+              <div className="pt-1">
                 <button
                   type="button"
                   onClick={onNavigateConsignments}
-                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
                 >
                   <Package className="w-4 h-4" />
-                  <span>View Active Consignment & Bids ➔</span>
+                  <span>
+                    {language === 'AM'
+                      ? 'የጭነት ዝርዝር እና ዋጋዎችን እይ ➔'
+                      : language === 'OM'
+                      ? 'Fe\'isa fi Caalbaasii Ilaali ➔'
+                      : 'View Consignment & Quotes ➔'}
+                  </span>
                 </button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         ) : (
           <form onSubmit={onSubmitPostLoad} className="space-y-6">
@@ -365,95 +386,122 @@ export const PostLoadTab: React.FC<PostLoadTabProps> = ({
             </div>
           </div>
 
-          {/* 4. DYNAMIC SPOT RATE ENGINE */}
-          <DynamicSpotRateCard
-            originLocation={originLocation}
-            destinationLocation={destinationLocation}
-            corridorDistanceKm={corridorDistanceKm}
-            weightTons={weightTons}
-            cargoCategory={cargoCategory}
-            specialHandling={specialHandling}
-            onApplySpotRate={(rate) => setTargetBudget(String(rate))}
-            appliedBudget={targetBudget}
-          />
 
           {/* 5. MATCHING ALGORITHM WEIGHTS PREFERENCE (BUSINESS LOGIC 5.2.1) */}
-          <div className="space-y-2.5 pt-2 border-t border-slate-100">
-            <div className="flex items-center justify-between">
-              <label className="block text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+            <div className="space-y-0.5">
+              <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                 <Sliders className="w-3.5 h-3.5 text-sky-600" />
-                <span>Matching Algorithm Priority Preference</span>
+                <span>
+                  {language === 'AM'
+                    ? 'የማዛመጃ ቅድሚያ ምርጫ'
+                    : language === 'OM'
+                    ? 'Filannoo Dursaa Walgitiinsaa'
+                    : 'Matching Priority Preference'}
+                </span>
               </label>
-              <span className="text-[10px] text-slate-500 font-bold">Configurable Weights</span>
+              <p className="text-[11px] text-slate-500 font-medium">
+                {activePref === 'BALANCED' &&
+                  (language === 'AM'
+                    ? 'ሚዛናዊ፡ ዋጋ 35% • አስተማማኝነት 30% • ቅርበት 20% • ነዳጅ 15%'
+                    : language === 'OM'
+                    ? 'Madaalawaa: Gatii 35% • Amanamummaa 30% • Dhiyoo 20% • Boba\'aa 15%'
+                    : 'Weights: Cost 35% • Reliability 30% • Proximity 20% • Fuel 15%')}
+                {activePref === 'COST_PRIORITY' &&
+                  (language === 'AM'
+                    ? 'ቅናሽ ዋጋ፡ ዋጋ 55% • አስተማማኝነት 20% • ቅርበት 15% • ነዳጅ 10%'
+                    : language === 'OM'
+                    ? 'Gatii Xiqqaa: Gatii 55% • Amanamummaa 20% • Dhiyoo 15% • Boba\'aa 10%'
+                    : 'Weights: Cost 55% • Reliability 20% • Proximity 15% • Fuel 10%')}
+                {activePref === 'SPEED_PRIORITY' &&
+                  (language === 'AM'
+                    ? 'ፈጣን ጉዞ፡ ፍጥነት 45% • አስተማማኝነት 30% • ዋጋ 15% • ነዳጅ 10%'
+                    : language === 'OM'
+                    ? 'Saffisa: Saffisa 45% • Amanamummaa 30% • Gatii 15% • Boba\'aa 10%'
+                    : 'Weights: Speed 45% • Reliability 30% • Cost 15% • Fuel 10%')}
+                {activePref === 'RELIABILITY_PRIORITY' &&
+                  (language === 'AM'
+                    ? 'አስተማማኝነት፡ አስተማማኝነት 50% • ዋጋ 20% • ቅርበት 15% • ነዳጅ 15%'
+                    : language === 'OM'
+                    ? 'Amanamummaa: Amanamummaa 50% • Gatii 20% • Dhiyoo 15% • Boba\'aa 15%'
+                    : 'Weights: Reliability 50% • Cost 20% • Proximity 15% • Fuel 15%')}
+              </p>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <button
-                type="button"
-                onClick={() => updatePref('BALANCED')}
-                className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
-                  activePref === 'BALANCED'
-                    ? 'border-sky-600 bg-sky-50/60 ring-1 ring-sky-600/30 text-sky-950 shadow-xs'
-                    : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
-                }`}
+            <div className="flex items-center gap-2 shrink-0">
+              <select
+                value={activePref}
+                onChange={(e) => updatePref(e.target.value as MatchingPreferenceType)}
+                className="px-3 py-1.5 text-xs font-bold rounded-xl bg-white border border-slate-300 text-slate-800 shadow-xs focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
               >
-                <div className="text-xs font-black">Balanced Utility</div>
-                <div className="text-[10px] text-slate-500 mt-1 leading-snug">
-                  Cost 35% • Reliability 30% • Proximity 20% • Fuel 15%
-                </div>
-              </button>
+                <option value="BALANCED">
+                  {language === 'AM' ? 'ሚዛናዊ ምርጫ' : language === 'OM' ? 'Madaalawaa' : 'Balanced Utility'}
+                </option>
+                <option value="COST_PRIORITY">
+                  {language === 'AM' ? 'ቅናሽ ዋጋ ቅድሚያ' : language === 'OM' ? 'Gatii Dursa' : 'Cost Priority'}
+                </option>
+                <option value="SPEED_PRIORITY">
+                  {language === 'AM' ? 'ፈጣን መድረስ ቅድሚያ' : language === 'OM' ? 'Saffisa Dursa' : 'Speed Priority'}
+                </option>
+                <option value="RELIABILITY_PRIORITY">
+                  {language === 'AM' ? 'ከፍተኛ አስተማማኝነት' : language === 'OM' ? 'Amanamummaa Dursa' : 'Reliability Priority'}
+                </option>
+              </select>
+            </div>
+          </div>
 
-              <button
-                type="button"
-                onClick={() => updatePref('COST_PRIORITY')}
-                className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
-                  activePref === 'COST_PRIORITY'
-                    ? 'border-sky-600 bg-sky-50/60 ring-1 ring-sky-600/30 text-sky-950 shadow-xs'
-                    : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
-                }`}
-              >
-                <div className="text-xs font-black">Cost Priority</div>
-                <div className="text-[10px] text-slate-500 mt-1 leading-snug">
-                  Cost 55% • Reliability 20% • Proximity 15% • Fuel 10%
-                </div>
-              </button>
+          {/* BID VALIDITY WINDOW CONFIGURATION (Rule 5.2.3) */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+            <div className="space-y-0.5">
+              <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-sky-600" />
+                <span>
+                  {language === 'AM'
+                    ? 'የጨረታ ቆይታ ጊዜ'
+                    : language === 'OM'
+                    ? 'Yeroo Turmaata Caalbaasii'
+                    : 'Bid Validity Period'}
+                </span>
+              </label>
+              <p className="text-[11px] text-slate-500">
+                {language === 'AM'
+                  ? 'አጓጓዦች ዋጋ የሚያቀርቡበት እና ውል የሚፀናበት የጊዜ ገደብ።'
+                  : language === 'OM'
+                  ? 'Yeroo dhiyeessiin gatii itti turu.'
+                  : 'Window for shippers to accept or decline carrier bids.'}
+              </p>
+            </div>
 
-              <button
-                type="button"
-                onClick={() => updatePref('SPEED_PRIORITY')}
-                className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
-                  activePref === 'SPEED_PRIORITY'
-                    ? 'border-sky-600 bg-sky-50/60 ring-1 ring-sky-600/30 text-sky-950 shadow-xs'
-                    : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
-                }`}
+            <div className="flex items-center gap-2 shrink-0">
+              <select
+                value={activeValidity}
+                onChange={(e) => updateValidity(Number(e.target.value))}
+                className="px-3 py-1.5 text-xs font-bold rounded-xl bg-white border border-slate-300 text-slate-800 shadow-xs focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
               >
-                <div className="text-xs font-black">Speed Priority</div>
-                <div className="text-[10px] text-slate-500 mt-1 leading-snug">
-                  Speed 45% • Reliability 30% • Cost 15% • Fuel 10%
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => updatePref('RELIABILITY_PRIORITY')}
-                className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
-                  activePref === 'RELIABILITY_PRIORITY'
-                    ? 'border-sky-600 bg-sky-50/60 ring-1 ring-sky-600/30 text-sky-950 shadow-xs'
-                    : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
-                }`}
-              >
-                <div className="text-xs font-black">Reliability Priority</div>
-                <div className="text-[10px] text-slate-500 mt-1 leading-snug">
-                  Reliability 50% • Cost 20% • Proximity 15% • Fuel 15%
-                </div>
-              </button>
+                <option value={12}>
+                  {language === 'AM' ? '12 ሰዓት' : language === 'OM' ? 'Sa\'aatii 12' : '12 Hours'}
+                </option>
+                <option value={24}>
+                  {language === 'AM' ? '24 ሰዓት (መደበኛ)' : language === 'OM' ? 'Sa\'aatii 24 (Idilee)' : '24 Hours (Default)'}
+                </option>
+                <option value={48}>
+                  {language === 'AM' ? '48 ሰዓት' : language === 'OM' ? 'Sa\'aatii 48' : '48 Hours'}
+                </option>
+                <option value={72}>
+                  {language === 'AM' ? '72 ሰዓት' : language === 'OM' ? 'Sa\'aatii 72' : '72 Hours'}
+                </option>
+              </select>
             </div>
           </div>
 
           {/* 6. BOOKING OPTIONS & COMPETITIVE QUORUM (BUSINESS LOGIC 5.1 & 5.2) */}
           <div className="space-y-3 pt-2 border-t border-slate-100">
             <label className="block text-xs font-bold text-slate-900 uppercase tracking-wider">
-              Select Corridor Booking Method
+              {language === 'AM'
+                ? 'የኮሪደር ቦታ ማስያዣ ዘዴ ይምረጡ'
+                : language === 'OM'
+                ? 'Mala Buufata Koriidaraa Filadhu'
+                : 'Select Corridor Booking Method'}
             </label>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -469,11 +517,11 @@ export const PostLoadTab: React.FC<PostLoadTabProps> = ({
                 <div className="flex items-center gap-2">
                   <Zap className="w-4 h-4 text-sky-600" />
                   <div className="text-xs font-bold text-slate-900">
-                    Option A: AI Instant Match
+                    {t('shipper.instantMatch')}
                   </div>
                 </div>
                 <p className="text-[11px] text-slate-500 mt-1">
-                  Ranks verified carriers by multi-factor weighted utility using your selected priority preference. Instant booking at calculated spot rate.
+                  {t('shipper.instantMatchDesc')}
                 </p>
               </div>
 
@@ -489,43 +537,13 @@ export const PostLoadTab: React.FC<PostLoadTabProps> = ({
                 <div className="flex items-center gap-2">
                   <Scale className="w-4 h-4 text-sky-600" />
                   <div className="text-xs font-bold text-slate-900">
-                    Option B: Competitive Bidding
+                    {t('shipper.competitiveBidding')}
                   </div>
                 </div>
                 <p className="text-[11px] text-slate-500 mt-1">
-                  Broadcasts RFQ to qualified shortlisted corridor transporters. Review competing quotes and accept within the validity window.
+                  {t('shipper.competitiveBiddingDesc')}
                 </p>
               </div>
-            </div>
-
-            {/* Bid Validity Window Configuration (Rule 5.2.3) */}
-            <div className="p-3.5 rounded-2xl bg-white border border-slate-200 space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-sky-600" />
-                  <span>Bid Validity Period (Configurable)</span>
-                </label>
-                <span className="text-[10px] text-slate-400 font-bold">Default: 24 Hours</span>
-              </div>
-              <div className="grid grid-cols-4 gap-2">
-                {[12, 24, 48, 72].map((hours) => (
-                  <button
-                    key={hours}
-                    type="button"
-                    onClick={() => updateValidity(hours)}
-                    className={`py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                      activeValidity === hours
-                        ? 'bg-sky-600 text-white shadow-xs'
-                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                    }`}
-                  >
-                    {hours} Hours {hours === 24 ? '(Default)' : ''}
-                  </button>
-                ))}
-              </div>
-              <p className="text-[10.5px] text-slate-500">
-                Shippers must accept or decline bids within this validity window. Expired bids cannot be awarded.
-              </p>
             </div>
           </div>
 
@@ -533,7 +551,7 @@ export const PostLoadTab: React.FC<PostLoadTabProps> = ({
           {bookingOption === 'INSTANT_MATCH' && (
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Target Budget (ETB) *
+                {t('shipper.budgetLabel')} *
               </label>
               <input
                 type="number"
@@ -559,13 +577,13 @@ export const PostLoadTab: React.FC<PostLoadTabProps> = ({
                   <span>
                     {matchingLoading
                       ? 'Finding & Matching Best Transporters...'
-                      : 'Confirm & Match with Top AI Carrier'}
+                      : t('shipper.findCarriersBtn')}
                   </span>
                 </>
               ) : (
                 <>
                   <PlusCircle className="w-4 h-4" />
-                  <span>Broadcast RFQ for Competitive Bidding</span>
+                  <span>{t('shipper.submitPublishBtn')}</span>
                 </>
               )}
             </button>

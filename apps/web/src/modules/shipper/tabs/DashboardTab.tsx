@@ -6,6 +6,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { ShipmentItem, BidItem } from '../types';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface DashboardTabProps {
   user: any;
@@ -28,6 +29,8 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
   onDeleteLoad,
   deleteLoadingId,
 }) => {
+  const { t } = useLanguage();
+
   return (
     <div className="space-y-6">
       {/* Header Banner */}
@@ -35,10 +38,10 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 rounded-full bg-gradient-to-br from-sky-500/10 via-blue-500/5 to-transparent blur-3xl pointer-events-none" />
         <div className="space-y-1 relative z-10">
           <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
-            Welcome, {user?.fullName || 'Shipper'}
+            {t('shipper.welcome')}, {user?.fullName || 'Shipper'}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
-            Manage freight postings, AI freight matching, live corridor tracking, and escrow payments.
+            {t('shipper.subtitle')}
           </p>
         </div>
 
@@ -47,7 +50,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
           className="relative z-10 px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold flex items-center gap-2 shadow-xs hover:shadow transition-all cursor-pointer shrink-0"
         >
           <PlusCircle className="w-4 h-4" />
-          <span>Post New Load</span>
+          <span>{t('shipper.postNewLoad')}</span>
         </button>
       </div>
 
@@ -55,49 +58,49 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-1">
           <div className="text-[11px] font-bold text-slate-500 uppercase">
-            Active Shipments
+            {t('shipper.activeShipments')}
           </div>
           <div className="text-2xl font-black text-slate-900">
             {shipments.length}
           </div>
           <div className="text-[10px] text-sky-600 font-semibold">
-            Djibouti–Addis Corridor
+            {t('shipper.corridorRoute')}
           </div>
         </div>
 
         <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-1">
           <div className="text-[11px] font-bold text-slate-500 uppercase">
-            Pending Quotes
+            {t('shipper.pendingQuotes')}
           </div>
           <div className="text-2xl font-black text-slate-900">
             {bids.length}
           </div>
           <div className="text-[10px] text-slate-500 font-semibold">
-            Transporter Quotes
+            {t('shipper.transporterQuotes')}
           </div>
         </div>
 
         <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-1">
           <div className="text-[11px] font-bold text-slate-500 uppercase">
-            Customs Status
+            {t('shipper.customsStatus')}
           </div>
           <div className="text-2xl font-black text-emerald-600">
-            Compliant
+            {t('shipper.compliant')}
           </div>
           <div className="text-[10px] text-slate-400">
-            Mojo & Galafi Checkpoints
+            {t('shipper.checkpoints')}
           </div>
         </div>
 
         <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-1">
           <div className="text-[11px] font-bold text-slate-500 uppercase">
-            Escrow Protected
+            {t('shipper.escrowProtected')}
           </div>
           <div className="text-2xl font-black text-emerald-600">
-            Smart Escrow
+            {t('shipper.smartEscrow')}
           </div>
           <div className="text-[10px] text-slate-400">
-            TeleBirr & CBE Birr Supported
+            {t('shipper.escrowSupport')}
           </div>
         </div>
       </div>
@@ -107,7 +110,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 font-black text-slate-900 text-sm">
             <Package className="w-4 h-4 text-sky-600" />
-            <span>Shipment Register</span>
+            <span>{t('shipper.shipmentRegister')}</span>
           </div>
           {onNavigateConsignments && (
             <button
@@ -115,7 +118,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
               onClick={onNavigateConsignments}
               className="text-xs font-bold text-sky-600 hover:text-sky-700 flex items-center gap-1 cursor-pointer transition-colors"
             >
-              <span>View All Consignments ➔</span>
+              <span>{t('shipper.viewAllConsignments')} ➔</span>
             </button>
           )}
         </div>
@@ -124,10 +127,10 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
           <div className="p-8 text-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 space-y-2">
             <Inbox className="w-8 h-8 text-slate-400 mx-auto" />
             <div className="text-xs font-bold text-slate-700">
-              No cargo loads posted yet
+              {t('shipper.noPostings')}
             </div>
             <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
-              Click "Post New Load" above to publish your first shipment to the corridor marketplace.
+              {t('shipper.noPostingsSub')}
             </p>
           </div>
         ) : (
@@ -160,11 +163,11 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
                         onClick={onNavigateBids}
                         className="text-[10px] font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
                       >
-                        <span>{s.bidsCount} Quotes</span>
+                        <span>{s.bidsCount} {t('shipper.quotes')}</span>
                         <ExternalLink className="w-2.5 h-2.5" />
                       </button>
                     ) : (
-                      <div className="text-[10px] text-slate-400">0 Quotes yet</div>
+                      <div className="text-[10px] text-slate-400">{t('shipper.quotesYet')}</div>
                     )}
                   </div>
 
@@ -176,7 +179,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
                       }}
                       disabled={deleteLoadingId === s.rawId}
                       className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors border border-transparent hover:border-rose-200"
-                      title="Delete / Cancel Consignment"
+                      title={t('shipper.deleteConsignment')}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>

@@ -16,6 +16,7 @@ import {
   Lock
 } from 'lucide-react';
 import { ClearanceLedgerItem } from '../types';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface ClearanceTabProps {
   ledger: ClearanceLedgerItem[];
@@ -30,6 +31,7 @@ export const ClearanceTab: React.FC<ClearanceTabProps> = ({
   onRefresh,
   selectedCertificateShipmentId,
 }) => {
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCertificate, setActiveCertificate] = useState<ClearanceLedgerItem | null>(() => {
     if (selectedCertificateShipmentId) {
@@ -63,10 +65,10 @@ export const ClearanceTab: React.FC<ClearanceTabProps> = ({
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 rounded-full bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent blur-3xl pointer-events-none" />
         <div className="space-y-1 relative z-10">
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-            Customs Electronic Release Clearances (Ledger)
+            {t('customs.clearanceTitle')}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
-            Permanent digital registry of authenticated Green Line releases across Galafi Border, Mojo Multimodal Terminal, and regional dry ports.
+            {t('customs.clearanceSubtitle')}
           </p>
         </div>
 
@@ -131,8 +133,8 @@ export const ClearanceTab: React.FC<ClearanceTabProps> = ({
                     </td>
                     <td className="py-3.5 px-4">
                       <div className="font-bold text-slate-900">{item.cargoTitle}</div>
-                      <div className="text-[11px] text-slate-500 font-mono">
-                        {item.loadCode} • {item.weightTons}T
+                      <div className="text-[11px] text-slate-500 font-medium">
+                        Gross Weight: {item.weightTons} Tons
                       </div>
                     </td>
                     <td className="py-3.5 px-4">
@@ -226,9 +228,9 @@ export const ClearanceTab: React.FC<ClearanceTabProps> = ({
               {/* Consignment & Carrier Details Grid */}
               <div className="grid grid-cols-2 gap-6 text-xs border-y border-slate-200 py-6">
                 <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Consignment Code</span>
-                  <div className="font-mono font-black text-sm text-slate-900">{activeCertificate.loadCode}</div>
-                  <div className="font-semibold text-slate-700 mt-1">{activeCertificate.cargoTitle}</div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Cargo Consignment</span>
+                  <div className="font-black text-sm text-slate-900">{activeCertificate.cargoTitle}</div>
+                  <div className="text-slate-500 mt-1 font-medium">Official Clearance Record</div>
                 </div>
 
                 <div>

@@ -15,6 +15,7 @@ import {
   Info
 } from 'lucide-react';
 import { LtlLoadItem, ConsolidationDossier } from '../types';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface ConsolidationTabProps {
   ltlLoads: LtlLoadItem[];
@@ -38,6 +39,7 @@ export const ConsolidationTab: React.FC<ConsolidationTabProps> = ({
   onRefresh,
   onConsolidate,
 }) => {
+  const { t } = useLanguage();
   const [selectedLoadIds, setSelectedLoadIds] = useState<string[]>([]);
   const [containerType, setContainerType] = useState('40FT_HIGH_CUBE');
   const [masterTitle, setMasterTitle] = useState('Consolidated Export Freight Container');
@@ -102,10 +104,10 @@ export const ConsolidationTab: React.FC<ConsolidationTabProps> = ({
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 rounded-full bg-gradient-to-br from-purple-500/10 via-indigo-500/5 to-transparent blur-3xl pointer-events-none" />
         <div className="space-y-1 relative z-10">
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-            Less-than-Truckload (LTL) Cargo Consolidation
+            {t('forwarder.consolidationTitle')}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
-            Combine multiple partial shipments from different cargo owners into a single 40ft High-Cube container. Reduce corridor haulage costs by up to 32% while maximizing truck space utilization.
+            {t('forwarder.consolidationSubtitle')}
           </p>
         </div>
 
@@ -274,8 +276,8 @@ export const ConsolidationTab: React.FC<ConsolidationTabProps> = ({
 
                   <div className="space-y-1.5 flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono text-[10px] font-black bg-slate-100 text-slate-800 px-2 py-0.5 rounded border border-slate-200">
-                        {load.loadCode}
+                      <span className="text-[10px] font-bold bg-slate-100 text-slate-800 px-2 py-0.5 rounded border border-slate-200 uppercase">
+                        {load.cargoType ? load.cargoType.replace('_', ' ') : 'Consignment'}
                       </span>
                       <span className="text-xs font-mono font-bold text-purple-700">
                         {load.weightTons} Tons • {load.volumeCbm} m³

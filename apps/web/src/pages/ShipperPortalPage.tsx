@@ -174,7 +174,7 @@ export const ShipperPortalPage: React.FC = () => {
     }
   };
 
-  const handleSubmitRating = async (e: React.FormEvent) => {
+  const handleSubmitRating = async (e: React.FormEvent, customShipmentId?: string, customToUserId?: string) => {
     e.preventDefault();
     try {
       const res = await fetch('/api/portal/ratings', {
@@ -182,16 +182,23 @@ export const ShipperPortalPage: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           fromUserId: user?.id,
+          toUserId: customToUserId || ratingTargetTransporter || undefined,
+          targetRole: 'TRANSPORTER',
+          shipmentId: customShipmentId || undefined,
           scoreStars: ratingStars,
           reviewText: ratingComment || 'On-time cargo delivery along Djibouti–Addis corridor.',
         }),
       });
 
+      const resData = await res.json().catch(() => ({}));
+
       if (res.ok) {
-        setRatingSuccessMsg('Review & rating submitted successfully!');
+        setRatingSuccessMsg('Verified carrier rating recorded permanently on the corridor ledger!');
         setRatingComment('');
         fetchReviews();
-        setTimeout(() => setRatingSuccessMsg(''), 3000);
+        setTimeout(() => setRatingSuccessMsg(''), 4000);
+      } else {
+        alert(resData.error || 'Could not submit rating. Ratings cannot be duplicated or edited.');
       }
     } catch (err) {
       console.error('Error submitting rating:', err);
@@ -244,7 +251,7 @@ export const ShipperPortalPage: React.FC = () => {
               resD.lng
             );
             return {
-              id: `TF-SH-${l.id.slice(-4).toUpperCase()}`,
+              id: l.id,
               rawId: l.id,
               title: l.title,
               type: l.cargoType || 'Containerized Cargo',
@@ -319,7 +326,7 @@ export const ShipperPortalPage: React.FC = () => {
           }
           const mapped: BidItem[] = data.bids.map((b: any) => ({
             id: b.id,
-            loadId: `TF-SH-${b.load?.id?.slice(-4).toUpperCase() || 'LOAD'}`,
+            loadId: b.load?.title || 'Corridor Consignment',
             rawLoadId: b.loadId || b.load?.id,
             loadTitle: b.load?.title || 'Corridor Freight Consignment',
             route:
@@ -328,7 +335,7 @@ export const ShipperPortalPage: React.FC = () => {
                 : 'Addis Ababa ➔ Djibouti Port',
             transporterName: b.transporter?.companyName || b.transporter?.fullName || 'Registered Carrier',
             transporterPhone: b.transporter?.phone || '+251 91 123 4567',
-            rating: b.transporter?.ratingAvg || 4.9,
+            rating: (b.transporter?.totalRatingsCount && b.transporter.totalRatingsCount > 0) ? b.transporter.ratingAvg : 0.0,
             bidAmount: Number(b.proposedRateEtb || 0),
             estimatedHours: `${b.validityHours || 24}h Validity`,
             validityHours: Number(b.validityHours) || 24,
@@ -659,6 +666,10 @@ export const ShipperPortalPage: React.FC = () => {
             onNavigatePostLoad={() => navigate('/shipper/post-load')}
             onNavigateBids={() => navigate('/shipper/bids')}
             onNavigateTracking={() => navigate('/shipper/tracking')}
+            onRateCarrier={(item) => {
+              setRatingTargetTransporter(item.id || item.rawId);
+              setActiveTab('ratings');
+            }}
           />
         )}
 
@@ -699,6 +710,8 @@ export const ShipperPortalPage: React.FC = () => {
             setRatingComment={setRatingComment}
             reviewsList={reviewsList}
             onSubmitRating={handleSubmitRating}
+            shipments={shipments}
+            bids={bids}
           />
         )}
 

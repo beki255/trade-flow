@@ -20,12 +20,7 @@ export const getApiBaseUrl = (): string => {
     return 'http://localhost:5000';
   }
 
-  // 2. Explicit environment variable if configured
-  if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
-  }
-
-  // 4. React Native SourceCode scriptURL (Most accurate on physical phone / Expo Go)
+  // 2. React Native SourceCode scriptURL (The EXACT IP that served the JS bundle to the physical phone)
   try {
     const scriptURL: string | undefined = (NativeModules as any)?.SourceCode?.scriptURL;
     if (scriptURL && typeof scriptURL === 'string') {
@@ -36,7 +31,7 @@ export const getApiBaseUrl = (): string => {
     }
   } catch (e) {}
 
-  // 5. Expo Constants hostUri / debuggerHost (Expo Go Wi-Fi IP auto-detection)
+  // 3. Expo Constants hostUri / debuggerHost (Expo Go Wi-Fi IP auto-detection)
   try {
     const hostUri =
       Constants.expoConfig?.hostUri ||
@@ -53,7 +48,7 @@ export const getApiBaseUrl = (): string => {
     }
   } catch (e) {}
 
-  // 6. Expo Linking URI (exp://192.168.x.x:8081)
+  // 4. Expo Linking URI (exp://192.168.x.x:8081)
   try {
     if (Constants.linkingUri && typeof Constants.linkingUri === 'string') {
       const linkMatch = Constants.linkingUri.match(/\/\/([^/:]+)/);
@@ -63,13 +58,18 @@ export const getApiBaseUrl = (): string => {
     }
   } catch (e) {}
 
-  // 7. Android Emulator fallback
+  // 5. Explicit environment variable if configured
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+
+  // 6. Android Emulator fallback
   if (Platform.OS === 'android') {
     return 'http://10.0.2.2:5000';
   }
 
-  // 8. Default local fallback
-  return 'http://localhost:5000';
+  // 7. Active LAN IP fallback for this workstation
+  return 'http://10.18.56.25:5000';
 };
 
 /**
@@ -78,7 +78,7 @@ export const getApiBaseUrl = (): string => {
 export const apiFetch = async (
   endpoint: string,
   options: RequestInit = {},
-  timeoutMs: number = 12000
+  timeoutMs: number = 6000
 ): Promise<Response> => {
   const primaryBaseUrl = getApiBaseUrl();
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
@@ -96,25 +96,26 @@ export const apiFetch = async (
   } catch (err: any) {
     clearTimeout(timeoutId);
 
-    // Fallback strategy 1: If on Web or if primary URL failed, retry with localhost
-    if (Platform.OS === 'web' && primaryBaseUrl !== 'http://localhost:5000') {
+    // Fallback candidates to try if primary URL failed
+    const candidateHosts: string[] = [];
+    if (Platform.OS === 'web') {
+      candidateHosts.push('http://localhost:5000');
+    } else {
+      candidateHosts.push('http://10.18.56.25:5000');
+      candidateHosts.push('http://192.168.137.1:5000');
+      if (Platform.OS === 'android') candidateHosts.push('http://10.0.2.2:5000');
+    }
+
+    for (const host of candidateHosts) {
+      if (host === primaryBaseUrl) continue;
       try {
-        const fallbackRes = await fetch(`http://localhost:5000${cleanEndpoint}`, {
+        const fallbackRes = await fetch(`${host}${cleanEndpoint}`, {
           ...options,
         });
         return fallbackRes;
-      } catch (fallbackErr) {}
-    }
-
-    // Fallback strategy 2: If on Android physical phone / Expo Go, try computer's active LAN / Hotspot IP
-    if (Platform.OS === 'android') {
-      try {
-        const fallbackHost = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.137.1:5000';
-        const lanRes = await fetch(`${fallbackHost}${cleanEndpoint}`, {
-          ...options,
-        });
-        return lanRes;
-      } catch (lanErr) {}
+      } catch (e) {
+        // try next fallback
+      }
     }
 
     throw err;
