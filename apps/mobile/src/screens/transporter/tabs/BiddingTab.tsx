@@ -401,18 +401,34 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
                           </Text>
                         </View>
                         {onOpenRatingModal && (
-                          b.hasRatedShipper ? (
-                            <View
+                          b.hasRatedShipper && b.hasRatedDriver ? (
+                            <TouchableOpacity
                               style={[
                                 styles.dispatchActionBtn,
                                 { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0', borderWidth: 1, paddingVertical: 6, paddingHorizontal: 10 },
                               ]}
+                              onPress={() => onOpenRatingModal(b)}
+                              activeOpacity={0.85}
                             >
                               <Ionicons name="checkmark-circle" size={12} color="#059669" />
                               <Text style={[styles.dispatchActionBtnText, { fontSize: 11, color: '#047857', fontWeight: '700' }]}>
-                                Rated {b.shipperRatingScore ? `★ ${b.shipperRatingScore}.0` : 'Recorded'}
+                                Rated ★ {b.shipperRatingScore || '5.0'}
                               </Text>
-                            </View>
+                            </TouchableOpacity>
+                          ) : b.hasRatedShipper && !b.hasRatedDriver ? (
+                            <TouchableOpacity
+                              style={[
+                                styles.dispatchActionBtn,
+                                { backgroundColor: '#0284C7', paddingVertical: 6, paddingHorizontal: 10 },
+                              ]}
+                              onPress={() => onOpenRatingModal(b)}
+                              activeOpacity={0.85}
+                            >
+                              <Ionicons name="star" size={12} color="#FFFFFF" />
+                              <Text style={[styles.dispatchActionBtnText, { fontSize: 11 }]}>
+                                Rate Driver ★
+                              </Text>
+                            </TouchableOpacity>
                           ) : (
                             <TouchableOpacity
                               style={[
@@ -424,7 +440,7 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
                             >
                               <Ionicons name="star" size={12} color="#FFFFFF" />
                               <Text style={[styles.dispatchActionBtnText, { fontSize: 11 }]}>
-                                Rate Shipper ★
+                                Rate Delivery ★
                               </Text>
                             </TouchableOpacity>
                           )
@@ -449,17 +465,31 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
                       </View>
                     </View>
                   ) : isAccepted ? (
-                    /* Won but Needs Dispatch: Prominent Clean CTA Button */
-                    <TouchableOpacity
-                      style={styles.dispatchActionBtn}
-                      onPress={() => onOpenDispatchModal(b)}
-                      activeOpacity={0.85}
-                    >
-                      <Ionicons name="paper-plane" size={13} color="#FFFFFF" />
-                      <Text style={styles.dispatchActionBtnText}>
-                        Assign Truck & Driver to Dispatch ➔
-                      </Text>
-                    </TouchableOpacity>
+                    !b.isEscrowLocked ? (
+                      <View style={{ backgroundColor: '#FFFBEB', borderColor: '#FDE68A', borderWidth: 1, borderRadius: 12, padding: 10, gap: 4 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Ionicons name="lock-closed" size={13} color="#D97706" />
+                          <Text style={{ fontSize: 12, fontWeight: '800', color: '#92400E' }}>
+                            Won • Awaiting Shipper Escrow Deposit
+                          </Text>
+                        </View>
+                        <Text style={{ fontSize: 11, color: '#B45309' }}>
+                          Fleet assignment is locked until the shipper deposits funds into TradeFlow Escrow. You will be notified once funded!
+                        </Text>
+                      </View>
+                    ) : (
+                      /* Won & Escrow Secured: Prominent Clean CTA Button */
+                      <TouchableOpacity
+                        style={styles.dispatchActionBtn}
+                        onPress={() => onOpenDispatchModal(b)}
+                        activeOpacity={0.85}
+                      >
+                        <Ionicons name="paper-plane" size={13} color="#FFFFFF" />
+                        <Text style={styles.dispatchActionBtnText}>
+                          Assign Truck & Driver to Dispatch ➔
+                        </Text>
+                      </TouchableOpacity>
+                    )
                   ) : (
                     /* Pending or Declined: Note + Withdraw Button */
                     <View style={styles.cardFooterActions}>

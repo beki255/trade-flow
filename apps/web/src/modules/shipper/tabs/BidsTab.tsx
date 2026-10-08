@@ -14,6 +14,7 @@ import {
   Filter,
   Search,
   Hourglass,
+  CreditCard,
 } from 'lucide-react';
 import { BidItem } from '../types';
 import { useLanguage } from '../../../context/LanguageContext';
@@ -57,6 +58,19 @@ export const BidsTab: React.FC<BidsTabProps> = ({
       const isAccepted = b.status === 'ACCEPTED';
       const isRejected = b.status === 'REJECTED';
       const isPending = !isAccepted && !isRejected;
+      const isDirectAiOffer = Boolean(
+        b.notes?.includes('DIRECT AI INSTANT MATCH') ||
+        b.notes?.includes('Option A') ||
+        b.notes?.includes('Direct match')
+      );
+      const isEscrowSecured = Boolean(
+        b.isEscrowPaid ||
+        b.paymentStatus === 'HELD_IN_ESCROW' ||
+        b.paymentStatus === 'CONFIRMED' ||
+        b.paymentStatus === 'SETTLED' ||
+        b.notes?.toLowerCase().includes('dispatched') ||
+        b.notes?.toLowerCase().includes('escrow')
+      );
 
       return {
         ...b,
@@ -66,6 +80,8 @@ export const BidsTab: React.FC<BidsTabProps> = ({
         isAccepted,
         isRejected,
         isPending,
+        isDirectAiOffer,
+        isEscrowSecured,
       };
     });
   }, [bids]);
@@ -248,7 +264,9 @@ export const BidsTab: React.FC<BidsTabProps> = ({
                             ? 'bg-rose-100 text-rose-800'
                             : b.isRejected
                             ? 'bg-slate-200 text-slate-700'
-                            : 'bg-amber-100 text-amber-800'
+                            : b.isDirectAiOffer
+                            ? 'bg-amber-100 text-amber-900 border border-amber-200'
+                            : 'bg-sky-100 text-sky-800'
                         }`}
                       >
                         {b.isAccepted
@@ -257,6 +275,8 @@ export const BidsTab: React.FC<BidsTabProps> = ({
                           ? 'EXPIRED'
                           : b.isRejected
                           ? 'DECLINED'
+                          : b.isDirectAiOffer
+                          ? 'AWAITING CARRIER ACCEPTANCE'
                           : 'PENDING QUOTE'}
                       </span>
                     </div>
@@ -318,7 +338,29 @@ export const BidsTab: React.FC<BidsTabProps> = ({
 
                 {/* Actions & Status Footers */}
                 <div className="pt-2">
-                  {b.isPending && !b.isExpired && (
+                  {b.isPending && !b.isExpired && b.isDirectAiOffer && (
+                    <div className="p-3 rounded-2xl bg-amber-50/90 border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-amber-600 animate-pulse shrink-0" />
+                        <div>
+                          <div className="text-xs font-black text-amber-950">
+                            Direct AI Offer Sent to {b.transporterName}
+                          </div>
+                          <div className="text-[10px] text-amber-800">
+                            Waiting for carrier to review, accept, and assign fleet in their portal.
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => onRejectBid(b.id)}
+                        className="px-3 py-1.5 rounded-xl bg-white border border-rose-200 text-rose-700 hover:bg-rose-50 text-[11px] font-bold transition shadow-2xs self-start sm:self-auto cursor-pointer"
+                      >
+                        Cancel Offer
+                      </button>
+                    </div>
+                  )}
+
+                  {b.isPending && !b.isExpired && !b.isDirectAiOffer && (
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => onAcceptBid(b)}
@@ -353,9 +395,26 @@ export const BidsTab: React.FC<BidsTabProps> = ({
                   )}
 
                   {b.isAccepted && (
-                    <div className="w-full py-2 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-black text-center flex items-center justify-center gap-1.5">
-                      <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Accepted • Transporter Assigned</span>
+                    <div className="space-y-2">
+                      <div className="w-full py-2 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-black text-center flex items-center justify-center gap-1.5">
+                        <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Carrier Accepted • Route Confirmed</span>
+                      </div>
+
+                      {b.isEscrowSecured ? (
+                        <div className="w-full py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-black flex items-center justify-center gap-2 shadow-2xs">
+                          <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                          <span>Escrow Secured in Vault • {b.paymentMethod || 'Telebirr'}</span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => onAcceptBid(b)}
+                          className="w-full py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                        >
+                          <CreditCard className="w-3.5 h-3.5" />
+                          <span>Deposit & Lock Escrow (Telebirr / CBE) ➔</span>
+                        </button>
+                      )}
                     </div>
                   )}
 

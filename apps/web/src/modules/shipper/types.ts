@@ -42,15 +42,22 @@ export interface BidItem {
   notes: string;
   status: string;
   createdAt: string;
+  isEscrowPaid?: boolean;
+  paymentStatus?: string;
+  paymentMethod?: string;
 }
 
 export interface ReviewItem {
   id: string;
+  fromUserId?: string;
+  toUserId?: string;
   fromUser?: {
+    id?: string;
     companyName?: string;
     fullName?: string;
   };
   toUser?: {
+    id?: string;
     companyName?: string;
     fullName?: string;
   };

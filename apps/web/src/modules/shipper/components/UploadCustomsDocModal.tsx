@@ -57,7 +57,7 @@ export const UploadCustomsDocModal: React.FC<UploadCustomsDocModalProps> = ({
   const [weightTons, setWeightTons] = useState(initialData?.weightTons || '');
   const [declaredValueEtb, setDeclaredValueEtb] = useState(initialData?.declaredValueEtb || '');
   const [issuingAuthority, setIssuingAuthority] = useState(
-    initialData?.issuingAuthority || 'Ethiopian Customs Commission (ECC)'
+    initialData?.issuingAuthority || 'Ethiopian Shipping & Logistics'
   );
   const [issueDate, setIssueDate] = useState(
     initialData?.issueDate || new Date().toISOString().split('T')[0]
@@ -184,10 +184,10 @@ export const UploadCustomsDocModal: React.FC<UploadCustomsDocModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-black text-slate-900 tracking-tight">
-                {isResubmission ? 'Resubmit Corrected Trade Document' : 'Upload International Trade Document'}
+                {isResubmission ? 'Update Consignment Document' : 'Upload Consignment Document'}
               </h3>
               <p className="text-xs text-slate-500">
-                Single-Window customs clearance for Djibouti–Addis Ababa freight transit.
+                Attach trade invoices, packing lists, or bills of lading for freight transit.
               </p>
             </div>
           </div>
@@ -204,7 +204,7 @@ export const UploadCustomsDocModal: React.FC<UploadCustomsDocModalProps> = ({
           <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-900 space-y-1">
             <div className="flex items-center gap-1.5 font-bold">
               <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-              <span>Customs Officer Rejection Notice</span>
+              <span>Document Revision Notice</span>
             </div>
             <p className="text-[11.5px] text-rose-700 leading-relaxed pl-5">
               {rejectionReason}
@@ -244,11 +244,11 @@ export const UploadCustomsDocModal: React.FC<UploadCustomsDocModalProps> = ({
               onChange={(e) => setDocType(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white font-bold text-slate-900 outline-none focus:border-sky-600"
             >
-              <option value="COMMERCIAL_INVOICE">Commercial Invoice (Mandatory)</option>
-              <option value="PACKING_LIST">Packing List (Mandatory)</option>
-              <option value="BILL_OF_LADING">Bill of Lading - B/L (Mandatory)</option>
-              <option value="CERTIFICATE_OF_ORIGIN">Certificate of Origin (Preferential)</option>
-              <option value="CUSTOMS_DECLARATION">Customs Transit Declaration (Galafi)</option>
+              <option value="COMMERCIAL_INVOICE">Commercial Invoice</option>
+              <option value="PACKING_LIST">Packing List</option>
+              <option value="BILL_OF_LADING">Bill of Lading (B/L)</option>
+              <option value="CERTIFICATE_OF_ORIGIN">Certificate of Origin</option>
+              <option value="CONSIGNMENT_WAYBILL">Consignment Waybill / Proof of Dispatch</option>
               <option value="INSURANCE_CERTIFICATE">Transit Insurance Certificate (GIT)</option>
             </select>
           </div>
@@ -320,7 +320,7 @@ export const UploadCustomsDocModal: React.FC<UploadCustomsDocModalProps> = ({
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-semibold text-slate-900 outline-none focus:border-sky-600"
               />
               <span className="text-[10px] text-slate-500 mt-0.5 block">
-                FOB/CIF total value for customs duty assessment.
+                Total declared cargo value for this document.
               </span>
             </div>
           </div>
@@ -335,7 +335,7 @@ export const UploadCustomsDocModal: React.FC<UploadCustomsDocModalProps> = ({
               type="text"
               value={issuingAuthority}
               onChange={(e) => setIssuingAuthority(e.target.value)}
-              placeholder="e.g. Ethiopian Customs Commission (ECC), Ministry of Trade"
+              placeholder="e.g. Ethiopian Shipping & Logistics, Ministry of Trade"
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-medium text-slate-900 outline-none focus:border-sky-600"
             />
           </div>
@@ -344,7 +344,7 @@ export const UploadCustomsDocModal: React.FC<UploadCustomsDocModalProps> = ({
           {isResubmission && (
             <div>
               <label className="block font-bold text-slate-700 mb-1">
-                Correction Notes for Customs Officer *
+                Revision Notes *
               </label>
               <textarea
                 rows={2}
@@ -458,7 +458,7 @@ export const UploadCustomsDocModal: React.FC<UploadCustomsDocModalProps> = ({
               className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>{loading ? 'Submitting...' : 'Submit for Customs Review'}</span>
+              <span>{loading ? 'Uploading...' : 'Upload Document'}</span>
             </button>
           </div>
         </div>

@@ -5,21 +5,18 @@ import { driverStyles as styles } from '../driverStyles';
 import { LanguageSwitcher } from '../../../components/LanguageSwitcher';
 import { useLanguage } from '../../../context/LanguageContext';
 import { isValidImageUri } from '../../../utils/imageUtils';
-import { WarningIcon } from '../../../components/AppIcons';
 
 interface DriverTopHeaderProps {
   user?: any;
   onLogout?: () => void;
-  sosActive: boolean;
-  onToggleSos: () => void;
+  sosActive?: boolean;
+  onToggleSos?: () => void;
   onOpenProfile: () => void;
 }
 
 export const DriverTopHeader: React.FC<DriverTopHeaderProps> = ({
   user,
   onLogout,
-  sosActive,
-  onToggleSos,
   onOpenProfile,
 }) => {
   const { t } = useLanguage();
@@ -60,22 +57,6 @@ export const DriverTopHeader: React.FC<DriverTopHeaderProps> = ({
               ) : (
                 <Ionicons name="person" size={20} color="#FFFFFF" />
               )}
-              {/* Subtle edit camera badge */}
-              <View
-                style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  right: 0,
-                  backgroundColor: 'rgba(15, 23, 42, 0.7)',
-                  width: 14,
-                  height: 14,
-                  borderRadius: 7,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Ionicons name="camera" size={8} color="#FFFFFF" />
-              </View>
             </View>
 
             <View style={{ flex: 1, minWidth: 0, paddingRight: 4 }}>
@@ -97,21 +78,6 @@ export const DriverTopHeader: React.FC<DriverTopHeaderProps> = ({
           <LanguageSwitcher dark={true} />
         </View>
       </View>
-
-      {/* Emergency SOS Banner Button */}
-      <TouchableOpacity
-        style={[styles.sosBanner, sosActive && styles.sosBannerActive]}
-        onPress={onToggleSos}
-        activeOpacity={0.85}
-      >
-        <WarningIcon
-          size={14}
-          color={sosActive ? '#FFFFFF' : '#EF4444'}
-        />
-        <Text style={[styles.sosText, sosActive && styles.sosTextActive, { marginLeft: 6 }]}>
-          {sosActive ? t('sosActive') : t('sosEmergency')}
-        </Text>
-      </TouchableOpacity>
     </>
   );
 };

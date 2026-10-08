@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import * as fs from 'fs';
-import { PrismaClient, UserRole, VerificationStatus, LoadStatus, BidStatus, ShipmentStatus, VehicleType, FuelType, CargoType } from '@prisma/client';
+import { PrismaClient, UserRole, VerificationStatus, LoadStatus, BidStatus, ShipmentStatus, VehicleType, FuelType, CargoType, PaymentStatus } from '@prisma/client';
 import { getDynamicCorridorWaypoints, calculateCorridorRoadDistanceKm, resolveCorridorCoordinates } from '@tradeflow/shared';
 
 const prisma = new PrismaClient();
@@ -278,23 +278,6 @@ export const createLoad = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    // Prevent duplicate active loads: Shipper can only have one active consignment in progress
-    const activeExistingLoad = await prisma.load.findFirst({
-      where: {
-        shipperId: shipper.id,
-        status: {
-          in: [LoadStatus.OPEN, LoadStatus.BIDDING, LoadStatus.MATCHED, LoadStatus.BOOKED, LoadStatus.IN_TRANSIT],
-        },
-      },
-    });
-
-    if (activeExistingLoad) {
-      res.status(400).json({
-        error: `Active consignment already in progress: "${activeExistingLoad.title}" (${activeExistingLoad.status}). Shippers cannot post multiple loads at once. Please complete or cancel the current load before creating a new one.`,
-        activeLoadId: activeExistingLoad.id,
-      });
-      return;
-    }
 
     const weightVal = parseFloat(weightTons) || 28.0;
     const parsedTargetBudget = targetBudget ? parseFloat(targetBudget) : null;
@@ -765,6 +748,13 @@ export const submitRating = async (req: Request, res: Response): Promise<void> =
     if (toUserId && typeof toUserId === 'string' && toUserId.trim().length > 0) {
       if (isValidUUID(toUserId)) {
         target = await prisma.user.findUnique({ where: { id: toUserId.trim() } });
+        if (!target) {
+          const dp = await prisma.driverProfile.findUnique({
+            where: { id: toUserId.trim() },
+            include: { user: true },
+          });
+          if (dp?.user) target = dp.user;
+        }
       }
       if (!target) {
         target = await prisma.user.findFirst({
@@ -803,6 +793,16 @@ export const submitRating = async (req: Request, res: Response): Promise<void> =
     }
 
     // Secondary resolution: If shipment has shipper and sender is transporter
+    if (!target && targetRole === 'SHIPPER' && shipment?.load?.shipperId) {
+      target = await prisma.user.findUnique({ where: { id: shipment.load.shipperId } });
+    }
+    if (!target && targetRole === 'DRIVER' && shipment?.driverId) {
+      const dp = await prisma.driverProfile.findUnique({
+        where: { id: shipment.driverId },
+        include: { user: true },
+      });
+      if (dp?.user) target = dp.user;
+    }
     if (!target && shipment?.load?.shipper && sender.id !== shipment.load.shipperId) {
       target = shipment.load.shipper;
     }
@@ -966,7 +966,20 @@ export const getRatings = async (req: Request, res: Response): Promise<void> => 
     const whereClause: any = {};
     if (targetUserId && typeof targetUserId === 'string' && targetUserId.trim().length > 0) {
       if (isValidUUID(targetUserId)) {
-        whereClause.toUserId = targetUserId.trim();
+        const directUser = await prisma.user.findUnique({ where: { id: targetUserId.trim() } });
+        if (directUser) {
+          whereClause.toUserId = directUser.id;
+        } else {
+          const dp = await prisma.driverProfile.findUnique({
+            where: { id: targetUserId.trim() },
+            include: { user: true },
+          });
+          if (dp?.user) {
+            whereClause.toUserId = dp.user.id;
+          } else {
+            whereClause.toUserId = targetUserId.trim();
+          }
+        }
       } else {
         const foundUser = await prisma.user.findFirst({
           where: {
@@ -1848,6 +1861,15 @@ export const getBids = async (req: Request, res: Response): Promise<void> => {
               select: {
                 id: true,
                 status: true,
+                payment: {
+                  select: {
+                    id: true,
+                    status: true,
+                    grossAmountEtb: true,
+                    paymentMethod: true,
+                    telebirrTransactionNo: true,
+                  },
+                },
                 vehicle: {
                   select: {
                     plateNumber: true,
@@ -2013,6 +2035,25 @@ export const respondToBid = async (req: Request, res: Response): Promise<void> =
         where: { id: bid.loadId },
         data: { status: LoadStatus.BOOKED },
       });
+
+      // 4. Ensure Shipment record exists in database so driver/vehicle can be dispatched
+      try {
+        const existingShipment = await prisma.shipment.findUnique({
+          where: { loadId: bid.loadId },
+        });
+        if (!existingShipment) {
+          await prisma.shipment.create({
+            data: {
+              loadId: bid.loadId,
+              transporterId: bid.transporterId,
+              agreedPriceEtb: Number(bid.proposedRateEtb) || 185000,
+              status: ShipmentStatus.ASSIGNED,
+            },
+          });
+        }
+      } catch (shipErr) {
+        console.warn('Shipment provision notice on bid accept:', shipErr);
+      }
 
       res.json({
         message: 'Bid accepted successfully! Transporter assigned to the load.',
@@ -2199,6 +2240,7 @@ export const dispatchShipment = async (req: Request, res: Response): Promise<voi
     const existingShipment = await prisma.shipment.findUnique({
       where: { loadId: load.id },
       include: {
+        payment: true,
         vehicle: true,
         driver: { include: { user: true } },
       },
@@ -2215,6 +2257,35 @@ export const dispatchShipment = async (req: Request, res: Response): Promise<voi
         error: `Load "${load.title}" is already dispatched to Vehicle ${existingShipment.vehicle?.plateNumber || ''} and Driver ${existingShipment.driver?.user?.fullName || ''}. A load cannot be assigned or dispatched multiple times.`,
         alreadyDispatched: true,
         shipment: existingShipment,
+      });
+      return;
+    }
+
+    // Strict Escrow Security Guard (§4.2.4 & NFR 7.4):
+    // Transporter CANNOT assign a driver or vehicle until Shipper has deposited Escrow!
+    const isEscrowSecured = existingShipment?.payment && (
+      existingShipment.payment.status === PaymentStatus.HELD_IN_ESCROW ||
+      existingShipment.payment.status === PaymentStatus.CONFIRMED ||
+      existingShipment.payment.status === PaymentStatus.SETTLED
+    );
+
+    let directPayment = null;
+    if (!isEscrowSecured) {
+      directPayment = await prisma.payment.findFirst({
+        where: {
+          OR: [
+            { shipment: { loadId: load.id } },
+            ...(existingShipment?.id ? [{ shipmentId: existingShipment.id }] : []),
+          ],
+          status: { in: [PaymentStatus.HELD_IN_ESCROW, PaymentStatus.CONFIRMED, PaymentStatus.SETTLED] },
+        },
+      });
+    }
+
+    if (!isEscrowSecured && !directPayment) {
+      res.status(400).json({
+        error: `Cannot assign fleet: Digital Escrow is not yet funded by the shipper. For your financial security, driver and vehicle assignment is blocked until the shipper deposits funds into TradeFlow Escrow.`,
+        escrowSecured: false,
       });
       return;
     }

@@ -10,12 +10,10 @@ import {
   Clock,
   ArrowUpRight,
   RefreshCw,
-  Scale,
   Send,
   Building,
   Filter,
   Check,
-  Award,
   Layers,
   Search,
   ExternalLink,
@@ -26,9 +24,7 @@ import {
 import { useAuth } from '../../../context/AuthContext';
 import { useLanguage } from '../../../context/LanguageContext';
 import { BidItem, ShipmentItem } from '../types';
-import { DisputeEscrowModal } from '../components/DisputeEscrowModal';
 import { PayWithTelebirrModal } from '../components/PayWithTelebirrModal';
-import { TransporterPerformanceDashboard } from '../components/TransporterPerformanceDashboard';
 
 export interface PaymentRecord {
   id: string;
@@ -56,7 +52,6 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
   const { t } = useLanguage();
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [activeSubView, setActiveSubView] = useState<'LEDGER' | 'BENCHMARKS'>('LEDGER');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
@@ -67,11 +62,6 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
   const [amount, setAmount] = useState('185000');
   const [paying, setPaying] = useState(false);
   const [paySuccess, setPaySuccess] = useState('');
-
-  // Dispute Modal State
-  const [disputeModalOpen, setDisputeModalOpen] = useState(false);
-  const [disputeSuccess, setDisputeSuccess] = useState('');
-  const [targetDisputePaymentId, setTargetDisputePaymentId] = useState<string>('');
 
   // Fetch real payment ledger from backend
   const fetchLedger = async () => {
@@ -199,34 +189,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
     }
   };
 
-  // Handle File Dispute
-  const handleFileDispute = async (
-    reason: string,
-    claimed: number,
-    photoUrl?: string,
-    requestedResolution?: string
-  ) => {
-    try {
-      const res = await fetch('/api/payments/dispute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          paymentId: targetDisputePaymentId || undefined,
-          disputeReason: reason,
-          claimedAmountEtb: claimed,
-          requestedResolution: requestedResolution || 'Escrow Deduction & Shipper Refund',
-        }),
-      });
 
-      if (res.ok) {
-        setDisputeSuccess('✓ Dispute ticket registered and routed to Platform Administrator console for mediation.');
-        await fetchLedger();
-        setTimeout(() => setDisputeSuccess(''), 5000);
-      }
-    } catch (e) {
-      console.warn('Dispute error:', e);
-    }
-  };
 
   // Filtered Payments
   const filteredPayments = useMemo(() => {
@@ -244,70 +207,24 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
 
   return (
     <div className="space-y-6">
-      {/* 1. Header Bar with Sub-View Switcher */}
+      {/* 1. Header Bar with Deposit Action */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-            {activeSubView === 'LEDGER'
-              ? t('shipper.paymentsTitle')
-              : 'Transporter Performance & Corridor Benchmarking'}
+            {t('shipper.paymentsTitle')}
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            {activeSubView === 'LEDGER'
-              ? t('shipper.paymentsSubtitle')
-              : 'Self-service performance dashboard comparing carrier on-time rates, fuel economy, and customer ratings against corridor leaders.'}
+            {t('shipper.paymentsSubtitle')}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          {/* Sub-view switcher */}
-          <div className="flex items-center p-1 bg-slate-100 rounded-2xl border border-slate-200/80">
-            <button
-              type="button"
-              onClick={() => setActiveSubView('LEDGER')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                activeSubView === 'LEDGER'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <CreditCard className="w-3.5 h-3.5 text-sky-600" />
-              <span>Payments Ledger</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveSubView('BENCHMARKS')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                activeSubView === 'BENCHMARKS'
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <Award className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Carrier Benchmarks</span>
-            </button>
-          </div>
-
-          {activeSubView === 'LEDGER' && (
-            <>
-              <button
-                onClick={() => {
-                  setTargetDisputePaymentId('');
-                  setDisputeModalOpen(true);
-                }}
-                className="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-rose-700 hover:bg-rose-50 transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
-              >
-                <Scale className="w-3.5 h-3.5" /> {t('shipper.disputeEscrow')}
-              </button>
-
-              <button
-                onClick={() => setPayModalOpen(true)}
-                className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
-              >
-                <CreditCard className="w-3.5 h-3.5" /> {t('shipper.depositEscrow')}
-              </button>
-            </>
-          )}
+          <button
+            onClick={() => setPayModalOpen(true)}
+            className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+          >
+            <CreditCard className="w-3.5 h-3.5" /> {t('shipper.depositEscrow')}
+          </button>
         </div>
       </div>
 
@@ -318,19 +235,8 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
         </div>
       )}
 
-      {disputeSuccess && (
-        <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-black flex items-center gap-2 shadow-sm animate-fade-in">
-          <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-          <span>{disputeSuccess}</span>
-        </div>
-      )}
-
-      {/* SUB-VIEW 2: TRANSPORTER PERFORMANCE BENCHMARKING */}
-      {activeSubView === 'BENCHMARKS' ? (
-        <TransporterPerformanceDashboard onRefresh={fetchLedger} />
-      ) : (
-        /* SUB-VIEW 1: PAYMENTS & SETTLEMENT LEDGER */
-        <div className="space-y-6">
+      {/* PAYMENTS & SETTLEMENT LEDGER */}
+      <div className="space-y-6">
           {/* Financial KPIs Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
             <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex items-center gap-3.5">
@@ -552,25 +458,6 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
                                   Settle Payout
                                 </button>
                               )}
-
-                              {!isDisputed && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setTargetDisputePaymentId(p.id);
-                                    setDisputeModalOpen(true);
-                                  }}
-                                  className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-700 font-bold text-[10px] transition cursor-pointer"
-                                >
-                                  Dispute
-                                </button>
-                              )}
-
-                              {isDisputed && (
-                                <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded">
-                                  Under Mediation
-                                </span>
-                              )}
                             </div>
                           </td>
                         </tr>
@@ -581,8 +468,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
               </div>
             )}
           </div>
-        </div>
-      )}
+      </div>
 
       {/* Pay / Escrow Modal */}
       <PayWithTelebirrModal
@@ -597,15 +483,6 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
         amount={amount}
         setAmount={setAmount}
         paying={paying}
-      />
-
-      {/* Dispute Modal */}
-      <DisputeEscrowModal
-        isOpen={disputeModalOpen}
-        onClose={() => setDisputeModalOpen(false)}
-        onSubmit={handleFileDispute}
-        paymentRef={targetDisputePaymentId || undefined}
-        defaultAmount={25000}
       />
     </div>
   );

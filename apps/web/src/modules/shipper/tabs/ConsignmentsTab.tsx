@@ -39,6 +39,7 @@ export const ConsignmentsTab: React.FC<ConsignmentsTabProps> = ({
   onNavigatePostLoad,
   onNavigateBids,
   onNavigateTracking,
+  onRateCarrier,
 }) => {
   const { t, language } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');

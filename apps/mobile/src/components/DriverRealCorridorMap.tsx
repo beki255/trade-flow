@@ -12,6 +12,7 @@ import {
   StatusBar,
   ActivityIndicator,
   useWindowDimensions,
+  Platform,
 } from 'react-native';
 import Svg, { Circle, Polyline, Rect, Text as SvgText, G, Path } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
@@ -238,7 +239,7 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
         name: w.name || `Waypoint ${idx + 1}`,
         lat: Number(w.latitude ?? w.lat),
         lng: Number(w.longitude ?? w.lng),
-        type: w.type || (idx === 0 ? 'ORIGIN' : idx === activeTrip.waypoints.length - 1 ? 'DESTINATION' : 'CHECKPOINT'),
+        type: w.type || (idx === 0 ? 'ORIGIN' : idx === (activeTrip.waypoints ? activeTrip.waypoints.length - 1 : 0) ? 'DESTINATION' : 'CHECKPOINT'),
       }));
     }
 
@@ -2421,7 +2422,7 @@ const s = StyleSheet.create({
     borderColor: '#334155',
     backgroundColor: '#E5E7EB', // Neutral light base matching OSM
     position: 'relative',
-    touchAction: 'none' as any,
+    ...(Platform.OS === 'web' ? ({ touchAction: 'none' } as any) : {}),
   },
   driverLiveLocationBar: {
     position: 'absolute',

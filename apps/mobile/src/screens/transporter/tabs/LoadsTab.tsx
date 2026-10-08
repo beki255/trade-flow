@@ -399,17 +399,26 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
                       </Text>
                     </View>
                   ) : isAccepted ? (
-                    /* Won: Clean CTA button to dispatch */
-                    <TouchableOpacity
-                      style={styles.assignFleetBtn}
-                      onPress={() =>
-                        onViewBidInMyBids ? onViewBidInMyBids(existingBid) : onSelectLoadForQuote(item)
-                      }
-                      activeOpacity={0.85}
-                    >
-                      <Ionicons name="trophy" size={13} color="#FFFFFF" />
-                      <Text style={styles.assignFleetBtnText}>Won! Assign Truck & Driver ➔</Text>
-                    </TouchableOpacity>
+                    !existingBid?.isEscrowLocked ? (
+                      <View style={[styles.statusPillPending, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
+                        <Ionicons name="lock-closed" size={13} color="#D97706" />
+                        <Text style={[styles.statusPillPendingText, { color: '#92400E' }]}>
+                          Won • Awaiting Shipper Escrow Deposit
+                        </Text>
+                      </View>
+                    ) : (
+                      /* Won & Escrow Secured: Clean CTA button to dispatch */
+                      <TouchableOpacity
+                        style={styles.assignFleetBtn}
+                        onPress={() =>
+                          onViewBidInMyBids ? onViewBidInMyBids(existingBid) : onSelectLoadForQuote(item)
+                        }
+                        activeOpacity={0.85}
+                      >
+                        <Ionicons name="trophy" size={13} color="#FFFFFF" />
+                        <Text style={styles.assignFleetBtnText}>Won! Assign Truck & Driver ➔</Text>
+                      </TouchableOpacity>
+                    )
                   ) : (
                     /* Pending Bid */
                     <View style={styles.statusPillPending}>

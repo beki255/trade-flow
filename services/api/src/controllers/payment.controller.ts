@@ -366,18 +366,26 @@ export const initiatePayment = async (req: Request, res: Response): Promise<void
         agreedRateEtb: resolvedGross,
       });
 
-      // Accept first bid if present
+      // Handle bid status upon escrow initiation
       if (load.bids && load.bids.length > 0) {
-        const winningBidId = load.bids[0].id;
+        const winningBid = load.bids[0];
+        const isDirectOffer = Boolean(
+          winningBid.proposalNotes?.includes('DIRECT AI INSTANT MATCH') ||
+          winningBid.proposalNotes?.includes('Option A')
+        );
+        const shouldStayPending = isDirectOffer && winningBid.status === BidStatus.PENDING;
+
         await prisma.bid.update({
-          where: { id: winningBidId },
+          where: { id: winningBid.id },
           data: {
-            status: BidStatus.ACCEPTED,
-            proposalNotes: `Direct match accepted by shipper. Smart Escrow locked. Awaiting fleet dispatch by carrier.`,
+            status: shouldStayPending ? BidStatus.PENDING : BidStatus.ACCEPTED,
+            proposalNotes: shouldStayPending
+              ? `DIRECT AI INSTANT MATCH REQUEST (Option A): Shipper approved spot rate & deposited escrow into TradeFlow vault. Review and accept in transporter portal to lock dispatch.`
+              : `Bid accepted by shipper. Smart Escrow locked. Awaiting fleet dispatch by carrier.`,
           },
         });
         await prisma.bid.updateMany({
-          where: { loadId: load.id, id: { not: winningBidId } },
+          where: { loadId: load.id, id: { not: winningBid.id } },
           data: { status: BidStatus.REJECTED },
         });
       }

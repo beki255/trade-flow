@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Navigation,
   Radio,
   RefreshCw,
   Clock,
   ShieldCheck,
   Truck,
   MapPin,
-  Fuel,
   Package,
   ArrowRight,
   PlusCircle,
@@ -19,17 +17,12 @@ import {
   FileCheck,
   CheckCircle,
   ExternalLink,
-  ShieldAlert,
-  Route,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { useLanguage } from '../../../context/LanguageContext';
 import { CorridorLiveMap, PostedLoadItem } from '../components/CorridorLiveMap';
 import { DeliveredHandoverCard } from '../components/DeliveredHandoverCard';
 import { TrackingConsignmentCard } from '../components/TrackingConsignmentCard';
-import { FuelSecurityRouteOptimizationCard } from '../components/FuelSecurityRouteOptimizationCard';
-import { FuelConsumptionAnalyticsCard } from '../components/FuelConsumptionAnalyticsCard';
-import { ConflictZoneAlertsReroutingCard } from '../components/ConflictZoneAlertsReroutingCard';
 import { calculateCorridorRoadDistanceKm, resolveCorridorCoordinates } from '@tradeflow/shared';
 
 interface TrackingTabProps {
@@ -53,7 +46,6 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
   const [loading, setLoading] = useState<boolean>(true);
   const [lastRefreshed, setLastRefreshed] = useState<string>('');
   const [filterMode, setFilterMode] = useState<'ACTIVE' | 'DELIVERED'>('ACTIVE');
-  const [trackingSubView, setTrackingSubView] = useState<'MAP' | 'ROUTE_OPTIMIZATION' | 'FUEL_ANALYTICS' | 'CONFLICT_ALERTS'>('MAP');
 
   // Fetch real loads & live tracking from backend
   const fetchTrackingData = async () => {
@@ -212,170 +204,7 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
         </div>
       </div>
 
-      {/* 2. Core Tracking Modules Navigation (4 Unified Views) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {/* Module 1: Corridor Route Map */}
-        <button
-          type="button"
-          onClick={() => setTrackingSubView('MAP')}
-          className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden ${
-            trackingSubView === 'MAP'
-              ? 'bg-white border-sky-500 shadow-md ring-2 ring-sky-500/20'
-              : 'bg-white/80 hover:bg-white border-slate-200/90 hover:border-slate-300 shadow-xs'
-          }`}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <div
-              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${
-                trackingSubView === 'MAP' ? 'bg-sky-500 text-white shadow-xs' : 'bg-sky-50 text-sky-600'
-              }`}
-            >
-              <Navigation className="w-4 h-4" />
-            </div>
-            <span
-              className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
-                trackingSubView === 'MAP'
-                  ? 'bg-sky-100 text-sky-800'
-                  : 'bg-slate-100 text-slate-600'
-              }`}
-            >
-              {counts.active} {language === 'AM' ? 'በጉዞ ላይ' : language === 'OM' ? 'Imala Irra' : 'Active'}
-            </span>
-          </div>
-          <div className="font-black text-xs sm:text-sm text-slate-900">
-            {language === 'AM' ? 'የኮሪደር ካርታ እና መከታተያ' : language === 'OM' ? 'Kaartaa Koriidaraa' : 'Corridor Route Map'}
-          </div>
-          <p className="text-[11px] text-slate-500 mt-0.5">
-            {language === 'AM' ? 'የቀጥታ ጂፒኤስ እና የጉዞ መስመር' : language === 'OM' ? 'Hordoffii GPS Kallattii' : 'Live GPS & vehicle telemetry'}
-          </p>
-        </button>
-
-        {/* Module 2: Route Optimization */}
-        <button
-          type="button"
-          onClick={() => setTrackingSubView('ROUTE_OPTIMIZATION')}
-          className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden ${
-            trackingSubView === 'ROUTE_OPTIMIZATION'
-              ? 'bg-white border-emerald-500 shadow-md ring-2 ring-emerald-500/20'
-              : 'bg-white/80 hover:bg-white border-slate-200/90 hover:border-slate-300 shadow-xs'
-          }`}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <div
-              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${
-                trackingSubView === 'ROUTE_OPTIMIZATION' ? 'bg-emerald-500 text-white shadow-xs' : 'bg-emerald-50 text-emerald-600'
-              }`}
-            >
-              <Route className="w-4 h-4" />
-            </div>
-            <span
-              className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
-                trackingSubView === 'ROUTE_OPTIMIZATION'
-                  ? 'bg-emerald-100 text-emerald-800'
-                  : 'bg-slate-100 text-slate-600'
-              }`}
-            >
-              {language === 'AM' ? 'ስማርት መስመር' : language === 'OM' ? 'Daandii Filannoo' : 'Multi-Factor'}
-            </span>
-          </div>
-          <div className="font-black text-xs sm:text-sm text-slate-900">
-            {language === 'AM' ? 'የመስመር ማመቻቸት' : language === 'OM' ? 'Fooyyessa Daandii' : 'Route Optimization'}
-          </div>
-          <p className="text-[11px] text-slate-500 mt-0.5">
-            {language === 'AM' ? 'የደህንነት እና የነዳጅ ቅኝት' : language === 'OM' ? 'Boba\'aa fi Nageenya' : 'Fuel & security routes'}
-          </p>
-        </button>
-
-        {/* Module 3: Fuel Analytics */}
-        <button
-          type="button"
-          onClick={() => setTrackingSubView('FUEL_ANALYTICS')}
-          className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden ${
-            trackingSubView === 'FUEL_ANALYTICS'
-              ? 'bg-white border-amber-500 shadow-md ring-2 ring-amber-500/20'
-              : 'bg-white/80 hover:bg-white border-slate-200/90 hover:border-slate-300 shadow-xs'
-          }`}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <div
-              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${
-                trackingSubView === 'FUEL_ANALYTICS' ? 'bg-amber-500 text-white shadow-xs' : 'bg-amber-50 text-amber-600'
-              }`}
-            >
-              <Fuel className="w-4 h-4" />
-            </div>
-            <span
-              className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
-                trackingSubView === 'FUEL_ANALYTICS'
-                  ? 'bg-amber-100 text-amber-800'
-                  : 'bg-slate-100 text-slate-600'
-              }`}
-            >
-              {language === 'AM' ? 'ቴሌማቲክስ' : language === 'OM' ? 'Teeleemaatikisii' : 'Telematics'}
-            </span>
-          </div>
-          <div className="font-black text-xs sm:text-sm text-slate-900">
-            {language === 'AM' ? 'የነዳጅ ፍጆታ ትንተና' : language === 'OM' ? 'Xiinxala Fayyadama Boba\'aa' : 'Fuel Analytics'}
-          </div>
-          <p className="text-[11px] text-slate-500 mt-0.5">
-            {language === 'AM' ? 'የሊትር እና ብቃት ስሌት' : language === 'OM' ? 'Liitirii fi Gahumsa Boba\'aa' : 'Fleet Liters & Efficiency'}
-          </p>
-        </button>
-
-        {/* Module 4: Conflict Alerts & Detours */}
-        <button
-          type="button"
-          onClick={() => setTrackingSubView('CONFLICT_ALERTS')}
-          className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden ${
-            trackingSubView === 'CONFLICT_ALERTS'
-              ? 'bg-white border-rose-500 shadow-md ring-2 ring-rose-500/20'
-              : 'bg-white/80 hover:bg-white border-slate-200/90 hover:border-slate-300 shadow-xs'
-          }`}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <div
-              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${
-                trackingSubView === 'CONFLICT_ALERTS' ? 'bg-rose-500 text-white shadow-xs' : 'bg-rose-50 text-rose-600'
-              }`}
-            >
-              <ShieldAlert className="w-4 h-4" />
-            </div>
-            <span
-              className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
-                trackingSubView === 'CONFLICT_ALERTS'
-                  ? 'bg-rose-100 text-rose-800'
-                  : 'bg-slate-100 text-slate-600'
-              }`}
-            >
-              {language === 'AM' ? 'ደህንነት' : language === 'OM' ? 'Nageenya' : 'Safety'}
-            </span>
-          </div>
-          <div className="font-black text-xs sm:text-sm text-slate-900">
-            {language === 'AM' ? 'የደህንነት እና አማራጭ መስመር' : language === 'OM' ? 'Akeekkachiisa Nageenyaa' : 'Conflict Alerts & Detours'}
-          </div>
-          <p className="text-[11px] text-slate-500 mt-0.5">
-            {language === 'AM' ? 'የአደጋ ቀጠና እና አቅጣጫ ቅየራ' : language === 'OM' ? 'Naannoo Balaa fi Rerouting' : 'Geofence alerts & safe routes'}
-          </p>
-        </button>
-      </div>
-
-      {trackingSubView === 'CONFLICT_ALERTS' ? (
-        <ConflictZoneAlertsReroutingCard
-          selectedShipmentId={selectedLoad?.id}
-          onDetourActivated={() => {
-            fetchTrackingData();
-            setTrackingSubView('MAP');
-          }}
-          onRefreshParent={fetchTrackingData}
-        />
-      ) : trackingSubView === 'FUEL_ANALYTICS' ? (
-        <FuelConsumptionAnalyticsCard onRefresh={fetchTrackingData} />
-      ) : trackingSubView === 'ROUTE_OPTIMIZATION' ? (
-        <FuelSecurityRouteOptimizationCard
-          selectedLoadId={selectedLoad?.id}
-          onRerouteConfirmed={() => fetchTrackingData()}
-        />
-      ) : !loading && allLoads.length === 0 ? (
+      {!loading && allLoads.length === 0 ? (
         <div className="space-y-6">
           <div className="p-12 rounded-3xl bg-white border border-slate-200/80 shadow-sm text-center max-w-2xl mx-auto space-y-4 my-8">
             <div className="w-16 h-16 rounded-2xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-700 mx-auto">
@@ -748,13 +577,6 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
                   <h4 className="text-base font-black text-slate-900">
                     Live GPS map will open as soon as the driver starts the trip
                   </h4>
-                  <p className="text-xs text-slate-600 max-w-xl mx-auto leading-relaxed">
-                    The vehicle is currently at origin (<strong>{selectedLoad.origin}</strong>). Once the driver taps <strong>"Start Trip"</strong> on their mobile app, this map will immediately update and stream live corridor telemetry.
-                  </p>
-                  <div className="pt-2 flex items-center justify-center gap-2 text-[11px] font-bold text-slate-500">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>Real-Time Telematics Listener Active</span>
-                  </div>
                 </div>
               </div>
             )}

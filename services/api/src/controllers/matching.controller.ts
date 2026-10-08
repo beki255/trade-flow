@@ -1,8 +1,14 @@
 import { Request, Response } from 'express';
-import { PrismaClient, UserRole, VerificationStatus, LoadStatus, ShipmentStatus, CargoType } from '@prisma/client';
+import { PrismaClient, UserRole, VerificationStatus, LoadStatus, ShipmentStatus, CargoType, BidStatus } from '@prisma/client';
 import { resolveCorridorCoordinates, calculateCorridorRoadDistanceKm } from '@tradeflow/shared';
 
 const prisma = new PrismaClient();
+
+const isValidUUID = (str?: any): boolean => {
+  if (!str || typeof str !== 'string') return false;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str.trim());
+};
 
 // Corridor Terminal Geo Coordinates
 export const CORRIDOR_LOCATIONS: Record<string, { name: string; lat: number; lng: number }> = {
@@ -351,23 +357,6 @@ export const postLoadWithBookingOption = async (req: Request, res: Response): Pr
       return;
     }
 
-    // Prevent duplicate active loads: Shipper can only have one active consignment in progress
-    const activeExistingLoad = await prisma.load.findFirst({
-      where: {
-        shipperId: shipper.id,
-        status: {
-          in: [LoadStatus.OPEN, LoadStatus.BIDDING, LoadStatus.MATCHED, LoadStatus.BOOKED, LoadStatus.IN_TRANSIT],
-        },
-      },
-    });
-
-    if (activeExistingLoad) {
-      res.status(400).json({
-        error: `Active consignment already in progress: "${activeExistingLoad.title}" (${activeExistingLoad.status}). Shippers cannot post multiple loads at once. Please complete or cancel the current load before creating a new one.`,
-        activeLoadId: activeExistingLoad.id,
-      });
-      return;
-    }
 
     const weightVal = parseFloat(weightTons) || 28.0;
     const volumeVal = parseFloat(volumeM3) || 40.0;
@@ -427,9 +416,9 @@ export const postLoadWithBookingOption = async (req: Request, res: Response): Pr
       },
     });
 
-    // Option A: Send Direct AI Instant Match Offer directly to targeted Transporter
-    if (bookingOption === 'INSTANT_MATCH') {
-      let targetTransporter = selectedInstantTransporterId
+    // Option A: Send Direct AI Instant Match Offer directly to targeted Transporter (ONLY if explicitly selected)
+    if (bookingOption === 'INSTANT_MATCH' && (selectedInstantTransporterId || selectedInstantTransporterName)) {
+      let targetTransporter = (selectedInstantTransporterId && isValidUUID(selectedInstantTransporterId))
         ? await prisma.user.findUnique({ where: { id: selectedInstantTransporterId } })
         : null;
 
@@ -440,15 +429,6 @@ export const postLoadWithBookingOption = async (req: Request, res: Response): Pr
               { companyName: { contains: selectedInstantTransporterName, mode: 'insensitive' } },
               { fullName: { contains: selectedInstantTransporterName, mode: 'insensitive' } },
             ],
-          },
-        });
-      }
-
-      if (!targetTransporter) {
-        targetTransporter = await prisma.user.findFirst({
-          where: {
-            role: UserRole.TRANSPORTER,
-            verificationStatus: VerificationStatus.VERIFIED, // Strictly Verified
           },
         });
       }
@@ -474,7 +454,7 @@ export const postLoadWithBookingOption = async (req: Request, res: Response): Pr
             deliveryEstimatedTime: new Date(now.getTime() + 22 * 3600000),
             validityHours: configuredHours,
             proposalNotes: 'DIRECT AI INSTANT MATCH REQUEST (Option A): Shipper approved spot rate. Review and accept to lock dispatch.',
-            status: 'PENDING',
+            status: BidStatus.PENDING,
             expiresAt: new Date(now.getTime() + configuredHours * 3600000),
           },
         });
@@ -590,3 +570,131 @@ export const submitTransporterBid = async (req: Request, res: Response): Promise
     res.status(500).json({ error: error.message || 'Failed to submit bid' });
   }
 };
+
+// 4. Send Direct AI Match Offer to a Specific Matched Transporter
+export const sendDirectOffer = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { loadId, transporterId, spotRateEtb, validityHours } = req.body;
+    if (!transporterId) {
+      res.status(400).json({ error: 'transporterId is required to send direct offer' });
+      return;
+    }
+
+    // Safely resolve Transporter
+    let transporter: any = null;
+    if (typeof transporterId === 'string' && isValidUUID(transporterId)) {
+      transporter = await prisma.user.findUnique({ where: { id: transporterId.trim() } });
+    }
+
+    if (!transporter && req.body.transporterName) {
+      transporter = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { companyName: { contains: req.body.transporterName, mode: 'insensitive' } },
+            { fullName: { contains: req.body.transporterName, mode: 'insensitive' } },
+          ],
+        },
+      });
+    }
+
+    if (!transporter) {
+      res.status(404).json({ error: 'Transporter account not found' });
+      return;
+    }
+
+    if (transporter.verificationStatus !== VerificationStatus.VERIFIED) {
+      res.status(403).json({
+        error: `Cannot send match offer: Transporter verification status is ${transporter.verificationStatus}. Must be VERIFIED.`,
+      });
+      return;
+    }
+
+    // Safely resolve Load without crashing Prisma on invalid UUID
+    let load: any = null;
+    if (loadId && typeof loadId === 'string' && isValidUUID(loadId)) {
+      load = await prisma.load.findUnique({ where: { id: loadId.trim() } });
+    }
+
+    // Fallback: If loadId is absent or was not a DB UUID, find the shipper's most recent active load
+    if (!load) {
+      const shipperId = req.body.shipperId;
+      let shipper = (shipperId && isValidUUID(shipperId))
+        ? await prisma.user.findUnique({ where: { id: shipperId.trim() } })
+        : null;
+
+      if (!shipper && req.body.shipperEmail) {
+        shipper = await prisma.user.findUnique({ where: { email: String(req.body.shipperEmail).trim().toLowerCase() } });
+      }
+
+      if (!shipper) {
+        shipper = await prisma.user.findFirst({ where: { role: UserRole.SHIPPER } });
+      }
+
+      if (shipper) {
+        load = await prisma.load.findFirst({
+          where: {
+            shipperId: shipper.id,
+            status: { in: [LoadStatus.OPEN, LoadStatus.BIDDING] },
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+      }
+    }
+
+    if (!load) {
+      res.status(400).json({ error: 'No active consignment load found to attach this offer to.' });
+      return;
+    }
+
+    const now = new Date();
+    const hours = parseInt(validityHours) || 24;
+    const rate = parseFloat(spotRateEtb) || Number(load.spotEstimatedPriceEtb) || 185000;
+
+    // Check if a bid already exists for this load & transporter, or create new
+    let bid = await prisma.bid.findFirst({
+      where: { loadId: load.id, transporterId: transporter.id },
+    });
+
+    if (bid) {
+      bid = await prisma.bid.update({
+        where: { id: bid.id },
+        data: {
+          proposedRateEtb: rate,
+          validityHours: hours,
+          status: BidStatus.PENDING,
+          proposalNotes: `DIRECT AI INSTANT MATCH REQUEST (Option A): Shipper approved spot rate (ETB ${rate.toLocaleString()}). Review and accept to lock dispatch.`,
+          expiresAt: new Date(now.getTime() + hours * 3600000),
+        },
+      });
+    } else {
+      bid = await prisma.bid.create({
+        data: {
+          loadId: load.id,
+          transporterId: transporter.id,
+          proposedRateEtb: rate,
+          pickupEstimatedTime: new Date(now.getTime() + 4 * 3600000),
+          deliveryEstimatedTime: new Date(now.getTime() + 22 * 3600000),
+          validityHours: hours,
+          proposalNotes: `DIRECT AI INSTANT MATCH REQUEST (Option A): Shipper approved spot rate (ETB ${rate.toLocaleString()}). Review and accept to lock dispatch.`,
+          status: BidStatus.PENDING,
+          expiresAt: new Date(now.getTime() + hours * 3600000),
+        },
+      });
+    }
+
+    // Update load status to BIDDING
+    await prisma.load.update({
+      where: { id: load.id },
+      data: { status: LoadStatus.BIDDING },
+    });
+
+    res.json({
+      message: `Direct AI offer successfully sent to ${transporter.companyName || transporter.fullName}!`,
+      bid,
+    });
+  } catch (err: any) {
+    console.error('Error sending direct offer:', err);
+    res.status(500).json({ error: err.message || 'Failed to send direct match offer' });
+  }
+};
+

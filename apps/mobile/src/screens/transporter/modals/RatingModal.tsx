@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BidItem, UserProfile } from '../types';
+import { apiFetch } from '../../../utils/api';
 
 interface RatingModalProps {
   visible: boolean;
@@ -63,6 +64,11 @@ export const RatingModal: React.FC<RatingModalProps> = ({
 
   useEffect(() => {
     if (visible) {
+      if (selectedBid?.hasRatedShipper && !selectedBid?.hasRatedDriver) {
+        setTargetRole('DRIVER');
+      } else {
+        setTargetRole('SHIPPER');
+      }
       setStars(5);
       setComment('');
       setSelectedTags([]);
@@ -135,19 +141,20 @@ export const RatingModal: React.FC<RatingModalProps> = ({
           : 'Professional driving and safe cargo transport along corridor.');
 
       const targetUserId = targetRole === 'SHIPPER'
-        ? selectedBid.shipperId
-        : selectedBid.driverUserId;
+        ? (selectedBid.shipperId || undefined)
+        : (selectedBid.driverUserId || undefined);
 
       const bodyData = {
         fromUserId: currentUser?.id,
         toUserId: targetUserId,
         targetRole,
         shipmentId: selectedBid.shipmentId || selectedBid.rawLoadId,
+        loadId: selectedBid.rawLoadId,
         scoreStars: stars,
         reviewText: combinedReview,
       };
 
-      const res = await fetch('/api/portal/ratings', {
+      const res = await apiFetch('/api/portal/ratings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(bodyData),
@@ -228,7 +235,7 @@ export const RatingModal: React.FC<RatingModalProps> = ({
             </View>
             <View style={{ flex: 1, marginLeft: 12, marginRight: 8 }}>
               <Text style={styles.headerTitle} numberOfLines={1}>
-                Rate Shipper Partner
+                {targetRole === 'SHIPPER' ? 'Rate Shipper Partner' : 'Rate Fleet Driver'}
               </Text>
               <Text style={styles.headerSubTitle} numberOfLines={1}>
                 {selectedBid?.loadId} • Post-Delivery Mutual Review

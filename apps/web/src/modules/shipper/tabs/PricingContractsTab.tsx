@@ -8,7 +8,6 @@ import {
   Clock,
   CheckCircle2,
   Calendar,
-  History,
   X,
   Truck,
   Inbox,
@@ -21,7 +20,7 @@ export const PricingContractsTab: React.FC = () => {
   const { user } = useAuth();
   const [contracts, setContracts] = useState<LockedContractItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [activeSubTab, setActiveSubTab] = useState<'CONTRACTS' | 'SPOT_SIMULATOR' | 'AUDIT_TRAIL'>('CONTRACTS');
+  const [activeSubTab, setActiveSubTab] = useState<'CONTRACTS' | 'SPOT_SIMULATOR'>('CONTRACTS');
   const [flaggedCount, setFlaggedCount] = useState<number>(0);
 
   // Real Transporters from PostgreSQL
@@ -56,9 +55,6 @@ export const PricingContractsTab: React.FC = () => {
   const [simResult, setSimResult] = useState<SpotPricingResult | null>(null);
   const [simLoading, setSimLoading] = useState<boolean>(false);
 
-  // Audit Logs State
-  const [auditLogs, setAuditLogs] = useState<any[]>([]);
-  const [auditLoading, setAuditLoading] = useState<boolean>(false);
 
   // 1. Fetch Real Contracts from API
   const fetchContracts = async () => {
@@ -99,21 +95,6 @@ export const PricingContractsTab: React.FC = () => {
     }
   };
 
-  // 3. Fetch Pricing Audit Logs
-  const fetchAuditLogs = async () => {
-    try {
-      setAuditLoading(true);
-      const res = await fetch(`/api/pricing/audit-logs?t=${Date.now()}`);
-      if (res.ok) {
-        const data = await res.json();
-        setAuditLogs(data.logs || []);
-      }
-    } catch (err) {
-      console.warn('Failed to fetch pricing audit logs:', err);
-    } finally {
-      setAuditLoading(false);
-    }
-  };
 
   // 4. Run Simulator with Real Auth Context
   const runSimulator = async () => {
@@ -153,7 +134,6 @@ export const PricingContractsTab: React.FC = () => {
   useEffect(() => {
     fetchContracts();
     fetchTransporters();
-    fetchAuditLogs();
     runSimulator();
   }, [user]);
 
@@ -177,7 +157,6 @@ export const PricingContractsTab: React.FC = () => {
 
       if (res.ok) {
         await fetchContracts();
-        await fetchAuditLogs();
         setRenegotiateModalContract(null);
         setProposedNewRate('');
         setRenegotiationNotes('');
@@ -223,7 +202,6 @@ export const PricingContractsTab: React.FC = () => {
 
       if (res.ok) {
         await fetchContracts();
-        await fetchAuditLogs();
         setLockModalOpen(false);
         setNewRateEtb('');
       } else {
@@ -280,21 +258,6 @@ export const PricingContractsTab: React.FC = () => {
             }`}
           >
             Spot Rate Calculator
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setActiveSubTab('AUDIT_TRAIL');
-              fetchAuditLogs();
-            }}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-              activeSubTab === 'AUDIT_TRAIL'
-                ? 'bg-slate-900 text-white shadow-sm'
-                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-            }`}
-          >
-            <History className="w-3.5 h-3.5" />
-            <span>Pricing Audit Trail</span>
           </button>
         </div>
       </div>
@@ -650,85 +613,6 @@ export const PricingContractsTab: React.FC = () => {
               </div>
             </div>
           )}
-        </div>
-      )}
-
-      {/* SUB-TAB 3: PRICING AUDIT TRAIL (4.4.3) */}
-      {activeSubTab === 'AUDIT_TRAIL' && (
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 space-y-4 shadow-xs">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-            <div>
-              <h2 className="text-lg font-black text-slate-900 tracking-tight">
-                Pricing Calculation & Divergence Audit Log
-              </h2>
-              <p className="text-xs text-slate-500">
-                All rate calculations are logged with verified parameters, distance, fuel index, demand multiplier, and timestamps.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={fetchAuditLogs}
-              className="px-3.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${auditLoading ? 'animate-spin' : ''}`} />
-              <span>Refresh Audit Log</span>
-            </button>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[10px] font-bold">
-                  <th className="py-3 px-4">Timestamp</th>
-                  <th className="py-3 px-4">Corridor & Distance</th>
-                  <th className="py-3 px-4">Base Rate</th>
-                  <th className="py-3 px-4">Demand Index</th>
-                  <th className="py-3 px-4">Fuel Index</th>
-                  <th className="py-3 px-4">Delay Surcharge</th>
-                  <th className="py-3 px-4">Floor / Ceiling</th>
-                  <th className="py-3 px-4 font-black text-slate-900">Calculated Spot</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-mono text-[11px]">
-                {auditLogs.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="py-8 text-center text-slate-400 font-sans">
-                      No pricing computations logged yet.
-                    </td>
-                  </tr>
-                ) : (
-                  auditLogs.map((log) => (
-                    <tr key={log.id} className="hover:bg-slate-50/60 transition-colors">
-                      <td className="py-3 px-4 text-slate-500 whitespace-nowrap">
-                        {new Date(log.timestamp).toLocaleString()}
-                      </td>
-                      <td className="py-3 px-4 font-sans font-bold text-slate-800">
-                        {log.corridorName} ({log.baseDistanceKm} km)
-                      </td>
-                      <td className="py-3 px-4 text-slate-600">
-                        ETB {log.baseCorridorRateEtb?.toLocaleString()}
-                      </td>
-                      <td className="py-3 px-4 text-amber-600 font-bold">
-                        {log.demandRatio}×
-                      </td>
-                      <td className="py-3 px-4 text-sky-600 font-bold">
-                        {log.fuelCostIndex}×
-                      </td>
-                      <td className="py-3 px-4 text-purple-600">
-                        ETB {log.congestionSurchargeEtb?.toLocaleString()}
-                      </td>
-                      <td className="py-3 px-4 text-slate-500 text-[10px]">
-                        {log.floorBoundEtb?.toLocaleString()} - {log.ceilingBoundEtb?.toLocaleString()}
-                      </td>
-                      <td className="py-3 px-4 font-sans font-black text-emerald-700">
-                        ETB {log.finalRateEtb?.toLocaleString()}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
         </div>
       )}
 

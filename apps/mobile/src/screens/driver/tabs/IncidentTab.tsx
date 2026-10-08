@@ -74,6 +74,8 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
 }) => {
   const { t } = useLanguage();
   const [showPhotoPreview, setShowPhotoPreview] = useState(false);
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+  const [isSeverityDropdownOpen, setIsSeverityDropdownOpen] = useState(false);
 
   // Current GPS coordinates
   const currentLat = realGpsLocation?.latitude ?? activeWaypoint?.lat ?? activeTrip?.originLat ?? 8.895;
@@ -96,34 +98,41 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
     }
   };
 
-  const selectedCat = INCIDENT_CATEGORIES.find((c) => c.id === incidentType);
+  const selectedCat = INCIDENT_CATEGORIES.find((c) => c.id === incidentType) || INCIDENT_CATEGORIES[0];
+  const selectedSev = SEVERITY_LEVELS.find((s) => s.id === (incidentSeverity || 'MEDIUM')) || SEVERITY_LEVELS[1];
+
+  const isDelivered = activeTrip?.status?.toUpperCase() === 'DELIVERED';
+  const hasTrip = !!activeTrip && !isDelivered;
 
   return (
     <View style={styles.sectionContainer}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
-        <View style={{ flex: 1, marginRight: 8 }}>
-          <Text style={styles.sectionTitle} numberOfLines={1}>{t('incidentTitle') || 'Report Corridor Incident'}</Text>
-          <Text style={{ fontSize: 11, color: '#64748B', marginTop: 1 }}>
-            Broadcast real-time hazard to corridor dispatch
-          </Text>
-        </View>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 4,
-            backgroundColor: '#ECFDF5',
-            paddingHorizontal: 8,
-            paddingVertical: 4,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: '#A7F3D0',
-          }}
-        >
-          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#10B981' }} />
-          <Text style={{ fontSize: 9.5, fontWeight: '800', color: '#047857' }}>GPS ACTIVE</Text>
-        </View>
-      </View>
+      <Text style={styles.sectionTitle} numberOfLines={1}>{t('incidentTitle') || 'Report Corridor Incident'}</Text>
+
+      {hasTrip ? (
+        <View style={{ gap: 12 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+            <View style={{ flex: 1, marginRight: 8 }}>
+              <Text style={{ fontSize: 11, color: '#64748B', marginTop: 1 }}>
+                Broadcast real-time hazard to corridor dispatch
+              </Text>
+            </View>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 4,
+                backgroundColor: '#ECFDF5',
+                paddingHorizontal: 8,
+                paddingVertical: 4,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: '#A7F3D0',
+              }}
+            >
+              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#10B981' }} />
+              <Text style={{ fontSize: 9.5, fontWeight: '800', color: '#047857' }}>GPS ACTIVE</Text>
+            </View>
+          </View>
 
       {/* DYNAMIC REROUTING PROPOSAL CARD (SRS FR-05.3) */}
       {pendingReroute && pendingReroute.status === 'PENDING_CONFIRMATION' && (
@@ -304,65 +313,134 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
           </View>
         </View>
 
-        {/* 1. Incident Category Selection (2-Column Compact Grid) */}
+        {/* 1. Incident Category Selection (Clean Dropdown) */}
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>Incident Category:</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 4 }}>
-            {INCIDENT_CATEGORIES.map((cat) => {
-              const isSelected = incidentType === cat.id;
-              return (
-                <TouchableOpacity
-                  key={cat.id}
-                  onPress={() => setIncidentType(cat.id)}
-                  activeOpacity={0.75}
-                  style={{
-                    width: '48.8%',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 7,
-                    paddingHorizontal: 10,
-                    paddingVertical: 9,
-                    borderRadius: 12,
-                    borderWidth: 1.5,
-                    borderColor: isSelected ? '#0284C7' : '#E2E8F0',
-                    backgroundColor: isSelected ? '#F0F9FF' : '#FFFFFF',
-                  }}
-                >
-                  <View
+          <TouchableOpacity
+            onPress={() => {
+              setIsCategoryDropdownOpen(!isCategoryDropdownOpen);
+              if (isSeverityDropdownOpen) setIsSeverityDropdownOpen(false);
+            }}
+            activeOpacity={0.8}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: '#FFFFFF',
+              borderWidth: 1.5,
+              borderColor: isCategoryDropdownOpen ? '#0284C7' : '#E2E8F0',
+              borderRadius: 12,
+              paddingHorizontal: 12,
+              paddingVertical: 10,
+              marginTop: 4,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+              <View
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 8,
+                  backgroundColor: '#F1F5F9',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Ionicons
+                  name={selectedCat.iconName}
+                  size={15}
+                  color={selectedCat.iconColor}
+                />
+              </View>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#0F172A', flex: 1 }} numberOfLines={1}>
+                {selectedCat.label}
+              </Text>
+            </View>
+            <Ionicons
+              name={isCategoryDropdownOpen ? 'chevron-up' : 'chevron-down'}
+              size={18}
+              color="#64748B"
+            />
+          </TouchableOpacity>
+
+          {/* Category Dropdown Menu */}
+          {isCategoryDropdownOpen && (
+            <View
+              style={{
+                backgroundColor: '#FFFFFF',
+                borderWidth: 1,
+                borderColor: '#CBD5E1',
+                borderRadius: 12,
+                marginTop: 4,
+                overflow: 'hidden',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.08,
+                shadowRadius: 4,
+                elevation: 3,
+              }}
+            >
+              {INCIDENT_CATEGORIES.map((cat, idx) => {
+                const isSelected = incidentType === cat.id;
+                return (
+                  <TouchableOpacity
+                    key={cat.id}
+                    onPress={() => {
+                      setIncidentType(cat.id);
+                      setIsCategoryDropdownOpen(false);
+                    }}
+                    activeOpacity={0.7}
                     style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: 6,
-                      backgroundColor: isSelected ? '#E0F2FE' : '#F1F5F9',
+                      flexDirection: 'row',
                       alignItems: 'center',
-                      justifyContent: 'center',
+                      gap: 10,
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                      backgroundColor: isSelected ? '#F0F9FF' : '#FFFFFF',
+                      borderBottomWidth: idx < INCIDENT_CATEGORIES.length - 1 ? 1 : 0,
+                      borderBottomColor: '#F1F5F9',
                     }}
                   >
-                    <Ionicons
-                      name={cat.iconName}
-                      size={14}
-                      color={isSelected ? '#0284C7' : cat.iconColor}
-                    />
-                  </View>
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      fontWeight: isSelected ? '800' : '600',
-                      color: isSelected ? '#0369A1' : '#1E293B',
-                      flex: 1,
-                    }}
-                    numberOfLines={1}
-                  >
-                    {cat.label}
-                  </Text>
-                  {isSelected && (
-                    <Ionicons name="checkmark-circle" size={14} color="#0284C7" />
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          {selectedCat && (
+                    <View
+                      style={{
+                        width: 26,
+                        height: 26,
+                        borderRadius: 7,
+                        backgroundColor: isSelected ? '#E0F2FE' : '#F8FAFC',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Ionicons
+                        name={cat.iconName}
+                        size={15}
+                        color={isSelected ? '#0284C7' : cat.iconColor}
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={{
+                          fontSize: 12.5,
+                          fontWeight: isSelected ? '800' : '600',
+                          color: isSelected ? '#0369A1' : '#1E293B',
+                        }}
+                      >
+                        {cat.label}
+                      </Text>
+                      <Text style={{ fontSize: 10.5, color: '#64748B', marginTop: 1 }} numberOfLines={1}>
+                        {cat.desc}
+                      </Text>
+                    </View>
+                    {isSelected && (
+                      <Ionicons name="checkmark-circle" size={16} color="#0284C7" />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+
+          {!isCategoryDropdownOpen && selectedCat && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4, paddingLeft: 2 }}>
               <Ionicons name="information-circle-outline" size={14} color="#64748B" />
               <Text style={{ fontSize: 10.5, color: '#64748B', flex: 1 }}>
@@ -372,41 +450,122 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
           )}
         </View>
 
-        {/* 2. Severity Level Selection */}
+        {/* 2. Severity Level Selection (Clean Dropdown) */}
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>Severity Level:</Text>
-          <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
-            {SEVERITY_LEVELS.map((sev) => {
-              const isSelected = (incidentSeverity || 'MEDIUM') === sev.id;
-              return (
-                <TouchableOpacity
-                  key={sev.id}
-                  onPress={() => setIncidentSeverity && setIncidentSeverity(sev.id)}
-                  activeOpacity={0.75}
-                  style={{
-                    flex: 1,
-                    paddingVertical: 8,
-                    borderRadius: 10,
-                    alignItems: 'center',
-                    borderWidth: 1.5,
-                    borderColor: isSelected ? sev.color : '#E2E8F0',
-                    backgroundColor: isSelected ? sev.bg : '#FFFFFF',
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 11,
-                      fontWeight: isSelected ? '800' : '600',
-                      color: isSelected ? sev.color : '#64748B',
+          <TouchableOpacity
+            onPress={() => {
+              setIsSeverityDropdownOpen(!isSeverityDropdownOpen);
+              if (isCategoryDropdownOpen) setIsCategoryDropdownOpen(false);
+            }}
+            activeOpacity={0.8}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: '#FFFFFF',
+              borderWidth: 1.5,
+              borderColor: isSeverityDropdownOpen ? '#0284C7' : '#E2E8F0',
+              borderRadius: 12,
+              paddingHorizontal: 12,
+              paddingVertical: 10,
+              marginTop: 4,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View
+                style={{
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                  borderRadius: 8,
+                  backgroundColor: selectedSev.bg,
+                  borderWidth: 1,
+                  borderColor: selectedSev.color,
+                }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '800', color: selectedSev.color }}>
+                  {selectedSev.label}
+                </Text>
+              </View>
+              <Text style={{ fontSize: 12, color: '#64748B', fontWeight: '500' }}>
+                Priority rating
+              </Text>
+            </View>
+            <Ionicons
+              name={isSeverityDropdownOpen ? 'chevron-up' : 'chevron-down'}
+              size={18}
+              color="#64748B"
+            />
+          </TouchableOpacity>
+
+          {/* Severity Dropdown Menu */}
+          {isSeverityDropdownOpen && (
+            <View
+              style={{
+                backgroundColor: '#FFFFFF',
+                borderWidth: 1,
+                borderColor: '#CBD5E1',
+                borderRadius: 12,
+                marginTop: 4,
+                overflow: 'hidden',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.08,
+                shadowRadius: 4,
+                elevation: 3,
+              }}
+            >
+              {SEVERITY_LEVELS.map((sev, idx) => {
+                const isSelected = (incidentSeverity || 'MEDIUM') === sev.id;
+                return (
+                  <TouchableOpacity
+                    key={sev.id}
+                    onPress={() => {
+                      if (setIncidentSeverity) setIncidentSeverity(sev.id);
+                      setIsSeverityDropdownOpen(false);
                     }}
-                    numberOfLines={1}
+                    activeOpacity={0.7}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                      backgroundColor: isSelected ? '#F8FAFC' : '#FFFFFF',
+                      borderBottomWidth: idx < SEVERITY_LEVELS.length - 1 ? 1 : 0,
+                      borderBottomColor: '#F1F5F9',
+                    }}
                   >
-                    {sev.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <View
+                        style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: 4,
+                          backgroundColor: sev.color,
+                        }}
+                      />
+                      <View
+                        style={{
+                          paddingHorizontal: 10,
+                          paddingVertical: 3,
+                          borderRadius: 8,
+                          backgroundColor: sev.bg,
+                        }}
+                      >
+                        <Text style={{ fontSize: 12, fontWeight: '800', color: sev.color }}>
+                          {sev.label}
+                        </Text>
+                      </View>
+                    </View>
+                    {isSelected && (
+                      <Ionicons name="checkmark-circle" size={16} color={sev.color} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
         </View>
 
         {/* 3. Incident Description */}
@@ -486,6 +645,18 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
           </Text>
         </TouchableOpacity>
       </View>
+    </View>
+  ) : (
+      <View style={[styles.card, { alignItems: 'center', paddingVertical: 24, gap: 8 }]}>
+        <Ionicons name="warning-outline" size={36} color="#94A3B8" />
+        <Text style={{ fontSize: 13, fontWeight: '800', color: '#334155' }}>
+          No Active Trip Assigned
+        </Text>
+        <Text style={{ fontSize: 11, color: '#64748B', textAlign: 'center', maxWidth: 280, lineHeight: 16 }}>
+          Corridor hazard and incident reporting is tied to an active consignment trip. When a freight mission is assigned to your vehicle, reporting tools will appear here.
+        </Text>
+      </View>
+    )}
 
       {/* Submitted Incident History */}
       {incidentsList.length > 0 && (

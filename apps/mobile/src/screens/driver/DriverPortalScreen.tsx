@@ -80,8 +80,6 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
     }));
   };
 
-  // Emergency SOS state
-  const [sosActive, setSosActive] = useState(false);
 
   // Active Trip Dynamic State
   const [activeTrip, setActiveTrip] = useState<ActiveTripDetails | null>(null);
@@ -763,12 +761,10 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
 
-      {/* Modular Top Mobile Header & Emergency SOS */}
+      {/* Modular Top Mobile Header */}
       <DriverTopHeader
         user={currentUser}
         onLogout={onLogout}
-        sosActive={sosActive}
-        onToggleSos={() => setSosActive(!sosActive)}
         onOpenProfile={() => setShowProfileModal(true)}
       />
 

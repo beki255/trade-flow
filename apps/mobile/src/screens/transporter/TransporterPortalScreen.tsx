@@ -366,6 +366,12 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
                     shipperTin: b.load?.shipper?.tin || '',
                     shipperRating: (b.load?.shipper?.totalRatingsCount && b.load.shipper.totalRatingsCount > 0) ? b.load.shipper.ratingAvg : 0.0,
                     shipperVerified: b.load?.shipper?.verificationStatus === 'VERIFIED',
+                    isEscrowLocked: Boolean(
+                      b.load?.shipment?.payment?.status === 'HELD_IN_ESCROW' ||
+                      b.load?.shipment?.payment?.status === 'CONFIRMED' ||
+                      b.load?.shipment?.payment?.status === 'SETTLED'
+                    ),
+                    escrowPaymentStatus: b.load?.shipment?.payment?.status || 'PENDING',
                   };
                 });
                 setSubmittedBids(mappedBids);

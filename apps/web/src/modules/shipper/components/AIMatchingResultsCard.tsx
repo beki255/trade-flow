@@ -1,5 +1,5 @@
 import React from 'react';
-import { Cpu, CreditCard, ShieldCheck, Check, Sparkles } from 'lucide-react';
+import { Cpu, CreditCard, ShieldCheck, Check, Sparkles, Send } from 'lucide-react';
 import { AIMatchCarrier, MatchingSLA } from '../types';
 
 interface AIMatchingResultsCardProps {
@@ -124,11 +124,11 @@ export const AIMatchingResultsCard: React.FC<AIMatchingResultsCardProps> = ({
               className={`w-full py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer ${
                 idx === 0
                   ? 'bg-sky-600 hover:bg-sky-700 text-white'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-800'
+                  : 'bg-slate-900 hover:bg-slate-800 text-white'
               }`}
             >
-              <CreditCard className="w-3.5 h-3.5" />
-              <span>Instant Book & Escrow</span>
+              <Send className="w-3.5 h-3.5" />
+              <span>Send AI Match Offer ➔</span>
             </button>
           </div>
         ))}

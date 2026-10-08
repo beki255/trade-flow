@@ -122,7 +122,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         photoUrl: user.roadworthinessDoc || user.insuranceDoc || null,
         driverProfile: user.driverProfile,
         verificationStatus: user.verificationStatus,
-        ratingAvg: user.ratingAvg,
+        ratingAvg: (user.totalRatingsCount && user.totalRatingsCount > 0) ? user.ratingAvg : 0.0,
+        totalRatingsCount: user.totalRatingsCount || 0,
       },
     });
   } catch (error: any) {
@@ -190,7 +191,8 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
         photoUrl: user.roadworthinessDoc || user.insuranceDoc || null,
         driverProfile: user.driverProfile,
         verificationStatus: user.verificationStatus,
-        ratingAvg: user.ratingAvg,
+        ratingAvg: (user.totalRatingsCount && user.totalRatingsCount > 0) ? user.ratingAvg : 0.0,
+        totalRatingsCount: user.totalRatingsCount || 0,
       },
     });
   } catch (error: any) {

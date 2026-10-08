@@ -98,6 +98,8 @@ export interface BidItem {
   shipperTin?: string;
   shipperRating?: number;
   shipperVerified?: boolean;
+  isEscrowLocked?: boolean;
+  escrowPaymentStatus?: string;
 }
 
 export type TransporterTabType = 'overview' | 'fleet' | 'loads' | 'bidding' | 'earnings';

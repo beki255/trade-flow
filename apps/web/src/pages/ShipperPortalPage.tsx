@@ -29,7 +29,7 @@ import { PricingContractsTab } from '../modules/shipper/tabs/PricingContractsTab
 import { TelebirrEscrowModal } from '../modules/shipper/components/TelebirrEscrowModal';
 
 export const ShipperPortalPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { tab } = useParams<{ tab?: string }>();
   const navigate = useNavigate();
   const activeTab = tab || 'dashboard';
@@ -168,6 +168,9 @@ export const ShipperPortalPage: React.FC = () => {
         if (data.ratings) {
           setReviewsList(data.ratings);
         }
+      }
+      if (refreshUser) {
+        refreshUser();
       }
     } catch (err) {
       console.warn('Could not fetch reviews:', err);
@@ -324,27 +327,49 @@ export const ShipperPortalPage: React.FC = () => {
             setBids([]);
             return;
           }
-          const mapped: BidItem[] = data.bids.map((b: any) => ({
-            id: b.id,
-            loadId: b.load?.title || 'Corridor Consignment',
-            rawLoadId: b.loadId || b.load?.id,
-            loadTitle: b.load?.title || 'Corridor Freight Consignment',
-            route:
-              b.load?.originName && b.load?.destName
-                ? `${b.load.originName} ➔ ${b.load.destName}`
-                : 'Addis Ababa ➔ Djibouti Port',
-            transporterName: b.transporter?.companyName || b.transporter?.fullName || 'Registered Carrier',
-            transporterPhone: b.transporter?.phone || '+251 91 123 4567',
-            rating: (b.transporter?.totalRatingsCount && b.transporter.totalRatingsCount > 0) ? b.transporter.ratingAvg : 0.0,
-            bidAmount: Number(b.proposedRateEtb || 0),
-            estimatedHours: `${b.validityHours || 24}h Validity`,
-            validityHours: Number(b.validityHours) || 24,
-            expiresAt: b.expiresAt,
-            transporterVerificationStatus: b.transporter?.verificationStatus || 'VERIFIED',
-            notes: b.proposalNotes || 'Carrier quote submitted via RFQ board.',
-            status: b.status || 'PENDING',
-            createdAt: new Date(b.createdAt).toLocaleDateString(),
-          }));
+          const mapped: BidItem[] = data.bids.map((b: any) => {
+            const payment = b.load?.shipment?.payment;
+            const hasPayment = Boolean(
+              payment &&
+              (payment.status === 'HELD_IN_ESCROW' ||
+               payment.status === 'CONFIRMED' ||
+               payment.status === 'SETTLED')
+            );
+            const hasDispatched = Boolean(
+              b.load?.shipment?.status === 'DISPATCHED' ||
+              b.load?.shipment?.status === 'IN_TRANSIT' ||
+              b.load?.shipment?.status === 'DELIVERED' ||
+              b.proposalNotes?.toLowerCase().includes('dispatched') ||
+              b.notes?.toLowerCase().includes('dispatched') ||
+              b.proposalNotes?.toLowerCase().includes('escrow')
+            );
+            const isEscrowPaid = hasPayment || hasDispatched;
+
+            return {
+              id: b.id,
+              loadId: b.load?.title || 'Corridor Consignment',
+              rawLoadId: b.loadId || b.load?.id,
+              loadTitle: b.load?.title || 'Corridor Freight Consignment',
+              route:
+                b.load?.originName && b.load?.destName
+                  ? `${b.load.originName} ➔ ${b.load.destName}`
+                  : 'Addis Ababa ➔ Djibouti Port',
+              transporterName: b.transporter?.companyName || b.transporter?.fullName || 'Registered Carrier',
+              transporterPhone: b.transporter?.phone || '+251 91 123 4567',
+              rating: (b.transporter?.totalRatingsCount && b.transporter.totalRatingsCount > 0) ? b.transporter.ratingAvg : 0.0,
+              bidAmount: Number(b.proposedRateEtb || 0),
+              estimatedHours: `${b.validityHours || 24}h Validity`,
+              validityHours: Number(b.validityHours) || 24,
+              expiresAt: b.expiresAt,
+              transporterVerificationStatus: b.transporter?.verificationStatus || 'VERIFIED',
+              notes: b.proposalNotes || 'Carrier quote submitted via RFQ board.',
+              status: b.status || 'PENDING',
+              createdAt: new Date(b.createdAt).toLocaleDateString(),
+              isEscrowPaid,
+              paymentStatus: payment?.status || (hasDispatched ? 'HELD_IN_ESCROW' : 'PENDING'),
+              paymentMethod: payment?.paymentMethod || 'TELEBIRR',
+            };
+          });
           setBids(mapped);
         }
       }
@@ -403,11 +428,14 @@ export const ShipperPortalPage: React.FC = () => {
     e.preventDefault();
     if (!cargoName || !weightTons || !originLocation.address || !destinationLocation.address) return;
 
-    if (activeShipment) {
-      alert(`Active consignment already in progress: "${activeShipment.title}" (${activeShipment.status}). Shippers cannot post multiple loads at once. Please complete or cancel the active load before creating a new one.`);
+    // Option A: Instant Match -> Only run AI matching to discover and rank verified carriers.
+    // Does NOT post load or send offers to any carrier until shipper reviews and clicks "Send AI Match Offer ➔".
+    if (bookingOption === 'INSTANT_MATCH') {
+      handleRunAIMatching();
       return;
     }
 
+    // Option B: Competitive Bidding (Live RFQ) -> Publish directly to Corridor Load Board
     const resO = resolveCorridorCoordinates(originLocation.address, originLocation.lat, originLocation.lng);
     const resD = resolveCorridorCoordinates(destinationLocation.address, destinationLocation.lat, destinationLocation.lng);
     const calculatedKm = calculateCorridorRoadDistanceKm(
@@ -440,13 +468,8 @@ export const ShipperPortalPage: React.FC = () => {
           specialHandling,
           validityHours,
           priorityPreference: matchingPreference,
-          targetBudgetEtb:
-            bookingOption === 'COMPETITIVE_BIDDING'
-              ? null
-              : targetBudget
-              ? parseFloat(targetBudget)
-              : null,
-          bookingOption,
+          targetBudgetEtb: targetBudget ? parseFloat(targetBudget) : null,
+          bookingOption: 'COMPETITIVE_BIDDING',
         }),
       });
 
@@ -457,20 +480,84 @@ export const ShipperPortalPage: React.FC = () => {
         }
         setPostedSuccess(true);
         loadShipments();
-        if (bookingOption === 'COMPETITIVE_BIDDING') {
-          setTimeout(() => {
-            setPostedSuccess(false);
-            navigate('/shipper/consignments');
-          }, 1200);
-        } else {
-          handleRunAIMatching();
-        }
+        setTimeout(() => {
+          setPostedSuccess(false);
+          navigate('/shipper/consignments');
+        }, 1200);
       } else {
         const errJson = await res.json().catch(() => ({}));
         alert(errJson.error || 'Failed to post load to database.');
       }
     } catch (err) {
       console.error('Error posting load to database:', err);
+    }
+  };
+
+  const handleSendDirectOfferToCarrier = async (carrier: any) => {
+    try {
+      setMatchingLoading(true);
+
+      const resO = resolveCorridorCoordinates(originLocation.address, originLocation.lat, originLocation.lng);
+      const resD = resolveCorridorCoordinates(destinationLocation.address, destinationLocation.lat, destinationLocation.lng);
+      const calculatedKm = calculateCorridorRoadDistanceKm(
+        originLocation.address,
+        destinationLocation.address,
+        resO.lat,
+        resO.lng,
+        resD.lat,
+        resD.lng
+      );
+
+      // Create the consignment and dispatch the Direct AI Match Offer to the selected carrier
+      const res = await fetch('/api/matching/post-load', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shipperId: user?.id,
+          shipperEmail: user?.email,
+          title: cargoName || `${cargoCategory || 'General Freight'} Consignment`,
+          cargoType: cargoCategory || 'General Cargo',
+          cargoDescription,
+          weightTons: weightTons || '28',
+          volumeM3: volumeM3 || '40',
+          originAddress: originLocation.address || resO.resolvedName,
+          originGps: { lat: resO.lat, lng: resO.lng },
+          destinationAddress: destinationLocation.address || resD.resolvedName,
+          destinationGps: { lat: resD.lat, lng: resD.lng },
+          distanceKm: calculatedKm,
+          pickupWindowStart: pickupDate,
+          specialHandling,
+          validityHours: validityHours || 24,
+          priorityPreference: matchingPreference,
+          targetBudgetEtb: carrier.calculatedSpotRateEtb || (targetBudget ? parseFloat(targetBudget) : null),
+          bookingOption: 'INSTANT_MATCH',
+          selectedInstantTransporterId: carrier.carrierId,
+          selectedInstantTransporterName: carrier.companyName,
+          spotRateEtb: carrier.calculatedSpotRateEtb,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.load?.id) {
+          setLastCreatedLoadId(data.load.id);
+        }
+        setPostedSuccess(false);
+        setAcceptedBidNotification(
+          `✓ Direct AI Match offer sent to ${carrier.companyName}! Waiting for carrier to review and accept.`
+        );
+        setTimeout(() => setAcceptedBidNotification(''), 7000);
+        await fetchAllBids();
+        await loadShipments();
+        navigate('/shipper/bids');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || 'Failed to dispatch offer to carrier.');
+      }
+    } catch (err) {
+      console.error('Error sending direct offer to carrier:', err);
+    } finally {
+      setMatchingLoading(false);
     }
   };
 
@@ -645,14 +732,7 @@ export const ShipperPortalPage: React.FC = () => {
             }}
             onRunAIMatching={handleRunAIMatching}
             onSubmitPostLoad={handlePostLoad}
-            onSelectCarrier={(carrier) => {
-              setSelectedMatch(carrier);
-              setSelectedBid(null);
-              setPaymentError(null);
-              setPaymentSuccess(false);
-              setTxReceipt(null);
-              setTelebirrModalOpen(true);
-            }}
+            onSelectCarrier={handleSendDirectOfferToCarrier}
             onNavigateConsignments={() => navigate('/shipper/consignments')}
           />
         )}
@@ -668,7 +748,7 @@ export const ShipperPortalPage: React.FC = () => {
             onNavigateTracking={() => navigate('/shipper/tracking')}
             onRateCarrier={(item) => {
               setRatingTargetTransporter(item.id || item.rawId);
-              setActiveTab('ratings');
+              navigate('/shipper/ratings');
             }}
           />
         )}

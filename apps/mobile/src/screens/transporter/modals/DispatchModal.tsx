@@ -81,7 +81,8 @@ export const DispatchModal: React.FC<DispatchModalProps> = ({
   };
 
   const isAlreadyDispatched = Boolean(selectedBid?.dispatchedTruck && selectedBid?.dispatchedDriver);
-  const canDispatch = Boolean(dispatchTruck && dispatchDriver && !isAlreadyDispatched);
+  const isEscrowSecured = selectedBid?.isEscrowLocked !== false;
+  const canDispatch = Boolean(dispatchTruck && dispatchDriver && !isAlreadyDispatched && isEscrowSecured);
 
   const availableTrucksCount = fleetList.filter((t) => t.status !== 'IN_TRANSIT').length;
   const availableDriversCount = driversList.filter(
@@ -168,14 +169,38 @@ export const DispatchModal: React.FC<DispatchModalProps> = ({
                     </Text>
                   </View>
                 ) : null}
-                <View style={[modalStyles.routeMetaPill, { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' }]}>
-                  <Ionicons name="shield-checkmark" size={13} color="#059669" />
-                  <Text style={[modalStyles.routeMetaPillText, { color: '#047857' }]}>
-                    Escrow Locked
+                {isEscrowSecured ? (
+                  <View style={[modalStyles.routeMetaPill, { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' }]}>
+                    <Ionicons name="shield-checkmark" size={13} color="#059669" />
+                    <Text style={[modalStyles.routeMetaPillText, { color: '#047857' }]}>
+                      Escrow Secured
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={[modalStyles.routeMetaPill, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
+                    <Ionicons name="lock-closed" size={13} color="#D97706" />
+                    <Text style={[modalStyles.routeMetaPillText, { color: '#92400E' }]}>
+                      Awaiting Escrow
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+
+            {/* Escrow Not Secured Warning */}
+            {!isEscrowSecured && (
+              <View style={[modalStyles.lockedBanner, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
+                <Ionicons name="lock-closed" size={20} color="#D97706" />
+                <View style={{ flex: 1 }}>
+                  <Text style={[modalStyles.lockedBannerTitle, { color: '#92400E' }]}>
+                    Digital Escrow Not Funded Yet
+                  </Text>
+                  <Text style={[modalStyles.lockedBannerSub, { color: '#B45309' }]}>
+                    For your financial security, fleet assignment is blocked until the shipper deposits funds into TradeFlow Escrow. Once funded, you can assign your vehicle and driver immediately.
                   </Text>
                 </View>
               </View>
-            </View>
+            )}
 
             {/* Already Dispatched Warning */}
             {isAlreadyDispatched && (

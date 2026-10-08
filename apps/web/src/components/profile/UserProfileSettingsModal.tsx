@@ -23,6 +23,7 @@ import {
   ShieldAlert,
   Sun,
   Moon,
+  Star,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage, Language } from '../../context/LanguageContext';
@@ -79,6 +80,9 @@ export const UserProfileSettingsModal: React.FC<UserProfileSettingsModalProps> =
 
   // Sync user state into form when opened
   useEffect(() => {
+    if (isOpen) {
+      refreshUser();
+    }
     if (user && isOpen) {
       setFullName(user.fullName || '');
       setCompanyName(user.companyName || '');
@@ -310,6 +314,15 @@ export const UserProfileSettingsModal: React.FC<UserProfileSettingsModalProps> =
                         <span className="text-rose-400">Suspended</span>
                       </>
                     )}
+                  </span>
+                  <span>•</span>
+                  <span className="flex items-center gap-1 font-semibold text-amber-400 shrink-0">
+                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                    <span>
+                      {user?.totalRatingsCount && user.totalRatingsCount > 0 && user?.ratingAvg
+                        ? `${Number(user.ratingAvg).toFixed(1)}`
+                        : 'New'}
+                    </span>
                   </span>
                 </div>
               </div>
