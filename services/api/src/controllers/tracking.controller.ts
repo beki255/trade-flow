@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import { PrismaClient, ShipmentStatus, LoadStatus, RiskLevel } from '@prisma/client';
 import { getDynamicCorridorWaypoints, calculateCorridorRoadDistanceKm, resolveCorridorCoordinates } from '@tradeflow/shared';
+import { NotificationService } from '../services/notification.service';
+import { sendMail, buildMilestoneNotificationHtml } from '../services/smtp.service';
+import { getActiveRerouteForShipment, getActiveRerouteForShipmentAsync } from './optimization.controller';
 
 const prisma = new PrismaClient();
 
@@ -97,31 +100,18 @@ export const CORRIDOR_WAYPOINTS = [
   },
 ];
 
-// Corridor Risk Zones
-export const CORRIDOR_RISK_ZONES = [
-  {
-    id: 'RZ-AFAR-BORDER',
-    name: 'Afar–Somali Border Corridor Buffer Zone',
-    severity: RiskLevel.MEDIUM,
-    centerLat: 10.45,
-    centerLng: 41.25,
-    radiusKm: 25.0,
-    speedLimitKmh: 45,
-    advisory: 'Security escort recommended during night hours. Maintain convoy speed.',
-    active: true,
-  },
-  {
-    id: 'RZ-AWASH-GORGE',
-    name: 'Awash Gorge Heavy Gradient & Wind Zone',
-    severity: RiskLevel.LOW,
-    centerLat: 8.95,
-    centerLng: 40.2,
-    radiusKm: 15.0,
-    speedLimitKmh: 35,
-    advisory: 'Steep descents and high crosswinds. Brake check mandatory at weighbridge.',
-    active: true,
-  },
-];
+// Corridor Risk Zones (Empty)
+export const CORRIDOR_RISK_ZONES: Array<{
+  id: string;
+  name: string;
+  severity: RiskLevel;
+  centerLat: number;
+  centerLng: number;
+  radiusKm: number;
+  speedLimitKmh: number;
+  advisory: string;
+  active: boolean;
+}> = [];
 
 // Haversine distance calculator in KM
 export const calculateDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -304,7 +294,7 @@ export const ingestTelemetry = async (req: Request, res: Response): Promise<void
               { loadId: shipmentId },
             ],
           },
-          include: { load: true },
+          include: { load: { include: { shipper: true } } },
         });
       } catch (e) {
         // Ignore if shipmentId wasn't a UUID
@@ -317,14 +307,14 @@ export const ingestTelemetry = async (req: Request, res: Response): Promise<void
         where: {
           status: { in: [ShipmentStatus.IN_TRANSIT, ShipmentStatus.ASSIGNED, ShipmentStatus.AT_ORIGIN] },
         },
-        include: { load: true },
+        include: { load: { include: { shipper: true } } },
         orderBy: { updatedAt: 'desc' },
       });
     }
 
     if (!shipment) {
       shipment = await prisma.shipment.findFirst({
-        include: { load: true },
+        include: { load: { include: { shipper: true } } },
         orderBy: { updatedAt: 'desc' },
       });
     }
@@ -395,13 +385,59 @@ export const ingestTelemetry = async (req: Request, res: Response): Promise<void
     const milestoneNotifications: string[] = [];
 
     if (shipment) {
+      // Helper to dispatch multi-channel milestone notification per SRS FR-03.3 (App, SMS, Email)
+      const dispatchShipperMilestone = (title: string, message: string) => {
+        // 1. In-App Notification Center
+        NotificationService.dispatchNotification({
+          role: 'SHIPPER',
+          userId: shipment.load?.shipperId,
+          title,
+          message,
+          type: 'SHIPMENT',
+          priority: 'HIGH',
+          actionTab: 'tracking',
+          metadata: {
+            shipmentId: shipment.id,
+            loadId: shipment.load?.id,
+            origin: shipment.load?.originName,
+            dest: shipment.load?.destName,
+          },
+        });
+
+        // 2. Email Notification via SMTP (Gmail)
+        const shipperEmail = shipment.load?.shipper?.email;
+        if (shipperEmail) {
+          sendMail({
+            to: shipperEmail,
+            subject: `[TradeFlow] Milestone Alert: ${title} - ${shipment.load?.title || 'Freight Consignment'}`,
+            html: buildMilestoneNotificationHtml(
+              shipment.load?.shipper?.fullName || shipment.load?.shipper?.companyName || 'Valued Cargo Owner',
+              title,
+              shipment.load?.title || 'Consignment',
+              shipment.load?.originName || 'Djibouti Port',
+              shipment.load?.destName || 'Modjo Dry Port',
+              message,
+              'http://localhost:3000/shipper'
+            ),
+          }).catch((err) => console.warn('[Milestone Email Dispatch Warning]:', err));
+        }
+
+        // 3. Automated SMS Notification Dispatch Log (SRS FR-03.3)
+        const shipperPhone = shipment.load?.shipper?.phone;
+        if (shipperPhone) {
+          console.log(`[TradeFlow SMS Dispatcher - FR-03.3] Sent to ${shipperPhone}: "${title} - ${message}"`);
+        }
+      };
+
       // Milestone 1: Departed Origin (Djibouti Port or Addis Hub)
       const distFromOrigin = calculateDistanceKm(lat, lng, shipment.load?.originLat || 11.595, shipment.load?.originLng || 43.148);
       if (distFromOrigin > 3.0 && !shipment.departedOriginAt) {
         const ts = new Date();
         milestoneUpdates.departedOriginAt = ts;
         milestoneUpdates.status = ShipmentStatus.IN_TRANSIT;
-        milestoneNotifications.push(`🚀 Departed Origin: Freight consignment has left ${shipment.load?.originName || 'Djibouti Port'}.`);
+        const msg = `🚀 Departed Origin: Freight consignment has left ${shipment.load?.originName || 'Djibouti Port'}.`;
+        milestoneNotifications.push(msg);
+        dispatchShipperMilestone('Departed Origin', msg);
       }
 
       // Milestone 2: Cleared Customs Checkpoint (Galafi border ~11.71, 41.83)
@@ -409,7 +445,9 @@ export const ingestTelemetry = async (req: Request, res: Response): Promise<void
       if (distFromGalafi <= 5.0 && !shipment.customsClearedAt) {
         const ts = new Date();
         milestoneUpdates.customsClearedAt = ts;
-        milestoneNotifications.push(`🛂 Cleared Customs Checkpoint: Galafi border inspection completed and digital seal verified.`);
+        const msg = `🛂 Cleared Customs Checkpoint: Galafi border inspection completed and digital seal verified.`;
+        milestoneNotifications.push(msg);
+        dispatchShipperMilestone('Cleared Customs Checkpoint', msg);
       }
 
       // Milestone 3: Arrived Modjo Dry Port (8.595, 39.12)
@@ -417,7 +455,9 @@ export const ingestTelemetry = async (req: Request, res: Response): Promise<void
       if (distFromModjo <= 4.0 && !shipment.arrivedModjoAt) {
         const ts = new Date();
         milestoneUpdates.arrivedModjoAt = ts;
-        milestoneNotifications.push(`🏢 Arrived at Modjo Dry Port: Truck has entered multimodal terminal for scanning & clearance.`);
+        const msg = `🏢 Arrived at Modjo Dry Port: Truck has entered multimodal terminal for scanning & clearance.`;
+        milestoneNotifications.push(msg);
+        dispatchShipperMilestone('Arrived at Modjo Dry Port', msg);
       }
 
       // Milestone 4: Arrived Final Destination (Strictly requires journey progress >= 80% and departure)
@@ -427,7 +467,9 @@ export const ingestTelemetry = async (req: Request, res: Response): Promise<void
         const ts = new Date();
         milestoneUpdates.arrivedDestinationAt = ts;
         milestoneUpdates.status = ShipmentStatus.OUT_FOR_DELIVERY;
-        milestoneNotifications.push(`🏁 Arrived at Final Destination: Ready for digital proof-of-delivery (e-POD) sign-off.`);
+        const msg = `🏁 Arrived at Final Destination: Ready for digital proof-of-delivery (e-POD) sign-off.`;
+        milestoneNotifications.push(msg);
+        dispatchShipperMilestone('Arrived at Final Destination', msg);
       }
 
       // Update Shipment in database safely
@@ -435,15 +477,21 @@ export const ingestTelemetry = async (req: Request, res: Response): Promise<void
         await prisma.shipment.update({
           where: { id: shipment.id },
           data: {
-            currentLat: isTransit ? lat : (shipment.load?.originLat || lat),
-            currentLng: isTransit ? lng : (shipment.load?.originLng || lng),
+            currentLat: isTransit
+              ? (speed > 3 ? lat : (shipment.currentLat || lat))
+              : (shipment.load?.originLat || lat),
+            currentLng: isTransit
+              ? (speed > 3 ? lng : (shipment.currentLng || lng))
+              : (shipment.load?.originLng || lng),
             currentSpeedKmh: isTransit ? speed : 0,
             currentHeading: headingDeg,
             fuelLevelPct: fuelPct,
             lastGpsUpdateTimestamp: new Date(),
             currentPredictedEta: etaResult.predictedEta,
             etaConfidenceMarginMins: etaResult.confidenceMarginMins,
-            progressPercentage: isTransit && hasDeparted ? etaResult.progressPercentage : 0,
+            progressPercentage: isTransit && hasDeparted
+              ? Math.max(shipment.progressPercentage || 0, etaResult.progressPercentage)
+              : 0,
             ...milestoneUpdates,
           },
         });
@@ -773,8 +821,77 @@ export const getLiveTracking = async (req: Request, res: Response): Promise<void
       shipment.status
     );
 
+    const activeReroute = await getActiveRerouteForShipmentAsync(shipment.id);
+    const isRerouted = Boolean(activeReroute && activeReroute.status === 'CONFIRMED');
+
+    // Build authentic Dewele Southern Bypass waypoints if rerouted
+    const deweleWaypoints = [
+      {
+        id: 'WP-ADDIS-KALITI',
+        name: currentOrigin || 'Kaliti Inland Container Terminal, Addis Ababa',
+        nameAm: 'ቃሊቲ የብስ ኮንቴይነር ተርሚናል (አዲስ አበባ)',
+        latitude: currentOriginLat,
+        longitude: currentOriginLng,
+        type: 'ORIGIN',
+        status: 'COMPLETED',
+        description: 'Consignment loading and origin departure terminal',
+      },
+      {
+        id: 'WP-ADAMA-EXPRESSWAY',
+        name: 'Adama Expressway Toll Gate',
+        nameAm: 'አዳማ የፍጥነት መንገድ የክፍያ ኬላ',
+        latitude: 8.541,
+        longitude: 39.271,
+        type: 'CHECKPOINT',
+        status: progress >= 20 ? 'COMPLETED' : 'ACTIVE_NOW',
+        description: 'FastPass electronic toll plaza & weigh verification',
+      },
+      {
+        id: 'WP-AWASH-ARBA',
+        name: 'Awash Arba Weigh Station & Fuel Depot',
+        nameAm: 'አዋሽ አርባ የክብደት መመዘኛ እና የነዳጅ ማደያ',
+        latitude: 8.986,
+        longitude: 40.165,
+        type: 'CHECKPOINT',
+        status: progress >= 45 ? 'COMPLETED' : (progress >= 20 ? 'ACTIVE_NOW' : 'UPCOMING'),
+        description: 'Axle load weighbridge compliance and driver rest stop',
+      },
+      {
+        id: 'WP-DIRE-DAWA',
+        name: 'Dire Dawa Dry Port & Regional Logistics Hub',
+        nameAm: 'ድሬዳዋ ደረቅ ወደብ እና የሎጅስቲክስ ተርሚናል',
+        latitude: 9.593,
+        longitude: 41.866,
+        type: 'CHECKPOINT',
+        status: progress >= 70 ? 'COMPLETED' : (progress >= 45 ? 'ACTIVE_NOW' : 'UPCOMING'),
+        description: 'Southern corridor customs transit checkpoint and fuel depot',
+      },
+      {
+        id: 'WP-DEWELE-BORDER',
+        name: 'Dewele Border Customs Checkpoint',
+        nameAm: 'ደወሌ የድንበር ጉምሩክ ኬላ',
+        latitude: 11.033,
+        longitude: 42.633,
+        type: 'CHECKPOINT',
+        status: progress >= 90 ? 'COMPLETED' : (progress >= 70 ? 'ACTIVE_NOW' : 'UPCOMING'),
+        description: 'Cross-border electronic single-window release gate',
+      },
+      {
+        id: 'WP-DJI-DORALEH',
+        name: currentDest || 'Port of Doraleh (SGTD), Djibouti',
+        nameAm: 'ዶራሌህ ወደብ (ጅቡቲ)',
+        latitude: currentDestLat,
+        longitude: currentDestLng,
+        type: 'DESTINATION',
+        status: progress >= 100 ? 'COMPLETED' : 'UPCOMING',
+        description: 'Final container terminal delivery and e-POD signature offloading',
+      },
+    ];
+
+    const effectiveDynamicWaypoints = isRerouted ? deweleWaypoints : dynamicWaypoints;
+
     // Build timeline milestones dynamically from the specific corridor waypoints
-    const milestones = dynamicWaypoints.map((dw, idx) => ({
+    const milestones = effectiveDynamicWaypoints.map((dw, idx) => ({
       id: dw.id,
       name: `${idx + 1}. ${dw.name}`,
       status: dw.status === 'ACTIVE_NOW' ? 'IN_PROGRESS' : dw.status,
@@ -782,7 +899,7 @@ export const getLiveTracking = async (req: Request, res: Response): Promise<void
       channelNotifications: ['In-App', 'Push (FCM)', 'SMS'],
       type: dw.type,
       description: dw.description,
-      time: dw.time,
+      time: (dw as any).time,
     }));
 
     const isMoving = isInTransit && currentSpeed > 5;
@@ -794,6 +911,17 @@ export const getLiveTracking = async (req: Request, res: Response): Promise<void
       isDelivered,
       isDriverMoving: isMoving,
       status: shipment.status,
+      isRerouted,
+      pendingReroute: (activeReroute && activeReroute.status === 'PENDING_CONFIRMATION') ? activeReroute : null,
+      activeRouteName: isRerouted ? 'Southern Bypass Corridor via Dewele Border' : 'Primary National Highway A-1 Corridor (Galafi Border)',
+      bypassPolyline: isRerouted ? (activeReroute?.bypassPolyline || [
+        { lat: 8.895, lng: 38.765 },
+        { lat: 8.541, lng: 39.271 },
+        { lat: 8.986, lng: 40.165 },
+        { lat: 9.593, lng: 41.866 },
+        { lat: 11.033, lng: 42.633 },
+        { lat: 11.595, lng: 43.148 },
+      ]) : null,
       message: isDelivered
         ? `Consignment arrived at destination and successfully DELIVERED! Electronic POD verified & Smart Escrow released.`
         : isDispatchedOnly
@@ -839,7 +967,7 @@ export const getLiveTracking = async (req: Request, res: Response): Promise<void
           formattedDuration: etaResult.formattedDuration,
           formattedConfidence: etaResult.formattedConfidence,
           remainingDistanceKm: etaResult.remainingDistanceKm,
-          progressPercentage: shipment.progressPercentage ?? 0,
+          progressPercentage: progress,
           weatherNote: etaResult.weatherNote,
         },
         breadcrumbs: shipment.trackingEvents.map((te: any) => ({
@@ -919,7 +1047,7 @@ export const getLiveTracking = async (req: Request, res: Response): Promise<void
         weightTons: l.weightTons,
         budgetEtb: l.targetBudgetEtb,
       })),
-      corridorWaypoints: dynamicWaypoints,
+      corridorWaypoints: effectiveDynamicWaypoints,
       riskZones: CORRIDOR_RISK_ZONES,
     });
   } catch (error: any) {

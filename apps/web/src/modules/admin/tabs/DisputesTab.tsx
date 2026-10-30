@@ -6,7 +6,6 @@ import {
   Clock,
   ShieldCheck,
   Search,
-  RefreshCw,
   Building,
   Truck,
   DollarSign,
@@ -44,7 +43,7 @@ export const DisputesTab: React.FC<DisputesTabProps> = ({
   onRefresh,
   onArbitrate,
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'OPEN' | 'SETTLED' | 'REFUNDED'>('ALL');
 
@@ -88,15 +87,6 @@ export const DisputesTab: React.FC<DisputesTabProps> = ({
             {t('admin.disputesSubtitle')}
           </p>
         </div>
-
-        <button
-          type="button"
-          onClick={onRefresh}
-          className="relative z-10 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs hover:shadow flex items-center gap-2 cursor-pointer shrink-0"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          <span>Sync Disputes</span>
-        </button>
       </div>
 
       {/* Action Success Alert */}
@@ -112,52 +102,52 @@ export const DisputesTab: React.FC<DisputesTabProps> = ({
         <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-1">
           <div className="text-[10.5px] font-bold text-amber-700 uppercase tracking-wider flex items-center gap-1.5">
             <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-            <span>Open Contested Cases</span>
+            <span>{language === 'AM' ? 'ክፍት የክርክር መዝገቦች' : language === 'OM' ? 'Galmeewwan Falmii Banaa' : 'Open Contested Cases'}</span>
           </div>
           <div className="text-2xl font-black text-amber-600">
             {stats.openCases}
           </div>
           <div className="text-[10px] text-slate-400 font-medium">
-            Funds Frozen in Escrow
+            {language === 'AM' ? 'በኤስክሮው የታገዱ ገንዘቦች' : language === 'OM' ? 'Maallaqa Eeskiroo Keessatti Qabame' : 'Funds Frozen in Escrow'}
           </div>
         </div>
 
         <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-1">
           <div className="text-[10.5px] font-bold text-rose-700 uppercase tracking-wider flex items-center gap-1.5">
             <CreditCard className="w-3.5 h-3.5 text-rose-600" />
-            <span>Frozen Escrow Value</span>
+            <span>{language === 'AM' ? 'የታገደ የኤስክሮው መጠን' : language === 'OM' ? 'Gatii Eeskiroo Qabame' : 'Frozen Escrow Value'}</span>
           </div>
           <div className="text-2xl font-black text-rose-600 font-mono">
             {Number(stats.totalFrozenAmountEtb).toLocaleString()} ETB
           </div>
           <div className="text-[10px] text-slate-400 font-medium">
-            Pending Resolution
+            {language === 'AM' ? 'ውሳኔ በመጠባበቅ ላይ' : language === 'OM' ? 'Murtee Eeggamaa Jira' : 'Pending Resolution'}
           </div>
         </div>
 
         <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-1">
           <div className="text-[10.5px] font-bold text-emerald-700 uppercase tracking-wider flex items-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Resolved / Settled</span>
+            <span>{language === 'AM' ? 'የተፈቱ / የተከፈሉ' : language === 'OM' ? 'Furmaata Kan Argatan' : 'Resolved / Settled'}</span>
           </div>
           <div className="text-2xl font-black text-emerald-600">
             {stats.resolvedCases}
           </div>
           <div className="text-[10px] text-slate-400 font-medium">
-            Mediation Completed
+            {language === 'AM' ? 'ሽምግልና ተጠናቋል' : language === 'OM' ? 'Araarri Xumurameera' : 'Mediation Completed'}
           </div>
         </div>
 
         <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-1">
           <div className="text-[10.5px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-sky-600" />
-            <span>Success Rate</span>
+            <span>{language === 'AM' ? 'የስኬት ምጣኔ' : language === 'OM' ? 'Reeshoo Milkaa\'inaa' : 'Success Rate'}</span>
           </div>
           <div className="text-2xl font-black text-slate-900">
             {stats.mediationSuccessRatePct}%
           </div>
           <div className="text-[10px] text-slate-400 font-medium">
-            Avg SLA: {stats.averageResolutionHours} Hours
+            {language === 'AM' ? 'አማካይ የመፍቻ ጊዜ:' : language === 'OM' ? 'Giddu-galeessaan:' : 'Avg SLA:'} {stats.averageResolutionHours} {language === 'AM' ? 'ሰዓታት' : language === 'OM' ? 'Sa\'aatii' : 'Hours'}
           </div>
         </div>
       </div>
@@ -174,7 +164,7 @@ export const DisputesTab: React.FC<DisputesTabProps> = ({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            All Disputes ({tickets.length})
+            {language === 'AM' ? 'ሁሉም ክርክሮች' : language === 'OM' ? 'Falmiiwwan Hundaa' : 'All Disputes'} ({tickets.length})
           </button>
           <button
             type="button"
@@ -185,7 +175,7 @@ export const DisputesTab: React.FC<DisputesTabProps> = ({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Open / Frozen ({stats.openCases})
+            {language === 'AM' ? 'ክፍት / የታገዱ' : language === 'OM' ? 'Banaa / Qabame' : 'Open / Frozen'} ({stats.openCases})
           </button>
           <button
             type="button"
@@ -196,7 +186,7 @@ export const DisputesTab: React.FC<DisputesTabProps> = ({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Settled / Payout ({stats.resolvedCases})
+            {language === 'AM' ? 'የተከፈሉ' : language === 'OM' ? 'Kaffalame' : 'Settled / Payout'} ({stats.resolvedCases})
           </button>
           <button
             type="button"
@@ -207,7 +197,7 @@ export const DisputesTab: React.FC<DisputesTabProps> = ({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Refunded ({stats.refundedCases})
+            {language === 'AM' ? 'የተመለሱ' : language === 'OM' ? 'Deebifame' : 'Refunded'} ({stats.refundedCases})
           </button>
         </div>
 
@@ -215,7 +205,7 @@ export const DisputesTab: React.FC<DisputesTabProps> = ({
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search by Ticket #, Shipper, Carrier, or Plate..."
+            placeholder={language === 'AM' ? 'በትኬት ቁጥር፣ ላኪ፣ አጓጓዥ ወይም የታርጋ ቁጥር ይፈልጉ...' : language === 'OM' ? 'Lakkofsa Tikkeettii, Ergaa, Konkolaachisaan barbaadaa...' : 'Search by Ticket #, Shipper, Carrier, or Plate...'}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3.5 py-1.5 text-xs rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all font-medium"
@@ -229,13 +219,21 @@ export const DisputesTab: React.FC<DisputesTabProps> = ({
           <ShieldCheck className="w-10 h-10 text-emerald-500 mx-auto" />
           <div className="text-sm font-bold text-slate-800">
             {tickets.length === 0
-              ? 'No Active Smart Escrow Disputes'
-              : 'No Disputes Matching Filter'}
+              ? (language === 'AM' ? 'ምንም ንቁ የኤስክሮው ክርክሮች የሉም' : language === 'OM' ? 'Falmiin Eeskiroo Hojiirra Jiru Hin Jiru' : 'No Active Smart Escrow Disputes')
+              : (language === 'AM' ? 'ከማጣሪያው ጋር የሚዛመድ ክርክር የለም' : language === 'OM' ? 'Falmiin Calaltuu Waliin Walsimu Hin Jiru' : 'No Disputes Matching Filter')}
           </div>
           <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
             {tickets.length === 0
-              ? 'Freight escrow transactions are currently running smoothly along the corridor. Any disputed charges or damage claims filed by shippers will be routed here.'
-              : 'Try clearing your search query or switching to another filter tab.'}
+              ? (language === 'AM'
+                  ? 'የጭነት ኤስክሮው ክፍያዎች በኮሪደሩ ላይ ያለምንም እንከን እየተከናወኑ ነው። በላኪዎች የተነሱ ማናቸውም የጉዳት ወይም የክፍያ ቅሬታዎች እዚህ ይመደባሉ።'
+                  : language === 'OM'
+                  ? 'Kaffaltiin eeskiroo imala geejjibaa nagaan adeemsifamaa jira. Kaffaltiin ykn komiin miidhaa ergitootaan dhiyaatu hundi asitti ilaalama.'
+                  : 'Freight escrow transactions are currently running smoothly along the corridor. Any disputed charges or damage claims filed by shippers will be routed here.')
+              : (language === 'AM'
+                  ? 'እባክዎ የፍለጋ ቃሉን ያጥፉ ወይም ወደ ሌላ የማጣሪያ ታብ ይቀይሩ።'
+                  : language === 'OM'
+                  ? 'Mee jecha barbaachaa qulqulleessaa ykn calaltuu birootti jijjiiraa.'
+                  : 'Try clearing your search query or switching to another filter tab.')}
           </p>
         </div>
       ) : (
@@ -273,10 +271,10 @@ export const DisputesTab: React.FC<DisputesTabProps> = ({
                         }`}
                       >
                         {isOpen
-                          ? '⏳ ESCROW FROZEN (UNDER ARBITRATION)'
+                          ? (language === 'AM' ? '⏳ ኤስክሮው ታግዷል (በሽምግልና ላይ)' : language === 'OM' ? '⏳ Eeskiroo Qabame (Adeemsa Murtee)' : '⏳ ESCROW FROZEN (UNDER ARBITRATION)')
                           : isRefunded
-                          ? '✓ 100% REFUNDED TO SHIPPER'
-                          : '✓ RESOLVED & DISBURSED'}
+                          ? (language === 'AM' ? '✓ 100% ለላኪው ተመላሽ ተደርጓል' : language === 'OM' ? '✓ 100% Ergaaf Deebifame' : '✓ 100% REFUNDED TO SHIPPER')
+                          : (language === 'AM' ? '✓ ተፈትቶ ክፍያ ተፈጽሟል' : language === 'OM' ? '✓ Furamee Kaffaltiin Raawwate' : '✓ RESOLVED & DISBURSED')}
                       </span>
                     </div>
 
@@ -288,14 +286,14 @@ export const DisputesTab: React.FC<DisputesTabProps> = ({
                     <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200/80 text-xs text-amber-950 space-y-1">
                       <div className="font-bold flex items-center gap-1.5">
                         <AlertCircle className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                        <span>Contested Claim: {ticket.disputeReason}</span>
+                        <span>{language === 'AM' ? 'የተነሳው አቤቱታ:' : language === 'OM' ? 'Kompii Dhiyaate:' : 'Contested Claim:'} {ticket.disputeReason}</span>
                       </div>
                       <div className="text-[11px] text-amber-800">
-                        Shipper Claimed Deduction:{' '}
+                        {language === 'AM' ? 'ላኪው የጠየቀው ተቀናሽ:' : language === 'OM' ? 'Hir\'ifama Ergaan Gaafate:' : 'Shipper Claimed Deduction:'}{' '}
                         <strong className="font-mono text-rose-700 font-bold">
                           {Number(ticket.claimedAmountEtb).toLocaleString()} ETB
                         </strong>{' '}
-                        • Total Frozen Escrow:{' '}
+                        • {language === 'AM' ? 'ጠቅላላ የታገደ ኤስክሮው:' : language === 'OM' ? 'Ida\'ama Eeskiroo Qabamee:' : 'Total Frozen Escrow:'}{' '}
                         <strong className="font-mono text-slate-900">
                           {Number(ticket.grossAmountEtb).toLocaleString()} ETB
                         </strong>
@@ -306,7 +304,7 @@ export const DisputesTab: React.FC<DisputesTabProps> = ({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 text-xs">
                       {/* Shipper Party */}
                       <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase">Consignor (Claimant)</div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase">{language === 'AM' ? 'ላኪ (ከሳሽ)' : language === 'OM' ? 'Ergaa (Himataa)' : 'Consignor (Claimant)'}</div>
                         <div className="font-bold text-slate-900">{ticket.shipperCompany}</div>
                         <div className="text-slate-500 font-mono text-[11px]">
                           TIN: {ticket.shipperTin} • {ticket.shipperPhone}
@@ -315,10 +313,10 @@ export const DisputesTab: React.FC<DisputesTabProps> = ({
 
                       {/* Transporter Party */}
                       <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase">Carrier (Respondent)</div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase">{language === 'AM' ? 'አጓጓዥ (ተከሳሽ)' : language === 'OM' ? 'GeesSAA (Himataamaa)' : 'Carrier (Respondent)'}</div>
                         <div className="font-bold text-slate-900">{ticket.transporterName}</div>
                         <div className="text-slate-500 text-[11px]">
-                          Driver: {ticket.driverName} • Plate: <strong>{ticket.truckPlate}</strong>
+                          {language === 'AM' ? 'አሽከርካሪ:' : language === 'OM' ? 'Konkolaachisaa:' : 'Driver:'} {ticket.driverName} • {language === 'AM' ? 'ታርጋ:' : language === 'OM' ? 'Gabatee:' : 'Plate:'} <strong>{ticket.truckPlate}</strong>
                         </div>
                       </div>
                     </div>
@@ -327,12 +325,12 @@ export const DisputesTab: React.FC<DisputesTabProps> = ({
                   {/* Right Actions Column */}
                   <div className="shrink-0 flex sm:flex-col items-center sm:items-stretch gap-2 min-w-[200px]">
                     <div className="text-right p-3 rounded-2xl bg-slate-50 border border-slate-200 sm:block hidden">
-                      <div className="text-[10px] font-bold uppercase text-slate-400">Total Escrow Funds</div>
+                      <div className="text-[10px] font-bold uppercase text-slate-400">{language === 'AM' ? 'ጠቅላላ የኤስክሮው ገንዘብ' : language === 'OM' ? 'Maallaqa Eeskiroo Waliigalaa' : 'Total Escrow Funds'}</div>
                       <div className="text-base font-black text-slate-900 font-mono">
                         {Number(ticket.grossAmountEtb).toLocaleString()} ETB
                       </div>
                       <div className="text-[10px] text-slate-400">
-                        Carrier Net: {Number(ticket.netTransporterPayoutEtb).toLocaleString()} ETB
+                        {language === 'AM' ? 'የአጓጓዥ የተጣራ:' : language === 'OM' ? 'Qulqulluu Geessituu:' : 'Carrier Net:'} {Number(ticket.netTransporterPayoutEtb).toLocaleString()} ETB
                       </div>
                     </div>
 
@@ -343,11 +341,13 @@ export const DisputesTab: React.FC<DisputesTabProps> = ({
                         className="px-4 py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer w-full"
                       >
                         <Scale className="w-4 h-4" />
-                        <span>Arbitrate Case</span>
+                        <span>{language === 'AM' ? 'ጉዳዩን ሸምግልና ወስን' : language === 'OM' ? 'Falmii Murteessi' : 'Arbitrate Case'}</span>
                       </button>
                     ) : (
                       <div className="p-3 text-center rounded-xl bg-slate-100 text-slate-600 text-xs font-bold border border-slate-200">
-                        {isRefunded ? 'Refund Executed ✓' : 'Settlement Executed ✓'}
+                        {isRefunded
+                          ? (language === 'AM' ? 'ተመላሽ ተፈጽሟል ✓' : language === 'OM' ? 'Deebiin Raawwateera ✓' : 'Refund Executed ✓')
+                          : (language === 'AM' ? 'ክፍያ ተፈጽሟል ✓' : language === 'OM' ? 'Kaffaltiin Raawwateera ✓' : 'Settlement Executed ✓')}
                       </div>
                     )}
                   </div>
@@ -364,7 +364,13 @@ export const DisputesTab: React.FC<DisputesTabProps> = ({
         onClose={() => setActiveTicket(null)}
         onConfirm={async (paymentId, v, refund, payout, notes) => {
           await onArbitrate(paymentId, v, refund, payout, notes);
-          setActionSuccessMsg('⚖️ Binding verdict recorded! Funds disbursed.');
+          setActionSuccessMsg(
+            language === 'AM'
+              ? '⚖️ מחሪኝ ውሳኔ ተመዝግቧል! ገንዘብ ተከፋፍሏል።'
+              : language === 'OM'
+              ? '⚖️ Murteen dirqisiisaa galmaa\'eera! Maallaqni kaffalameera.'
+              : '⚖️ Binding verdict recorded! Funds disbursed.'
+          );
           setTimeout(() => setActionSuccessMsg(''), 5000);
           onRefresh();
         }}

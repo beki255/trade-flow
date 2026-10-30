@@ -6,6 +6,7 @@ import {
   getPendingRerouteProposals,
   confirmDynamicRerouting,
   updateFuelStationStock,
+  resetDynamicRerouting,
 } from '../controllers/optimization.controller';
 
 const router = Router();
@@ -27,6 +28,9 @@ router.post('/reroute/confirm', confirmDynamicRerouting);
 
 // 6. Update fuel station stockout status (Boundary Condition 6.8)
 router.post('/fuel-stock', updateFuelStationStock);
+
+// 7. Reset dynamic rerouting to primary corridor (testing reset)
+router.post('/reroute/reset', resetDynamicRerouting);
 
 export default router;
 

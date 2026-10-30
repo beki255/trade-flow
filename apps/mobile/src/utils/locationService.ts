@@ -134,18 +134,36 @@ export const startLiveLocationWatch = async (
   try {
     stopLiveLocationWatch();
 
+    let lastReportedLat = 0;
+    let lastReportedLng = 0;
+    let lastReportedHeading = 0;
+
     // 1. Web browser watcher
     if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.geolocation) {
       webWatchId = navigator.geolocation.watchPosition(
         (pos) => {
-          const speedKmh = typeof pos.coords.speed === 'number' && pos.coords.speed > 0
+          const speedKmh = typeof pos.coords.speed === 'number' && pos.coords.speed > 0.8
             ? Math.round(pos.coords.speed * 3.6 * 10) / 10
             : 0;
+          let currentHeading = lastReportedHeading;
+          if (speedKmh >= 3.0 && typeof pos.coords.heading === 'number' && pos.coords.heading >= 0) {
+            currentHeading = Math.round(pos.coords.heading);
+            lastReportedHeading = currentHeading;
+          }
+          const delta = Math.hypot(
+            pos.coords.latitude - lastReportedLat,
+            pos.coords.longitude - lastReportedLng
+          );
+          if (speedKmh < 3.0 && lastReportedLat !== 0 && delta < 0.00015) {
+            return;
+          }
+          lastReportedLat = pos.coords.latitude;
+          lastReportedLng = pos.coords.longitude;
           onUpdate({
             latitude: pos.coords.latitude,
             longitude: pos.coords.longitude,
             speedKmh,
-            heading: pos.coords.heading || 0,
+            heading: currentHeading,
             accuracy: pos.coords.accuracy || 10,
             timestamp: new Date(pos.timestamp).toISOString(),
           });
@@ -156,24 +174,44 @@ export const startLiveLocationWatch = async (
       return true;
     }
 
-    // 2. Native Expo Location watcher
+    // 2. Native Expo Location watcher with stationary deadband filter
     locationSubscription = await Location.watchPositionAsync(
       {
         accuracy: Location.Accuracy.High,
-        timeInterval: 2500,
-        distanceInterval: 5, // report update every 5 meters
+        timeInterval: 2000,
+        distanceInterval: 8, // Avoid micro-jitter under 8 meters
       },
       (position) => {
         const speedRaw = position.coords.speed;
-        const speedKmh = typeof speedRaw === 'number' && speedRaw > 0
+        const speedKmh = typeof speedRaw === 'number' && speedRaw > 0.8
           ? Math.round(speedRaw * 3.6 * 10) / 10
           : 0;
+
+        // If stationary (speed < 3 km/h), lock heading to suppress 3D orientation spin
+        let currentHeading = lastReportedHeading;
+        if (speedKmh >= 3.0 && typeof position.coords.heading === 'number' && position.coords.heading >= 0) {
+          currentHeading = Math.round(position.coords.heading);
+          lastReportedHeading = currentHeading;
+        }
+
+        const delta = Math.hypot(
+          position.coords.latitude - lastReportedLat,
+          position.coords.longitude - lastReportedLng
+        );
+
+        // If stationary and displacement < 15m, keep coordinates stable to prevent map tremor
+        if (speedKmh < 3.0 && lastReportedLat !== 0 && delta < 0.00015) {
+          return;
+        }
+
+        lastReportedLat = position.coords.latitude;
+        lastReportedLng = position.coords.longitude;
 
         onUpdate({
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
           speedKmh,
-          heading: position.coords.heading || 0,
+          heading: currentHeading,
           accuracy: position.coords.accuracy || 10,
           timestamp: new Date(position.timestamp).toISOString(),
         });

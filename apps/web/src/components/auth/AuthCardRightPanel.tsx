@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 
 import { GoogleAuthButton } from './GoogleAuthButton';
+import { ForgotPasswordModal } from './ForgotPasswordModal';
 import {
   Package,
   Building2,
@@ -26,10 +27,24 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
   const [selectedRole, setSelectedRole] = useState<string>('SHIPPER');
   const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [rememberMe, setRememberMe] = useState<boolean>(true);
+  const [rememberMe, setRememberMe] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('tradeflow_remember_me');
+      return saved !== null ? saved === 'true' : true;
+    } catch {
+      return true;
+    }
+  });
+  const [showForgotModal, setShowForgotModal] = useState<boolean>(false);
 
   // Form states
-  const [email, setEmail] = useState<string>('');
+  const [email, setEmail] = useState<string>(() => {
+    try {
+      return localStorage.getItem('tradeflow_remembered_identifier') || '';
+    } catch {
+      return '';
+    }
+  });
   const [password, setPassword] = useState<string>('');
   const [fullName, setFullName] = useState<string>('');
   const [companyName, setCompanyName] = useState<string>('');
@@ -109,6 +124,15 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
         onAuthSuccess(res?.user?.role || selectedRole);
       } else {
         const res = await loginUser(email, password);
+        try {
+          if (rememberMe) {
+            localStorage.setItem('tradeflow_remembered_identifier', email.trim());
+            localStorage.setItem('tradeflow_remember_me', 'true');
+          } else {
+            localStorage.removeItem('tradeflow_remembered_identifier');
+            localStorage.setItem('tradeflow_remember_me', 'false');
+          }
+        } catch (e) {}
         setLoading(false);
         const resolvedRole = res?.user?.role || 'SHIPPER';
         onAuthSuccess(resolvedRole);
@@ -404,9 +428,13 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
                 />
                 <span>Remember me</span>
               </label>
-              <a href="#forgot" className="text-[#0284C7] hover:underline font-semibold">
+              <button
+                type="button"
+                onClick={() => setShowForgotModal(true)}
+                className="text-[#0284C7] hover:underline font-semibold cursor-pointer"
+              >
                 Forgot Password?
-              </a>
+              </button>
             </div>
           )}
 
@@ -480,6 +508,11 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
 
       </div>
 
+      <ForgotPasswordModal
+        isOpen={showForgotModal}
+        onClose={() => setShowForgotModal(false)}
+        defaultEmail={email}
+      />
     </div>
   );
 };

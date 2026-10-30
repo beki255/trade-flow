@@ -5,7 +5,6 @@ import {
   Package,
   ArrowUpRight,
   Search,
-  RefreshCw,
   Building,
   Phone,
   Mail,
@@ -31,7 +30,7 @@ export const MultiShipperTab: React.FC<MultiShipperTabProps> = ({
   onRefresh,
   onNavigateConsolidation,
 }) => {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredClients = clients.filter((c) => {
@@ -62,14 +61,6 @@ export const MultiShipperTab: React.FC<MultiShipperTabProps> = ({
         <div className="flex items-center gap-3 shrink-0 relative z-10">
           <button
             type="button"
-            onClick={onRefresh}
-            className="px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all border border-slate-200 hover:border-slate-300 flex items-center gap-2 shadow-xs cursor-pointer"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Sync</span>
-          </button>
-          <button
-            type="button"
             onClick={onNavigateConsolidation}
             className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
           >
@@ -88,7 +79,7 @@ export const MultiShipperTab: React.FC<MultiShipperTabProps> = ({
           </div>
           <div className="text-2xl font-black text-slate-900">{stats.activeClients}</div>
           <div className="text-[10px] text-indigo-600 font-semibold">
-            Consignors Managed
+            {language === 'AM' ? 'የሚተዳደሩ ላኪዎች' : language === 'OM' ? 'Ergitoota Toʼataman' : 'Consignors Managed'}
           </div>
         </div>
 
@@ -101,7 +92,11 @@ export const MultiShipperTab: React.FC<MultiShipperTabProps> = ({
             {stats.totalLoadsManaged}
           </div>
           <div className="text-[10px] text-slate-400 font-medium">
-            Active: {stats.activeLoadsManaged} In-Flight
+            {language === 'AM'
+              ? `ንቁ፦ ${stats.activeLoadsManaged} በጉዞ ላይ`
+              : language === 'OM'
+              ? `Hojiirra፦ ${stats.activeLoadsManaged} Imalarra`
+              : `Active: ${stats.activeLoadsManaged} In-Flight`}
           </div>
         </div>
 
@@ -114,18 +109,18 @@ export const MultiShipperTab: React.FC<MultiShipperTabProps> = ({
             {stats.averageSavingsPct}%
           </div>
           <div className="text-[10px] text-emerald-700 font-semibold">
-            Via LTL ➔ FTL Bundling
+            {language === 'AM' ? 'ከፊል ጭነትን በማዋሃድ' : language === 'OM' ? 'Feʼiisa LTL Walitti Makuun' : 'Via LTL ➔ FTL Bundling'}
           </div>
         </div>
 
         <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-1">
           <div className="text-[10.5px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-sky-600" />
-            <span>Corridor Compliance</span>
+            <span>{language === 'AM' ? 'የኮሪደር ሕግ ተገዢነት' : language === 'OM' ? 'Hordoffii Seera Koriidoorii' : 'Corridor Compliance'}</span>
           </div>
           <div className="text-2xl font-black text-slate-900">100%</div>
           <div className="text-[10px] text-slate-400 font-medium">
-            Single Window Cleared
+            {language === 'AM' ? 'በ Single Window የጸደቀ' : language === 'OM' ? 'Single Windowʼn Mirkanaaʼe' : 'Single Window Cleared'}
           </div>
         </div>
       </div>
@@ -133,14 +128,24 @@ export const MultiShipperTab: React.FC<MultiShipperTabProps> = ({
       {/* 3. Search & Clients List */}
       <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-          Managed Shipper Clients ({filteredClients.length})
+          {language === 'AM'
+            ? `የሚተዳደሩ የላኪ ደንበኞች (${filteredClients.length})`
+            : language === 'OM'
+            ? `Maamiltoota Ergitootaa (${filteredClients.length})`
+            : `Managed Shipper Clients (${filteredClients.length})`}
         </div>
 
         <div className="relative min-w-[280px]">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search clients by company, TIN, or contact..."
+            placeholder={
+              language === 'AM'
+                ? 'ደንበኞችን በድርጅት ስም፣ በTIN ወይም በዕውቂያ ይፈልጉ...'
+                : language === 'OM'
+                ? 'Maamiltoota maqaa dhaabbataa, TIN ykn teessoon barbaadaa...'
+                : 'Search clients by company, TIN, or contact...'
+            }
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3.5 py-1.5 text-xs rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium"
@@ -149,7 +154,22 @@ export const MultiShipperTab: React.FC<MultiShipperTabProps> = ({
       </div>
 
       {/* Clients Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {filteredClients.length === 0 ? (
+        <div className="p-8 text-center rounded-3xl bg-white border border-slate-200 space-y-2">
+          <Users className="w-8 h-8 text-slate-300 mx-auto" />
+          <div className="text-xs font-bold text-slate-700">
+            {language === 'AM' ? 'ምንም የተመዘገቡ ላኪ ደንበኞች አልተገኙም' : language === 'OM' ? 'Maamiltoonni hin argamne' : 'No Shipper Clients Found'}
+          </div>
+          <p className="text-[11px] text-slate-500">
+            {language === 'AM'
+              ? 'አዳዲስ ላኪዎች በ TradeFlow ሲመዘገቡ እዚህ ዝርዝር ውስጥ ይካተታሉ።'
+              : language === 'OM'
+              ? 'Ergitoonni haaraan yeroo galmaaʼan asitti mulʼatu.'
+              : 'When new shippers register on TradeFlow, they will appear in this managed directory.'}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {filteredClients.map((client) => (
           <div
             key={client.id}
@@ -166,14 +186,18 @@ export const MultiShipperTab: React.FC<MultiShipperTabProps> = ({
                   </span>
                 </div>
                 <h3 className="text-base font-black text-slate-900">{client.companyName}</h3>
-                <p className="text-xs text-slate-500">Contact: {client.fullName}</p>
+                <p className="text-xs text-slate-500">
+                  {language === 'AM' ? 'ዕውቂያ፦' : language === 'OM' ? 'Qunnamtii:' : 'Contact:'} {client.fullName}
+                </p>
               </div>
 
               <div className="text-right shrink-0">
                 <div className="text-xs font-black text-indigo-700 font-mono">
-                  {client.totalTonnageManaged} Tons
+                  {client.totalTonnageManaged} {language === 'AM' ? 'ቶን' : language === 'OM' ? 'Toonii' : 'Tons'}
                 </div>
-                <div className="text-[10px] text-slate-400">Total Volume</div>
+                <div className="text-[10px] text-slate-400">
+                  {language === 'AM' ? 'ጠቅላላ መጠን' : language === 'OM' ? 'Waliigala Hammaa' : 'Total Volume'}
+                </div>
               </div>
             </div>
 
@@ -192,7 +216,9 @@ export const MultiShipperTab: React.FC<MultiShipperTabProps> = ({
             {/* Recent Consignments */}
             {client.recentLoads.length > 0 && (
               <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                <div className="text-[10.5px] font-bold text-slate-400 uppercase">Recent Consignments:</div>
+                <div className="text-[10.5px] font-bold text-slate-400 uppercase">
+                  {language === 'AM' ? 'የቅርብ ጊዜ ጭነቶች፦' : language === 'OM' ? 'Feʼiisa Dhiheenyaa:' : 'Recent Consignments:'}
+                </div>
                 <div className="space-y-1">
                   {client.recentLoads.map((l) => (
                     <div
@@ -210,7 +236,8 @@ export const MultiShipperTab: React.FC<MultiShipperTabProps> = ({
             )}
           </div>
         ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

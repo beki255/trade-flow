@@ -49,9 +49,6 @@ function tileUrl(layer: string, col: number, row: number, z: number): string {
   if (layer === 'sat') {
     return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${row}/${col}`;
   }
-  if (layer === 'roads') {
-    return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/${z}/${row}/${col}`;
-  }
   // OSM: OpenStreetMap France mirror (osmfr) serves standard OpenStreetMap Carto tiles
   // and does not block mobile/Expo OkHttp network requests with 403 Access Blocked.
   return `https://a.tile.openstreetmap.fr/osmfr/${z}/${col}/${row}.png`;
@@ -68,83 +65,10 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
 }) => {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
 
-  // Default to 'osm' (OpenStreetMap) when online; automatically falls back to 'roads' when offline
-  const [isOffline, setIsOffline] = useState<boolean>(() => {
-    if (typeof navigator !== 'undefined' && 'onLine' in navigator) {
-      return !navigator.onLine;
-    }
-    return false;
-  });
-  const [layer, setLayer] = useState<'roads' | 'osm' | 'sat'>('osm');
+  // Map layer toggle: strictly OSM (OpenStreetMap) and Sat (Satellite)
+  const [layer, setLayer] = useState<'osm' | 'sat'>('osm');
   const userManuallySelectedLayerRef = useRef<boolean>(false);
-
-  // Auto-switch between OSM (online) and Roads (offline fallback)
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.addEventListener) {
-      const handleOffline = () => {
-        setIsOffline(true);
-        if (!userManuallySelectedLayerRef.current || layer === 'osm') {
-          setLayer('roads');
-        }
-      };
-      const handleOnline = () => {
-        setIsOffline(false);
-        if (!userManuallySelectedLayerRef.current) {
-          setLayer('osm');
-        }
-      };
-      window.addEventListener('offline', handleOffline);
-      window.addEventListener('online', handleOnline);
-
-      return () => {
-        window.removeEventListener('offline', handleOffline);
-        window.removeEventListener('online', handleOnline);
-      };
-    }
-  }, [layer]);
-
-  // Periodic network connectivity probe to ensure field offline detection
-  useEffect(() => {
-    let isMounted = true;
-    const testConnectivity = async () => {
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 3500);
-        await fetch('https://a.tile.openstreetmap.fr/osmfr/0/0/0.png', {
-          method: 'HEAD',
-          mode: 'no-cors',
-          signal: controller.signal,
-        });
-        clearTimeout(timeout);
-        if (isMounted && isOffline) {
-          setIsOffline(false);
-          if (!userManuallySelectedLayerRef.current) {
-            setLayer('osm');
-          }
-        }
-      } catch {
-        if (isMounted && !isOffline) {
-          setIsOffline(true);
-          if (!userManuallySelectedLayerRef.current || layer === 'osm') {
-            setLayer('roads');
-          }
-        }
-      }
-    };
-
-    const interval = setInterval(testConnectivity, 15000);
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
-  }, [isOffline, layer]);
-
-  const handleTileError = () => {
-    if (layer === 'osm' && !userManuallySelectedLayerRef.current) {
-      setIsOffline(true);
-      setLayer('roads');
-    }
-  };
+  const handleTileError = () => {};
 
   // Navigation Modal State (Authentic 3D Google Maps Turn-by-Turn View)
   const [isNavActive, setIsNavActive] = useState<boolean>(false);
@@ -158,6 +82,7 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
   const manualHeadingRef = useRef<number | null>(null);
   const truckHeadingRef = useRef<number>(0);
   const nav3DStartPanRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const stableLocationRef = useRef<{ lat: number; lng: number; heading: number } | null>(null);
 
   // Auto-transition to close-up Follow Truck view when driver starts trip
   const prevStatusRef = useRef(activeTrip?.status);
@@ -293,28 +218,33 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
   // Live genuine OpenStreetMap / Google Maps road coordinates fetched via OSRM
   const [liveOsmRoad, setLiveOsmRoad] = useState<RoadCoordinate[] | null>(null);
 
+  // Stable coarse coordinates (rounded to 3 decimals, ~110m) to avoid unnecessary route re-fetches
+  const gpsLatKey = driverGpsLocation?.latitude ? Math.round(driverGpsLocation.latitude * 1000) / 1000 : null;
+  const gpsLngKey = driverGpsLocation?.longitude ? Math.round(driverGpsLocation.longitude * 1000) / 1000 : null;
+
   useEffect(() => {
     if (!activeTrip) {
       setLiveOsmRoad(null);
       return;
     }
     let isMounted = true;
-    const oLat = originCoords.lat;
-    const oLng = originCoords.lng;
+    // Route from the driver's genuine current location if GPS is present, or from posted origin
+    const startLat = (driverGpsLocation && typeof driverGpsLocation.latitude === 'number')
+      ? driverGpsLocation.latitude
+      : originCoords.lat;
+    const startLng = (driverGpsLocation && typeof driverGpsLocation.longitude === 'number')
+      ? driverGpsLocation.longitude
+      : originCoords.lng;
     const dLat = destCoords.lat;
     const dLng = destCoords.lng;
 
-    fetchOsmHighwayRoute(oLat, oLng, dLat, dLng).then((route) => {
+    fetchOsmHighwayRoute(startLat, startLng, dLat, dLng).then((route) => {
       if (isMounted && route && route.length >= 10) {
         setLiveOsmRoad(route);
-        setIsOffline(false);
       } else if (isMounted && !route) {
         // Fall back gracefully when offline
         if (typeof navigator !== 'undefined' && 'onLine' in navigator && !navigator.onLine) {
-          setIsOffline(true);
-          if (!userManuallySelectedLayerRef.current) {
-            setLayer('roads');
-          }
+          // Keep active layer
         }
       }
     });
@@ -324,6 +254,8 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
     };
   }, [
     activeTrip?.id,
+    gpsLatKey,
+    gpsLngKey,
     originCoords.lat,
     originCoords.lng,
     destCoords.lat,
@@ -342,12 +274,16 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
     // 2. High-density authentic Ethiopian Highway road polyline
     const oName = origin;
     const dName = dest;
-    const oLat = originCoords.lat;
-    const oLng = originCoords.lng;
+    const startLat = (driverGpsLocation && typeof driverGpsLocation.latitude === 'number')
+      ? driverGpsLocation.latitude
+      : originCoords.lat;
+    const startLng = (driverGpsLocation && typeof driverGpsLocation.longitude === 'number')
+      ? driverGpsLocation.longitude
+      : originCoords.lng;
     const dLat = destCoords.lat;
     const dLng = destCoords.lng;
 
-    const localRoad = getCorridorRoadPolylineLocal(oName, dName, oLat, oLng, dLat, dLng);
+    const localRoad = getCorridorRoadPolylineLocal(oName, dName, startLat, startLng, dLat, dLng);
     if (localRoad && localRoad.length >= 5) {
       return localRoad;
     }
@@ -357,7 +293,7 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
       return WAYPOINTS.map((w) => ({ lat: w.lat, lng: w.lng }));
     }
 
-    return [{ lat: oLat, lng: oLng }, { lat: dLat, lng: dLng }];
+    return [{ lat: startLat, lng: startLng }, { lat: dLat, lng: dLng }];
   }, [
     liveOsmRoad,
     activeTrip,
@@ -366,14 +302,29 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
     originCoords,
     destCoords,
     WAYPOINTS,
+    driverGpsLocation?.latitude,
+    driverGpsLocation?.longitude,
   ]);
 
-  // Truck geographic coordinates interpolated along the curved highway road
+  // Truck geographic coordinates interpolated along the curved highway road with Anti-Jitter Stationary Lock
   const truckGeo = useMemo(() => {
     const route = ROAD_POINTS.length >= 2 ? ROAD_POINTS : WAYPOINTS.map((w) => ({ lat: w.lat, lng: w.lng }));
 
-    // 1. High-Precision Real GPS Snapping on Expo Mobile
+    // 1. High-Precision Real GPS Snapping on Expo Mobile with Deadband Filter
     if (driverGpsLocation && typeof driverGpsLocation.latitude === 'number' && typeof driverGpsLocation.longitude === 'number' && route.length >= 2) {
+      const isStationary = !isInTransit || !isDrivingState || (driverGpsLocation.speedKmh ?? 0) < 3.0;
+
+      // When stationary or resting, anchor coordinates within 25m to eliminate jitter
+      if (isStationary && stableLocationRef.current) {
+        const delta = Math.hypot(
+          driverGpsLocation.latitude - stableLocationRef.current.lat,
+          driverGpsLocation.longitude - stableLocationRef.current.lng
+        );
+        if (delta < 0.00025) {
+          return stableLocationRef.current;
+        }
+      }
+
       let bestDist = Infinity;
       let bestIdx = 0;
       for (let i = 0; i < route.length; i++) {
@@ -384,19 +335,34 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
         }
       }
       const roadPt = route[bestIdx];
-      const nextPt = route[Math.min(route.length - 1, bestIdx + 1)] || roadPt;
+      const lookAhead = Math.min(route.length - 1, bestIdx + 4);
+      const nextPt = route[lookAhead] || roadPt;
+      const dy = nextPt.lat - roadPt.lat;
+      const dx = (nextPt.lng - roadPt.lng) * Math.cos((roadPt.lat * Math.PI) / 180);
       const roadHeading = nextPt !== roadPt
-        ? Math.round(((Math.atan2(nextPt.lng - roadPt.lng, nextPt.lat - roadPt.lat) * 180) / Math.PI + 360) % 360)
+        ? Math.round(((Math.atan2(dx, dy) * 180) / Math.PI + 360) % 360)
         : 0;
-      const heading = (typeof driverGpsLocation.heading === 'number' && driverGpsLocation.heading >= 0)
+
+      // Authentic Google Maps navigation: automatically aligns camera along the upcoming road
+      const heading = (isMoving && typeof driverGpsLocation.heading === 'number' && driverGpsLocation.heading > 0 && (driverGpsLocation.speedKmh ?? 0) > 12)
         ? driverGpsLocation.heading
         : roadHeading;
 
+      // When stationary or resting, freeze heading to prevent 3D canvas spinning
+      if (isStationary && stableLocationRef.current && stableLocationRef.current.heading) {
+        // Keep stable road heading
+      }
+
+      let result: { lat: number; lng: number; heading: number };
       // Snap within ~3.5 km of highway corridor to stay glued to asphalt
       if (bestDist < 0.035) {
-        return { lat: roadPt.lat, lng: roadPt.lng, heading };
+        result = { lat: roadPt.lat, lng: roadPt.lng, heading };
+      } else {
+        result = { lat: driverGpsLocation.latitude, lng: driverGpsLocation.longitude, heading };
       }
-      return { lat: driverGpsLocation.latitude, lng: driverGpsLocation.longitude, heading };
+
+      stableLocationRef.current = result;
+      return result;
     }
 
     if (!isInTransit || tick <= 0 || route.length === 0) {
@@ -419,7 +385,7 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
       ((Math.atan2(p2.lng - p1.lng, p2.lat - p1.lat) * 180) / Math.PI + 360) % 360
     );
     return { lat, lng, heading };
-  }, [isInTransit, tick, ROAD_POINTS, WAYPOINTS, driverGpsLocation]);
+  }, [isInTransit, tick, ROAD_POINTS, WAYPOINTS, driverGpsLocation, isDrivingState]);
 
   // Keep references in sync for gesture callbacks
   useEffect(() => {
@@ -431,7 +397,12 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
   }, [manualHeading]);
 
   // Active map camera heading: manual hand rotation overrides vehicle heading, North-Up sets 0°
-  const activeHeading = isNorthUp ? 0 : (manualHeading !== null ? manualHeading : truckGeo.heading);
+  // When stationary, anchor to stable heading so camera never rotates or spins
+  const activeHeading = isNorthUp
+    ? 0
+    : (manualHeading !== null
+        ? manualHeading
+        : (isMoving ? truckGeo.heading : (stableLocationRef.current?.heading ?? truckGeo.heading)));
 
   // Route center coordinates & span (accounts for all highway curves and waypoints)
   const routeCenter = useMemo(() => {
@@ -632,9 +603,12 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
         WAYPOINTS[1]?.lat || destCoords.lat,
         WAYPOINTS[1]?.lng || destCoords.lng
       )));
+      const cleanOriginShort = cleanOrigin.replace(/\s*\(.*?\)\s*/g, ' ').replace(/\s+/g, ' ').trim();
       return {
-        townName: `${cleanOrigin} Terminal`,
-        shortTown: cleanOrigin,
+        townName: cleanOrigin.toLowerCase().includes('terminal') || cleanOrigin.toLowerCase().includes('depot')
+          ? cleanOrigin
+          : `${cleanOriginShort} Terminal`,
+        shortTown: cleanOriginShort,
         subText: 'Vehicle at Origin Station · Ready to roll',
         nextStopName: firstWp,
         distToNext: distToFirst,
@@ -757,19 +731,19 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
     };
   }, [remainingKm, totalRoadKm, speed]);
 
-  // 3D Canvas dimensions (enlarged to 3.0x with min 1400 to fully cover horizon when tilted 52° and rotated 360°)
-  const nav3DW = Math.max(1400, Math.round(navW * 3.0));
-  const nav3DH = Math.max(1400, Math.round(navH * 3.0));
+  // 3D Canvas dimensions (enlarged to 3.5x to fully cover the horizon without dark bars)
+  const nav3DW = Math.max(1600, Math.round(navW * 3.5));
+  const nav3DH = Math.max(1800, Math.round(navH * 3.5));
 
   const nav3DProj = useMemo(() => {
-    // When following truck, use street/highway driving navigation level (Z=15) centered on vehicle
+    // When following truck, use street/highway driving navigation level (Z=16) centered on vehicle
     // When in overview, use comfortable corridor level (Z=10 or 11) centered towards destination
     let targetZ: number;
     let localScale: number;
 
     if (navModalFollowTruck) {
-      targetZ = 15;
-      localScale = nav3DZoom * 1.35;
+      targetZ = 16;
+      localScale = nav3DZoom * 1.55;
     } else {
       const latDiff = Math.abs(truckGeo.lat - destCoords.lat);
       const lngDiff = Math.abs(truckGeo.lng - destCoords.lng);
@@ -839,29 +813,49 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
     return { geo2px, tiles, effectiveZ: targetZ };
   }, [nav3DW, nav3DH, nav3DZoom, nav3DPanOffset, truckGeo, navModalFollowTruck, destCoords]);
 
-  const nav3DRoutePoints = useMemo(() => {
-    const pts = ROAD_POINTS.length >= 2 ? ROAD_POINTS : WAYPOINTS;
-    return pts.map((p) => {
-      const pt = nav3DProj.geo2px(p.lat, p.lng);
-      return `${pt.x},${pt.y}`;
-    }).join(' ');
-  }, [ROAD_POINTS, WAYPOINTS, nav3DProj]);
+  // Find where the truck is along the active road
+  const truckRoadIdx = useMemo(() => {
+    const route = ROAD_POINTS.length >= 2 ? ROAD_POINTS : WAYPOINTS;
+    if (!route || route.length === 0) return 0;
+    let bestIdx = 0;
+    let minD = Infinity;
+    for (let i = 0; i < route.length; i++) {
+      const d = Math.hypot(route[i].lat - truckGeo.lat, route[i].lng - truckGeo.lng);
+      if (d < minD) {
+        minD = d;
+        bestIdx = i;
+      }
+    }
+    return bestIdx;
+  }, [ROAD_POINTS, WAYPOINTS, truckGeo]);
 
+  // Ahead road: follows the exact curving road geometry ahead of the truck (vibrant Google Maps blue)
+  const nav3DRoutePoints = useMemo(() => {
+    const route = ROAD_POINTS.length >= 2 ? ROAD_POINTS : WAYPOINTS;
+    if (!route || route.length === 0) return '';
+    const ahead = route.slice(truckRoadIdx);
+    const truckPt = nav3DProj.geo2px(truckGeo.lat, truckGeo.lng);
+    const pts = [`${truckPt.x},${truckPt.y}`];
+    for (let i = 1; i < ahead.length; i++) {
+      const pt = nav3DProj.geo2px(ahead[i].lat, ahead[i].lng);
+      pts.push(`${pt.x},${pt.y}`);
+    }
+    return pts.join(' ');
+  }, [ROAD_POINTS, WAYPOINTS, nav3DProj, truckRoadIdx, truckGeo]);
+
+  // Completed road: follows the exact curving road geometry behind the truck (emerald green)
   const nav3DDonePoints = useMemo(() => {
     const route = ROAD_POINTS.length >= 2 ? ROAD_POINTS : WAYPOINTS;
-    if (!isInTransit || tick <= 0 || route.length === 0) return '';
-    const segs = route.length - 1;
-    const currentProgressIndex = (tick / 100) * segs;
-    const segmentIndex = Math.min(Math.floor(currentProgressIndex), segs - 1);
-
-    const pts = route.slice(0, segmentIndex + 1).map((p) => {
+    if (!isInTransit || truckRoadIdx <= 0 || route.length === 0) return '';
+    const done = route.slice(0, truckRoadIdx);
+    const pts = done.map((p) => {
       const pt = nav3DProj.geo2px(p.lat, p.lng);
       return `${pt.x},${pt.y}`;
     });
     const truckPt = nav3DProj.geo2px(truckGeo.lat, truckGeo.lng);
     pts.push(`${truckPt.x},${truckPt.y}`);
     return pts.join(' ');
-  }, [isInTransit, tick, ROAD_POINTS, WAYPOINTS, nav3DProj, truckGeo]);
+  }, [isInTransit, truckRoadIdx, ROAD_POINTS, WAYPOINTS, nav3DProj, truckGeo]);
 
   // ── 3D Navigation Multi-Touch Handlers, Pinch Zoom & Wheel Listeners ──
   const nav3DLastPinchDistRef = useRef<number | null>(null);
@@ -1374,10 +1368,11 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
     <View style={s.card}>
       {/* ── Inline Header ── */}
       <View style={s.headerRow}>
-        <View style={{ flex: 1 }}>
+        {/* Row 1: Title, Status Badge & Layer Switcher */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: 6 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Ionicons name="map-outline" size={15} color="#0284C7" />
-            <Text style={s.title}>REALTIME CORRIDOR MAP</Text>
+            <Text style={s.title}>CORRIDOR MAP</Text>
             <View
               style={[
                 s.badgeLive,
@@ -1395,17 +1390,36 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
               </Text>
             </View>
           </View>
-          <Text style={s.sub}>
-            {totalRoadKm} km Corridor Route · {origin} ➔ {dest}
-          </Text>
+
+          <View style={s.switcher}>
+            {(['osm', 'sat'] as const).map((l) => (
+              <TouchableOpacity
+                key={l}
+                style={[s.btn, layer === l && s.btnActive]}
+                onPress={() => {
+                  userManuallySelectedLayerRef.current = true;
+                  setLayer(l);
+                }}
+              >
+                <Text style={[s.btnTxt, layer === l && s.btnTxtActive]}>
+                  {l === 'osm' ? 'OSM' : 'Sat'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
-        {/* Right Header: 3D Navigation Launch Button & Map Layer Switcher */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        {/* Row 2: Full-width Corridor Route & 3D Navigation Button */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+          <Text style={[s.sub, { flex: 1, marginRight: 8 }]} numberOfLines={1}>
+            {totalRoadKm} km · {origin} ➔ {dest}
+          </Text>
           <TouchableOpacity
             style={s.nav3dLaunchBtn}
             onPress={() => {
               setIsNorthUp(false);
+              setManualHeading(null);
+              setNavModalFollowTruck(true);
               setNav3DZoom(1.0);
               setNav3DPanOffset({ x: 0, y: 0 });
               setIsNavActive(true);
@@ -1417,23 +1431,6 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
               <Text style={s.nav3dLaunchTxt}>3D Navigation</Text>
             </View>
           </TouchableOpacity>
-
-          <View style={s.switcher}>
-            {(['osm', 'roads', 'sat'] as const).map((l) => (
-              <TouchableOpacity
-                key={l}
-                style={[s.btn, layer === l && s.btnActive]}
-                onPress={() => {
-                  userManuallySelectedLayerRef.current = true;
-                  setLayer(l);
-                }}
-              >
-                <Text style={[s.btnTxt, layer === l && s.btnTxtActive]}>
-                  {l === 'osm' ? 'OSM' : l === 'roads' ? (isOffline ? 'Roads · Offline' : 'Roads') : 'Sat'}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
         </View>
       </View>
 
@@ -1447,25 +1444,6 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
         }}
         {...panResponder.panHandlers}
       >
-        {/* Real-time Driver Current Location & Next Milestone Overlay Banner */}
-        <View style={s.driverLiveLocationBar} pointerEvents="none">
-          <View style={s.driverLiveLocationRow}>
-            <View
-              style={[
-                s.locationPulseDot,
-                { backgroundColor: isMoving ? '#10B981' : '#F59E0B' },
-              ]}
-            />
-            <Ionicons name="location" size={11} color="#38BDF8" />
-            <Text style={s.driverLiveLocationTitle} numberOfLines={1}>
-              {driverCurrentLocation.townName}
-            </Text>
-          </View>
-          <Text style={s.driverLiveLocationSub} numberOfLines={1}>
-            {driverCurrentLocation.subText} • Next: {driverCurrentLocation.nextStopName} ({driverCurrentLocation.distToNext} km)
-          </Text>
-        </View>
-
         {/* Floating Recenter Button when panned away or in overview */}
         {(panOffset.x !== 0 || panOffset.y !== 0 || !isFollowTruck) && (
           <TouchableOpacity
@@ -1758,44 +1736,19 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
             </TouchableOpacity>
           </View>
         )}
-
-        {/* Floating Recenter Pill when panned or exploring overview */}
-        {(!isFollowTruck || panOffset.x !== 0 || panOffset.y !== 0) && (
-          <TouchableOpacity
-            style={s.inlineRecenterBtn}
-            onPress={handleFollowTruck}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="navigate-circle" size={13} color="#FFFFFF" />
-            <Text style={s.inlineRecenterTxt}>Follow Vehicle</Text>
-          </TouchableOpacity>
-        )}
       </View>
 
       {/* ── Inline Action Bar (Cleanly placed BELOW map, NEVER overlapping the route!) ── */}
       <View style={s.cleanActionBar}>
         <TouchableOpacity
-          style={[s.cleanActionPill, isFollowTruck && s.cleanActionPillActive]}
+          style={[s.cleanActionPill, s.cleanActionPillActive, { flex: 1 }]}
           onPress={handleFollowTruck}
           activeOpacity={0.7}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-            <Ionicons name="navigate-circle" size={14} color={isFollowTruck ? '#FFFFFF' : '#94A3B8'} />
-            <Text style={[s.cleanActionPillTxt, isFollowTruck && s.cleanActionPillTxtActive]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <Ionicons name="navigate-circle" size={15} color="#FFFFFF" />
+            <Text style={[s.cleanActionPillTxt, s.cleanActionPillTxtActive]}>
               Follow Vehicle (Close-Up)
-            </Text>
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[s.cleanActionPill, !isFollowTruck && s.cleanActionPillActive]}
-          onPress={handleResetRoute}
-          activeOpacity={0.7}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-            <Ionicons name="map" size={14} color={!isFollowTruck ? '#FFFFFF' : '#94A3B8'} />
-            <Text style={[s.cleanActionPillTxt, !isFollowTruck && s.cleanActionPillTxtActive]}>
-              Route Overview (Full Corridor)
             </Text>
           </View>
         </TouchableOpacity>
@@ -1827,23 +1780,6 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
             <Text style={s.routeTxt} numberOfLines={1}>{dest}</Text>
           </View>
         </View>
-
-        {/* Inline Start Trip Button */}
-        {activeTrip && !isInTransit && activeTrip.status !== 'DELIVERED' && onStartTrip && (
-          <TouchableOpacity
-            style={s.startTripMapBtn}
-            onPress={handleStartTripWith3D}
-            disabled={actionLoading}
-            activeOpacity={0.85}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-              <Ionicons name="play" size={13} color="#FFFFFF" />
-              <Text style={s.startTripMapTxt}>
-                {actionLoading ? 'Starting Trip...' : 'Start Trip'}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        )}
       </View>
 
       {/* ═══════════════════════════════════════════════════════════════ */}
@@ -1872,8 +1808,8 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
                 width: nav3DW,
                 height: nav3DH,
                 transform: [
-                  { perspective: navModalFollowTruck ? 950 : 0 },
-                  { rotateX: !navModalFollowTruck || isNorthUp ? '0deg' : '58deg' },
+                  { perspective: navModalFollowTruck ? 900 : 0 },
+                  { rotateX: !navModalFollowTruck || isNorthUp ? '0deg' : '48deg' },
                   { rotateZ: navModalFollowTruck ? `${-activeHeading}deg` : '0deg' },
                 ],
               }}
@@ -2083,31 +2019,6 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
 
             {/* 3. FLOATING RIGHT COLUMN CONTROLS */}
             <View style={s.navRightControls} pointerEvents="box-none">
-              {/* Route Overview ⟷ Follow Vehicle Toggle */}
-              <TouchableOpacity
-                style={[
-                  s.navFloatingCircleBtn,
-                  !navModalFollowTruck && { borderColor: '#38BDF8', backgroundColor: '#0284C7' },
-                ]}
-                onPress={() => {
-                  setNavModalFollowTruck(!navModalFollowTruck);
-                  setNav3DPanOffset({ x: 0, y: 0 });
-                  setNav3DZoom(1.0);
-                  if (navModalFollowTruck) {
-                    setIsNorthUp(true);
-                  } else {
-                    setIsNorthUp(false);
-                  }
-                }}
-                activeOpacity={0.8}
-              >
-                <Ionicons
-                  name={navModalFollowTruck ? 'map-outline' : 'navigate-circle'}
-                  size={19}
-                  color={!navModalFollowTruck ? '#FFFFFF' : '#38BDF8'}
-                />
-              </TouchableOpacity>
-
               {/* Compass Needle Button (Shows True North; tap to reset manual rotation or toggle North-Up) */}
               <TouchableOpacity
                 style={[
@@ -2233,14 +2144,14 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
                 <Text style={{ fontSize: 18, color: '#FFFFFF', fontWeight: 'bold' }}>－</Text>
               </TouchableOpacity>
 
-              {/* Layer Toggle */}
+              {/* Layer Toggle (OSM ⟷ Sat) */}
               <TouchableOpacity
                 style={s.navFloatingCircleBtn}
-                onPress={() => setLayer(layer === 'roads' ? 'sat' : layer === 'sat' ? 'osm' : 'roads')}
+                onPress={() => setLayer(layer === 'sat' ? 'osm' : 'sat')}
                 activeOpacity={0.8}
               >
-                <Text style={{ fontSize: 11, fontWeight: '900', color: '#38BDF8' }}>
-                  {layer === 'roads' ? 'R' : layer === 'sat' ? 'S' : 'O'}
+                <Text style={{ fontSize: 10, fontWeight: '900', color: '#38BDF8' }}>
+                  {layer === 'sat' ? 'SAT' : 'OSM'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -2271,30 +2182,6 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
                     </View>
                   </View>
 
-                  {/* Route Overview vs Follow Toggle */}
-                  <TouchableOpacity
-                    style={[
-                      s.navAltRouteBtn,
-                      !navModalFollowTruck && { backgroundColor: '#0284C7', borderColor: '#38BDF8' },
-                    ]}
-                    onPress={() => {
-                      setNavModalFollowTruck(!navModalFollowTruck);
-                      setNav3DPanOffset({ x: 0, y: 0 });
-                      setNav3DZoom(1.0);
-                      if (navModalFollowTruck) {
-                        setIsNorthUp(true);
-                      } else {
-                        setIsNorthUp(false);
-                      }
-                    }}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons
-                      name={navModalFollowTruck ? 'map-outline' : 'navigate-circle'}
-                      size={18}
-                      color="#FFFFFF"
-                    />
-                  </TouchableOpacity>
                 </View>
 
                 {/* Start Trip Button if awaiting departure */}
@@ -2428,14 +2315,14 @@ const s = StyleSheet.create({
     position: 'absolute',
     top: 8,
     left: 8,
-    maxWidth: '74%',
+    right: 8,
     backgroundColor: 'rgba(15, 23, 42, 0.94)',
-    paddingHorizontal: 9,
-    paddingVertical: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1.2,
     borderColor: '#0284C7',
-    zIndex: 999,
+    zIndex: 998,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.4,
@@ -2467,11 +2354,11 @@ const s = StyleSheet.create({
   },
   inlineRecenterBtn: {
     position: 'absolute',
-    top: 8,
+    bottom: 8,
     right: 8,
     backgroundColor: '#0284C7',
     paddingHorizontal: 9,
-    paddingVertical: 5,
+    paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#38BDF8',
@@ -2688,7 +2575,7 @@ const s = StyleSheet.create({
   },
   navTopCardContainer: {
     position: 'absolute',
-    top: 12,
+    top: Platform.OS === 'android' ? (StatusBar.currentHeight ? StatusBar.currentHeight + 10 : 38) : 48,
     left: 14,
     right: 14,
     zIndex: 100,

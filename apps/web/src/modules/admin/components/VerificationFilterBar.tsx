@@ -1,5 +1,6 @@
 import React from 'react';
 import { Clock, CheckCircle, XCircle, Search } from 'lucide-react';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface VerificationFilterBarProps {
   totalUsersCount: number;
@@ -26,6 +27,8 @@ export const VerificationFilterBar: React.FC<VerificationFilterBarProps> = ({
   searchQuery,
   setSearchQuery,
 }) => {
+  const { language } = useLanguage();
+
   return (
     <div className="p-4 bg-slate-50/70 border-b border-slate-200 flex flex-col md:flex-row items-center justify-between gap-3">
       {/* 1. Status Filter Pills */}
@@ -38,7 +41,7 @@ export const VerificationFilterBar: React.FC<VerificationFilterBarProps> = ({
               : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
           }`}
         >
-          All ({totalUsersCount})
+          {language === 'AM' ? `ሁሉም (${totalUsersCount})` : language === 'OM' ? `Hundaa (${totalUsersCount})` : `All (${totalUsersCount})`}
         </button>
 
         <button
@@ -50,7 +53,7 @@ export const VerificationFilterBar: React.FC<VerificationFilterBarProps> = ({
           }`}
         >
           <Clock className="w-3.5 h-3.5" />
-          <span>Pending ({pendingCount})</span>
+          <span>{language === 'AM' ? `የሚጠባበቁ (${pendingCount})` : language === 'OM' ? `Eegamu (${pendingCount})` : `Pending (${pendingCount})`}</span>
         </button>
 
         <button
@@ -62,7 +65,7 @@ export const VerificationFilterBar: React.FC<VerificationFilterBarProps> = ({
           }`}
         >
           <CheckCircle className="w-3.5 h-3.5" />
-          <span>Verified ({verifiedCount})</span>
+          <span>{language === 'AM' ? `የተረጋገጡ (${verifiedCount})` : language === 'OM' ? `Mirkanaa'an (${verifiedCount})` : `Verified (${verifiedCount})`}</span>
         </button>
 
         <button
@@ -74,7 +77,7 @@ export const VerificationFilterBar: React.FC<VerificationFilterBarProps> = ({
           }`}
         >
           <XCircle className="w-3.5 h-3.5" />
-          <span>Suspended ({suspendedCount})</span>
+          <span>{language === 'AM' ? `የታገዱ (${suspendedCount})` : language === 'OM' ? `Dhoorkaman (${suspendedCount})` : `Suspended (${suspendedCount})`}</span>
         </button>
       </div>
 
@@ -85,12 +88,12 @@ export const VerificationFilterBar: React.FC<VerificationFilterBarProps> = ({
           onChange={(e) => setRoleFilter(e.target.value)}
           className="px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-xs font-bold text-slate-700 outline-none focus:border-[#0284C7] cursor-pointer"
         >
-          <option value="ALL">All Roles</option>
-          <option value="SHIPPER">Shipper</option>
-          <option value="TRANSPORTER">Transporter</option>
-          <option value="FREIGHT_FORWARDER">Freight Forwarder</option>
-          <option value="DRIVER">Driver</option>
-          <option value="CUSTOMS_OFFICER">Customs Inspector</option>
+          <option value="ALL">{language === 'AM' ? 'ሁሉም ሚናዎች' : language === 'OM' ? 'Ga\'ee Hundaa' : 'All Roles'}</option>
+          <option value="SHIPPER">{language === 'AM' ? 'የጭነት ባለቤት (Shipper)' : language === 'OM' ? 'Abbaa Fe\'isaa' : 'Shipper'}</option>
+          <option value="TRANSPORTER">{language === 'AM' ? 'አጓጓዥ (Transporter)' : language === 'OM' ? 'Geejjibsiisaa' : 'Transporter'}</option>
+          <option value="FREIGHT_FORWARDER">{language === 'AM' ? 'የጭነት አስተላላፊ (Forwarder)' : language === 'OM' ? 'Ergaa Fe\'isaa' : 'Freight Forwarder'}</option>
+          <option value="DRIVER">{language === 'AM' ? 'አሽከርካሪ (Driver)' : language === 'OM' ? 'Konkolaachisaa' : 'Driver'}</option>
+          <option value="CUSTOMS_OFFICER">{language === 'AM' ? 'የጉምሩክ መርማሪ (Customs)' : language === 'OM' ? 'Sakatta\'aa Gumruukaa' : 'Customs Inspector'}</option>
         </select>
 
         <div className="relative flex-1 md:w-56">
@@ -98,7 +101,7 @@ export const VerificationFilterBar: React.FC<VerificationFilterBarProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search company, TIN, name..."
+            placeholder={language === 'AM' ? 'ድርጅት፣ ቲን (TIN)፣ ስም ፈልግ...' : language === 'OM' ? 'Dhaabbata, TIN, maqaa barbaadi...' : 'Search company, TIN, name...'}
             className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-300 bg-white text-xs font-medium text-slate-900 outline-none focus:border-[#0284C7]"
           />
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2" />

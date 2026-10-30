@@ -25,6 +25,8 @@ import { DeliveredHandoverCard } from '../components/DeliveredHandoverCard';
 import { TrackingConsignmentCard } from '../components/TrackingConsignmentCard';
 import { calculateCorridorRoadDistanceKm, resolveCorridorCoordinates } from '@tradeflow/shared';
 
+const cleanText = (str?: string) => (str ? String(str).replace(/^`+|`+$/g, '').trim() : '');
+
 interface TrackingTabProps {
   onNavigatePostLoad?: () => void;
   onNavigateConsignments?: () => void;
@@ -46,6 +48,8 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
   const [loading, setLoading] = useState<boolean>(true);
   const [lastRefreshed, setLastRefreshed] = useState<string>('');
   const [filterMode, setFilterMode] = useState<'ACTIVE' | 'DELIVERED'>('ACTIVE');
+  const selectedLoadRef = React.useRef<PostedLoadItem | null>(null);
+  selectedLoadRef.current = selectedLoad;
 
   // Fetch real loads & live tracking from backend
   const fetchTrackingData = async () => {
@@ -53,8 +57,9 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
       setLoading(true);
 
       // 1. Fetch live tracking info for selected load or overall corridor
-      const trackingUrl = selectedLoad?.id
-        ? `/api/tracking/live/${selectedLoad.id}`
+      const loadId = selectedLoadRef.current?.id;
+      const trackingUrl = loadId
+        ? `/api/tracking/live/${loadId}`
         : '/api/tracking/live';
       const trackingRes = await fetch(trackingUrl);
       let liveJson: any = null;
@@ -74,12 +79,12 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
           const distKm = calculateCorridorRoadDistanceKm(l.originName, l.destName, oC.lat, oC.lng, dC.lat, dC.lng);
           return {
             id: l.id,
-            loadCode: l.title || 'Freight Consignment',
-            title: l.title || 'Freight Consignment',
-            origin: l.originName || '',
+            loadCode: cleanText(l.title) || 'Freight Consignment',
+            title: cleanText(l.title) || 'Freight Consignment',
+            origin: cleanText(l.originName) || '',
             originLat: oC.lat,
             originLng: oC.lng,
-            destination: l.destName || '',
+            destination: cleanText(l.destName) || '',
             destLat: dC.lat,
             destLng: dC.lng,
             distanceKm: distKm,
@@ -97,7 +102,7 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
 
         setAllLoads(formatted);
 
-        // Keep current selection if valid and matches current filterMode, or clear
+        // Keep current selection if valid and matches current filterMode, or auto-select active in-transit load
         if (selectedLoad) {
           const stillExists = formatted.find((l) => l.id === selectedLoad.id);
           if (stillExists) {
@@ -110,8 +115,11 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
           } else {
             setSelectedLoad(null);
           }
-        } else if (formatted.length === 0) {
-          setSelectedLoad(null);
+        } else if (formatted.length > 0) {
+          const activeInTransit = formatted.find((l) => l.status === 'IN_TRANSIT') || (filterMode === 'ACTIVE' ? formatted[0] : null);
+          if (activeInTransit && filterMode === 'ACTIVE') {
+            setSelectedLoad(activeInTransit);
+          }
         }
       } else if (liveJson?.allLoads?.length > 0) {
         setAllLoads(liveJson.allLoads);
@@ -408,48 +416,41 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
 
         return (
           <div className="space-y-4 pt-2">
-            {/* Active Selection Banner with Close Option */}
-            <div
-              className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border shadow-xs ${
-                isTripDelivered
-                  ? 'bg-purple-50/80 border-purple-200 text-slate-800'
-                  : 'bg-sky-50/80 border-sky-200 text-slate-800'
-              }`}
-            >
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-black text-slate-900 capitalize">
-                    {selectedLoad.title}
-                  </h3>
-                  <span
-                    className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
-                      isTripDelivered ? 'bg-purple-100 text-purple-800 border-purple-200' : 'bg-sky-100 text-sky-800 border-sky-200'
-                    }`}
-                  >
-                    {isTripDelivered ? '✓ Delivered' : isTripInTransit ? '🟢 In Transit' : 'Dispatched'}
-                  </span>
+            {/* Active Selection Banner with Close Option (Only for In-Transit Live Map) */}
+            {isTripInTransit && (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-sky-200 bg-sky-50/80 text-slate-800 shadow-xs">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-black text-slate-900 capitalize">
+                      {selectedLoad.title}
+                    </h3>
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border bg-emerald-100 text-emerald-800 border-emerald-200 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                      IN TRANSIT (LIVE)
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600 mt-1 flex items-center gap-2 font-medium">
+                    <span className="text-slate-700">🟢 {selectedLoad.origin.split(',')[0]}</span>
+                    <span className="text-slate-400">➔</span>
+                    <span className="text-slate-700">🏁 {selectedLoad.destination.split(',')[0]}</span>
+                    <span className="text-sky-800 font-bold">
+                      • {selectedLoad.distanceKm ? `${selectedLoad.distanceKm} km Corridor` : 'Active Corridor'}
+                    </span>
+                  </p>
                 </div>
-                <p className="text-xs text-slate-600 mt-1 flex items-center gap-2 font-medium">
-                  <span className="text-slate-700">🟢 {selectedLoad.origin.split(',')[0]}</span>
-                  <span className="text-slate-400">➔</span>
-                  <span className="text-slate-700">🏁 {selectedLoad.destination.split(',')[0]}</span>
-                  <span className={isTripDelivered ? 'text-purple-800 font-bold' : 'text-sky-800 font-bold'}>
-                    • Status: {isTripDelivered ? 'DELIVERED (e-POD SIGNED ✓)' : isTripInTransit ? 'IN_TRANSIT (LIVE)' : selectedLoad.status}
-                  </span>
-                </p>
-              </div>
 
-              <button
-                onClick={() => setSelectedLoad(null)}
-                className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all self-start sm:self-auto border border-slate-200 hover:border-slate-300 shadow-xs cursor-pointer"
-              >
-                {language === 'AM'
-                  ? '✕ ዝጋ / ሌላ ጭነት ምረጥ'
-                  : language === 'OM'
-                  ? '✕ Cufi / Kan Biroo Filadhu'
-                  : '✕ Close / Select Other Consignment'}
-              </button>
-            </div>
+                <button
+                  onClick={() => setSelectedLoad(null)}
+                  className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all self-start sm:self-auto border border-slate-200 hover:border-slate-300 shadow-xs cursor-pointer"
+                >
+                  {language === 'AM'
+                    ? '✕ ዝጋ / ሌላ ጭነት ምረጥ'
+                    : language === 'OM'
+                    ? '✕ Cufi / Kan Biroo Filadhu'
+                    : '✕ Close / Select Other Consignment'}
+                </button>
+              </div>
+            )}
 
             {/* A. CASE 1: TRIP IS DELIVERED -> MODULAR COMPLETED SUMMARY */}
             {isTripDelivered ? (
@@ -458,6 +459,7 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
                 onPaymentsRedirect={handlePaymentsRedirect}
                 onConsignmentsRedirect={handleConsignmentsRedirect}
                 onPostLoadRedirect={handlePostLoadRedirect}
+                onClose={() => setSelectedLoad(null)}
               />
             ) : isTripInTransit ? (
               /* B. CASE 2: TRIP IS IN TRANSIT -> SHOW REAL LIVE GPS MAP */
@@ -483,7 +485,7 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
                 />
               </div>
             ) : (
-              /* C. CASE 3: TRIP NOT YET IN TRANSIT -> SHOW AWAITING DEPARTURE STATE */
+              /* C. CASE 3: TRIP NOT YET IN TRANSIT -> SHOW AWAITING DEPARTURE STATE (Single Unified Card, No Duplication) */
               <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
                   <div className="flex items-center gap-3.5">
@@ -492,10 +494,12 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full border border-amber-200">
+                        <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded-full border border-amber-200">
                           {selectedLoad.status === 'DISPATCHED' || selectedLoad.status === 'BOOKED'
-                            ? 'Dispatched • Ready at Origin'
-                            : 'Awaiting Carrier Match'}
+                            ? (language === 'AM' ? 'ተልኳል • በመነሻ ቦታ ዝግጁ ነው' : language === 'OM' ? 'Ergameera • Bakka Ka\'umsaatti Qophii' : 'Dispatched • Ready at Origin')
+                            : selectedLoad.status === 'BIDDING'
+                            ? (language === 'AM' ? 'ጨረታ በሂደት ላይ • አጓጓዥ ይጠበቃል' : language === 'OM' ? 'Caalbaasiin Hojiirra Jira' : 'Bidding in Progress • Awaiting Carrier')
+                            : (language === 'AM' ? 'ክፍት • አጓጓዥ ማዛመድ ይጠበቃል' : language === 'OM' ? 'Banaa • Geessisaa Eegaa Jira' : 'Open • Awaiting Carrier Match')}
                         </span>
                       </div>
                       <h3 className="text-xl font-black text-slate-900 mt-1 capitalize">
@@ -504,11 +508,25 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
                     </div>
                   </div>
 
-                  <div className="text-right sm:border-l sm:border-slate-200 sm:pl-6">
-                    <div className="text-[10px] font-bold uppercase text-slate-400">Total Route Distance</div>
-                    <div className="text-sm font-black text-slate-900">
-                      {selectedLoad.distanceKm || '--'} km Corridor
+                  <div className="flex items-center gap-4 sm:border-l sm:border-slate-200 sm:pl-6">
+                    <div className="text-right">
+                      <div className="text-[10px] font-bold uppercase text-slate-400">
+                        {language === 'AM' ? 'ጠቅላላ የመንገድ ርቀት' : language === 'OM' ? 'Waliigala Fageenya Daandii' : 'Total Route Distance'}
+                      </div>
+                      <div className="text-sm font-black text-slate-900">
+                        {selectedLoad.distanceKm || '--'} km Corridor
+                      </div>
                     </div>
+                    <button
+                      onClick={() => setSelectedLoad(null)}
+                      className="px-3.5 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-all border border-slate-200 shadow-2xs cursor-pointer shrink-0"
+                    >
+                      {language === 'AM'
+                        ? '✕ ሌላ ጭነት ምረጥ'
+                        : language === 'OM'
+                        ? '✕ Kan Biroo Filadhu'
+                        : '✕ Change Consignment'}
+                    </button>
                   </div>
                 </div>
 
@@ -520,7 +538,7 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
                     </div>
                     <div>
                       <div className="text-[10px] font-black uppercase tracking-wider text-emerald-800">
-                        Origin
+                        {language === 'AM' ? 'መነሻ' : language === 'OM' ? 'Ka\'umsa' : 'Origin'}
                       </div>
                       <div className="text-xs font-bold text-slate-900">{selectedLoad.origin}</div>
                     </div>
@@ -532,7 +550,7 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
                     </div>
                     <div>
                       <div className="text-[10px] font-black uppercase tracking-wider text-sky-800">
-                        Destination
+                        {language === 'AM' ? 'መድረሻ' : language === 'OM' ? 'Ga\'umsa' : 'Destination'}
                       </div>
                       <div className="text-xs font-bold text-slate-900">{selectedLoad.destination}</div>
                     </div>
@@ -543,7 +561,9 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
                 {(liveData?.shipment?.driverName || selectedLoad.driverName || selectedLoad.status === 'DISPATCHED' || selectedLoad.status === 'BOOKED') ? (
                   <div className="p-4 rounded-2xl bg-sky-50/80 border border-sky-200 grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                      <span className="text-[10px] font-bold text-sky-700 uppercase">Assigned Driver</span>
+                      <span className="text-[10px] font-bold text-sky-700 uppercase">
+                        {language === 'AM' ? 'የተመደበ አሽከርካሪ' : language === 'OM' ? 'Konkolaachisaa Ramadame' : 'Assigned Driver'}
+                      </span>
                       <div className="text-xs font-black text-slate-900 mt-0.5">
                         👤 {selectedLoad.driverName || liveData?.shipment?.driverName || 'Verified Fleet Driver'}
                       </div>
@@ -554,15 +574,23 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
                       )}
                     </div>
                     <div>
-                      <span className="text-[10px] font-bold text-sky-700 uppercase">Assigned Vehicle</span>
+                      <span className="text-[10px] font-bold text-sky-700 uppercase">
+                        {language === 'AM' ? 'የተመደበ ተሽከርካሪ' : language === 'OM' ? 'Konkolaataa Ramadame' : 'Assigned Vehicle'}
+                      </span>
                       <div className="text-xs font-black text-slate-900 mt-0.5">
                         🚛 {selectedLoad.truckPlate || liveData?.shipment?.truckPlate || 'Heavy Freight Carrier'}
                       </div>
                     </div>
                     <div>
-                      <span className="text-[10px] font-bold text-sky-700 uppercase">Departure Status</span>
+                      <span className="text-[10px] font-bold text-sky-700 uppercase">
+                        {language === 'AM' ? 'የመነሻ ሁኔታ' : language === 'OM' ? 'Haala Ka\'umsaa' : 'Departure Status'}
+                      </span>
                       <div className="text-xs font-black text-amber-700 mt-0.5">
-                        ⏳ Ready at Origin (Trip Not Started)
+                        {language === 'AM'
+                          ? '⏳ በመነሻ ቦታ ዝግጁ (ጉዞ ገና አልተጀመረም)'
+                          : language === 'OM'
+                          ? '⏳ Ka\'umsa Irratti Qophii (Imalli Hin Jalqabamne)'
+                          : '⏳ Ready at Origin (Trip Not Started)'}
                       </div>
                     </div>
                   </div>
@@ -572,10 +600,18 @@ export const TrackingTab: React.FC<TrackingTabProps> = ({
                 <div className="p-6 rounded-2xl bg-gradient-to-r from-amber-500/10 via-sky-500/10 to-indigo-500/10 border border-amber-300/80 text-center space-y-3">
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-black border border-amber-200">
                     <Radio className="w-3.5 h-3.5 text-amber-600 animate-ping" />
-                    Live Tracking Locked (Awaiting Departure)
+                    {language === 'AM'
+                      ? 'የቀጥታ መከታተያ ተቆልፏል (ጉዞ እስኪጀመር)'
+                      : language === 'OM'
+                      ? 'Hordoffiin Cufameera (Imala Eegaa)'
+                      : 'Live Tracking Locked (Awaiting Departure)'}
                   </div>
                   <h4 className="text-base font-black text-slate-900">
-                    Live GPS map will open as soon as the driver starts the trip
+                    {language === 'AM'
+                      ? 'ሹፌሩ ጉዞውን እንደጀመረ የቀጥታ የጂፒኤስ ካርታ ወዲያውኑ ይከፈታል።'
+                      : language === 'OM'
+                      ? 'Akkuma konkolaachisaan imala jalqabeen kaartaan GPS kallattii battalumatti banama.'
+                      : 'Live GPS map will open as soon as the driver starts the trip'}
                   </h4>
                 </div>
               </div>

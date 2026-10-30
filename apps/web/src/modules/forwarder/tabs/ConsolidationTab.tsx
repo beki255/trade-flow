@@ -8,7 +8,6 @@ import {
   Building,
   Plus,
   ArrowRight,
-  RefreshCw,
   Box,
   Scale,
   Sparkles,
@@ -39,7 +38,7 @@ export const ConsolidationTab: React.FC<ConsolidationTabProps> = ({
   onRefresh,
   onConsolidate,
 }) => {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const [selectedLoadIds, setSelectedLoadIds] = useState<string[]>([]);
   const [containerType, setContainerType] = useState('40FT_HIGH_CUBE');
   const [masterTitle, setMasterTitle] = useState('Consolidated Export Freight Container');
@@ -54,14 +53,14 @@ export const ConsolidationTab: React.FC<ConsolidationTabProps> = ({
 
   // Compute selected metrics
   const selectedLoads = ltlLoads.filter((l) => selectedLoadIds.includes(l.id));
-  const currentTotalWeight = selectedLoads.reduce((sum, l) => sum + (l.weightTons || 8.0), 0);
-  const currentTotalVolume = selectedLoads.reduce((sum, l) => sum + (l.volumeCbm || 15.0), 0);
-  const separateCostSum = selectedLoads.reduce((sum, l) => sum + (l.targetBudgetEtb || 45000), 0);
+  const currentTotalWeight = selectedLoads.reduce((sum, l) => sum + (l.weightTons || 0), 0);
+  const currentTotalVolume = selectedLoads.reduce((sum, l) => sum + (l.volumeCbm || 0), 0);
+  const separateCostSum = selectedLoads.reduce((sum, l) => sum + (l.targetBudgetEtb || 0), 0);
 
   // 28% to 32% consolidation savings
   const consolidatedRate = Math.round(separateCostSum * 0.72);
   const totalSavings = separateCostSum - consolidatedRate;
-  const savingsPct = separateCostSum > 0 ? Math.round((totalSavings / separateCostSum) * 100) : 28;
+  const savingsPct = separateCostSum > 0 ? Math.round((totalSavings / separateCostSum) * 100) : 0;
 
   const weightPct = Math.min(100, Math.round((currentTotalWeight / maxWeightTons) * 100));
   const volumePct = Math.min(100, Math.round((currentTotalVolume / maxVolumeCbm) * 100));
@@ -74,7 +73,13 @@ export const ConsolidationTab: React.FC<ConsolidationTabProps> = ({
 
   const handleExecuteConsolidation = async () => {
     if (selectedLoadIds.length < 2) {
-      alert('Please select at least 2 partial LTL loads to consolidate into a single container.');
+      alert(
+        language === 'AM'
+          ? 'እባክዎ በአንድ ኮንቴነር ውስጥ ለማዋሃድ ቢያንስ 2 ከፊል LTL ጭነቶችን ይምረጡ።'
+          : language === 'OM'
+          ? 'Maaloo konteenara tokko keessatti walitti makuuf yoo xiqqaate feʼiisa LTL 2 filadhaa.'
+          : 'Please select at least 2 partial LTL loads to consolidate into a single container.'
+      );
       return;
     }
     setSubmitting(true);
@@ -87,7 +92,13 @@ export const ConsolidationTab: React.FC<ConsolidationTabProps> = ({
         destStation,
         consolidatedRate
       );
-      setSuccessNotice(`🎉 Successfully consolidated ${selectedLoadIds.length} LTL shipments! Container registered.`);
+      setSuccessNotice(
+        language === 'AM'
+          ? `🎉 ${selectedLoadIds.length} የLTL ጭነቶች በተሳካ ሁኔታ ተዋህደዋል! ኮንቴነር ተመዝግቧል።`
+          : language === 'OM'
+          ? `🎉 Feʼiisota LTL ${selectedLoadIds.length} milkaaʼinaan walitti makamaniiru! Konteenarri galmaaʼeera.`
+          : `🎉 Successfully consolidated ${selectedLoadIds.length} LTL shipments! Container registered.`
+      );
       setSelectedLoadIds([]);
       setTimeout(() => setSuccessNotice(''), 6000);
     } catch (err: any) {
@@ -110,15 +121,6 @@ export const ConsolidationTab: React.FC<ConsolidationTabProps> = ({
             {t('forwarder.consolidationSubtitle')}
           </p>
         </div>
-
-        <button
-          type="button"
-          onClick={onRefresh}
-          className="relative z-10 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs hover:shadow flex items-center gap-2 cursor-pointer shrink-0"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          <span>Sync Cargo</span>
-        </button>
       </div>
 
       {/* Success Alert */}
@@ -136,10 +138,10 @@ export const ConsolidationTab: React.FC<ConsolidationTabProps> = ({
           <div className="flex items-center justify-between text-xs">
             <span className="font-bold text-slate-500 uppercase flex items-center gap-1.5">
               <Scale className="w-3.5 h-3.5 text-indigo-600" />
-              <span>Weight Capacity</span>
+              <span>{language === 'AM' ? 'የክብደት አቅም' : language === 'OM' ? 'Dandeettii Ulfaatinnaa' : 'Weight Capacity'}</span>
             </span>
             <span className="font-mono font-black text-slate-900">
-              {currentTotalWeight.toFixed(1)} / {maxWeightTons} Tons
+              {currentTotalWeight.toFixed(1)} / {maxWeightTons} {language === 'AM' ? 'ቶን' : language === 'OM' ? 'Toonii' : 'Tons'}
             </span>
           </div>
           <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
@@ -151,8 +153,8 @@ export const ConsolidationTab: React.FC<ConsolidationTabProps> = ({
             />
           </div>
           <div className="flex items-center justify-between text-[11px] text-slate-500 font-medium">
-            <span>Utilization: <strong>{weightPct}%</strong></span>
-            <span>Available: {(maxWeightTons - currentTotalWeight).toFixed(1)}T</span>
+            <span>{language === 'AM' ? 'አጠቃቀም:' : language === 'OM' ? 'Hojiirra Oolmaa:' : 'Utilization:'} <strong>{weightPct}%</strong></span>
+            <span>{language === 'AM' ? 'ክፍት የቀረ:' : language === 'OM' ? 'Kan Hafu:' : 'Available:'} {(maxWeightTons - currentTotalWeight).toFixed(1)}T</span>
           </div>
         </div>
 
@@ -161,7 +163,7 @@ export const ConsolidationTab: React.FC<ConsolidationTabProps> = ({
           <div className="flex items-center justify-between text-xs">
             <span className="font-bold text-slate-500 uppercase flex items-center gap-1.5">
               <Box className="w-3.5 h-3.5 text-purple-600" />
-              <span>Volume Utilization</span>
+              <span>{language === 'AM' ? 'የይዘት/መጠን አጠቃቀም' : language === 'OM' ? 'Hojiirra Oolmaa Qabiyyee' : 'Volume Utilization'}</span>
             </span>
             <span className="font-mono font-black text-slate-900">
               {currentTotalVolume.toFixed(1)} / {maxVolumeCbm} m³
@@ -176,8 +178,8 @@ export const ConsolidationTab: React.FC<ConsolidationTabProps> = ({
             />
           </div>
           <div className="flex items-center justify-between text-[11px] text-slate-500 font-medium">
-            <span>Cube Filled: <strong>{volumePct}%</strong></span>
-            <span>Free Space: {(maxVolumeCbm - currentTotalVolume).toFixed(1)} m³</span>
+            <span>{language === 'AM' ? 'የተሞላ መጠን:' : language === 'OM' ? 'Bakka Guutame:' : 'Cube Filled:'} <strong>{volumePct}%</strong></span>
+            <span>{language === 'AM' ? 'ባዶ ቦታ:' : language === 'OM' ? 'Bakka Duwwaa:' : 'Free Space:'} {(maxVolumeCbm - currentTotalVolume).toFixed(1)} m³</span>
           </div>
         </div>
 
@@ -185,13 +187,17 @@ export const ConsolidationTab: React.FC<ConsolidationTabProps> = ({
         <div className="p-5 rounded-3xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200/90 shadow-xs space-y-2">
           <div className="text-[11px] font-bold text-emerald-800 uppercase flex items-center gap-1.5">
             <TrendingDown className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Consolidation Freight Discount</span>
+            <span>{language === 'AM' ? 'የኮንሶሊዴሽን ጭነት ቅናሽ' : language === 'OM' ? 'Hirʼina Gatii Feʼiisa Walitti Makamee' : 'Consolidation Freight Discount'}</span>
           </div>
           <div className="text-2xl font-black text-emerald-700 font-mono">
             {totalSavings > 0 ? `${Number(totalSavings).toLocaleString()} ETB` : '0 ETB'}
           </div>
           <div className="text-[11px] text-emerald-800 font-semibold">
-            {savingsPct}% Cheaper than separate LTL dispatches
+            {language === 'AM'
+              ? `ከተናጠል ጭነት በ ${savingsPct}% ቅናሽ`
+              : language === 'OM'
+              ? `Feʼiisa adda addaa irra %${savingsPct} salphaa dha`
+              : `${savingsPct}% Cheaper than separate LTL dispatches`}
           </div>
         </div>
       </div>
@@ -199,7 +205,9 @@ export const ConsolidationTab: React.FC<ConsolidationTabProps> = ({
       {/* 3. Container Configuration Bar */}
       <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="space-y-1">
-          <label className="text-xs font-bold text-slate-700">Master Container Type</label>
+          <label className="text-xs font-bold text-slate-700">
+            {language === 'AM' ? 'ዋና የኮንቴነር ዓይነት' : language === 'OM' ? 'Gosa Konteenara Guddaa' : 'Master Container Type'}
+          </label>
           <select
             value={containerType}
             onChange={(e) => setContainerType(e.target.value)}
@@ -212,7 +220,9 @@ export const ConsolidationTab: React.FC<ConsolidationTabProps> = ({
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-bold text-slate-700">Corridor Route Leg</label>
+          <label className="text-xs font-bold text-slate-700">
+            {language === 'AM' ? 'የኮሪደር መስመር ምዕራፍ' : language === 'OM' ? 'Daandii Koriidoorii' : 'Corridor Route Leg'}
+          </label>
           <div className="px-3 py-2 text-xs font-medium rounded-xl bg-slate-50 border border-slate-200 text-slate-700 truncate">
             {originStation.split(' ')[0]} ➔ {destStation.split(' ')[0]}
           </div>
@@ -227,7 +237,13 @@ export const ConsolidationTab: React.FC<ConsolidationTabProps> = ({
           >
             <Package className="w-4 h-4" />
             <span>
-              {submitting ? 'Bundling...' : `Consolidate ${selectedLoadIds.length} Selected Loads ➔`}
+              {submitting
+                ? (language === 'AM' ? 'በማዋሃድ ላይ...' : language === 'OM' ? 'Walitti makaa jira...' : 'Bundling...')
+                : (language === 'AM'
+                  ? `${selectedLoadIds.length} የተመረጡ ጭነቶችን አዋህድ ➔`
+                  : language === 'OM'
+                  ? `Feʼiisa Filatame ${selectedLoadIds.length} Walitti Maki ➔`
+                  : `Consolidate ${selectedLoadIds.length} Selected Loads ➔`)}
             </span>
           </button>
         </div>
@@ -238,19 +254,39 @@ export const ConsolidationTab: React.FC<ConsolidationTabProps> = ({
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
             <Box className="w-4 h-4 text-purple-600" />
-            <span>Available Partial LTL Consignments for Bundling ({ltlLoads.length}):</span>
+            <span>
+              {language === 'AM'
+                ? `ለማዋሃድ ዝግጁ የሆኑ ከፊል (LTL) ጭነቶች (${ltlLoads.length}):`
+                : language === 'OM'
+                ? `Feʼiisota LTL walitti qabuuf qophaaʼan (${ltlLoads.length}):`
+                : `Available Partial LTL Consignments for Bundling (${ltlLoads.length}):`}
+            </span>
           </h3>
           <span className="text-xs font-bold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full border border-purple-200">
-            {selectedLoadIds.length} Consignments Selected
+            {language === 'AM'
+              ? `${selectedLoadIds.length} ጭነቶች ተመርጠዋል`
+              : language === 'OM'
+              ? `Feʼiisa ${selectedLoadIds.length} filatameera`
+              : `${selectedLoadIds.length} Consignments Selected`}
           </span>
         </div>
 
         {ltlLoads.length === 0 ? (
           <div className="p-8 text-center rounded-3xl bg-white border border-slate-200 space-y-2">
             <Package className="w-8 h-8 text-slate-300 mx-auto" />
-            <div className="text-xs font-bold text-slate-700">No Partial Cargo Awaiting Consolidation</div>
+            <div className="text-xs font-bold text-slate-700">
+              {language === 'AM'
+                ? 'ውህደት የሚጠብቅ ከፊል ጭነት የለም'
+                : language === 'OM'
+                ? 'Feʼiisni walitti makamuuf eegu hin jiru'
+                : 'No Partial Cargo Awaiting Consolidation'}
+            </div>
             <p className="text-[11px] text-slate-500">
-              When cargo owners post loads under 24 Tons along the corridor, they will appear here.
+              {language === 'AM'
+                ? 'የጭነት ባለቤቶች በኮሪደሩ ላይ ከ24 ቶን በታች ጭነት ሲለጥፉ እዚህ ይታያሉ።'
+                : language === 'OM'
+                ? 'Abbootiin qabeenyaa feʼiisa toonii 24 gadi yammuu maxxansan asitti mulʼatu.'
+                : 'When cargo owners post loads under 24 Tons along the corridor, they will appear here.'}
             </p>
           </div>
         ) : (
@@ -277,10 +313,12 @@ export const ConsolidationTab: React.FC<ConsolidationTabProps> = ({
                   <div className="space-y-1.5 flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-[10px] font-bold bg-slate-100 text-slate-800 px-2 py-0.5 rounded border border-slate-200 uppercase">
-                        {load.cargoType ? load.cargoType.replace('_', ' ') : 'Consignment'}
+                        {load.cargoType
+                          ? load.cargoType.replace('_', ' ')
+                          : (language === 'AM' ? 'ጭነት' : language === 'OM' ? 'Feʼiisa' : 'Consignment')}
                       </span>
                       <span className="text-xs font-mono font-bold text-purple-700">
-                        {load.weightTons} Tons • {load.volumeCbm} m³
+                        {load.weightTons} {language === 'AM' ? 'ቶን' : language === 'OM' ? 'Toonii' : 'Tons'} • {load.volumeCbm} m³
                       </span>
                     </div>
 
@@ -292,7 +330,7 @@ export const ConsolidationTab: React.FC<ConsolidationTabProps> = ({
                     </div>
 
                     <div className="pt-1 text-[10.5px] text-slate-400 flex items-center justify-between">
-                      <span>Route: {load.origin} ➔ {load.destination}</span>
+                      <span>{language === 'AM' ? 'መስመር:' : language === 'OM' ? 'Daandii:' : 'Route:'} {load.origin} ➔ {load.destination}</span>
                       <span className="text-emerald-700 font-mono font-bold">
                         {Number(load.targetBudgetEtb).toLocaleString()} ETB
                       </span>
@@ -310,7 +348,13 @@ export const ConsolidationTab: React.FC<ConsolidationTabProps> = ({
         <div className="space-y-3 pt-4 border-t border-slate-200">
           <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
             <Layers className="w-4 h-4 text-emerald-600" />
-            <span>Master Consolidated Containers in Transit ({consolidatedHistory.length}):</span>
+            <span>
+              {language === 'AM'
+                ? `በጉዞ ላይ ያሉ ዋና የተዋሃዱ ኮንቴነሮች (${consolidatedHistory.length}):`
+                : language === 'OM'
+                ? `Konteenaroota gurguddoo imalarra jiran (${consolidatedHistory.length}):`
+                : `Master Consolidated Containers in Transit (${consolidatedHistory.length}):`}
+            </span>
           </h3>
 
           <div className="grid grid-cols-1 gap-3">
@@ -327,16 +371,24 @@ export const ConsolidationTab: React.FC<ConsolidationTabProps> = ({
                     <span className="text-xs font-black text-slate-900">{c.masterTitle}</span>
                   </div>
                   <span className="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                    {c.savingsPct}% Discount Achieved
+                    {language === 'AM'
+                      ? `${c.savingsPct}% ቅናሽ ተገኝቷል`
+                      : language === 'OM'
+                      ? `Hirʼina %${c.savingsPct} argameera`
+                      : `${c.savingsPct}% Discount Achieved`}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-4 text-xs text-slate-600">
-                  <span>Capacity Filled: <strong>{c.weightUtilizationPct}%</strong> ({c.totalWeightTons}T)</span>
+                  <span>
+                    {language === 'AM' ? 'የተሞላ አቅም:' : language === 'OM' ? 'Dandeettii Guutame:' : 'Capacity Filled:'} <strong>{c.weightUtilizationPct}%</strong> ({c.totalWeightTons}{language === 'AM' ? 'ቶን' : language === 'OM' ? 'T' : 'T'})
+                  </span>
                   <span>•</span>
-                  <span>Bundled Cargoes: <strong>{c.consignmentsCount} Shippers</strong></span>
+                  <span>
+                    {language === 'AM' ? 'የተዋሃዱ ጭነቶች:' : language === 'OM' ? 'Feʼiisa Walitti Makame:' : 'Bundled Cargoes:'} <strong>{c.consignmentsCount} {language === 'AM' ? 'ላኪዎች' : language === 'OM' ? 'Ergitoota' : 'Shippers'}</strong>
+                  </span>
                   <span>•</span>
-                  <span>Route: {c.origin} ➔ {c.destination}</span>
+                  <span>{language === 'AM' ? 'መስመር:' : language === 'OM' ? 'Daandii:' : 'Route:'} {c.origin} ➔ {c.destination}</span>
                 </div>
               </div>
             ))}

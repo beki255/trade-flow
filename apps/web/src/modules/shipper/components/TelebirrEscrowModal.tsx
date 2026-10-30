@@ -12,6 +12,7 @@ import {
   Check,
 } from 'lucide-react';
 import { AIMatchCarrier, BidItem } from '../types';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface TelebirrEscrowModalProps {
   isOpen: boolean;
@@ -40,6 +41,10 @@ export const TelebirrEscrowModal: React.FC<TelebirrEscrowModalProps> = ({
   onPay,
   txReceipt,
 }) => {
+  const { language: rawLanguage } = useLanguage();
+  const isAm = (rawLanguage || '').toUpperCase() === 'AM';
+  const isOm = (rawLanguage || '').toUpperCase() === 'OM';
+  const language = isAm ? 'am' : isOm ? 'om' : 'en';
   const [selectedMethod, setSelectedMethod] = useState<'TELEBIRR' | 'CBE_BIRR'>('TELEBIRR');
 
   if (!isOpen) return null;
@@ -56,15 +61,15 @@ export const TelebirrEscrowModal: React.FC<TelebirrEscrowModalProps> = ({
   const transporterName =
     selectedBid?.transporterName ||
     selectedMatch?.companyName ||
-    'Assigned Corridor Transporter';
+    (language === 'am' ? 'የተመደበ የመተላለፊያ አጓጓዥ' : language === 'om' ? "Fe'aa Daandii Ramadame" : 'Assigned Corridor Transporter');
 
   const routeName =
     selectedBid?.route ||
-    'Addis Ababa ➔ Djibouti Port Corridor';
+    (language === 'am' ? 'አዲስ አበባ ➔ ጅቡቲ ወደብ ኮሪደር' : language === 'om' ? 'Koriidarii Finfinnee ➔ Buufata Jibuutii' : 'Addis Ababa ➔ Djibouti Port Corridor');
 
   const loadName =
     selectedBid?.loadTitle ||
-    'Heavy Freight Consignment';
+    (language === 'am' ? 'ከባድ የጭነት ዕቃ' : language === 'om' ? "Fe'iinsa Ulfaataa" : 'Heavy Freight Consignment');
 
   const handleAuthorize = (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,6 +79,28 @@ export const TelebirrEscrowModal: React.FC<TelebirrEscrowModalProps> = ({
       paymentMethod: selectedMethod,
       amount: grossAmount,
     });
+  };
+
+  const getHeaderTitle = () => {
+    if (selectedMethod === 'CBE_BIRR') {
+      if (language === 'am') return 'የሲቢኢ ብር ስማርት እስክሮው መቆለፊያ';
+      if (language === 'om') return 'Cuffaa Iskiroo Smart CBE Birr';
+      return 'CBE Birr Smart Escrow Lock';
+    }
+    if (language === 'am') return 'የቴሌብር ስማርት እስክሮው መቆለፊያ';
+    if (language === 'om') return 'Cuffaa Iskiroo Smart TeleBirr';
+    return 'TeleBirr Smart Escrow Lock';
+  };
+
+  const getHeaderSubtitle = () => {
+    if (selectedMethod === 'CBE_BIRR') {
+      if (language === 'am') return 'በብሔራዊ ሎጂስቲክስ SLA የተረጋገጠ የኢትዮጵያ ንግድ ባንክ ዲጂታል እስክሮው';
+      if (language === 'om') return 'Iskiroo dijitaalaa Baankii Daldala Itoophiyaa kan SLA Loojistiksii Biyyooleessaan deeggarame';
+      return 'Commercial Bank of Ethiopia digital escrow backed by National Logistics SLA';
+    }
+    if (language === 'am') return 'በኢትዮጵያ ብሔራዊ ሎጂስቲክስ SLA የተረጋገጠ የኢትዮ ቴሌኮም ዲጂታል እስክሮው';
+    if (language === 'om') return 'Iskiroo dijitaalaa Itiyo Teelekoom kan SLA Loojistiksii Biyyooleessaan deeggarame';
+    return 'Ethio Telecom digital escrow backed by Ethiopian National Logistics SLA';
   };
 
   return (
@@ -93,16 +120,14 @@ export const TelebirrEscrowModal: React.FC<TelebirrEscrowModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight">
-                  {selectedMethod === 'CBE_BIRR' ? 'CBE Birr Smart Escrow Lock' : 'TeleBirr Smart Escrow Lock'}
+                  {getHeaderTitle()}
                 </h3>
                 <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full shrink-0">
-                  Secure
+                  {language === 'am' ? 'አስተማማኝ' : language === 'om' ? "Mirkanaa'aa" : 'Secure'}
                 </span>
               </div>
               <p className="text-[10.5px] sm:text-[11px] text-slate-500">
-                {selectedMethod === 'CBE_BIRR'
-                  ? 'Commercial Bank of Ethiopia digital escrow backed by National Logistics SLA'
-                  : 'Ethio Telecom digital escrow backed by Ethiopian National Logistics SLA'}
+                {getHeaderSubtitle()}
               </p>
             </div>
           </div>
@@ -127,36 +152,55 @@ export const TelebirrEscrowModal: React.FC<TelebirrEscrowModalProps> = ({
             </div>
             <div>
               <h4 className="text-base font-black text-emerald-950">
-                Escrow Funds Successfully Locked!
+                {language === 'am'
+                  ? 'የእስክሮው ገንዘብ በተሳካ ሁኔታ ተቆልፏል!'
+                  : language === 'om'
+                  ? "Maallaqni Iskiroo Milkaa'inaan Cufameera!"
+                  : 'Escrow Funds Successfully Locked!'}
               </h4>
               <p className="text-xs text-emerald-800 mt-1">
-                Receipt reference: <span className="font-mono font-bold text-emerald-900">{txReceipt?.transactionNo || (selectedMethod === 'CBE_BIRR' ? 'CBE-TF-CONFIRMED' : 'TB-TF-CONFIRMED')}</span>
+                {language === 'am' ? 'የደረሰኝ መለያ:' : language === 'om' ? 'Lakk. Nagahee:' : 'Receipt reference:'}{' '}
+                <span className="font-mono font-bold text-emerald-900">
+                  {txReceipt?.transactionNo || (selectedMethod === 'CBE_BIRR' ? 'CBE-TF-CONFIRMED' : 'TB-TF-CONFIRMED')}
+                </span>
               </p>
             </div>
 
             <div className="p-4 rounded-2xl bg-white/90 border border-emerald-200 text-left space-y-2 text-xs">
               <div className="flex justify-between items-center">
-                <span className="text-slate-500 font-medium">Assigned Transporter:</span>
+                <span className="text-slate-500 font-medium">
+                  {language === 'am' ? 'የተመደበው አጓጓዥ:' : language === 'om' ? "Fe'aa Ramadame:" : 'Assigned Transporter:'}
+                </span>
                 <span className="font-bold text-slate-900">{transporterName}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-slate-500 font-medium">Locked Escrow Deposit:</span>
+                <span className="text-slate-500 font-medium">
+                  {language === 'am' ? 'የተቆለፈ የእስክሮው ተቀማጭ:' : language === 'om' ? 'Qabsiisa Iskiroo Cufame:' : 'Locked Escrow Deposit:'}
+                </span>
                 <span className="font-black text-slate-900">{grossAmount.toLocaleString()} ETB</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-slate-500 font-medium">Net Payout to Carrier:</span>
+                <span className="text-slate-500 font-medium">
+                  {language === 'am' ? 'ለአጓጓዡ የሚከፈል የተጣራ ክፍያ:' : language === 'om' ? "Kaffaltii Qulqulluu Fe'aaf:" : 'Net Payout to Carrier:'}
+                </span>
                 <span className="font-black text-emerald-700">{netTransporterPayout.toLocaleString()} ETB</span>
               </div>
               <div className="flex justify-between items-center pt-2 border-t border-emerald-100">
-                <span className="text-slate-500 font-medium">Escrow Release Condition:</span>
+                <span className="text-slate-500 font-medium">
+                  {language === 'am' ? 'የእስክሮው መልቀቂያ ቅድመ-ሁኔታ:' : language === 'om' ? 'Ulaagaa Iskiroo Gadhiisuu:' : 'Escrow Release Condition:'}
+                </span>
                 <span className="text-[11px] font-bold text-sky-800">
-                  Recipient GPS e-POD Signature
+                  {language === 'am' ? 'የተቀባይ GPS e-POD ዲጂታል ፊርማ' : language === 'om' ? 'Mallattoo GPS e-POD Fudhataa' : 'Recipient GPS e-POD Signature'}
                 </span>
               </div>
             </div>
 
             <p className="text-[11px] text-emerald-700 italic">
-              Transporter notified immediately to commence dispatch and corridor loading.
+              {language === 'am'
+                ? 'አጓጓዡ ወዲያውኑ ጭነት እንዲጀምርና ወደ መተላለፊያው እንዲንቀሳቀስ ማሳወቂያ ተልኳል።'
+                : language === 'om'
+                ? "Fe'aan battalumatti fe'iinsa eegalee daandii irra akka socho'uuf beeksisni ergameera."
+                : 'Transporter notified immediately to commence dispatch and corridor loading.'}
             </p>
           </div>
         ) : (
@@ -166,35 +210,47 @@ export const TelebirrEscrowModal: React.FC<TelebirrEscrowModalProps> = ({
             {/* Cargo & Carrier Summary Card */}
             <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
               <div>
-                <div className="text-[10px] font-bold uppercase text-slate-400">Consignment & Carrier</div>
+                <div className="text-[10px] font-bold uppercase text-slate-400">
+                  {language === 'am' ? 'ጭነት እና አጓጓዥ' : language === 'om' ? "Fe'iinsa fi Fe'aa" : 'Consignment & Carrier'}
+                </div>
                 <div className="text-xs font-bold text-slate-900 mt-0.5">{loadName}</div>
                 <div className="text-[11px] text-sky-700 font-semibold">{routeName}</div>
               </div>
               <div className="sm:text-right">
-                <div className="text-[10px] font-bold uppercase text-slate-400">Transporter</div>
+                <div className="text-[10px] font-bold uppercase text-slate-400">
+                  {language === 'am' ? 'አጓጓዥ' : language === 'om' ? "Fe'aa" : 'Transporter'}
+                </div>
                 <div className="text-xs font-bold text-slate-800">{transporterName}</div>
-                <div className="text-[10px] font-semibold text-emerald-600">★ Verified Fleet</div>
+                <div className="text-[10px] font-semibold text-emerald-600">
+                  {language === 'am' ? '★ የተረጋገጠ ተሽከርካሪ' : language === 'om' ? "★ Konkolaattota Mirkanaa'an" : '★ Verified Fleet'}
+                </div>
               </div>
             </div>
 
             {/* Financial Ledger Breakdown */}
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 space-y-2.5 text-xs shadow-xs">
               <div className="flex justify-between items-center text-slate-600">
-                <span>Agreed Gross Freight Rate:</span>
+                <span>
+                  {language === 'am' ? 'የተስማሙበት ጠቅላላ የጭነት ዋጋ:' : language === 'om' ? "Gatii Waliigalaa Fe'iinsaa:" : 'Agreed Gross Freight Rate:'}
+                </span>
                 <span className="font-bold text-slate-900 font-mono">{grossAmount.toLocaleString()} ETB</span>
               </div>
               <div className="flex justify-between items-center text-slate-500">
-                <span>Platform Escrow Fee (5.0%):</span>
+                <span>
+                  {language === 'am' ? 'የመድረኩ የእስክሮው አገልግሎት ክፍያ (5.0%):' : language === 'om' ? 'Kaffaltii Tajaajila Iskiroo (5.0%):' : 'Platform Escrow Fee (5.0%):'}
+                </span>
                 <span className="font-mono text-amber-700 font-semibold">-{platformFee.toLocaleString()} ETB</span>
               </div>
               <div className="flex justify-between items-center text-emerald-800 text-[11.5px]">
-                <span className="font-medium">Transporter Disbursement upon e-POD:</span>
+                <span className="font-medium">
+                  {language === 'am' ? 'e-POD ሲረጋገጥ ለአጓጓዡ የሚለቀቅ ክፍያ:' : language === 'om' ? "e-POD yeroo mirkanaa'u Kaffaltii Fe'aaf Gadhiifamu:" : 'Transporter Disbursement upon e-POD:'}
+                </span>
                 <span className="font-bold font-mono">{netTransporterPayout.toLocaleString()} ETB</span>
               </div>
               <div className="flex justify-between items-center pt-2.5 border-t border-slate-200 text-sm font-black">
                 <span className="text-slate-900 flex items-center gap-1.5">
                   <Lock className="w-3.5 h-3.5 text-sky-600" />
-                  Total Escrow Lock:
+                  {language === 'am' ? 'ጠቅላላ የሚቆለፍ እስክሮው:' : language === 'om' ? 'Waliigala Iskiroo Cufamu:' : 'Total Escrow Lock:'}
                 </span>
                 <span className="text-sky-700 font-mono text-base">{grossAmount.toLocaleString()} ETB</span>
               </div>
@@ -203,7 +259,7 @@ export const TelebirrEscrowModal: React.FC<TelebirrEscrowModalProps> = ({
             {/* Mobile Wallet Selector: TeleBirr & CBE Birr only */}
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-700">
-                Select Mobile Money Wallet
+                {language === 'am' ? 'የሞባይል ገንዘብ ዋሌት ይምረጡ' : language === 'om' ? 'Waleetii Maallaqa Mobaayilaa Filadhaa' : 'Select Mobile Money Wallet'}
               </label>
               <div className="grid grid-cols-2 gap-2.5">
                 <button
@@ -219,7 +275,9 @@ export const TelebirrEscrowModal: React.FC<TelebirrEscrowModalProps> = ({
                     <span className="text-xs font-black text-sky-700">TeleBirr</span>
                     {selectedMethod === 'TELEBIRR' && <Check className="w-3.5 h-3.5 text-sky-600" />}
                   </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">Ethio Telecom</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">
+                    {language === 'am' ? 'ኢትዮ ቴሌኮም' : language === 'om' ? 'Itiyo Teelekoom' : 'Ethio Telecom'}
+                  </div>
                 </button>
 
                 <button
@@ -235,7 +293,9 @@ export const TelebirrEscrowModal: React.FC<TelebirrEscrowModalProps> = ({
                     <span className="text-xs font-black text-purple-700">CBE Birr</span>
                     {selectedMethod === 'CBE_BIRR' && <Check className="w-3.5 h-3.5 text-purple-600" />}
                   </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">Commercial Bank of Ethiopia</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">
+                    {language === 'am' ? 'የኢትዮጵያ ንግድ ባንክ' : language === 'om' ? 'Baankii Daldala Itoophiyaa' : 'Commercial Bank of Ethiopia'}
+                  </div>
                 </button>
               </div>
             </div>
@@ -243,7 +303,7 @@ export const TelebirrEscrowModal: React.FC<TelebirrEscrowModalProps> = ({
             {/* Mobile Number Input */}
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Payer Mobile Number (Registered Wallet)
+                {language === 'am' ? 'የከፋይ ስልክ ቁጥር (የተመዘገበ ዋሌት)' : language === 'om' ? "Lakk. Mobaayilaa Kaffalaa (Waleetii Galmaa'e)" : 'Payer Mobile Number (Registered Wallet)'}
               </label>
               <div className="relative">
                 <input
@@ -265,7 +325,14 @@ export const TelebirrEscrowModal: React.FC<TelebirrEscrowModalProps> = ({
             <div className="p-3 rounded-2xl bg-sky-50/80 border border-sky-200 flex items-start gap-2.5 text-[11px] text-sky-900">
               <ShieldCheck className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
               <p className="leading-snug">
-                <strong className="font-bold">Smart Escrow Protection:</strong> Funds remain securely locked in digital escrow and will only be disbursed to the transporter when the recipient confirms delivery via digital signature (e-POD).
+                <strong className="font-bold">
+                  {language === 'am' ? 'የስማርት እስክሮው ጥበቃ:' : language === 'om' ? 'Eegumsa Smart Iskiroo:' : 'Smart Escrow Protection:'}
+                </strong>{' '}
+                {language === 'am'
+                  ? 'ገንዘቡ በዲጂታል እስክሮው ውስጥ በአስተማማኝ ሁኔታ ተቆልፎ የሚቆይ ሲሆን፣ ተቀባዩ ርክክቡን በዲጂታል ፊርማ (e-POD) ሲያረጋግጥ ብቻ ለአጓጓዡ ይለቀቃል።'
+                  : language === 'om'
+                  ? "Maallaqni iskiroo dijitaalaa keessatti amansiisummaan cufamee kan turu yoo ta'u, kaffaltiin kan gadhiifamu yeroo fudhataan mallattoo dijitaalaatiin (e-POD) mirkaneessu qofaadha."
+                  : 'Funds remain securely locked in digital escrow and will only be disbursed to the transporter when the recipient confirms delivery via digital signature (e-POD).'}
               </p>
             </div>
 
@@ -291,13 +358,23 @@ export const TelebirrEscrowModal: React.FC<TelebirrEscrowModalProps> = ({
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
                   <span>
-                    Contacting {selectedMethod === 'CBE_BIRR' ? 'CBE Birr' : 'TeleBirr'} Gateway & Locking Escrow...
+                    {language === 'am'
+                      ? `ከ${selectedMethod === 'CBE_BIRR' ? 'ሲቢኢ ብር' : 'ቴሌብር'} ጌትዌይ ጋር በመገናኘት እስክሮው እየተቆለፈ ነው...`
+                      : language === 'om'
+                      ? `Gara ${selectedMethod === 'CBE_BIRR' ? 'CBE Birr' : 'TeleBirr'}tti erguun Iskiroon cufamaa jira...`
+                      : `Contacting ${selectedMethod === 'CBE_BIRR' ? 'CBE Birr' : 'TeleBirr'} Gateway & Locking Escrow...`}
                   </span>
                 </>
               ) : (
                 <>
                   <Lock className="w-4 h-4" />
-                  <span>Authorize & Lock {grossAmount.toLocaleString()} ETB in Escrow</span>
+                  <span>
+                    {language === 'am'
+                      ? `${grossAmount.toLocaleString()} ብር በእስክሮው ውስጥ አረጋግጥና ቆልፍ`
+                      : language === 'om'
+                      ? `${grossAmount.toLocaleString()} ETB Iskiroo keessatti Mirkaneessi fi Cufi`
+                      : `Authorize & Lock ${grossAmount.toLocaleString()} ETB in Escrow`}
+                  </span>
                   <ArrowRight className="w-3.5 h-3.5 ml-1" />
                 </>
               )}

@@ -6,7 +6,6 @@ import {
   Radio,
   Compass,
   Navigation,
-  RefreshCw,
   Search,
   Filter,
   CheckCircle2,
@@ -26,7 +25,9 @@ import {
   User,
   Shield,
   Layers,
+  Trash2,
 } from 'lucide-react';
+import { useLanguage } from '../../../context/LanguageContext';
 
 export type RiskSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 
@@ -118,6 +119,10 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
   onDetourActivated,
   onRefreshParent,
 }) => {
+  const { language: rawLanguage } = useLanguage();
+  const isAm = (rawLanguage || '').toUpperCase() === 'AM';
+  const isOm = (rawLanguage || '').toUpperCase() === 'OM';
+  const language = isAm ? 'am' : isOm ? 'om' : 'en';
   const [activeTab, setActiveTab] = useState<'ALERTS' | 'ZONES_DB' | 'ALTERNATE_ROUTING'>('ALERTS');
   const [riskZones, setRiskZones] = useState<RiskZoneItem[]>([]);
   const [alerts, setAlerts] = useState<GeofenceAlertItem[]>([]);
@@ -274,6 +279,44 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
     }
   };
 
+  // Handle Delete Single Zone
+  const handleDeleteZone = async (id: string) => {
+    try {
+      setRiskZones((prev) => prev.filter((z) => z.id !== id));
+      await fetch(`/api/security/risk-zones/${id}`, { method: 'DELETE' });
+      setActionSuccessMsg(
+        language === 'am'
+          ? '✓ የስጋት ቀጠናው በተሳካ ሁኔታ ተሰርዟል።'
+          : language === 'om'
+          ? '✓ Naannoon sodaa milkaa’inaan haqameera.'
+          : '✓ Risk zone deleted successfully.'
+      );
+      setTimeout(() => setActionSuccessMsg(null), 4000);
+      await fetchData();
+    } catch (err) {
+      console.error('Delete risk zone error:', err);
+    }
+  };
+
+  // Handle Clear All Risk Zones
+  const handleClearAllZones = async () => {
+    try {
+      setRiskZones([]);
+      await fetch('/api/security/risk-zones', { method: 'DELETE' });
+      setActionSuccessMsg(
+        language === 'am'
+          ? '✓ ሁሉም የስጋት ቀጠናዎች ተሰርዘዋል።'
+          : language === 'om'
+          ? '✓ Naannoowwan sodaa hundi haqamaniiru.'
+          : '✓ All risk zones cleared.'
+      );
+      setTimeout(() => setActionSuccessMsg(null), 4000);
+      await fetchData();
+    } catch (err) {
+      console.error('Clear all risk zones error:', err);
+    }
+  };
+
   // Filtered Risk Zones
   const filteredZones = useMemo(() => {
     return riskZones.filter((z) => {
@@ -295,25 +338,25 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
         return {
           bg: 'bg-slate-950 text-white border-slate-800',
           dot: 'bg-rose-500 animate-ping',
-          label: 'Critical (Black)',
+          label: language === 'am' ? 'አስጊ / ወሳኝ (ጥቁር)' : language === 'om' ? 'Murteessaa (Gurraacha)' : 'Critical (Black)',
         };
       case 'HIGH':
         return {
           bg: 'bg-rose-600 text-white border-rose-700',
           dot: 'bg-white',
-          label: 'High (Red)',
+          label: language === 'am' ? 'ከፍተኛ ስጋት (ቀይ)' : language === 'om' ? 'Sodaa Olaanaa (Diimaa)' : 'High (Red)',
         };
       case 'MEDIUM':
         return {
           bg: 'bg-amber-500 text-slate-950 border-amber-600',
           dot: 'bg-slate-950',
-          label: 'Medium (Orange)',
+          label: language === 'am' ? 'መካከለኛ ስጋት (ቢጫ)' : language === 'om' ? 'Giddu-galeessa (Burtukaana)' : 'Medium (Orange)',
         };
       case 'LOW':
         return {
           bg: 'bg-yellow-400 text-slate-900 border-yellow-500',
           dot: 'bg-slate-900',
-          label: 'Low (Yellow)',
+          label: language === 'am' ? 'ዝቅተኛ ስጋት' : language === 'om' ? 'Sodaa Gadi-aanaa' : 'Low (Yellow)',
         };
       default:
         return {
@@ -332,30 +375,31 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1">
             <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-              Conflict Zone Alerts & Dynamic Detours
+              {language === 'am'
+                ? 'የደህንነት ስጋት ቀጠናዎች እና ተለዋዋጭ አማራጭ መንገዶች'
+                : language === 'om'
+                ? 'Akeekkachiisa Naannoo Nageenyaa fi Daandiiwwan Jijjiirraa'
+                : 'Conflict Zone Alerts & Dynamic Detours'}
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
-              Real-time geofenced warnings within 25 km of flagged security corridors, paired with automated alternate bypass routing and safety comparison matrices.
+              {language === 'am'
+                ? 'የደህንነት ስጋት ከተመዘገበባቸው የኮሪደሩ መስመሮች በ 25 ኪ.ሜ ርቀት ውስጥ የቀረበ የቀጥታ የጂኦፈንስ ማስጠንቀቂያ፣ ከአማራጭ የመተላለፊያ መንገዶች እና የደህንነት ንጽጽር ማትሪክስ ጋር።'
+                : language === 'om'
+                ? 'Akeekkachiisa geofence daandii nageenyaa irraa km 25 keessatti, daandii filatamaa fi madaallii nageenyaa waliin.'
+                : 'Real-time geofenced warnings within 25 km of flagged security corridors, paired with automated alternate bypass routing and safety comparison matrices.'}
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3 relative z-10">
             <div className="px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-left">
-              <span className="text-[10px] font-bold uppercase text-slate-500 block">Active Corridor Alerts</span>
+              <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                {language === 'am' ? 'ንቁ የኮሪደር ማስጠንቀቂያዎች' : language === 'om' ? 'Akeekkachiisa Koriidarii Yeroo Ammaa' : 'Active Corridor Alerts'}
+              </span>
               <span className="text-sm font-extrabold text-rose-700 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-                {alerts.length} In-Transit Warnings
+                {alerts.length} {language === 'am' ? 'በጉዞ ላይ ያሉ ማስጠንቀቂያዎች' : language === 'om' ? 'Akeekkachiisa Imalaa' : 'In-Transit Warnings'}
               </span>
             </div>
-
-            <button
-              onClick={fetchData}
-              disabled={loading}
-              className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all shadow-xs hover:shadow flex items-center gap-2 cursor-pointer disabled:opacity-50"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              <span>Sync Intel</span>
-            </button>
           </div>
         </div>
       </div>
@@ -379,7 +423,13 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
             }`}
           >
             <Radio className="w-3.5 h-3.5 text-red-400" />
-            <span>Proactive Geofence Alerts ({alerts.length})</span>
+            <span>
+              {language === 'am'
+                ? `የቅድመ-ማስጠንቀቂያ ጂኦፈንስ ጥቆማዎች (${alerts.length})`
+                : language === 'om'
+                ? `Akeekkachiisa Geofence (${alerts.length})`
+                : `Proactive Geofence Alerts (${alerts.length})`}
+            </span>
           </button>
 
           <button
@@ -391,7 +441,13 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
             }`}
           >
             <Shield className="w-3.5 h-3.5 text-amber-500" />
-            <span>Risk Zone Database ({riskZones.length})</span>
+            <span>
+              {language === 'am'
+                ? `የስጋት ቀጠናዎች ማከማቻ (${riskZones.length})`
+                : language === 'om'
+                ? `Kuusaa Naannoo Sodaa (${riskZones.length})`
+                : `Risk Zone Database (${riskZones.length})`}
+            </span>
           </button>
 
           <button
@@ -403,7 +459,13 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
             }`}
           >
             <Compass className="w-3.5 h-3.5 text-sky-500" />
-            <span>Alternate Routing & Matrix</span>
+            <span>
+              {language === 'am'
+                ? 'አማራጭ መስመር እና የንጽጽር ማትሪክስ'
+                : language === 'om'
+                ? 'Daandii Filatamaa fi Madaallii'
+                : 'Alternate Routing & Matrix'}
+            </span>
           </button>
         </div>
 
@@ -413,7 +475,7 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
             className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer"
           >
             <PlusCircle className="w-3.5 h-3.5 text-red-400" />
-            <span>Flag Security Zone</span>
+            <span>{language === 'am' ? 'የደህንነት ቀጠና መዝግብ' : language === 'om' ? 'Naannoo Sodaa Galmeessi' : 'Flag Security Zone'}</span>
           </button>
         )}
       </div>
@@ -428,14 +490,28 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
               <div>
                 <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                   <Radio className="w-4 h-4 text-red-600 animate-pulse" />
-                  <span>Approaching Corridor Geofence Warnings (&lt; 25 km)</span>
+                  <span>
+                    {language === 'am'
+                      ? 'የቀረቡ የኮሪደር ጂኦፈንስ ማስጠንቀቂያዎች (< 25 ኪ.ሜ)'
+                      : language === 'om'
+                      ? 'Akeekkachiisa Koriidarii Dhihaatu (< km 25)'
+                      : 'Approaching Corridor Geofence Warnings (< 25 km)'}
+                  </span>
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Proactive warnings pushed to drivers and dispatchers approaching conflict zones along the corridor.
+                  {language === 'am'
+                    ? 'በኮሪደሩ ላይ ወዳሉ የስጋት ቀጠናዎች ለሚቀርቡ አሽከርካሪዎች እና ላኪዎች የሚላኩ ንቁ የቅድመ-ጥንቃቄ ማስጠንቀቂያዎች።'
+                    : language === 'om'
+                    ? 'Akeekkachiisa konkolaachistootaa fi ergitoota gara naannoo sodaa dhihaataniif ergamu.'
+                    : 'Proactive warnings pushed to drivers and dispatchers approaching conflict zones along the corridor.'}
                 </p>
               </div>
               <span className="text-xs font-extrabold text-red-700 bg-red-50 border border-red-200 px-3 py-1 rounded-xl">
-                25 km Dynamic Geofence Active
+                {language === 'am'
+                  ? '25 ኪ.ሜ ተለዋዋጭ ጂኦፈንስ በርቷል'
+                  : language === 'om'
+                  ? 'Geofence Jijjiiramaa km 25 Hojiirra Jira'
+                  : '25 km Dynamic Geofence Active'}
               </span>
             </div>
 
@@ -443,9 +519,19 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
               <div className="p-12 text-center text-slate-500 space-y-3 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
                 <ShieldCheck className="w-10 h-10 text-emerald-500 mx-auto" />
                 <div className="space-y-1">
-                  <h4 className="text-sm font-black text-slate-800">Corridor Safe — No Imminent Geofence Breaches</h4>
+                  <h4 className="text-sm font-black text-slate-800">
+                    {language === 'am'
+                      ? 'ኮሪደሩ ደህንነቱ የተጠበቀ ነው — ምንም የጂኦፈንስ ጥሰት አልተመዘገበም'
+                      : language === 'om'
+                      ? 'Koriidariin Nageenya Qaba — Sarbamiinsi Geofence Hin Jiru'
+                      : 'Corridor Safe — No Imminent Geofence Breaches'}
+                  </h4>
                   <p className="text-xs text-slate-500 max-w-md mx-auto">
-                    All active shipments are currently operating outside the 25 km proximity threshold of flagged security zones.
+                    {language === 'am'
+                      ? 'ሁሉም በመጓጓዝ ላይ ያሉ ጭነቶች ከስጋት ቀጠናዎች ከ 25 ኪ.ሜ ገደብ ውጪ በሰላም እየተጓዙ ይገኛሉ።'
+                      : language === 'om'
+                      ? 'Fe’iinsi hundi naannoo sodaa qaban irraa fageenya km 25 ol irratti imalaa jiru.'
+                      : 'All active shipments are currently operating outside the 25 km proximity threshold of flagged security zones.'}
                   </p>
                 </div>
               </div>
@@ -470,7 +556,7 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
 
                         <div className="flex items-center gap-2 text-xs font-bold">
                           <span className="text-red-700 bg-red-100/80 px-2.5 py-1 rounded-lg">
-                            ⚠️ {alert.distanceToPerimeterKm} km to Hazard Perimeter
+                            ⚠️ {alert.distanceToPerimeterKm} {language === 'am' ? 'ኪ.ሜ ወደ ስጋት ቀጠናው ዙሪያ' : language === 'om' ? 'km gara daangaa sodaa' : 'km to Hazard Perimeter'}
                           </span>
                         </div>
                       </div>
@@ -478,7 +564,9 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
                       {/* Warning Detail Grid */}
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                         <div className="p-3 bg-white rounded-xl border border-slate-200/80">
-                          <span className="text-[10px] font-black text-slate-400 uppercase block">Vehicle & Driver In Transit</span>
+                          <span className="text-[10px] font-black text-slate-400 uppercase block">
+                            {language === 'am' ? 'በጉዞ ላይ ያለ ተሽከርካሪ እና አሽከርካሪ' : language === 'om' ? 'Konkolaataa fi Konkolaachisaa Imala Irra Jiru' : 'Vehicle & Driver In Transit'}
+                          </span>
                           <div className="font-extrabold text-slate-900 mt-0.5 flex items-center gap-1.5">
                             <Truck className="w-3.5 h-3.5 text-slate-400" />
                             <span>{alert.vehiclePlate}</span>
@@ -492,16 +580,20 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
                         </div>
 
                         <div className="p-3 bg-white rounded-xl border border-slate-200/80">
-                          <span className="text-[10px] font-black text-slate-400 uppercase block">Verified Intelligence Source</span>
+                          <span className="text-[10px] font-black text-slate-400 uppercase block">
+                            {language === 'am' ? 'የተረጋገጠ የስለላ / የመረጃ ምንጭ' : language === 'om' ? 'Madda Odeeffannoo Mirkanaa’e' : 'Verified Intelligence Source'}
+                          </span>
                           <div className="font-bold text-slate-800 mt-0.5">{alert.source}</div>
                           <div className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
                             <Clock className="w-3 h-3" />
-                            <span>Verified: {new Date(alert.verifiedTimestamp).toLocaleString()}</span>
+                            <span>{language === 'am' ? 'የተረጋገጠበት:' : language === 'om' ? 'Mirkanaa’e:' : 'Verified:'} {new Date(alert.verifiedTimestamp).toLocaleString()}</span>
                           </div>
                         </div>
 
                         <div className="p-3 bg-white rounded-xl border border-slate-200/80">
-                          <span className="text-[10px] font-black text-slate-400 uppercase block">Hazard Description</span>
+                          <span className="text-[10px] font-black text-slate-400 uppercase block">
+                            {language === 'am' ? 'የስጋቱ ዝርዝር መግለጫ' : language === 'om' ? 'Ibsa Balaa / Sodaa' : 'Hazard Description'}
+                          </span>
                           <p className="text-slate-700 font-medium mt-0.5 line-clamp-2">
                             {alert.description}
                           </p>
@@ -513,7 +605,9 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
                         <div className="flex items-start gap-2.5">
                           <Compass className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
                           <div>
-                            <span className="font-black text-red-900">Recommended Detour:</span>{' '}
+                            <span className="font-black text-red-900">
+                              {language === 'am' ? 'የሚመከር አማራጭ መስመር:' : language === 'om' ? 'Daandii Jijjiirraa Filatame:' : 'Recommended Detour:'}
+                            </span>{' '}
                             <span className="text-slate-800 font-medium">{alert.recommendedDetour}</span>
                           </div>
                         </div>
@@ -523,7 +617,7 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
                           onClick={() => setActiveTab('ALTERNATE_ROUTING')}
                           className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold transition shadow-xs shrink-0 flex items-center gap-1 cursor-pointer"
                         >
-                          <span>Inspect Rerouting Matrix</span>
+                          <span>{language === 'am' ? 'የአማራጭ መንገድ ማትሪክስን መርምር' : language === 'om' ? 'Madaallii Daandii Qoradhu' : 'Inspect Rerouting Matrix'}</span>
                           <ChevronRight className="w-3 h-3" />
                         </button>
                       </div>
@@ -543,10 +637,18 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="text-base font-black text-slate-900">
-                  Continuously Maintained Corridor Risk Zone Database
+                  {language === 'am'
+                    ? 'የተሟላ የኮሪደር ስጋት ቀጠናዎች ማከማቻ'
+                    : language === 'om'
+                    ? 'Kuusaa Naannoo Sodaa Koriidarii Yeroo Hunda Qophaa’e'
+                    : 'Continuously Maintained Corridor Risk Zone Database'}
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Sourced from Government Security Advisories, Verified Driver Crowdsourcing, and Authority Incident Reports.
+                  {language === 'am'
+                    ? 'ከመንግስት የጸጥታ መረጃዎች፣ ከአሽከርካሪዎች ማህበራዊ ጥቆማዎች እና ከባለስልጣናት የክስተት ሪፖርቶች የተጠናቀረ።'
+                    : language === 'om'
+                    ? 'Gorsa mootummaa, odeeffannoo konkolaachistootaa fi gabaasa bulchiinsaa irraa kan walitti qabame.'
+                    : 'Sourced from Government Security Advisories, Verified Driver Crowdsourcing, and Authority Incident Reports.'}
                 </p>
               </div>
 
@@ -556,7 +658,7 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
                   <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
-                    placeholder="Search zone, corridor..."
+                    placeholder={language === 'am' ? 'ቀጠና፣ ኮሪደር ፈልግ...' : language === 'om' ? 'Naannoo, koriidarii barbaadi...' : 'Search zone, corridor...'}
                     value={zoneSearchQuery}
                     onChange={(e) => setZoneSearchQuery(e.target.value)}
                     className="pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-red-500 w-44"
@@ -568,58 +670,121 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
                   onChange={(e) => setZoneSeverityFilter(e.target.value)}
                   className="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-700 focus:outline-none"
                 >
-                  <option value="ALL">All Severities</option>
-                  <option value="CRITICAL">Critical (Black)</option>
-                  <option value="HIGH">High (Red)</option>
-                  <option value="MEDIUM">Medium (Orange)</option>
-                  <option value="LOW">Low (Yellow)</option>
+                  <option value="ALL">{language === 'am' ? 'ሁሉም የስጋት ደረጃዎች' : language === 'om' ? 'Sadarkaa Sodaa Hunda' : 'All Severities'}</option>
+                  <option value="CRITICAL">{language === 'am' ? 'አስጊ / ወሳኝ (ጥቁር)' : language === 'om' ? 'Murteessaa (Gurraacha)' : 'Critical (Black)'}</option>
+                  <option value="HIGH">{language === 'am' ? 'ከፍተኛ (ቀይ)' : language === 'om' ? 'Olaanaa (Diimaa)' : 'High (Red)'}</option>
+                  <option value="MEDIUM">{language === 'am' ? 'መካከለኛ (ቢጫ)' : language === 'om' ? 'Giddu-galeessa (Burtukaana)' : 'Medium (Orange)'}</option>
+                  <option value="LOW">{language === 'am' ? 'ዝቅተኛ' : language === 'om' ? 'Gadi-aanaa' : 'Low (Yellow)'}</option>
                 </select>
+
+                <button
+                  type="button"
+                  onClick={() => setShowAddZoneModal(true)}
+                  className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                >
+                  <PlusCircle className="w-3.5 h-3.5" />
+                  <span>{language === 'am' ? 'አዲስ ቀጠና መዝግብ' : language === 'om' ? 'Qophii Haaraa' : 'Add Risk Zone'}</span>
+                </button>
+
+                {riskZones.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleClearAllZones}
+                    className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-600 text-xs font-bold transition flex items-center gap-1 border border-slate-200 hover:border-rose-200 cursor-pointer"
+                    title={language === 'am' ? 'ሁሉንም የስጋት ቀጠናዎች አጥፋ' : language === 'om' ? 'Hunda Haqi' : 'Clear All Risk Zones'}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>{language === 'am' ? 'ሁሉንም አጥፋ' : language === 'om' ? 'Hunda Haqi' : 'Clear All'}</span>
+                  </button>
+                )}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredZones.map((zone) => {
-                const badge = getSeverityBadge(zone.severity);
+            {filteredZones.length === 0 ? (
+              <div className="p-10 rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 text-center space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto shadow-2xs">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <div className="max-w-md mx-auto space-y-1">
+                  <h4 className="text-sm font-black text-slate-900">
+                    {language === 'am'
+                      ? 'ምንም የተመዘገበ የስጋት ቀጠና የለም'
+                      : language === 'om'
+                      ? 'Naannoon sodaa galmaa\'e hin jiru'
+                      : 'No Active Risk Zones in Database'}
+                  </h4>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    {language === 'am'
+                      ? 'በኮሪደሩ ላይ ሁሉም መስመሮች ክፍት እና ደህንነታቸው የተጠበቁ ናቸው። አዲስ የጸጥታ ወይም የመንገድ ስጋት ካለ ከላይ ያለውን «አዲስ ቀጠና መዝግብ» የሚለውን አዝራር በመጫን መመዝገብ ይችላሉ።'
+                      : language === 'om'
+                      ? 'Daandiiwwan kooridoorii hundi banaa fi nageenyi isaanii kan eegameedha. Sodaa haaraa yoo qabaattan qabduu armaan olii fayyadamaa.'
+                      : 'All corridor segments are currently verified clear. Use "Add Risk Zone" to register a verified security checkpoint or road hazard.'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAddZoneModal(true)}
+                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-xs inline-flex items-center gap-1.5 transition cursor-pointer"
+                >
+                  <PlusCircle className="w-3.5 h-3.5" />
+                  <span>{language === 'am' ? 'አዲስ የስጋት ቀጠና መዝግብ' : language === 'om' ? 'Qophii Haaraa Galmeessi' : 'Register Security Zone'}</span>
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredZones.map((zone) => {
+                  const badge = getSeverityBadge(zone.severity);
 
-                return (
-                  <div
-                    key={zone.id}
-                    className="p-5 rounded-2xl bg-slate-50 border border-slate-200/90 hover:shadow-md transition-shadow space-y-3.5 flex flex-col justify-between"
-                  >
-                    <div className="space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border flex items-center gap-1.5 ${badge.bg}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
-                          {badge.label}
-                        </span>
+                  return (
+                    <div
+                      key={zone.id}
+                      className="p-5 rounded-2xl bg-slate-50 border border-slate-200/90 hover:shadow-md transition-shadow space-y-3.5 flex flex-col justify-between"
+                    >
+                      <div className="space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border flex items-center gap-1.5 ${badge.bg}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
+                            {badge.label}
+                          </span>
 
-                        <span className="text-[10px] font-black text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded-md">
-                          Radius: {zone.radiusKm} km
-                        </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-black text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded-md">
+                              {language === 'am' ? 'ስፋት' : language === 'om' ? 'Raadiyaasii' : 'Radius'}: {zone.radiusKm} {language === 'am' ? 'ኪ.ሜ' : 'km'}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteZone(zone.id)}
+                              title={language === 'am' ? 'ይህንን ቀጠና ሰርዝ' : language === 'om' ? 'Haqi' : 'Delete Zone'}
+                              className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <h4 className="text-sm font-black text-slate-900 leading-snug">{zone.name}</h4>
+
+                        <p className="text-xs text-slate-600 leading-relaxed">
+                          {zone.description}
+                        </p>
                       </div>
 
-                      <h4 className="text-sm font-black text-slate-900 leading-snug">{zone.name}</h4>
+                      <div className="pt-3 border-t border-slate-200/80 space-y-2 text-xs">
+                        <div className="flex items-center justify-between text-slate-500 text-[11px]">
+                          <span className="font-bold">{language === 'am' ? 'የመረጃ ምንጭ:' : language === 'om' ? 'Madda Odeeffannoo:' : 'Intelligence Source:'}</span>
+                          <span className="font-extrabold text-slate-800">{zone.source}</span>
+                        </div>
 
-                      <p className="text-xs text-slate-600 leading-relaxed">
-                        {zone.description}
-                      </p>
+                        <div className="flex items-center justify-between text-slate-400 text-[10px]">
+                          <span>GPS: {zone.centerLat.toFixed(3)}, {zone.centerLng.toFixed(3)}</span>
+                          <span className="text-emerald-700 font-bold">● {language === 'am' ? 'ንቁ ጂኦፈንስ ቁጥጥር' : language === 'om' ? 'Hordoffii Geofence Hojiirra Jira' : 'Active Geofence Monitor'}</span>
+                        </div>
+                      </div>
                     </div>
-
-                    <div className="pt-3 border-t border-slate-200/80 space-y-2 text-xs">
-                      <div className="flex items-center justify-between text-slate-500 text-[11px]">
-                        <span className="font-bold">Intelligence Source:</span>
-                        <span className="font-extrabold text-slate-800">{zone.source}</span>
-                      </div>
-
-                      <div className="flex items-center justify-between text-slate-400 text-[10px]">
-                        <span>GPS Coordinates: {zone.centerLat.toFixed(3)}, {zone.centerLng.toFixed(3)}</span>
-                        <span className="text-emerald-700 font-bold">● Active Geofence Monitor</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -631,13 +796,21 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
           <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-6">
             <div>
               <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-sky-50 text-sky-800 border border-sky-200">
-                Automated Corridor Rerouting Engine
+                {language === 'am' ? 'አውቶሜትድ የመንገድ ማስተካከያ ሞተር' : language === 'om' ? 'Mootora Jijjiirraa Daandii Ofta’aa' : 'Automated Corridor Rerouting Engine'}
               </span>
               <h3 className="text-lg font-black text-slate-900 mt-1">
-                Route Safety & Cost Comparison Matrix
+                {language === 'am'
+                  ? 'የመንገድ ደህንነት እና የወጪ ንጽጽር ማትሪክስ'
+                  : language === 'om'
+                  ? 'Madaallii Nageenya Daandii fi Baasii'
+                  : 'Route Safety & Cost Comparison Matrix'}
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Side-by-side evaluation of the primary northern corridor vs the calculated southern bypass avoiding high-risk conflict zones.
+                {language === 'am'
+                  ? 'የዋናውን ሰሜናዊ አውራ ጎዳና (A-1) ስጋት ያለበትን መስመር ከአማራጭ ደቡባዊ ማለፊያ መስመር ጋር ጎን ለጎን ያነጻጽራል።'
+                  : language === 'om'
+                  ? 'Daandii kaabaa isa duraa fi daandii filatamaa kibbaa sodaa malee jiru wal-bira qabee madaala.'
+                  : 'Side-by-side evaluation of the primary northern corridor vs the calculated southern bypass avoiding high-risk conflict zones.'}
               </p>
             </div>
 
@@ -646,19 +819,23 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-400 uppercase text-[10px] font-black">
-                    <th className="py-3 px-4 w-1/4">Metric Parameter</th>
+                    <th className="py-3 px-4 w-1/4">
+                      {language === 'am' ? 'መለኪያ መለኪያ' : language === 'om' ? 'Ulaagaa Madaallii' : 'Metric Parameter'}
+                    </th>
                     <th className="py-3 px-4 w-3/8 bg-rose-50/50 rounded-t-xl text-rose-900">
-                      Primary Highway Route (A-1)
+                      {language === 'am' ? 'ዋና አውራ ጎዳና (A-1)' : language === 'om' ? 'Daandii Guddaa Duraa (A-1)' : 'Primary Highway Route (A-1)'}
                     </th>
                     <th className="py-3 px-4 w-3/8 bg-emerald-50/60 rounded-t-xl text-emerald-900">
-                      Southern Bypass Detour (via Dewele)
+                      {language === 'am' ? 'ደቡባዊ አማራጭ መስመር (በደወሌ በኩል)' : language === 'om' ? 'Daandii Filatamaa Kibbaa (Deweleen)' : 'Southern Bypass Detour (via Dewele)'}
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                   {/* Route Corridor Path */}
                   <tr>
-                    <td className="py-3.5 px-4 font-bold text-slate-900">Corridor Route Path</td>
+                    <td className="py-3.5 px-4 font-bold text-slate-900">
+                      {language === 'am' ? 'የኮሪደር ጉዞ መስመር' : language === 'om' ? 'Daandii Koriidarii' : 'Corridor Route Path'}
+                    </td>
                     <td className="py-3.5 px-4 bg-rose-50/20 text-slate-800">
                       {primaryRoute.corridorPath}
                     </td>
@@ -669,13 +846,15 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
 
                   {/* Distance */}
                   <tr>
-                    <td className="py-3.5 px-4 font-bold text-slate-900">Distance (km)</td>
+                    <td className="py-3.5 px-4 font-bold text-slate-900">
+                      {language === 'am' ? 'ርቀት (ኪ.ሜ)' : language === 'om' ? 'Fageenya (km)' : 'Distance (km)'}
+                    </td>
                     <td className="py-3.5 px-4 bg-rose-50/20">
-                      <span className="font-extrabold text-slate-900 text-sm">{primaryRoute.distanceKm} km</span>
+                      <span className="font-extrabold text-slate-900 text-sm">{primaryRoute.distanceKm} {language === 'am' ? 'ኪ.ሜ' : 'km'}</span>
                     </td>
                     <td className="py-3.5 px-4 bg-emerald-50/30">
                       <div className="flex items-baseline gap-2">
-                        <span className="font-extrabold text-slate-900 text-sm">{bypassRoute.distanceKm} km</span>
+                        <span className="font-extrabold text-slate-900 text-sm">{bypassRoute.distanceKm} {language === 'am' ? 'ኪ.ሜ' : 'km'}</span>
                         <span className="text-[11px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded">
                           {comparisonMatrix.distanceDeltaLabel}
                         </span>
@@ -685,31 +864,37 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
 
                   {/* Estimated Standstill Delay */}
                   <tr>
-                    <td className="py-3.5 px-4 font-bold text-slate-900">Conflict / Checkpoint Delays</td>
+                    <td className="py-3.5 px-4 font-bold text-slate-900">
+                      {language === 'am' ? 'የስጋት / ፍተሻ መዘግየቶች' : language === 'om' ? 'Turtii Qorannoo fi Sodaa' : 'Conflict / Checkpoint Delays'}
+                    </td>
                     <td className="py-3.5 px-4 bg-rose-50/20 text-rose-700 font-bold">
-                      ⚠️ ~{primaryRoute.estimatedStandstillDelayHours} hrs standstill hold
+                      ⚠️ ~{primaryRoute.estimatedStandstillDelayHours} {language === 'am' ? 'ሰዓታት መቆሚያ መዘግየት' : language === 'om' ? 'sa’aatiiwwan turtii' : 'hrs standstill hold'}
                     </td>
                     <td className="py-3.5 px-4 bg-emerald-50/30 text-emerald-700 font-black">
-                      ✓ {comparisonMatrix.delayAvoidedLabel}
+                      ✓ {isAm ? `${comparisonMatrix.delayAvoidedHours} ሰዓታት የግጭት መቆሚያ መዘግየት ዳነ` : isOm ? `sa’aatii ${comparisonMatrix.delayAvoidedHours} turtii balaa irraa oole` : comparisonMatrix.delayAvoidedLabel}
                     </td>
                   </tr>
 
                   {/* Net Time Saved */}
                   <tr>
-                    <td className="py-3.5 px-4 font-bold text-slate-900">Net Transit Time Delta</td>
+                    <td className="py-3.5 px-4 font-bold text-slate-900">
+                      {language === 'am' ? 'የተጣራ የጉዞ ጊዜ ልዩነት' : language === 'om' ? 'Garaagarummaa Yeroo Imalaa' : 'Net Transit Time Delta'}
+                    </td>
                     <td className="py-3.5 px-4 bg-rose-50/20 text-slate-500">
-                      ~{primaryRoute.estimatedTransitHours + primaryRoute.estimatedStandstillDelayHours} hrs total elapsed
+                      ~{primaryRoute.estimatedTransitHours + primaryRoute.estimatedStandstillDelayHours} {language === 'am' ? 'ጠቅላላ ሰዓት ይፈጃል' : language === 'om' ? 'waliigala sa’aatii' : 'hrs total elapsed'}
                     </td>
                     <td className="py-3.5 px-4 bg-emerald-50/30">
                       <span className="text-xs font-black text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-lg">
-                        ⚡ {comparisonMatrix.netTimeSavingLabel}
+                        ⚡ {isAm ? `${comparisonMatrix.netTimeSavingMinutes} ደቂቃዎች የተጣራ ጊዜ ዳነ` : isOm ? `daqiiqaa ${comparisonMatrix.netTimeSavingMinutes} yeroo qusatame` : comparisonMatrix.netTimeSavingLabel}
                       </span>
                     </td>
                   </tr>
 
                   {/* Fuel Difference */}
                   <tr>
-                    <td className="py-3.5 px-4 font-bold text-slate-900">Fuel Burn & Expense</td>
+                    <td className="py-3.5 px-4 font-bold text-slate-900">
+                      {language === 'am' ? 'የነዳጅ ፍጆታ እና ወጪ' : language === 'om' ? 'Baasii fi Fayyadama Boba’aa' : 'Fuel Burn & Expense'}
+                    </td>
                     <td className="py-3.5 px-4 bg-rose-50/20">
                       {primaryRoute.fuelConsumptionLiters} L ({primaryRoute.fuelCostEtb.toLocaleString()} ETB)
                     </td>
@@ -725,13 +910,15 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
 
                   {/* Safety Rating */}
                   <tr>
-                    <td className="py-3.5 px-4 font-bold text-slate-900">Safety Rating Score</td>
+                    <td className="py-3.5 px-4 font-bold text-slate-900">
+                      {language === 'am' ? 'የደህንነት ውጤት ነጥብ' : language === 'om' ? 'Qabxii Nageenyaa' : 'Safety Rating Score'}
+                    </td>
                     <td className="py-3.5 px-4 bg-rose-50/20">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <span className="font-black text-rose-700 text-sm">{primaryRoute.safetyScore} / 100</span>
                           <span className="text-[10px] font-black uppercase text-rose-600 bg-rose-100 px-1.5 py-0.5 rounded">
-                            High Conflict Risk
+                            {language === 'am' ? 'ከፍተኛ የስጋት አደጋ' : language === 'om' ? 'Sodaa Balaa Olaanaa' : 'High Conflict Risk'}
                           </span>
                         </div>
                         <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
@@ -744,7 +931,7 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
                         <div className="flex items-center gap-2">
                           <span className="font-black text-emerald-700 text-sm">{bypassRoute.safetyScore} / 100</span>
                           <span className="text-[10px] font-black uppercase text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">
-                            {comparisonMatrix.safetyRating.safetyRatingDelta}
+                            {isAm ? `+${bypassRoute.safetyScore - primaryRoute.safetyScore}% የደህንነት ጭማሪ` : isOm ? `Daballii Nageenyaa +${bypassRoute.safetyScore - primaryRoute.safetyScore}%` : comparisonMatrix.safetyRating.safetyRatingDelta}
                           </span>
                         </div>
                         <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
@@ -761,10 +948,14 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
             <div className="p-5 rounded-2xl bg-emerald-50/80 border border-emerald-200 text-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
               <div className="space-y-1 max-w-2xl">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200 inline-block">
-                  Decision Recommendation
+                  {language === 'am' ? 'የውሳኔ የድጋፍ ምክረ-ሀሳብ' : language === 'om' ? 'Gorsa Murtee' : 'Decision Recommendation'}
                 </span>
                 <p className="text-xs text-slate-700 leading-relaxed font-medium">
-                  {comparisonMatrix.recommendationSummary}
+                  {isAm
+                    ? 'በደወሌ በኩል ደቡባዊ አማራጭ መስመርን መፍቀድ 65 ኪ.ሜ የአስፋልት ጉዞ የሚጨምር ቢሆንም፣ የሰሜኑን የስጋት ቀጠና በማስቀረት የሚገመተውን 4.5 ሰዓታት የኬላ መዘግየት ሙሉ ለሙሉ ያስቀራል፤ እንዲሁም የጭነቱን የደህንነት ውጤት ከ38 ወደ 96 ያሳድጋል።'
+                    : isOm
+                    ? 'Daandii Dawaaleetiin kooridoorii kibbaa hayyamuun fageenya km 65 kan dabalu ta\'us, sodaa kaabaa hambisuun turtii keellaa sa\'aatii 4.5 guutummaatti balleessa; qabxii nageenya fe\'isaas 38 irraa gara 96tti ol guddisa.'
+                    : comparisonMatrix.recommendationSummary}
                 </p>
               </div>
 
@@ -775,7 +966,11 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
                 className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-xs hover:shadow inline-flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shrink-0"
               >
                 <Compass className="w-4 h-4 text-white" />
-                <span>{isApplyingDetour ? 'Authorizing...' : 'Authorize & Activate Southern Bypass'}</span>
+                <span>
+                  {isApplyingDetour
+                    ? (language === 'am' ? 'በማረጋገጥ ላይ...' : language === 'om' ? 'Mirkaneessaa jira...' : 'Authorizing...')
+                    : (language === 'am' ? 'አጽድቅ እና የደቡባዊ አማራጭ መስመርን አስጀምር' : language === 'om' ? 'Mirkaneessi & Daandii Kibbaa Jalqabsiisi' : 'Authorize & Activate Southern Bypass')}
+                </span>
               </button>
             </div>
           </div>
@@ -789,7 +984,9 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
                 <ShieldAlert className="w-5 h-5 text-red-600" />
-                <h3 className="text-base font-black text-slate-900">Flag Corridor Security Hazard</h3>
+                <h3 className="text-base font-black text-slate-900">
+                  {language === 'am' ? 'የኮሪደር ደህንነት ስጋት መዝግብ' : language === 'om' ? 'Balaa Nageenya Koriidarii Galmeessi' : 'Flag Corridor Security Hazard'}
+                </h3>
               </div>
               <button
                 onClick={() => setShowAddZoneModal(false)}
@@ -801,11 +998,13 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
 
             <form onSubmit={handleCreateRiskZone} className="space-y-3.5 text-xs">
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Security Zone Name</label>
+                <label className="font-bold text-slate-700 block mb-1">
+                  {language === 'am' ? 'የደህንነት ቀጠና ስም' : language === 'om' ? 'Maqaa Naannoo Sodaa' : 'Security Zone Name'}
+                </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g., Awash-Mille Corridor Security Buffer"
+                  placeholder={language === 'am' ? 'ምሳሌ፡ አዋሽ-ሚሌ የደህንነት ማቋረጫ' : language === 'om' ? 'Fkn: Daangaa Nageenyaa Awaash-Millee' : 'e.g., Awash-Mille Corridor Security Buffer'}
                   value={newZoneName}
                   onChange={(e) => setNewZoneName(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-red-500 font-medium"
@@ -814,36 +1013,48 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Risk Severity Level</label>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    {language === 'am' ? 'የስጋት ደረጃ' : language === 'om' ? 'Sadarkaa Balaa / Sodaa' : 'Risk Severity Level'}
+                  </label>
                   <select
                     value={newZoneSeverity}
                     onChange={(e) => setNewZoneSeverity(e.target.value as RiskSeverity)}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none font-bold"
                   >
-                    <option value="CRITICAL">Critical (Black)</option>
-                    <option value="HIGH">High (Red)</option>
-                    <option value="MEDIUM">Medium (Orange)</option>
-                    <option value="LOW">Low (Yellow)</option>
+                    <option value="CRITICAL">{language === 'am' ? 'አስጊ / ወሳኝ (ጥቁር)' : language === 'om' ? 'Murteessaa (Gurraacha)' : 'Critical (Black)'}</option>
+                    <option value="HIGH">{language === 'am' ? 'ከፍተኛ (ቀይ)' : language === 'om' ? 'Olaanaa (Diimaa)' : 'High (Red)'}</option>
+                    <option value="MEDIUM">{language === 'am' ? 'መካከለኛ (ቢጫ)' : language === 'om' ? 'Giddu-galeessa (Burtukaana)' : 'Medium (Orange)'}</option>
+                    <option value="LOW">{language === 'am' ? 'ዝቅተኛ' : language === 'om' ? 'Gadi-aanaa' : 'Low (Yellow)'}</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Intelligence Source</label>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    {language === 'am' ? 'የመረጃ ምንጭ' : language === 'om' ? 'Madda Odeeffannoo' : 'Intelligence Source'}
+                  </label>
                   <select
                     value={newZoneSource}
                     onChange={(e) => setNewZoneSource(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none font-bold"
                   >
-                    <option value="Government Security Advisory">Government Security Advisory</option>
-                    <option value="Verified Driver Crowdsourcing">Verified Driver Crowdsourcing</option>
-                    <option value="Regional Authority Incident Report">Regional Authority Report</option>
+                    <option value="Government Security Advisory">
+                      {language === 'am' ? 'የመንግስት የጸጥታ መረጃ' : language === 'om' ? 'Gorsa Nageenya Mootummaa' : 'Government Security Advisory'}
+                    </option>
+                    <option value="Verified Driver Crowdsourcing">
+                      {language === 'am' ? 'የአሽከርካሪዎች ማህበራዊ ጥቆማ' : language === 'om' ? 'Odeeffannoo Konkolaachistootaa' : 'Verified Driver Crowdsourcing'}
+                    </option>
+                    <option value="Regional Authority Incident Report">
+                      {language === 'am' ? 'የክልል ባለስልጣናት ሪፖርት' : language === 'om' ? 'Gabaasa Bulchiinsa Naannoo' : 'Regional Authority Incident Report'}
+                    </option>
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Center Latitude</label>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    {language === 'am' ? 'ኬክሮስ (Lat)' : language === 'om' ? 'Laatituudii (Lat)' : 'Center Latitude'}
+                  </label>
                   <input
                     type="number"
                     step="0.001"
@@ -855,7 +1066,9 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Center Longitude</label>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    {language === 'am' ? 'ኬንትሮስ (Lng)' : language === 'om' ? 'Loongituudii (Lng)' : 'Center Longitude'}
+                  </label>
                   <input
                     type="number"
                     step="0.001"
@@ -867,7 +1080,9 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Radius (km)</label>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    {language === 'am' ? 'ስፋት (ኪ.ሜ)' : language === 'om' ? 'Raadiyaasii (km)' : 'Radius (km)'}
+                  </label>
                   <input
                     type="number"
                     step="1"
@@ -880,11 +1095,13 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Hazard Advisory / Description</label>
+                <label className="font-bold text-slate-700 block mb-1">
+                  {language === 'am' ? 'የስጋቱ ዝርዝር መግለጫ / ምክር' : language === 'om' ? 'Ibsa Balaa fi Gorsa' : 'Hazard Advisory / Description'}
+                </label>
                 <textarea
                   rows={3}
                   required
-                  placeholder="Detail the nature of the hazard, recommended detours, or transit curfews..."
+                  placeholder={language === 'am' ? 'የስጋቱን አይነት፣ የሚመከሩ አማራጮችን ወይም የሰዓት ገደቦችን ይግለጹ...' : language === 'om' ? 'Gosa balaa, daandiiwwan filatamaa ykn sa’aatiiwwan dorkaa ibsaa...' : 'Detail the nature of the hazard, recommended detours, or transit curfews...'}
                   value={newZoneDescription}
                   onChange={(e) => setNewZoneDescription(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-red-500 font-medium"
@@ -897,14 +1114,16 @@ export const ConflictZoneAlertsReroutingCard: React.FC<ConflictZoneAlertsRerouti
                   onClick={() => setShowAddZoneModal(false)}
                   className="px-4 py-2 rounded-xl text-slate-600 font-bold hover:bg-slate-100"
                 >
-                  Cancel
+                  {language === 'am' ? 'ሰርዝ' : language === 'om' ? 'Haqi' : 'Cancel'}
                 </button>
                 <button
                   type="submit"
                   disabled={submittingZone}
                   className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold shadow-md transition disabled:opacity-50"
                 >
-                  {submittingZone ? 'Registering...' : 'Register Security Zone'}
+                  {submittingZone
+                    ? (language === 'am' ? 'በመመዝገብ ላይ...' : language === 'om' ? 'Galmeessaa jira...' : 'Registering...')
+                    : (language === 'am' ? 'የደህንነት ቀጠና መዝግብ' : language === 'om' ? 'Naannoo Sodaa Galmeessi' : 'Register Security Zone')}
                 </button>
               </div>
             </form>

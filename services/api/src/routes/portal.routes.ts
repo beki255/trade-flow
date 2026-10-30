@@ -12,8 +12,12 @@ import {
   getRatings,
   getVehicles,
   createVehicle,
+  updateVehicle,
+  deleteVehicle,
   getDrivers,
   createDriver,
+  updateDriver,
+  deleteDriver,
   createBid,
   getBids,
   respondToBid,
@@ -59,10 +63,14 @@ router.get('/ratings/:userId', getRatings);
 // Vehicles & Fleet Management
 router.get('/vehicles', getVehicles);
 router.post('/vehicles', createVehicle);
+router.put('/vehicles/:id', updateVehicle);
+router.delete('/vehicles/:id', deleteVehicle);
 
 // Drivers Management
 router.get('/drivers', getDrivers);
 router.post('/drivers', createDriver);
+router.put('/drivers/:id', updateDriver);
+router.delete('/drivers/:id', deleteDriver);
 
 // Bidding & RFQ Management
 router.get('/bids', getBids);

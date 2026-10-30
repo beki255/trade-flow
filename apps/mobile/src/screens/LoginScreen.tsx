@@ -14,8 +14,11 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../context/LanguageContext';
+import { lightColors } from '../context/ThemeContext';
 import { apiFetch } from '../utils/api';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { validateEthiopianPhone, validateEmail } from '../utils/validation';
+import { ForgotPasswordModal } from './modals/ForgotPasswordModal';
 
 interface LoginScreenProps {
   onBack: () => void;
@@ -29,36 +32,67 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   onLoginSuccess,
 }) => {
   const { t } = useLanguage();
-  const [step, setStep] = useState<'IDENTIFIER' | 'PASSWORD'>('IDENTIFIER');
-  const [identifier, setIdentifier] = useState('');
+  const isDark = false;
+  const colors = lightColors;
+  const [identifier, setIdentifier] = useState<string>(() => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        return window.localStorage.getItem('tradeflow_mobile_remembered_identifier') || '';
+      } catch (e) {
+        return '';
+      }
+    }
+    return '';
+  });
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
+  const [rememberMe, setRememberMe] = useState<boolean>(() => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        const saved = window.localStorage.getItem('tradeflow_mobile_remember_me');
+        return saved !== null ? saved === 'true' : true;
+      } catch (e) {
+        return true;
+      }
+    }
+    return true;
+  });
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isFocused, setIsFocused] = useState(false);
+  const [focusedInput, setFocusedInput] = useState<'identifier' | 'password' | null>(null);
+  const [showForgotModal, setShowForgotModal] = useState(false);
 
   const passwordInputRef = useRef<TextInput>(null);
 
-  // Step 1 -> Step 2
-  const handleContinue = () => {
+  // Submit Login
+  const handleSubmit = async () => {
     const trimmed = identifier.trim();
     if (!trimmed) {
       setErrorMsg(t('requiredFields') || 'Please enter your phone number or email.');
       return;
     }
-    setErrorMsg('');
-    setStep('PASSWORD');
-    setTimeout(() => {
-      passwordInputRef.current?.focus();
-    }, 150);
-  };
-
-  // Step 2 -> Submit Login
-  const handleSubmit = async () => {
     if (!password) {
       setErrorMsg(t('requiredFields') || 'Please enter your password.');
       return;
+    }
+
+    // Validate whether identifier is email or Ethiopian phone number
+    let finalIdentifier = trimmed;
+    if (trimmed.includes('@')) {
+      const emailRes = validateEmail(trimmed);
+      if (!emailRes.isValid) {
+        setErrorMsg(emailRes.error || 'Please enter a valid email address.');
+        return;
+      }
+      finalIdentifier = emailRes.normalized || trimmed;
+    } else {
+      const phoneRes = validateEthiopianPhone(trimmed);
+      if (!phoneRes.isValid) {
+        setErrorMsg(phoneRes.error || 'Only Ethiopian phone numbers (+251 9... / 09... or +251 7... / 07...) are accepted.');
+        return;
+      }
+      finalIdentifier = phoneRes.normalized || trimmed;
+      setIdentifier(finalIdentifier);
     }
 
     setLoading(true);
@@ -68,12 +102,23 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       const res = await apiFetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier: identifier.trim(), password }),
+        body: JSON.stringify({ identifier: finalIdentifier, password }),
       });
       const data = await res.json();
       setLoading(false);
 
       if (res.ok && data.user) {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          try {
+            if (rememberMe) {
+              window.localStorage.setItem('tradeflow_mobile_remembered_identifier', finalIdentifier);
+              window.localStorage.setItem('tradeflow_mobile_remember_me', 'true');
+            } else {
+              window.localStorage.removeItem('tradeflow_mobile_remembered_identifier');
+              window.localStorage.setItem('tradeflow_mobile_remember_me', 'false');
+            }
+          } catch (e) {}
+        }
         onLoginSuccess(data.user.role, data.user);
         return;
       }
@@ -86,12 +131,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   };
 
   const handleHeaderBack = () => {
-    if (step === 'PASSWORD') {
-      setErrorMsg('');
-      setStep('IDENTIFIER');
-    } else {
-      onBack();
-    }
+    onBack();
   };
 
   const handleGoogleLogin = async () => {
@@ -124,252 +164,233 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F4F9FD" />
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        {/* Top Header Bar */}
-        <View style={styles.topBar}>
-          <TouchableOpacity
-            onPress={handleHeaderBack}
-            style={styles.backButton}
-            activeOpacity={0.7}
-            accessibilityLabel="Back"
-          >
-            <Ionicons name="arrow-back" size={20} color="#0F172A" />
-          </TouchableOpacity>
-          <Text style={styles.brandTitle}>TradeFlow</Text>
-          <LanguageSwitcher />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.background} />
+      
+      {/* Top Header Bar */}
+      <View style={styles.topBar}>
+        <TouchableOpacity
+          onPress={handleHeaderBack}
+          style={[styles.backButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+          activeOpacity={0.7}
+          accessibilityLabel="Back"
+        >
+          <Ionicons name="arrow-back" size={20} color={colors.text} />
+        </TouchableOpacity>
+
+        {/* Absolute Mathematically Centered Title */}
+        <View style={styles.brandTitleContainer} pointerEvents="none">
+          <Text style={[styles.brandTitle, { color: colors.text }]}>TradeFlow</Text>
         </View>
 
-        {/* Polished Card */}
-        <View style={styles.card}>
-          {/* Card Top Icon & Title */}
-          <View style={styles.headerBox}>
-            <View style={styles.iconCircle}>
-              <Ionicons
-                name={step === 'IDENTIFIER' ? 'person-circle-outline' : 'key-outline'}
-                size={26}
-                color="#0284C7"
-              />
+        <View style={styles.rightActions}>
+          <LanguageSwitcher dark={false} />
+        </View>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Sleek, Open Container (Telebirr style) */}
+        <View style={styles.formContainer}>
+          {/* Title Area inspired by Telebirr */}
+          <View style={styles.titleSection}>
+            <View style={styles.mainTitleRow}>
+              <Text style={[styles.mainTitleText, { color: colors.text }]}>
+                {t('loginButton') || 'Login'}
+              </Text>
+              <View style={styles.accentLine} />
             </View>
-            <Text style={styles.screenHeading}>
-              {step === 'IDENTIFIER' ? t('mobileLogin') : t('enterPassword')}
-            </Text>
-            <Text style={styles.screenSubtitle}>
-              {step === 'IDENTIFIER'
-                ? t('enterPhoneOrEmail') || t('mobileLoginSub')
-                : t('enterPasswordSub') || t('setPasswordSub')}
+            <Text style={[styles.roleSubTag, { color: colors.textMuted }]}>
+              {t('driverAndTransporter') || 'Driver & Transporter'}
             </Text>
           </View>
 
           {/* Error Message Box */}
           {errorMsg ? (
-            <View style={styles.errorBox}>
-              <Ionicons name="alert-circle" size={16} color="#DC2626" style={{ marginRight: 6 }} />
-              <Text style={styles.errorText}>{errorMsg}</Text>
+            <View style={[styles.errorBox, isDark && { backgroundColor: '#450A0A', borderColor: '#991B1B' }]}>
+              <Ionicons name="alert-circle" size={16} color={isDark ? '#FCA5A5' : '#DC2626'} style={{ marginRight: 6 }} />
+              <Text style={[styles.errorText, isDark && { color: '#FCA5A5' }]}>{errorMsg}</Text>
             </View>
           ) : null}
 
-          {/* STEP 1: Phone or Email */}
-          {step === 'IDENTIFIER' ? (
-            <View style={{ gap: 16 }}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>{t('phoneOrEmail')}</Text>
-                <View
-                  style={[
-                    styles.inputWrapper,
-                    isFocused && styles.inputWrapperFocused,
-                  ]}
-                >
-                  <Ionicons
-                    name="phone-portrait-outline"
-                    size={18}
-                    color={isFocused ? '#0284C7' : '#64748B'}
-                    style={{ marginLeft: 14, marginRight: 8 }}
-                  />
-                  <TextInput
-                    style={styles.cleanInput}
-                    value={identifier}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setIsFocused(false)}
-                    onChangeText={(val) => {
-                      setIdentifier(val);
-                      if (errorMsg) setErrorMsg('');
-                    }}
-                    placeholder="+251 9... or user@tradeflow.et"
-                    placeholderTextColor="#94A3B8"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    keyboardType="email-address"
-                    returnKeyType="next"
-                    onSubmitEditing={handleContinue}
-                  />
-                  {identifier.length > 0 && (
-                    <TouchableOpacity
-                      onPress={() => setIdentifier('')}
-                      style={{ padding: 10 }}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    >
-                      <Ionicons name="close-circle" size={16} color="#94A3B8" />
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-
-              {/* Continue Button */}
-              <TouchableOpacity
-                style={styles.primaryBtn}
-                onPress={handleContinue}
-                activeOpacity={0.85}
+          <View style={{ gap: 14 }}>
+            {/* Phone or Email Input */}
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>{t('phoneOrEmail')}</Text>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  {
+                    backgroundColor: isDark
+                      ? (focusedInput === 'identifier' ? '#0B1220' : colors.inputBg)
+                      : (focusedInput === 'identifier' ? '#FFFFFF' : colors.inputBg),
+                    borderColor: focusedInput === 'identifier' ? '#0284C7' : colors.border,
+                  },
+                ]}
               >
-                <Text style={styles.primaryBtnText}>{t('continue') || 'Continue ➔'}</Text>
-              </TouchableOpacity>
-
-              {/* Divider */}
-              <View style={styles.dividerRow}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>{t('or')}</Text>
-                <View style={styles.dividerLine} />
-              </View>
-
-              {/* Google Button */}
-              <TouchableOpacity
-                style={styles.googleBtn}
-                onPress={handleGoogleLogin}
-                activeOpacity={0.85}
-              >
-                <Ionicons name="logo-google" size={17} color="#EA4335" />
-                <Text style={styles.googleBtnText}>{t('continueWithGoogle')}</Text>
-              </TouchableOpacity>
-
-              {/* Switch to Register */}
-              <View style={styles.promptRow}>
-                <Text style={styles.promptText}>{t('noAccount')} </Text>
-                <TouchableOpacity onPress={onNavigateRegister} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                  <Text style={styles.promptLink}>{t('register')}</Text>
-                </TouchableOpacity>
+                <Ionicons
+                  name="phone-portrait-outline"
+                  size={18}
+                  color={focusedInput === 'identifier' ? '#0284C7' : colors.textMuted}
+                  style={{ marginLeft: 14, marginRight: 8 }}
+                />
+                <TextInput
+                  style={[styles.cleanInput, { color: colors.text }]}
+                  value={identifier}
+                  onFocus={() => setFocusedInput('identifier')}
+                  onBlur={() => setFocusedInput(null)}
+                  onChangeText={(val) => {
+                    setIdentifier(val);
+                    if (errorMsg) setErrorMsg('');
+                  }}
+                  placeholder={t('emailOrPhoneNumber') || 'Email or phone number'}
+                  placeholderTextColor={isDark ? '#64748B' : '#94A3B8'}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="email-address"
+                  returnKeyType="next"
+                  onSubmitEditing={() => passwordInputRef.current?.focus()}
+                />
+                {identifier.length > 0 && (
+                  <TouchableOpacity
+                    onPress={() => setIdentifier('')}
+                    style={{ padding: 10 }}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Ionicons name="close-circle" size={16} color="#94A3B8" />
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
-          ) : (
-            /* STEP 2: Password */
-            <View style={{ gap: 16 }}>
-              {/* Account summary pill */}
-              <View style={styles.accountBadge}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-                  <Ionicons name="checkmark-circle" size={18} color="#0284C7" />
-                  <Text style={styles.accountBadgeText} numberOfLines={1}>
-                    {identifier}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  onPress={() => {
-                    setErrorMsg('');
-                    setStep('IDENTIFIER');
+
+            {/* Password Input */}
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>{t('password')}</Text>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  {
+                    backgroundColor: isDark
+                      ? (focusedInput === 'password' ? '#0B1220' : colors.inputBg)
+                      : (focusedInput === 'password' ? '#FFFFFF' : colors.inputBg),
+                    borderColor: focusedInput === 'password' ? '#0284C7' : colors.border,
+                  },
+                ]}
+              >
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={18}
+                  color={focusedInput === 'password' ? '#0284C7' : colors.textMuted}
+                  style={{ marginLeft: 14, marginRight: 8 }}
+                />
+                <TextInput
+                  ref={passwordInputRef}
+                  style={[styles.cleanInput, { color: colors.text }]}
+                  value={password}
+                  onFocus={() => setFocusedInput('password')}
+                  onBlur={() => setFocusedInput(null)}
+                  onChangeText={(val) => {
+                    setPassword(val);
+                    if (errorMsg) setErrorMsg('');
                   }}
-                  style={styles.changeBtn}
+                  secureTextEntry={!showPassword}
+                  placeholder={t('password') || 'Password'}
+                  placeholderTextColor={isDark ? '#64748B' : '#94A3B8'}
+                  autoComplete="password"
+                  returnKeyType="done"
+                  onSubmitEditing={handleSubmit}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={styles.eyeBtn}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.changeBtnText}>{t('changeAccount') || 'Edit'}</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Password Input */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>{t('password')}</Text>
-                <View
-                  style={[
-                    styles.inputWrapper,
-                    isFocused && styles.inputWrapperFocused,
-                  ]}
-                >
                   <Ionicons
-                    name="lock-closed-outline"
+                    name={showPassword ? 'eye-off' : 'eye'}
                     size={18}
-                    color={isFocused ? '#0284C7' : '#64748B'}
-                    style={{ marginLeft: 14, marginRight: 8 }}
+                    color={showPassword ? '#0284C7' : colors.textMuted}
                   />
-                  <TextInput
-                    ref={passwordInputRef}
-                    style={styles.cleanInput}
-                    value={password}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setIsFocused(false)}
-                    onChangeText={(val) => {
-                      setPassword(val);
-                      if (errorMsg) setErrorMsg('');
-                    }}
-                    secureTextEntry={!showPassword}
-                    placeholder="••••••••"
-                    placeholderTextColor="#94A3B8"
-                    autoComplete="password"
-                    returnKeyType="done"
-                    onSubmitEditing={handleSubmit}
-                  />
-                  <TouchableOpacity
-                    onPress={() => setShowPassword(!showPassword)}
-                    style={styles.eyeBtn}
-                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons
-                      name={showPassword ? 'eye-off' : 'eye'}
-                      size={18}
-                      color={showPassword ? '#0284C7' : '#64748B'}
-                    />
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              {/* Remember Me & Forgot Password */}
-              <View style={styles.rememberRow}>
-                <TouchableOpacity
-                  style={styles.checkboxRow}
-                  onPress={() => setRememberMe(!rememberMe)}
-                  activeOpacity={0.8}
-                >
-                  <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
-                    {rememberMe && <Ionicons name="checkmark" size={12} color="#FFFFFF" />}
-                  </View>
-                  <Text style={styles.rememberText}>{t('rememberMe')}</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                  <Text style={styles.forgotText}>{t('forgotPassword')}</Text>
                 </TouchableOpacity>
               </View>
+            </View>
 
-              {/* Log In Button */}
+            {/* Remember Me & Forgot Password */}
+            <View style={styles.rememberRow}>
               <TouchableOpacity
-                style={styles.primaryBtn}
-                onPress={handleSubmit}
-                disabled={loading}
-                activeOpacity={0.85}
+                style={styles.checkboxRow}
+                onPress={() => setRememberMe(!rememberMe)}
+                activeOpacity={0.8}
               >
-                {loading ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.primaryBtnText}>{t('loginButton') || 'Log In ➔'}</Text>
-                )}
+                <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+                  {rememberMe && <Ionicons name="checkmark" size={12} color="#FFFFFF" />}
+                </View>
+                <Text style={styles.rememberText}>{t('rememberMe')}</Text>
               </TouchableOpacity>
 
-              {/* Back to Step 1 Button */}
               <TouchableOpacity
-                onPress={() => {
-                  setErrorMsg('');
-                  setStep('IDENTIFIER');
-                }}
-                style={styles.switchAccountBtn}
+                onPress={() => setShowForgotModal(true)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 activeOpacity={0.7}
               >
-                <Ionicons name="arrow-back" size={14} color="#64748B" />
-                <Text style={styles.switchAccountText}>
-                  {t('useAnotherAccount') || 'Use a different account'}
-                </Text>
+                <Text style={styles.forgotText}>{t('forgotPassword')}</Text>
               </TouchableOpacity>
             </View>
-          )}
+
+            {/* Log In Button */}
+            <TouchableOpacity
+              style={styles.primaryBtn}
+              onPress={handleSubmit}
+              disabled={loading}
+              activeOpacity={0.85}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.primaryBtnText}>{t('loginButton') || 'Log In ➔'}</Text>
+              )}
+            </TouchableOpacity>
+
+            {/* Divider */}
+            <View style={styles.dividerRow}>
+              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+              <Text style={styles.dividerText}>{t('or')}</Text>
+              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+            </View>
+
+            {/* Google Button */}
+            <TouchableOpacity
+              style={[styles.googleBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={handleGoogleLogin}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="logo-google" size={17} color="#EA4335" />
+              <Text style={[styles.googleBtnText, { color: colors.text }]}>{t('continueWithGoogle')}</Text>
+            </TouchableOpacity>
+
+            {/* Switch to Register as Transporter */}
+            <View style={styles.promptRow}>
+              <Text style={[styles.promptText, { color: colors.textMuted }]}>{t('noAccount')} </Text>
+              <TouchableOpacity onPress={onNavigateRegister} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Text style={styles.promptLink}>{t('signUpAsTransporter') || 'Sign Up as Transporter'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </ScrollView>
+
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal
+        visible={showForgotModal}
+        onClose={() => setShowForgotModal(false)}
+        defaultIdentifier={identifier}
+        onResetSuccess={() => {
+          setErrorMsg('');
+        }}
+      />
     </SafeAreaView>
   );
 };
@@ -380,15 +401,42 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 35,
+    flexGrow: 1,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    paddingBottom: 40,
   },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'android' ? Math.max((StatusBar.currentHeight || 0) + 14, 48) : 12,
+    paddingBottom: 12,
+    position: 'relative',
     zIndex: 100,
+  },
+  brandTitleContainer: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: -1,
+  },
+  brandTitle: {
+    fontSize: 21,
+    fontWeight: '900',
+    color: '#0F172A',
+    letterSpacing: -0.5,
+    textAlign: 'center',
+  },
+  rightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   backButton: {
     width: 38,
@@ -404,62 +452,37 @@ const styles = StyleSheet.create({
       default: { elevation: 1 },
     }),
   },
-  brandTitle: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: '#0F172A',
-    letterSpacing: -0.5,
+  formContainer: {
+    width: '100%',
+    maxWidth: 420,
+    alignSelf: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 20,
   },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 28,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginTop: 6,
-    ...Platform.select({
-      web: {
-        boxShadow: '0 10px 30px -5px rgba(15, 23, 42, 0.06), 0 4px 6px -2px rgba(15, 23, 42, 0.02)',
-      } as any,
-      default: {
-        shadowColor: '#0F172A',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.06,
-        shadowRadius: 16,
-        elevation: 3,
-      },
-    }),
-  },
-  headerBox: {
+  titleSection: {
     alignItems: 'center',
-    textAlign: 'center',
     marginBottom: 20,
   },
-  iconCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#F0F9FF',
-    borderWidth: 1,
-    borderColor: '#BAE6FD',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  screenHeading: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: '#0F172A',
-    textAlign: 'center',
-    letterSpacing: -0.4,
-    marginBottom: 6,
-  },
-  screenSubtitle: {
+  roleSubTag: {
     fontSize: 12.5,
-    color: '#64748B',
-    textAlign: 'center',
-    lineHeight: 18,
-    paddingHorizontal: 8,
+    fontWeight: '600',
+    marginTop: 8,
+  },
+  mainTitleRow: {
+    alignItems: 'center',
+  },
+  mainTitleText: {
+    fontSize: 24,
+    fontWeight: '900',
+    letterSpacing: -0.4,
+  },
+  accentLine: {
+    width: 40,
+    height: 3,
+    backgroundColor: '#0284C7',
+    borderRadius: 2,
+    marginTop: 4,
   },
   errorBox: {
     flexDirection: 'row',
@@ -467,47 +490,41 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF2F2',
     borderColor: '#FECACA',
     borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginBottom: 14,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 12,
   },
   errorText: {
     flex: 1,
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '600',
     color: '#DC2626',
-    lineHeight: 16,
+    lineHeight: 15,
   },
   inputGroup: {
-    gap: 7,
+    gap: 5,
   },
   inputLabel: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#334155',
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F8FAFC',
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    borderRadius: 16,
-    height: 50,
-    transitionProperty: 'border-color',
-    transitionDuration: '150ms',
-  },
-  inputWrapperFocused: {
-    borderColor: '#0284C7',
-    backgroundColor: '#FFFFFF',
+    borderWidth: 1.2,
+    borderColor: '#CBD5E1',
+    borderRadius: 12,
+    height: 48,
   },
   cleanInput: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: 6,
-    fontSize: 14,
+    fontSize: 13.5,
     color: '#0F172A',
     fontWeight: '600',
   },
@@ -518,29 +535,29 @@ const styles = StyleSheet.create({
   },
   primaryBtn: {
     backgroundColor: '#0284C7',
-    borderRadius: 16,
-    height: 50,
+    borderRadius: 12,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 4,
     ...Platform.select({
       web: {
-        boxShadow: '0 4px 14px rgba(2, 132, 199, 0.3)',
+        boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)',
       } as any,
       default: {
         shadowColor: '#0284C7',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
-        elevation: 4,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.25,
+        shadowRadius: 6,
+        elevation: 3,
       },
     }),
   },
   primaryBtnText: {
     color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '900',
-    letterSpacing: 0.3,
+    fontSize: 14.5,
+    fontWeight: '800',
+    letterSpacing: 0.2,
   },
   dividerRow: {
     flexDirection: 'row',
@@ -566,16 +583,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 16,
-    height: 48,
-    gap: 9,
+    borderRadius: 12,
+    height: 46,
+    gap: 8,
     ...Platform.select({
       web: { boxShadow: '0 1px 2px rgba(0,0,0,0.03)' } as any,
       default: { elevation: 1 },
     }),
   },
   googleBtnText: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#334155',
   },
@@ -583,44 +600,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 8,
+    marginTop: 6,
   },
   promptText: {
-    fontSize: 12.5,
+    fontSize: 12,
     color: '#64748B',
     fontWeight: '500',
   },
   promptLink: {
-    fontSize: 12.5,
-    fontWeight: '800',
-    color: '#0284C7',
-  },
-  accountBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#F0F9FF',
-    borderWidth: 1,
-    borderColor: '#BAE6FD',
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-  },
-  accountBadgeText: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#0369A1',
-  },
-  changeBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#BAE6FD',
-  },
-  changeBtnText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '800',
     color: '#0284C7',
   },
@@ -628,7 +616,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginVertical: 2,
+    marginVertical: 1,
   },
   checkboxRow: {
     flexDirection: 'row',
@@ -636,9 +624,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   checkbox: {
-    width: 18,
-    height: 18,
-    borderRadius: 6,
+    width: 17,
+    height: 17,
+    borderRadius: 5,
     borderWidth: 1.5,
     borderColor: '#94A3B8',
     alignItems: 'center',
@@ -650,26 +638,13 @@ const styles = StyleSheet.create({
     borderColor: '#0284C7',
   },
   rememberText: {
-    fontSize: 12,
+    fontSize: 11.5,
     color: '#475569',
     fontWeight: '600',
   },
   forgotText: {
-    fontSize: 12,
+    fontSize: 11.5,
     color: '#0284C7',
     fontWeight: '800',
-  },
-  switchAccountBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    marginTop: 2,
-  },
-  switchAccountText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#64748B',
   },
 });

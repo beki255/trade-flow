@@ -14,6 +14,7 @@ interface DeliveredHandoverCardProps {
   onPaymentsRedirect?: () => void;
   onConsignmentsRedirect?: () => void;
   onPostLoadRedirect?: () => void;
+  onClose?: () => void;
 }
 
 export const DeliveredHandoverCard: React.FC<DeliveredHandoverCardProps> = ({
@@ -21,6 +22,7 @@ export const DeliveredHandoverCard: React.FC<DeliveredHandoverCardProps> = ({
   onPaymentsRedirect,
   onConsignmentsRedirect,
   onPostLoadRedirect,
+  onClose,
 }) => {
   return (
     <div className="bg-white rounded-3xl p-6 sm:p-8 border border-purple-200 shadow-md space-y-6">
@@ -40,11 +42,21 @@ export const DeliveredHandoverCard: React.FC<DeliveredHandoverCardProps> = ({
           </div>
         </div>
 
-        <div className="text-right sm:border-l sm:border-slate-200 sm:pl-6">
-          <div className="text-[10px] font-bold uppercase text-slate-400">Total Route Covered</div>
-          <div className="text-base font-black text-purple-900">
-            {selectedLoad.distanceKm || '--'} km Corridor Completed
+        <div className="flex items-center gap-4 sm:border-l sm:border-slate-200 sm:pl-6">
+          <div className="text-right">
+            <div className="text-[10px] font-bold uppercase text-slate-400">Total Route Covered</div>
+            <div className="text-base font-black text-purple-900">
+              {selectedLoad.distanceKm || '--'} km Corridor Completed
+            </div>
           </div>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="px-3.5 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-all border border-slate-200 shadow-2xs cursor-pointer shrink-0"
+            >
+              ✕ Change Consignment
+            </button>
+          )}
         </div>
       </div>
 

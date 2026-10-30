@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: tradeflow_password
       POSTGRES_DB: tradeflow_db
     ports:
-      - "5432:5432"
+      - "15432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -43,8 +43,8 @@ services:
       MINIO_ROOT_USER: tradeflow_admin
       MINIO_ROOT_PASSWORD: tradeflow_storage_pass
     ports:
-      - "9000:9000" # S3 API
-      - "9001:9001" # Web Console
+      - "19000:9000" # S3 API
+      - "19001:9001" # Web Console
     volumes:
       - minio_data:/data
     healthcheck:

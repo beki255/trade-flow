@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   Modal,
   View,
@@ -10,11 +10,16 @@ import {
   StyleSheet,
   Platform,
   Pressable,
+  TextInput,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { UserProfile } from '../types';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../../../context/LanguageContext';
 import { useTheme } from '../../../context/ThemeContext';
+import { apiFetch } from '../../../utils/api';
+import { validatePassword, validatePasswordMatch } from '../../../utils/validation';
 
 interface ProfileModalProps {
   visible: boolean;
@@ -42,10 +47,98 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   const { theme, setTheme, isDark, colors } = useTheme();
   const activeLang = ((language || ctxLang || 'EN') as string).toUpperCase();
 
+  // Password Change States
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loadingPassword, setLoadingPassword] = useState(false);
+  const [passwordSuccessMsg, setPasswordSuccessMsg] = useState('');
+  const [passwordErrorMsg, setPasswordErrorMsg] = useState('');
+
   // Left-to-right drawer slide and backdrop fade animation
   const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const useNative = Platform.OS !== 'web';
+
+  const handleUpdatePassword = async () => {
+    setPasswordSuccessMsg('');
+    setPasswordErrorMsg('');
+
+    if (!oldPassword || !oldPassword.trim()) {
+      const err = activeLang === 'AM' ? 'እባክዎ የአሁኑን የይለፍ ቃል ያስገቡ።' : 'Please enter your current password.';
+      setPasswordErrorMsg(err);
+      Alert.alert(activeLang === 'AM' ? 'ስህተት' : 'Validation Error', err);
+      return;
+    }
+
+    const passRes = validatePassword(newPassword, activeLang as any);
+    if (!passRes.isValid) {
+      const err = passRes.error || (activeLang === 'AM' ? 'አዲሱ የይለፍ ቃል ቢያንስ 8 ፊደላት/ቁጥሮች መሆን አለበት (ፊደልና ቁጥር ያካተተ)።' : 'Password must be at least 8 characters long and contain at least one letter and one number.');
+      setPasswordErrorMsg(err);
+      Alert.alert(activeLang === 'AM' ? 'ስህተት' : 'Validation Error', err);
+      return;
+    }
+
+    const matchRes = validatePasswordMatch(newPassword, confirmPassword, activeLang as any);
+    if (!matchRes.isValid) {
+      const err = matchRes.error || (activeLang === 'AM' ? 'የተረጋገጠው የይለፍ ቃል ከአዲሱ ጋር አይዛመድም።' : 'New password and confirmation do not match.');
+      setPasswordErrorMsg(err);
+      Alert.alert(activeLang === 'AM' ? 'ስህተት' : 'Validation Error', err);
+      return;
+    }
+
+    setLoadingPassword(true);
+    try {
+      const res = await apiFetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user?.id,
+          phone: user?.phone,
+          email: user?.email,
+          oldPassword: oldPassword.trim(),
+          newPassword: newPassword.trim(),
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        const succ = activeLang === 'AM' ? 'የይለፍ ቃልዎ በተሳካ ሁኔታ ተቀይሯል!' : 'Your password has been updated successfully!';
+        setPasswordSuccessMsg(succ);
+        Alert.alert(
+          activeLang === 'AM' ? 'የይለፍ ቃል ተቀይሯል' : 'Password Updated',
+          activeLang === 'AM'
+            ? 'አዲሱ ቋሚ የይለፍ ቃልዎ ተቀምጧል። እባክዎ ለሚቀጥሉት መግቢያዎች ይጠቀሙበት።'
+            : 'Your new permanent password has been saved. Please use it for all future logins.',
+          [{ text: 'OK' }]
+        );
+        setOldPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setTimeout(() => setPasswordSuccessMsg(''), 4500);
+      } else {
+        let msg = data.error || 'Failed to update password.';
+        if (activeLang === 'AM') {
+          if (msg.includes('Current password does not match') || msg.includes('temporary password does not match')) {
+            msg = 'ያስገቡት የአሁን የይለፍ ቃል ትክክል አይደለም።';
+          } else if (msg.includes('at least 8 characters')) {
+            msg = 'አዲሱ የይለፍ ቃል ቢያንስ 8 ፊደላት/ቁጥሮች መሆን አለበት (ፊደልና ቁጥር ያካተተ)።';
+          }
+        }
+        setPasswordErrorMsg(msg);
+        Alert.alert(activeLang === 'AM' ? 'ማሻሻል አልተሳካም' : 'Update Failed', msg);
+      }
+    } catch (err: any) {
+      const msg = activeLang === 'AM' ? 'ሰርቨሩን ማግኘት አልተቻለም። እባክዎ ግንኙነትዎን ያረጋግጡ።' : 'Cannot connect to server. Please check your connection.';
+      setPasswordErrorMsg(msg);
+      Alert.alert(activeLang === 'AM' ? 'የግንኙነት ስህተት' : 'Connection Error', msg);
+    } finally {
+      setLoadingPassword(false);
+    }
+  };
 
   useEffect(() => {
     if (visible) {
@@ -240,7 +333,163 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               </View>
             </View>
 
-            {/* 3. Appearance & Theme Mode (INSIDE Profile Settings) */}
+            {/* 3. Change Account Password (SECURE CREDENTIAL MANAGEMENT) */}
+            <View style={drawerStyles.sectionCard}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Text style={drawerStyles.sectionTitle}>
+                  {activeLang === 'AM' ? 'የይለፍ ቃል ቀይር' : activeLang === 'OM' ? 'Jijjiirraa Jecha Icciitii' : 'CHANGE ACCOUNT PASSWORD'}
+                </Text>
+                <Ionicons name="lock-closed" size={13} color="#38BDF8" />
+              </View>
+
+              {/* Requirement Hint */}
+              <View style={drawerStyles.securityHintBox}>
+                <Ionicons name="shield-checkmark-outline" size={13} color="#38BDF8" style={{ marginTop: 1 }} />
+                <Text style={drawerStyles.securityHintText}>
+                  {activeLang === 'AM'
+                    ? 'አዲሱ የይለፍ ቃል ቢያንስ 8 ፊደላት/ቁጥሮች መሆን አለበት (ቢያንስ አንድ ፊደል እና አንድ ቁጥር)።'
+                    : 'Password must be at least 8 characters long and contain both letters and numbers.'}
+                </Text>
+              </View>
+
+              {passwordSuccessMsg ? (
+                <View style={drawerStyles.alertBannerSuccess}>
+                  <Ionicons name="checkmark-circle" size={15} color="#10B981" />
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#34D399', flex: 1 }}>
+                    {passwordSuccessMsg}
+                  </Text>
+                </View>
+              ) : null}
+
+              {passwordErrorMsg ? (
+                <View style={drawerStyles.alertBannerError}>
+                  <Ionicons name="alert-circle" size={15} color="#EF4444" />
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#F87171', flex: 1 }}>
+                    {passwordErrorMsg}
+                  </Text>
+                </View>
+              ) : null}
+
+              {/* Current Password Input */}
+              <View style={drawerStyles.inputGroup}>
+                <Text style={drawerStyles.inputLabel}>
+                  {activeLang === 'AM' ? 'የአሁን የይለፍ ቃል *' : 'Current Password *'}
+                </Text>
+                <View style={drawerStyles.passwordBox}>
+                  <Ionicons name="lock-closed-outline" size={14} color="#64748B" style={{ marginRight: 6 }} />
+                  <TextInput
+                    style={drawerStyles.input}
+                    placeholder={activeLang === 'AM' ? 'የአሁኑን የይለፍ ቃል ያስገቡ' : 'Enter current password'}
+                    placeholderTextColor="#64748B"
+                    secureTextEntry={!showOldPassword}
+                    value={oldPassword}
+                    onChangeText={(txt) => {
+                      setOldPassword(txt);
+                      if (passwordErrorMsg) setPasswordErrorMsg('');
+                    }}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowOldPassword(!showOldPassword)}
+                    style={drawerStyles.eyeBtn}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={showOldPassword ? 'eye-off-outline' : 'eye-outline'}
+                      size={15}
+                      color="#94A3B8"
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* New Password Input */}
+              <View style={drawerStyles.inputGroup}>
+                <Text style={drawerStyles.inputLabel}>
+                  {activeLang === 'AM' ? 'አዲስ ቋሚ የይለፍ ቃል *' : 'New Password *'}
+                </Text>
+                <View style={drawerStyles.passwordBox}>
+                  <Ionicons name="key-outline" size={14} color="#64748B" style={{ marginRight: 6 }} />
+                  <TextInput
+                    style={drawerStyles.input}
+                    placeholder={activeLang === 'AM' ? 'ቢያንስ 8 ፊደልና ቁጥር' : 'Min. 8 chars (letter + number)'}
+                    placeholderTextColor="#64748B"
+                    secureTextEntry={!showNewPassword}
+                    value={newPassword}
+                    onChangeText={(txt) => {
+                      setNewPassword(txt);
+                      if (passwordErrorMsg) setPasswordErrorMsg('');
+                    }}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowNewPassword(!showNewPassword)}
+                    style={drawerStyles.eyeBtn}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={showNewPassword ? 'eye-off-outline' : 'eye-outline'}
+                      size={15}
+                      color="#94A3B8"
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Confirm Password Input */}
+              <View style={drawerStyles.inputGroup}>
+                <Text style={drawerStyles.inputLabel}>
+                  {activeLang === 'AM' ? 'አዲሱን የይለፍ ቃል አረጋግጥ *' : 'Confirm New Password *'}
+                </Text>
+                <View style={drawerStyles.passwordBox}>
+                  <Ionicons name="shield-checkmark-outline" size={14} color="#64748B" style={{ marginRight: 6 }} />
+                  <TextInput
+                    style={drawerStyles.input}
+                    placeholder={activeLang === 'AM' ? 'አዲሱን የይለፍ ቃል ድጋሚ ያስገቡ' : 'Repeat new password'}
+                    placeholderTextColor="#64748B"
+                    secureTextEntry={!showConfirmPassword}
+                    value={confirmPassword}
+                    onChangeText={(txt) => {
+                      setConfirmPassword(txt);
+                      if (passwordErrorMsg) setPasswordErrorMsg('');
+                    }}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                    style={drawerStyles.eyeBtn}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
+                      size={15}
+                      color="#94A3B8"
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Save Button */}
+              <TouchableOpacity
+                style={[
+                  drawerStyles.saveBtn,
+                  (loadingPassword || !oldPassword.trim() || !newPassword.trim() || !confirmPassword.trim()) && { opacity: 0.6 },
+                ]}
+                onPress={handleUpdatePassword}
+                disabled={loadingPassword || !oldPassword.trim() || !newPassword.trim() || !confirmPassword.trim()}
+                activeOpacity={0.85}
+              >
+                {loadingPassword ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Ionicons name="lock-closed-outline" size={14} color="#FFFFFF" />
+                    <Text style={drawerStyles.saveBtnText}>
+                      {activeLang === 'AM' ? 'የይለፍ ቃል አድስ' : 'Update Password'}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {/* 4. Appearance & Theme Mode (INSIDE Profile Settings) */}
             <View style={drawerStyles.sectionCard}>
               <Text style={drawerStyles.sectionTitle}>
                 {activeLang === 'AM' ? 'የገጽታ ቀለም' : activeLang === 'OM' ? 'Bifa Fuulaa' : 'APPEARANCE & THEME'}
@@ -540,5 +789,82 @@ const drawerStyles = StyleSheet.create({
   themeBtnTextActiveDark: {
     color: '#38BDF8',
     fontWeight: '800',
+  },
+  inputGroup: {
+    gap: 4,
+    marginTop: 2,
+  },
+  inputLabel: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#CBD5E1',
+  },
+  passwordBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0F172A',
+    borderWidth: 1,
+    borderColor: '#334155',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+  },
+  input: {
+    flex: 1,
+    height: 38,
+    fontSize: 11.5,
+    color: '#FFFFFF',
+    paddingVertical: 0,
+  },
+  eyeBtn: {
+    padding: 6,
+  },
+  saveBtn: {
+    backgroundColor: '#0284C7',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 6,
+  },
+  saveBtnText: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  securityHintBox: {
+    backgroundColor: 'rgba(56, 189, 248, 0.08)',
+    borderRadius: 8,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.2)',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+  },
+  securityHintText: {
+    fontSize: 10,
+    color: '#94A3B8',
+    flex: 1,
+    lineHeight: 14,
+  },
+  alertBannerSuccess: {
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+    borderRadius: 8,
+    padding: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  alertBannerError: {
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+    borderRadius: 8,
+    padding: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
 });

@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { driverStyles as styles } from '../driverStyles';
@@ -13,6 +14,7 @@ import { IncidentRecord, DynamicRerouteProposal } from '../types';
 import { useLanguage } from '../../../context/LanguageContext';
 import { formatCleanLocation } from './TripTab';
 import { CheckIcon } from '../../../components/AppIcons';
+import { uriToDataUrl } from '../../../utils/imageUtils';
 
 interface IncidentTabProps {
   incidentType: string;
@@ -72,10 +74,100 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
   pendingReroute,
   onConfirmReroute,
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [showPhotoPreview, setShowPhotoPreview] = useState(false);
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [isSeverityDropdownOpen, setIsSeverityDropdownOpen] = useState(false);
+
+  const getCategoryLabel = (id: string) => {
+    if (language === 'AM') {
+      switch(id) {
+        case 'ACCIDENT': return 'አደጋ';
+        case 'CHECKPOINT_DELAY': return 'የጉምሩክ መዘግየት';
+        case 'FUEL_OUTAGE': return 'የነዳጅ እጥረት';
+        case 'ROAD_BLOCKAGE': return 'የመንገድ መዘጋት';
+        case 'SECURITY_CONCERN': return 'የደህንነት ስጋት';
+        default: return 'አደጋ';
+      }
+    }
+    if (language === 'OM') {
+      switch(id) {
+        case 'ACCIDENT': return 'Balaa';
+        case 'CHECKPOINT_DELAY': return 'Turtii Gumruukaa';
+        case 'FUEL_OUTAGE': return 'Hanqina Boba’aa';
+        case 'ROAD_BLOCKAGE': return 'Cufama Daandii';
+        case 'SECURITY_CONCERN': return 'Akeekkachiisa Nageenyaa';
+        default: return 'Balaa';
+      }
+    }
+    switch(id) {
+      case 'ACCIDENT': return 'Accident';
+      case 'CHECKPOINT_DELAY': return 'Customs Delay';
+      case 'FUEL_OUTAGE': return 'Fuel Outage';
+      case 'ROAD_BLOCKAGE': return 'Road Block';
+      case 'SECURITY_CONCERN': return 'Security Alert';
+      default: return 'Incident';
+    }
+  };
+
+  const getCategoryDesc = (id: string) => {
+    if (language === 'AM') {
+      switch(id) {
+        case 'ACCIDENT': return 'የተሽከርካሪ ግጭት፣ መገልበጥ ወይም የመንገድ መዘጋት';
+        case 'CHECKPOINT_DELAY': return 'ረጅም የጉምሩክ ሰልፍ ወይም የፍተሻ መዘግየት';
+        case 'FUEL_OUTAGE': return 'የነዳጅ ማደያ ናፍጣ ያለቀበት ወይም የተዘጋ';
+        case 'ROAD_BLOCKAGE': return 'የመሬት መንሸራተት፣ የድልድይ ብልሽት ወይም የግንባታ መዘጋጋት';
+        case 'SECURITY_CONCERN': return 'የጸጥታ ስጋት፣ ያልተፈቀደ ኬላ ወይም የደህንነት ችግር';
+        default: return '';
+      }
+    }
+    if (language === 'OM') {
+      switch(id) {
+        case 'ACCIDENT': return 'Walitti bu\'iinsa konkolaataa ykn cufama daandii';
+        case 'CHECKPOINT_DELAY': return 'Tarree dheeraa gumruukaa ykn sakatta\'iinsa';
+        case 'FUEL_OUTAGE': return 'Boba\'aan buufata dhumachuu ykn cufamuu';
+        case 'ROAD_BLOCKAGE': return 'Sigiga lafaa, miidhama riqichaa ykn ijaarsa';
+        case 'SECURITY_CONCERN': return 'Sodaa nageenyaa, buufata seeraan alaa';
+        default: return '';
+      }
+    }
+    switch(id) {
+      case 'ACCIDENT': return 'Vehicle collision, rollover, or highway obstruction';
+      case 'CHECKPOINT_DELAY': return 'Customs queue, weighbridge backlog, or inspection wait';
+      case 'FUEL_OUTAGE': return 'Highway fuel station out of diesel / closed pumps';
+      case 'ROAD_BLOCKAGE': return 'Landslide, bridge damage, or major construction standstill';
+      case 'SECURITY_CONCERN': return 'Conflict alert, unauthorized checkpoint, or safety hazard';
+      default: return '';
+    }
+  };
+
+  const getSeverityLabel = (id: string) => {
+    if (language === 'AM') {
+      switch(id) {
+        case 'LOW': return 'ዝቅተኛ';
+        case 'MEDIUM': return 'መካከለኛ';
+        case 'HIGH': return 'ከፍተኛ';
+        case 'CRITICAL': return 'አስቸኳይ/ወሳኝ';
+        default: return 'መካከለኛ';
+      }
+    }
+    if (language === 'OM') {
+      switch(id) {
+        case 'LOW': return 'Giddu-galeessa Gadi';
+        case 'MEDIUM': return 'Giddu-galeessa';
+        case 'HIGH': return 'Olaanaa';
+        case 'CRITICAL': return 'Murteessaa';
+        default: return 'Giddu-galeessa';
+      }
+    }
+    switch(id) {
+      case 'LOW': return 'Minor';
+      case 'MEDIUM': return 'Moderate';
+      case 'HIGH': return 'Severe';
+      case 'CRITICAL': return 'Critical';
+      default: return 'Moderate';
+    }
+  };
 
   // Current GPS coordinates
   const currentLat = realGpsLocation?.latitude ?? activeWaypoint?.lat ?? activeTrip?.originLat ?? 8.895;
@@ -84,17 +176,47 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
   const cleanDest = formatCleanLocation(activeTrip?.destination);
   const locationName =
     activeWaypoint?.name ||
-    (activeTrip ? (activeTrip.route || `${cleanOrigin} ➔ ${cleanDest}`) : 'Djibouti–Addis Ababa Strategic Corridor');
+    (activeTrip ? (activeTrip.route || `${cleanOrigin} ➔ ${cleanDest}`) : (language === 'AM' ? 'የጅቡቲ–አዲስ አበባ ስትራቴጂክ ኮሪደር' : 'Djibouti–Addis Ababa Strategic Corridor'));
 
-  const handleTogglePhoto = () => {
+  const handleTogglePhoto = async () => {
     if (incidentPhoto) {
       if (setIncidentPhoto) setIncidentPhoto(null);
       setShowPhotoPreview(false);
-    } else {
-      // Simulate authentic camera capture with GPS metadata
-      const simulatedPhoto = 'https://images.unsplash.com/photo-1541888946425-d0fbb18615f8?q=80&w=800&auto=format&fit=crop';
-      if (setIncidentPhoto) setIncidentPhoto(simulatedPhoto);
-      setShowPhotoPreview(true);
+      return;
+    }
+
+    try {
+      if (Platform.OS === 'web' && typeof document !== 'undefined') {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = (e: any) => {
+          const file = e.target?.files?.[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+              const dataUrl = reader.result as string;
+              if (setIncidentPhoto) setIncidentPhoto(dataUrl);
+              setShowPhotoPreview(true);
+            };
+            reader.readAsDataURL(file);
+          }
+        };
+        input.click();
+      } else {
+        const DocumentPicker = require('expo-document-picker');
+        const res = await DocumentPicker.getDocumentAsync({
+          type: ['image/*'],
+          copyToCacheDirectory: true,
+        });
+        if (!res.canceled && res.assets && res.assets[0]?.uri) {
+          const dataUrl = await uriToDataUrl(res.assets[0].uri);
+          if (setIncidentPhoto) setIncidentPhoto(dataUrl);
+          setShowPhotoPreview(true);
+        }
+      }
+    } catch (err) {
+      console.warn('Incident photo capture error:', err);
     }
   };
 
@@ -106,14 +228,18 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
 
   return (
     <View style={styles.sectionContainer}>
-      <Text style={styles.sectionTitle} numberOfLines={1}>{t('incidentTitle') || 'Report Corridor Incident'}</Text>
+      <Text style={styles.sectionTitle} numberOfLines={1}>{t('incidentTitle') || (language === 'AM' ? 'የኮሪደር አደጋ ሪፖርት ማቅረቢያ' : 'Report Corridor Incident')}</Text>
 
       {hasTrip ? (
         <View style={{ gap: 12 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
             <View style={{ flex: 1, marginRight: 8 }}>
               <Text style={{ fontSize: 11, color: '#64748B', marginTop: 1 }}>
-                Broadcast real-time hazard to corridor dispatch
+                {language === 'AM'
+                  ? 'የመንገዱን አደጋ በቀጥታ ለኮሪደር መቆጣጠሪያ ያሰራጩ'
+                  : language === 'OM'
+                  ? 'Balaa qabatamaa yeroo sanaa beeksisaa'
+                  : 'Broadcast real-time hazard to corridor dispatch'}
               </Text>
             </View>
             <View
@@ -130,7 +256,9 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
               }}
             >
               <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#10B981' }} />
-              <Text style={{ fontSize: 9.5, fontWeight: '800', color: '#047857' }}>GPS ACTIVE</Text>
+              <Text style={{ fontSize: 9.5, fontWeight: '800', color: '#047857' }}>
+                {language === 'AM' ? 'ንቁ ጂፒኤስ' : language === 'OM' ? 'GPS Hojiirra' : 'GPS ACTIVE'}
+              </Text>
             </View>
           </View>
 
@@ -150,10 +278,10 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
             <Ionicons name="warning" size={22} color="#D97706" />
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 14, fontWeight: '900', color: '#92400E' }}>
-                Dynamic Rerouting Proposed!
+                {language === 'AM' ? 'ተለዋዋጭ አማራጭ መስመር ቀርቧል!' : language === 'OM' ? 'Daandiin Filannoo Dhiyaateera!' : 'Dynamic Rerouting Proposed!'}
               </Text>
               <Text style={{ fontSize: 11, color: '#B45309', fontWeight: '700' }}>
-                Materially Faster/Safer Path Detected Along Corridor
+                {language === 'AM' ? 'ፈጣን እና አስተማማኝ አማራጭ መስመር ተገኝቷል' : language === 'OM' ? 'Daandii saffisaa fi nagaa qabu argameera' : 'Materially Faster/Safer Path Detected Along Corridor'}
               </Text>
             </View>
             <View
@@ -186,9 +314,11 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
                 borderColor: '#A7F3D0',
               }}
             >
-              <Text style={{ fontSize: 10, fontWeight: '700', color: '#065F46' }}>EST. TIME SAVINGS</Text>
+              <Text style={{ fontSize: 10, fontWeight: '700', color: '#065F46' }}>
+                {language === 'AM' ? 'የሚድን ግምታዊ ጊዜ' : language === 'OM' ? 'Yeroo Qusatamu' : 'EST. TIME SAVINGS'}
+              </Text>
               <Text style={{ fontSize: 15, fontWeight: '900', color: '#047857' }}>
-                -{pendingReroute.estimatedTimeSavingMins} min
+                -{pendingReroute.estimatedTimeSavingMins} {language === 'AM' ? 'ደቂቃ' : 'min'}
               </Text>
             </View>
             <View
@@ -201,9 +331,11 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
                 borderColor: '#E2E8F0',
               }}
             >
-              <Text style={{ fontSize: 10, fontWeight: '700', color: '#475569' }}>DISTANCE DELTA</Text>
+              <Text style={{ fontSize: 10, fontWeight: '700', color: '#475569' }}>
+                {language === 'AM' ? 'የኪ.ሜ ልዩነት' : language === 'OM' ? 'Garaagarummaa Fageenyaa' : 'DISTANCE DELTA'}
+              </Text>
               <Text style={{ fontSize: 15, fontWeight: '900', color: '#0F172A' }}>
-                +{pendingReroute.distanceDeltaKm} km
+                +{pendingReroute.distanceDeltaKm} {language === 'AM' ? 'ኪ.ሜ' : 'km'}
               </Text>
             </View>
             <View
@@ -216,7 +348,9 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
                 borderColor: '#E2E8F0',
               }}
             >
-              <Text style={{ fontSize: 10, fontWeight: '700', color: '#475569' }}>PROPOSED BYPASS</Text>
+              <Text style={{ fontSize: 10, fontWeight: '700', color: '#475569' }}>
+                {language === 'AM' ? 'የቀረበ ማለፊያ' : language === 'OM' ? 'Daandii Qaxxaamuraa' : 'PROPOSED BYPASS'}
+              </Text>
               <Text style={{ fontSize: 12, fontWeight: '800', color: '#0284C7' }} numberOfLines={1}>
                 Dewele Bypass
               </Text>
@@ -240,7 +374,7 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
             >
               <CheckIcon size={14} color="#FFFFFF" />
               <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '900' }}>
-                Accept Bypass Reroute
+                {language === 'AM' ? 'አማራጭ መስመሩን ተቀበል' : language === 'OM' ? 'Daandii Filannoo Fudhadhu' : 'Accept Bypass Reroute'}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -256,7 +390,7 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
               }}
             >
               <Text style={{ color: '#475569', fontSize: 13, fontWeight: '800' }}>
-                Decline
+                {language === 'AM' ? 'አትቀበል' : language === 'OM' ? 'Didi' : 'Decline'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -267,7 +401,11 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
         <View style={[styles.successBox, { flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
           <CheckIcon size={14} color="#059669" />
           <Text style={styles.successText}>
-            Incident broadcasted! Corridor routing graph & ETA updated.
+            {language === 'AM'
+              ? 'ሪፖርቱ ተላልፏል! የኮሪደር ካርታ እና የሚደርስበት ሰዓት ተሻሽሏል።'
+              : language === 'OM'
+              ? 'Gabaasni ergameera! Daandiin fi yeroon haaromfameera.'
+              : 'Incident broadcasted! Corridor routing graph & ETA updated.'}
           </Text>
         </View>
       ) : null}
@@ -299,8 +437,8 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
             <Ionicons name="location" size={16} color="#0284C7" />
           </View>
           <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ fontSize: 12.5, fontWeight: '800', color: '#0F172A' }} numberOfLines={1}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+              <Text style={{ fontSize: 12.5, fontWeight: '800', color: '#0F172A', flex: 1 }} numberOfLines={1}>
                 {locationName}
               </Text>
               <Text style={{ fontSize: 10, color: '#64748B', fontWeight: '600' }}>
@@ -308,14 +446,16 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
               </Text>
             </View>
             <Text style={{ fontSize: 10.5, color: '#64748B', marginTop: 1 }}>
-              GPS: {Number(currentLat).toFixed(4)}° N, {Number(currentLng).toFixed(4)}° E • Live Geotag
+              GPS: {Number(currentLat).toFixed(4)}° N, {Number(currentLng).toFixed(4)}° E • {language === 'AM' ? 'የቀጥታ ጂፒኤስ' : 'Live Geotag'}
             </Text>
           </View>
         </View>
 
         {/* 1. Incident Category Selection (Clean Dropdown) */}
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Incident Category:</Text>
+          <Text style={styles.inputLabel}>
+            {language === 'AM' ? 'የአደጋው ዓይነት:' : language === 'OM' ? 'Gosa Balaa:' : 'Incident Category:'}
+          </Text>
           <TouchableOpacity
             onPress={() => {
               setIsCategoryDropdownOpen(!isCategoryDropdownOpen);
@@ -353,7 +493,7 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
                 />
               </View>
               <Text style={{ fontSize: 13, fontWeight: '700', color: '#0F172A', flex: 1 }} numberOfLines={1}>
-                {selectedCat.label}
+                {getCategoryLabel(selectedCat.id)}
               </Text>
             </View>
             <Ionicons
@@ -425,10 +565,10 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
                           color: isSelected ? '#0369A1' : '#1E293B',
                         }}
                       >
-                        {cat.label}
+                        {getCategoryLabel(cat.id)}
                       </Text>
                       <Text style={{ fontSize: 10.5, color: '#64748B', marginTop: 1 }} numberOfLines={1}>
-                        {cat.desc}
+                        {getCategoryDesc(cat.id)}
                       </Text>
                     </View>
                     {isSelected && (
@@ -444,7 +584,7 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4, paddingLeft: 2 }}>
               <Ionicons name="information-circle-outline" size={14} color="#64748B" />
               <Text style={{ fontSize: 10.5, color: '#64748B', flex: 1 }}>
-                {selectedCat.desc}
+                {getCategoryDesc(selectedCat.id)}
               </Text>
             </View>
           )}
@@ -452,7 +592,9 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
 
         {/* 2. Severity Level Selection (Clean Dropdown) */}
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Severity Level:</Text>
+          <Text style={styles.inputLabel}>
+            {language === 'AM' ? 'የክብደት ደረጃ:' : language === 'OM' ? 'Sadarkaa Ciminnaa:' : 'Severity Level:'}
+          </Text>
           <TouchableOpacity
             onPress={() => {
               setIsSeverityDropdownOpen(!isSeverityDropdownOpen);
@@ -484,11 +626,11 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
                 }}
               >
                 <Text style={{ fontSize: 12, fontWeight: '800', color: selectedSev.color }}>
-                  {selectedSev.label}
+                  {getSeverityLabel(selectedSev.id)}
                 </Text>
               </View>
               <Text style={{ fontSize: 12, color: '#64748B', fontWeight: '500' }}>
-                Priority rating
+                {language === 'AM' ? 'የቅድሚያ ደረጃ' : language === 'OM' ? 'Sadarkaa Dursa' : 'Priority rating'}
               </Text>
             </View>
             <Ionicons
@@ -554,7 +696,7 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
                         }}
                       >
                         <Text style={{ fontSize: 12, fontWeight: '800', color: sev.color }}>
-                          {sev.label}
+                          {getSeverityLabel(sev.id)}
                         </Text>
                       </View>
                     </View>
@@ -570,10 +712,12 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
 
         {/* 3. Incident Description */}
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Observations & Details:</Text>
+          <Text style={styles.inputLabel}>
+            {language === 'AM' ? 'ተጨማሪ ማብራሪያ እና ዝርዝር:' : language === 'OM' ? 'Bal\'ina fi Ibsa:' : 'Observations & Details:'}
+          </Text>
           <TextInput
             style={[styles.input, { height: 60, textAlignVertical: 'top' }]}
-            placeholder="Describe obstruction, queue length, lane closures..."
+            placeholder={language === 'AM' ? 'የመንገዱን ሁኔታ፣ የሰልፍ ርዝመት ወይም የተዘጉ መስመሮችን ይግለጹ...' : language === 'OM' ? 'Haala daandii, dheerina tarree ykn cufama ibsaa...' : 'Describe obstruction, queue length, lane closures...'}
             placeholderTextColor="#94A3B8"
             value={incidentNotes}
             onChangeText={setIncidentNotes}
@@ -583,7 +727,9 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
 
         {/* 4. Photo Evidence Upload */}
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Photo Evidence (Optional):</Text>
+          <Text style={styles.inputLabel}>
+            {language === 'AM' ? 'የፎቶ ማስረጃ (አማራጭ):' : language === 'OM' ? 'Ragaa Suuraa (Filannoo):' : 'Photo Evidence (Optional):'}
+          </Text>
           <TouchableOpacity
             onPress={handleTogglePhoto}
             activeOpacity={0.75}
@@ -615,17 +761,73 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
                   }}
                   numberOfLines={1}
                 >
-                  {incidentPhoto ? 'Incident Photo Attached' : 'Attach Live Photo'}
+                  {incidentPhoto
+                    ? (language === 'AM' ? 'የአደጋው ፎቶ ተያይዟል' : language === 'OM' ? 'Suuraan Balaa Qabateera' : 'Incident Photo Attached')
+                    : (language === 'AM' ? 'ቀጥታ ፎቶ ያያይዙ' : language === 'OM' ? 'Suuraa Qabsiisaa' : 'Attach Live Photo')}
                 </Text>
                 <Text style={{ fontSize: 10, color: '#64748B' }}>
-                  {incidentPhoto ? 'Verified GPS EXIF metadata embedded' : 'Capture photo or choose image'}
+                  {incidentPhoto
+                    ? (language === 'AM' ? 'የተረጋገጠ የጂፒኤስ መረጃ ተካቷል' : 'Verified GPS EXIF metadata embedded')
+                    : (language === 'AM' ? 'ፎቶ አንሳ ወይም ከማዕከለ-ስዕላት ምረጥ' : 'Capture photo or choose image')}
                 </Text>
               </View>
             </View>
             <Text style={{ fontSize: 11, fontWeight: '800', color: incidentPhoto ? '#EF4444' : '#0284C7' }}>
-              {incidentPhoto ? 'Remove' : 'Capture'}
+              {incidentPhoto
+                ? (language === 'AM' ? 'አስወግድ' : language === 'OM' ? 'Haqi' : 'Remove')
+                : (language === 'AM' ? 'አንሳ' : language === 'OM' ? 'Kasaa' : 'Capture')}
             </Text>
           </TouchableOpacity>
+
+          {/* Photo Preview Thumbnail */}
+          {incidentPhoto && (
+            <View
+              style={{
+                marginTop: 8,
+                borderRadius: 12,
+                overflow: 'hidden',
+                borderWidth: 1,
+                borderColor: '#86EFAC',
+                backgroundColor: '#F0FDF4',
+                padding: 8,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 12,
+              }}
+            >
+              <Image
+                source={{ uri: incidentPhoto }}
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: 8,
+                  backgroundColor: '#E2E8F0',
+                }}
+                resizeMode="cover"
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#166534' }}>
+                  {language === 'AM' ? 'የተያያዘ ፎቶ' : language === 'OM' ? 'Suuraa Qabate' : 'Attached Evidence Photo'}
+                </Text>
+                <Text style={{ fontSize: 10, color: '#15803D', marginTop: 2 }}>
+                  {language === 'AM' ? '✓ የቀጥታ ጂፒኤስ ማረጋገጫ ተያይዟል' : '✓ Live GPS verification attached'}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => {
+                  if (setIncidentPhoto) setIncidentPhoto(null);
+                  setShowPhotoPreview(false);
+                }}
+                style={{
+                  padding: 6,
+                  borderRadius: 20,
+                  backgroundColor: '#FEE2E2',
+                }}
+              >
+                <Ionicons name="close" size={16} color="#DC2626" />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {/* Broadcast Button */}
@@ -641,7 +843,7 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
         >
           <Ionicons name="megaphone" size={15} color="#FFFFFF" />
           <Text style={styles.reportBtnText}>
-            Broadcast Geotagged Alert ➔
+            {language === 'AM' ? 'የአደጋ ማስጠንቀቂያ አስተላልፍ ➔' : language === 'OM' ? 'Akeekkachiisa Ergi ➔' : 'Broadcast Geotagged Alert ➔'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -650,10 +852,14 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
       <View style={[styles.card, { alignItems: 'center', paddingVertical: 24, gap: 8 }]}>
         <Ionicons name="warning-outline" size={36} color="#94A3B8" />
         <Text style={{ fontSize: 13, fontWeight: '800', color: '#334155' }}>
-          No Active Trip Assigned
+          {language === 'AM' ? 'ምንም የተመደበ ንቁ ጉዞ የለም' : language === 'OM' ? 'Imalli Hojiirra Jiru Hin Ramadamne' : 'No Active Trip Assigned'}
         </Text>
         <Text style={{ fontSize: 11, color: '#64748B', textAlign: 'center', maxWidth: 280, lineHeight: 16 }}>
-          Corridor hazard and incident reporting is tied to an active consignment trip. When a freight mission is assigned to your vehicle, reporting tools will appear here.
+          {language === 'AM'
+            ? 'የአደጋ ሪፖርት ማቅረብ የሚቻለው ንቁ የጭነት ጉዞ ሲኖር ብቻ ነው። የጉዞ ትዕዛዝ ሲደርስዎት እዚህ ሪፖርት ማድረግ ይችላሉ።'
+            : language === 'OM'
+            ? 'Gabaasni balaa dhiyaachuu kan danda\'u imalli hojiirra jiru yoo jiraate qofaadha. Imalli yoo dhiyaatu asirratti gabaasuu dandeessu.'
+            : 'Corridor hazard and incident reporting is tied to an active consignment trip. When a freight mission is assigned to your vehicle, reporting tools will appear here.'}
         </Text>
       </View>
     )}
@@ -661,12 +867,14 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
       {/* Submitted Incident History */}
       {incidentsList.length > 0 && (
         <View style={{ gap: 8, marginTop: 10 }}>
-          <Text style={styles.sectionTitle}>Submitted Incident Reports</Text>
+          <Text style={styles.sectionTitle}>
+            {language === 'AM' ? 'ቀደም ሲል የቀረቡ የአደጋ ሪፖርቶች' : language === 'OM' ? 'Gabaasaalee Balaa Dhiyaatan' : 'Submitted Incident Reports'}
+          </Text>
           {incidentsList.map((inc) => (
             <View key={inc.id} style={styles.historyCard}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text style={[styles.historyId, { color: '#EF4444' }]}>
-                  {inc.type}
+                  {getCategoryLabel(inc.type)}
                 </Text>
                 <View
                   style={{
@@ -677,12 +885,12 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
                   }}
                 >
                   <Text style={{ fontSize: 9, fontWeight: '800', color: '#15803D' }}>
-                    ✓ Authority Verified
+                    {language === 'AM' ? '✓ በባለሥልጣን የተረጋገጠ' : language === 'OM' ? '✓ Mirkanaa\'e' : '✓ Authority Verified'}
                   </Text>
                 </View>
               </View>
               <Text style={styles.historyCoords}>
-                {inc.notes || 'Driver reported corridor incident'} ({inc.time})
+                {inc.notes || (language === 'AM' ? 'በአሽከርካሪ የቀረበ የአደጋ ሪፖርት' : 'Driver reported corridor incident')} ({inc.time})
               </Text>
               {inc.coords && (
                 <Text style={{ fontSize: 10, color: '#94A3B8', fontFamily: 'monospace' }}>

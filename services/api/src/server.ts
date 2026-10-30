@@ -14,11 +14,12 @@ import analyticsRoutes from './routes/analytics.routes';
 import paymentRoutes from './routes/payment.routes';
 import forwarderRoutes from './routes/forwarder.routes';
 import securityRoutes from './routes/security.routes';
+import notificationRoutes from './routes/notification.routes';
 import { swaggerDocsHandler, swaggerJsonHandler } from './docs/swagger';
 
 dotenv.config();
 
-// TradeFlow API Server - Initialized with complete OpenAPI 3.0 specs & real-time compliance (customs & fraud guard included)
+// TradeFlow API Server - Connected to Live PostgreSQL Database at 127.0.0.1:15432
 const app = express();
 const server = http.createServer(app);
 const io = new SocketIOServer(server, {
@@ -85,6 +86,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/forwarder', forwarderRoutes);
 app.use('/api/security', securityRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Socket.io Real-Time Telematics Channel
 io.on('connection', (socket) => {

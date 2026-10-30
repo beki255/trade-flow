@@ -14,10 +14,12 @@ import {
   ShieldCheck,
   Sliders,
   AlertCircle,
+  Calendar,
 } from 'lucide-react';
 import { LocationData, AIMatchCarrier, MatchingSLA, ShipmentItem } from '../types';
 import { AIMatchingResultsCard } from '../components/AIMatchingResultsCard';
 import { RouteLocationPickerCard } from '../components/RouteLocationPickerCard';
+import { DynamicSpotRateCard } from '../components/DynamicSpotRateCard';
 import { useLanguage } from '../../../context/LanguageContext';
 
 export type MatchingPreferenceType = 'BALANCED' | 'COST_PRIORITY' | 'SPEED_PRIORITY' | 'RELIABILITY_PRIORITY';
@@ -122,6 +124,35 @@ export const PostLoadTab: React.FC<PostLoadTabProps> = ({
     else setLocalValidity(hours);
   };
 
+  // Pickup time slot selection
+  const standardTimeSlots = [
+    '08:00 AM - 12:00 PM (Morning)',
+    '12:00 PM - 04:00 PM (Afternoon)',
+    '04:00 PM - 08:00 PM (Evening)',
+    '08:00 PM - 06:00 AM (Night)',
+    '08:00 AM - 06:00 PM (Full Day)',
+  ];
+
+  const isCustomTime = Boolean(
+    pickupTimeWindow &&
+    !standardTimeSlots.includes(pickupTimeWindow) &&
+    pickupTimeWindow !== ''
+  );
+  const [showCustomPicker, setShowCustomPicker] = useState<boolean>(isCustomTime);
+  const [customStart, setCustomStart] = useState<string>('08:00');
+  const [customEnd, setCustomEnd] = useState<string>('12:00');
+
+  useEffect(() => {
+    if (!pickupTimeWindow) {
+      setPickupTimeWindow('08:00 AM - 12:00 PM (Morning)');
+    }
+    if (!pickupDate) {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      setPickupDate(tomorrow.toISOString().split('T')[0]);
+    }
+  }, []);
+
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
@@ -153,11 +184,21 @@ export const PostLoadTab: React.FC<PostLoadTabProps> = ({
           <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-3 animate-fade-in shadow-sm">
             <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
             <div>
-              <div className="font-extrabold text-sm">Consignment Created Successfully!</div>
+              <div className="font-extrabold text-sm">
+                {language === 'AM' ? 'ጭነት በተሳካ ሁኔታ ተፈጥሯል!' : language === 'OM' ? 'Fe\'isni Milkaa\'inaan Uumameera!' : 'Consignment Created Successfully!'}
+              </div>
               <p className="text-emerald-700 font-medium mt-0.5">
                 {bookingOption === 'COMPETITIVE_BIDDING'
-                  ? 'Your load has been broadcast to verified corridor transporters for competitive quotes.'
-                  : 'AI matching engine has ranked verified transporters at the calculated spot rate.'}
+                  ? (language === 'AM'
+                      ? 'ጭነትዎ ከተረጋገጡ የኮሪደር አጓጓዦች ተወዳዳሪ ዋጋዎችን ለማግኘት ተላልፏል።'
+                      : language === 'OM'
+                      ? 'Fe\'isni keessan dorgommii gatiif geessitoota mirkanaa\'aniif darbeera.'
+                      : 'Your load has been broadcast to verified corridor transporters for competitive quotes.')
+                  : (language === 'AM'
+                      ? 'የ AI አዛማጅ ሞተር የተረጋገጡ አጓጓዦችን በስሌት ባገኘው ስፖት ዋጋ ደረጃ አስቀምጧል።'
+                      : language === 'OM'
+                      ? 'Mootorri AI geessitoota mirkanaa\'an gatii ispootiin sadarkeesseera.'
+                      : 'AI matching engine has ranked verified transporters at the calculated spot rate.')}
               </p>
             </div>
           </div>
@@ -180,42 +221,68 @@ export const PostLoadTab: React.FC<PostLoadTabProps> = ({
           <div className="space-y-3 pt-2">
             <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
               <Package className="w-4 h-4 text-sky-600" />
-              <span>Cargo Specifications</span>
+              <span>
+                {language === 'AM' ? 'የጭነት ዝርዝር መረጃዎች' : language === 'OM' ? 'Ibsa Fe\'isaa' : 'Cargo Specifications'}
+              </span>
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Cargo Title / Description *
+                  {language === 'AM' ? 'የጭነት ስም / ማብራሪያ *' : language === 'OM' ? 'Mata Duree / Ibsa Fe\'isaa *' : 'Cargo Title / Description *'}
                 </label>
                 <input
                   type="text"
                   required
                   value={cargoName}
                   onChange={(e) => setCargoName(e.target.value)}
-                  placeholder="e.g. Export Yirgacheffe Washed Coffee Grade 1"
+                  placeholder={
+                    language === 'AM'
+                      ? 'ለምሳሌ፡ የይርጋጨፌ ታጠበ የወጪ ቡና ደረጃ 1'
+                      : language === 'OM'
+                      ? 'Fkn: Buna Yirgaacaffee Qulqulluu Sadarkaa 1'
+                      : 'e.g. Export Yirgacheffe Washed Coffee Grade 1'
+                  }
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-sky-600 outline-hidden text-xs font-medium text-slate-900"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Cargo Category *
+                  {language === 'AM' ? 'የጭነት ምድብ *' : language === 'OM' ? 'Gosa Fe\'isaa *' : 'Cargo Category *'}
                 </label>
                 <select
                   value={cargoCategory}
                   onChange={(e) => setCargoCategory(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-sky-600 outline-hidden text-xs font-medium bg-white text-slate-900"
                 >
-                  <option value="AGRICULTURAL_COFFEE">Agricultural: Export Coffee</option>
-                  <option value="CONTAINERIZED">Containerized Freight (FCL/LCL)</option>
-                  <option value="GRAIN_BULK">Grain & Bulk Agricultural Cargo</option>
-                  <option value="INDUSTRIAL_MACHINERY">Industrial Equipment & Heavy Machinery</option>
-                  <option value="TEXTILES_GARMENTS">Textiles, Garments & Apparel</option>
-                  <option value="CONSTRUCTION_MATERIALS">Construction Materials & Cement</option>
-                  <option value="PETROLEUM_FUEL">Petroleum Products & Fuel</option>
-                  <option value="PHARMACEUTICALS">Pharmaceuticals & Medical Supplies</option>
-                  <option value="GENERAL_MERCHANDISE">General Merchandise</option>
+                  <option value="AGRICULTURAL_COFFEE">
+                    {language === 'AM' ? 'ግብርና፦ የወጪ ቡና' : language === 'OM' ? 'Qonna: Buna Ergaa' : 'Agricultural: Export Coffee'}
+                  </option>
+                  <option value="CONTAINERIZED">
+                    {language === 'AM' ? 'በኮንቴነር የታሸገ ጭነት (FCL/LCL)' : language === 'OM' ? 'Fe\'isa Konteenaraa (FCL/LCL)' : 'Containerized Freight (FCL/LCL)'}
+                  </option>
+                  <option value="GRAIN_BULK">
+                    {language === 'AM' ? 'እህል እና የጅምላ የግብርና ጭነት' : language === 'OM' ? 'Midhaan & Fe\'isa Qonnaa Jumlaa' : 'Grain & Bulk Agricultural Cargo'}
+                  </option>
+                  <option value="INDUSTRIAL_MACHINERY">
+                    {language === 'AM' ? 'የኢንዱስትሪ መሣሪያዎች እና ከባድ ማሽነሪዎች' : language === 'OM' ? 'Meeshaalee Warshaa & Maashinarii Gurguddoo' : 'Industrial Equipment & Heavy Machinery'}
+                  </option>
+                  <option value="TEXTILES_GARMENTS">
+                    {language === 'AM' ? 'ጨርቃጨርቅ እና አልባሳት' : language === 'OM' ? 'Uffata & Huccuu' : 'Textiles, Garments & Apparel'}
+                  </option>
+                  <option value="CONSTRUCTION_MATERIALS">
+                    {language === 'AM' ? 'የግንባታ ዕቃዎች እና ሲሚንቶ' : language === 'OM' ? 'Meeshaalee Ijaarsaa & Simentoo' : 'Construction Materials & Cement'}
+                  </option>
+                  <option value="PETROLEUM_FUEL">
+                    {language === 'AM' ? 'የነዳጅ ውጤቶች እና ነዳጅ' : language === 'OM' ? 'Boba\'aa & Bu\'aalee Boba\'aa' : 'Petroleum Products & Fuel'}
+                  </option>
+                  <option value="PHARMACEUTICALS">
+                    {language === 'AM' ? 'መድኃኒቶች እና የሕክምና መገልገያዎች' : language === 'OM' ? 'Qorichoota & Meeshaalee Yaalaa' : 'Pharmaceuticals & Medical Supplies'}
+                  </option>
+                  <option value="GENERAL_MERCHANDISE">
+                    {language === 'AM' ? 'ጠቅላላ ንግድ ዕቃዎች' : language === 'OM' ? 'Meeshaalee Waliigalaa' : 'General Merchandise'}
+                  </option>
                 </select>
               </div>
             </div>
@@ -224,7 +291,7 @@ export const PostLoadTab: React.FC<PostLoadTabProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Weight (Metric Tons) *
+                  {language === 'AM' ? 'ክብደት (በሜትሪክ ቶን) *' : language === 'OM' ? 'Ulfaatina (Toonii) *' : 'Weight (Metric Tons) *'}
                 </label>
                 <input
                   type="number"
@@ -239,7 +306,7 @@ export const PostLoadTab: React.FC<PostLoadTabProps> = ({
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Volume (m³) *
+                  {language === 'AM' ? 'መጠን / ይዘት (m³) *' : language === 'OM' ? 'Qabiyyee (m³) *' : 'Volume (m³) *'}
                 </label>
                 <input
                   type="number"
@@ -256,14 +323,20 @@ export const PostLoadTab: React.FC<PostLoadTabProps> = ({
             {/* Cargo Description */}
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Packaging Specifications & Instructions *
+                {language === 'AM' ? 'የማሸጊያ ዝርዝር መመሪያዎች *' : language === 'OM' ? 'Qajeelfama Qabiinsa & Saamsamaa *' : 'Packaging Specifications & Instructions *'}
               </label>
               <textarea
                 rows={2}
                 required
                 value={cargoDescription}
                 onChange={(e) => setCargoDescription(e.target.value)}
-                placeholder="Enter container numbering, moisture thresholds, seal numbers, palletization, etc."
+                placeholder={
+                  language === 'AM'
+                    ? 'የኮንቴነር ቁጥር፣ የእርጥበት መጠን፣ የማህተም ቁጥሮች እና ልዩ ጥንቃቄዎችን ያስገቡ...'
+                    : language === 'OM'
+                    ? 'Lakkoofsa konteenaraa, hamma jiidhaa, lakkoofsa chaappaa fi kkf galchaa...'
+                    : 'Enter container numbering, moisture thresholds, seal numbers, palletization, etc.'
+                }
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-sky-600 outline-hidden text-xs font-medium text-slate-900"
               />
             </div>
@@ -272,47 +345,163 @@ export const PostLoadTab: React.FC<PostLoadTabProps> = ({
           {/* 3. Pickup Date & Special Handling */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Required Pickup Window *
-              </label>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                <input
-                  type="date"
-                  required
-                  value={pickupDate}
-                  onChange={(e) => setPickupDate(e.target.value)}
-                  className="flex-1 px-3 py-2 rounded-xl border border-slate-300 focus:border-sky-600 outline-hidden text-xs font-medium text-slate-900"
-                />
-                <input
-                  type="text"
-                  value={pickupTimeWindow}
-                  onChange={(e) => setPickupTimeWindow(e.target.value)}
-                  placeholder="e.g. 08:00 AM - 12:00 PM"
-                  className="w-full sm:w-44 px-3 py-2 rounded-xl border border-slate-300 focus:border-sky-600 outline-hidden text-xs font-medium text-slate-900"
-                />
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-sky-600" />
+                  {language === 'AM'
+                    ? 'የመጫኛ ቀን እና ሰዓት *'
+                    : language === 'OM'
+                    ? 'Yeroo Fudhatamaa Barbaadamu *'
+                    : 'Required Pickup Window *'}
+                </label>
+                <span className="text-[10px] text-slate-400 font-medium">
+                  {language === 'AM' ? 'ቀን እና ሰዓት ይምረጡ' : language === 'OM' ? 'Guyyaa fi sa\'aa filadhu' : 'Select date & slot'}
+                </span>
+              </div>
+              <div className="space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {/* Date Input with Calendar Icon */}
+                  <div className="relative">
+                    <input
+                      type="date"
+                      required
+                      min={new Date().toISOString().split('T')[0]}
+                      value={pickupDate}
+                      onChange={(e) => setPickupDate(e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-xl border border-slate-300 focus:border-sky-600 focus:ring-1 focus:ring-sky-600 outline-hidden text-xs font-semibold text-slate-900 bg-white"
+                      title={language === 'AM' ? 'የመጫኛ ቀን' : language === 'OM' ? 'Guyyaa Fudhatamaa' : 'Pickup Date'}
+                    />
+                  </div>
+
+                  {/* Time Window Dropdown Picker */}
+                  <div className="relative">
+                    <select
+                      value={showCustomPicker ? 'CUSTOM' : (pickupTimeWindow || '08:00 AM - 12:00 PM (Morning)')}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === 'CUSTOM') {
+                          setShowCustomPicker(true);
+                          setPickupTimeWindow(`${customStart} - ${customEnd}`);
+                        } else {
+                          setShowCustomPicker(false);
+                          setPickupTimeWindow(val);
+                        }
+                      }}
+                      className="w-full px-3 py-2.5 rounded-xl border border-slate-300 focus:border-sky-600 focus:ring-1 focus:ring-sky-600 outline-hidden text-xs font-semibold text-slate-900 bg-white cursor-pointer"
+                    >
+                      <option value="08:00 AM - 12:00 PM (Morning)">
+                        {language === 'AM' ? 'ጠዋት (08:00 AM - 12:00 PM)' : language === 'OM' ? 'Bariisaa (08:00 AM - 12:00 PM)' : 'Morning (08:00 AM - 12:00 PM)'}
+                      </option>
+                      <option value="12:00 PM - 04:00 PM (Afternoon)">
+                        {language === 'AM' ? 'ከሰዓት (12:00 PM - 04:00 PM)' : language === 'OM' ? 'Waaree Booda (12:00 PM - 04:00 PM)' : 'Afternoon (12:00 PM - 04:00 PM)'}
+                      </option>
+                      <option value="04:00 PM - 08:00 PM (Evening)">
+                        {language === 'AM' ? 'ምሽት (04:00 PM - 08:00 PM)' : language === 'OM' ? 'Galgala (04:00 PM - 08:00 PM)' : 'Evening (04:00 PM - 08:00 PM)'}
+                      </option>
+                      <option value="08:00 PM - 06:00 AM (Night)">
+                        {language === 'AM' ? 'ሌሊት (08:00 PM - 06:00 AM)' : language === 'OM' ? 'Halkan (08:00 PM - 06:00 AM)' : 'Night (08:00 PM - 06:00 AM)'}
+                      </option>
+                      <option value="08:00 AM - 06:00 PM (Full Day)">
+                        {language === 'AM' ? 'ሙሉ ቀን (08:00 AM - 06:00 PM)' : language === 'OM' ? 'Guyyaa Guutuu (08:00 AM - 06:00 PM)' : 'Full Day Flexible (08:00 AM - 06:00 PM)'}
+                      </option>
+                      <option value="CUSTOM">
+                        {language === 'AM' ? 'ልዩ የሰዓት ክልል...' : language === 'OM' ? 'Sa\'aatii Biroo...' : 'Custom Time Range...'}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Custom Time Range Picker Drawer (Only shown when "Custom Time Range..." is selected) */}
+                {showCustomPicker && (
+                  <div className="p-2.5 bg-sky-50/70 rounded-xl border border-sky-200 flex items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-2 flex-1">
+                      <span className="text-[11px] font-bold text-sky-900">
+                        {language === 'AM' ? 'ከ፦' : language === 'OM' ? 'Irraa:' : 'From:'}
+                      </span>
+                      <input
+                        type="time"
+                        value={customStart}
+                        onChange={(e) => {
+                          setCustomStart(e.target.value);
+                          setPickupTimeWindow(`${e.target.value} - ${customEnd}`);
+                        }}
+                        className="px-2 py-1 bg-white rounded-lg border border-sky-300 text-xs font-semibold text-slate-900 outline-none focus:ring-1 focus:ring-sky-500"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 flex-1">
+                      <span className="text-[11px] font-bold text-sky-900">
+                        {language === 'AM' ? 'እስከ፦' : language === 'OM' ? 'Hanga:' : 'To:'}
+                      </span>
+                      <input
+                        type="time"
+                        value={customEnd}
+                        onChange={(e) => {
+                          setCustomEnd(e.target.value);
+                          setPickupTimeWindow(`${customStart} - ${e.target.value}`);
+                        }}
+                        className="px-2 py-1 bg-white rounded-lg border border-sky-300 text-xs font-semibold text-slate-900 outline-none focus:ring-1 focus:ring-sky-500"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCustomPicker(false);
+                        setPickupTimeWindow('08:00 AM - 12:00 PM (Morning)');
+                      }}
+                      className="text-[11px] text-sky-700 hover:text-sky-900 font-semibold underline px-1"
+                    >
+                      {language === 'AM' ? 'መደበኛ ሰዓቶች' : language === 'OM' ? 'Idilee' : 'Presets'}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Special Handling Requirements *
+                {language === 'AM' ? 'ልዩ የጥንቃቄ መስፈርቶች *' : language === 'OM' ? 'Ulaagaalee Of-eeggannoo Addaa *' : 'Special Handling Requirements *'}
               </label>
               <select
                 value={specialHandling}
                 onChange={(e) => setSpecialHandling(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-sky-600 outline-hidden text-xs font-medium bg-white text-slate-900"
               >
-                <option value="Standard Heavy Freight">Standard Heavy Freight</option>
-                <option value="Moisture-Controlled / High-Security Escort">Moisture-Controlled / High-Security Escort</option>
-                <option value="Refrigerated (Reefer -20°C to +4°C)">Refrigerated (Reefer -20°C to +4°C)</option>
-                <option value="Fragile / Delicate Industrial Cargo">Fragile / Delicate Industrial Cargo</option>
-                <option value="Hazardous Materials (HAZMAT Class 3)">Hazardous Materials (HAZMAT Class 3)</option>
+                <option value="Standard Heavy Freight">
+                  {language === 'AM' ? 'መደበኛ ከባድ ጭነት' : language === 'OM' ? 'Fe\'isa Ulfaataa Idilee' : 'Standard Heavy Freight'}
+                </option>
+                <option value="Moisture-Controlled / High-Security Escort">
+                  {language === 'AM' ? 'እርጥበት የተቆጣጠረ / ከፍተኛ ጥበቃ ያለው' : language === 'OM' ? 'Jiidha To\'atame / Eegumsa Cimaa' : 'Moisture-Controlled / High-Security Escort'}
+                </option>
+                <option value="Refrigerated (Reefer -20°C to +4°C)">
+                  {language === 'AM' ? 'ማቀዝቀዣ ያለው (Reefer -20°C እስከ +4°C)' : language === 'OM' ? 'Meeshaa Qabbaneessaa Qabu (-20°C hanga +4°C)' : 'Refrigerated (Reefer -20°C to +4°C)'}
+                </option>
+                <option value="Fragile / Delicate Industrial Cargo">
+                  {language === 'AM' ? 'ተሰባሪ / ስስ የኢንዱስትሪ ጭነት' : language === 'OM' ? 'Fe\'isa Caccabaa / Salphaatti Miidhamu' : 'Fragile / Delicate Industrial Cargo'}
+                </option>
+                <option value="Hazardous Materials (HAZMAT Class 3)">
+                  {language === 'AM' ? 'አደገኛ ቁሶች (HAZMAT Class 3)' : language === 'OM' ? 'Meeshaalee Balaafamaa (HAZMAT Class 3)' : 'Hazardous Materials (HAZMAT Class 3)'}
+                </option>
               </select>
             </div>
           </div>
 
+          {/* 4. REAL-TIME CORRIDOR DYNAMIC SPOT PRICING ASSISTANT */}
+          <div className="pt-2">
+            <DynamicSpotRateCard
+              originLocation={originLocation}
+              destinationLocation={destinationLocation}
+              corridorDistanceKm={corridorDistanceKm}
+              weightTons={weightTons}
+              cargoCategory={cargoCategory}
+              specialHandling={specialHandling}
+              appliedBudget={targetBudget}
+              onApplySpotRate={(rate) => {
+                setTargetBudget(String(rate));
+              }}
+            />
+          </div>
 
-          {/* 4. BOOKING OPTIONS & SELECTION (Option A: Instant AI Matching vs Option B: Competitive Bidding) */}
+          {/* 5. BOOKING OPTIONS & SELECTION (Option A: Instant AI Matching vs Option B: Competitive Bidding) */}
           <div className="space-y-3 pt-2 border-t border-slate-100">
             <label className="block text-xs font-bold text-slate-900 uppercase tracking-wider">
               {language === 'AM'
@@ -365,24 +554,24 @@ export const PostLoadTab: React.FC<PostLoadTabProps> = ({
             </div>
           </div>
 
-          {/* AI MATCHING SPECIFICS (Target Budget & Priority Weights) - ONLY for Option A */}
-          {bookingOption === 'INSTANT_MATCH' && (
-            <div className="space-y-4 pt-1 animate-fade-in">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {t('shipper.budgetLabel')} *
-                </label>
-                <input
-                  type="number"
-                  required
-                  value={targetBudget}
-                  onChange={(e) => setTargetBudget(e.target.value)}
-                  placeholder="e.g. 185000"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-sky-600 outline-hidden text-xs font-medium text-slate-900"
-                />
-              </div>
+          {/* TARGET BUDGET (Applies to both; required for Instant Match) */}
+          <div className="space-y-4 pt-1 animate-fade-in">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                {t('shipper.budgetLabel')} {bookingOption === 'INSTANT_MATCH' ? '*' : (language === 'AM' ? '(አማራጭ የዒላማ በጀት)' : '(Target Budget)')}
+              </label>
+              <input
+                type="number"
+                required={bookingOption === 'INSTANT_MATCH'}
+                value={targetBudget}
+                onChange={(e) => setTargetBudget(e.target.value)}
+                placeholder="e.g. 185000"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-sky-600 outline-hidden text-xs font-medium text-slate-900"
+              />
+            </div>
 
-              {/* Matching Priority Preference (Appears ONLY for AI Matching) */}
+            {/* Matching Priority Preference (Appears ONLY for AI Matching) */}
+            {bookingOption === 'INSTANT_MATCH' && (
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-sky-50/60 border border-sky-200/80">
                 <div className="space-y-0.5">
                   <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
@@ -444,8 +633,8 @@ export const PostLoadTab: React.FC<PostLoadTabProps> = ({
                   </select>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* 5. BID / OFFER VALIDITY PERIOD (Applies to both options) */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
@@ -509,7 +698,11 @@ export const PostLoadTab: React.FC<PostLoadTabProps> = ({
                   <Zap className="w-4 h-4 text-sky-200" />
                   <span>
                     {matchingLoading
-                      ? 'Finding & Matching Best Transporters...'
+                      ? (language === 'AM'
+                          ? 'ምርጥ አጓጓዦችን በመፈለግና በማዛመድ ላይ...'
+                          : language === 'OM'
+                          ? 'Geessitoota filatamoo barbaadaa jira...'
+                          : 'Finding & Matching Best Transporters...')
                       : t('shipper.findCarriersBtn')}
                   </span>
                 </>

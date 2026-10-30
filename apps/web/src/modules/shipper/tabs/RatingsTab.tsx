@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CheckCircle, CheckCircle2, Star, ShieldCheck, Lock, Truck, Info, Award, UserCheck } from 'lucide-react';
 import { ReviewItem, ShipmentItem, BidItem } from '../types';
 import { useAuth } from '../../../context/AuthContext';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface RatingsTabProps {
   ratingSuccessMsg: string;
@@ -31,6 +32,7 @@ export const RatingsTab: React.FC<RatingsTabProps> = ({
   bids = [],
 }) => {
   const { user, refreshUser } = useAuth();
+  const { language, t } = useLanguage();
   const [selectedLoadId, setSelectedLoadId] = useState<string>('');
   const [filterType, setFilterType] = useState<'ALL' | 'RECEIVED' | 'GIVEN'>('ALL');
 
@@ -116,7 +118,13 @@ export const RatingsTab: React.FC<RatingsTabProps> = ({
 
   const handleFormSubmit = (e: React.FormEvent) => {
     if (isAlreadyReviewed) {
-      alert('This carrier has already been rated for this consignment. Corridor ratings are immutable audit records and cannot be repeated or edited.');
+      alert(
+        language === 'AM'
+          ? 'ይህ አጓጓዥ ለዚህ ጭነት አስቀድሞ ደረጃ ተሰጥቶታል። የኮሪደር ደረጃዎች ቋሚ የኦዲት መዛግብት በመሆናቸው ሊደገሙ ወይም ሊሻሻሉ አይችሉም።'
+          : language === 'OM'
+          ? 'Fe\'aan kun fe\'isa kanaaf duraanuu sadarkaan kennameeraaf. Galmeen kun hin jijjiiramu ykn hin irra deebi\'amu.'
+          : 'This carrier has already been rated for this consignment. Corridor ratings are immutable audit records and cannot be repeated or edited.'
+      );
       return;
     }
     onSubmitRating(e, selectedBid?.rawLoadId || selectedBid?.id);
@@ -127,15 +135,19 @@ export const RatingsTab: React.FC<RatingsTabProps> = ({
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-black text-slate-900 tracking-tight">
-            Post-Trip Ratings & Reviews
+            {language === 'AM' ? 'ከጉዞ በኋላ ደረጃ እና አስተያየት መስጫ' : language === 'OM' ? 'Sadarkaa fi Yaada Erga Imala Boodaa' : 'Post-Trip Ratings & Reviews'}
           </h2>
           <p className="text-xs text-slate-500">
-            Submit verified carrier performance reviews upon delivery. Ratings are sealed permanently in the corridor ledger.
+            {language === 'AM'
+              ? 'እቃው በደረሰ ጊዜ የተረጋገጠ የአጓጓዥ አፈጻጸም ደረጃ ይስጡ። ደረጃዎች በኮሪደሩ መዝገብ ላይ በቋሚነት ይመዘገባሉ።'
+              : language === 'OM'
+              ? 'Fe\'isi yeroo ga\'u sadarkaa raawwii fe\'aa mirkanaa\'e kennaa. Sadarkaan galmee kooridoorii irratti dhaabbataan cufama.'
+              : 'Submit verified carrier performance reviews upon delivery. Ratings are sealed permanently in the corridor ledger.'}
           </p>
         </div>
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Immutable Ledger Integrity</span>
+          <span>{language === 'AM' ? 'የማይለወጥ የመዝገብ ታማኝነት' : language === 'OM' ? 'Qulqullina Galmee Hin Jijjiiramne' : 'Immutable Ledger Integrity'}</span>
         </div>
       </div>
 
@@ -143,7 +155,7 @@ export const RatingsTab: React.FC<RatingsTabProps> = ({
       {deliveredBids.length > 0 && (
         <div className="space-y-2">
           <label className="block text-xs font-bold text-slate-700">
-            Select Delivered Consignment to Rate:
+            {language === 'AM' ? 'ደረጃ ለመስጠት የደረሰ ጭነት ይምረጡ፦' : language === 'OM' ? 'Sadarkaa kennuuf fe\'isa ga\'e filadhaa:' : 'Select Delivered Consignment to Rate:'}
           </label>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {deliveredBids.map((b) => {
@@ -172,11 +184,11 @@ export const RatingsTab: React.FC<RatingsTabProps> = ({
                     {alreadyRated ? (
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 flex items-center gap-1">
                         <Lock className="w-2.5 h-2.5 text-emerald-600" />
-                        Rated
+                        {language === 'AM' ? 'ተመዝግቧል' : language === 'OM' ? 'Sadarkaa Qaba' : 'Rated'}
                       </span>
                     ) : (
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
-                        Ready to Rate
+                        {language === 'AM' ? 'ደረጃ ለመስጠት ዝግጁ' : language === 'OM' ? 'Qophii' : 'Ready to Rate'}
                       </span>
                     )}
                   </div>
@@ -185,7 +197,7 @@ export const RatingsTab: React.FC<RatingsTabProps> = ({
                     <span className="line-clamp-1">{b.transporterName}</span>
                   </div>
                   <div className="text-[10px] text-slate-400 mt-1">
-                    Route: {b.route}
+                    {language === 'AM' ? 'መስመር፦' : language === 'OM' ? 'Daandii:' : 'Route:'} {b.route}
                   </div>
                 </button>
               );
@@ -198,10 +210,10 @@ export const RatingsTab: React.FC<RatingsTabProps> = ({
       <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-slate-900">
-            Rate Carrier for Delivered Consignment
+            {language === 'AM' ? 'ለደረሰው ጭነት ለአጓጓዡ ደረጃ ይስጡ' : language === 'OM' ? 'Fe\'isa ga\'eef abbaa fe\'isaaf sadarkaa kennaa' : 'Rate Carrier for Delivered Consignment'}
           </h3>
           <span className="text-[11px] font-bold text-slate-400">
-            Write-Once • Non-Editable
+            {language === 'AM' ? 'አንድ ጊዜ ብቻ የሚጻፍ • የማይቀየር' : language === 'OM' ? 'Al Tokko Barreeffama • Hin Jijjiiramu' : 'Write-Once • Non-Editable'}
           </span>
         </div>
 
@@ -217,7 +229,7 @@ export const RatingsTab: React.FC<RatingsTabProps> = ({
             <div className="flex items-center gap-2 text-emerald-800 text-xs font-bold">
               <Lock className="w-4 h-4 text-emerald-600" />
               <span>
-                Verified Rating Recorded ({existingReview?.scoreStars ?? 5}.0 Stars)
+                {language === 'AM' ? 'የተረጋገጠ ደረጃ ተመዝግቧል' : language === 'OM' ? 'Sadarkaan Mirkanaa\'e Galmaa\'eera' : 'Verified Rating Recorded'} ({existingReview?.scoreStars ?? 5}.0 {language === 'AM' ? 'ኮከቦች' : language === 'OM' ? 'Urjii' : 'Stars'})
               </span>
             </div>
             <p className="text-xs text-emerald-700 italic">
@@ -225,14 +237,20 @@ export const RatingsTab: React.FC<RatingsTabProps> = ({
             </p>
             <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 pt-1">
               <Info className="w-3.5 h-3.5" />
-              <span>Corridor ratings are immutable audit records and cannot be repeated or edited.</span>
+              <span>
+                {language === 'AM'
+                  ? 'የኮሪደር ደረጃዎች ቋሚ የኦዲት መዛግብት በመሆናቸው ሊደገሙ ወይም ሊሻሻሉ አይችሉም።'
+                  : language === 'OM'
+                  ? 'Galmeen kun hin jijjiiramu ykn hin irra deebi\'amu.'
+                  : 'Corridor ratings are immutable audit records and cannot be repeated or edited.'}
+              </span>
             </div>
           </div>
         ) : (
           <form onSubmit={handleFormSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Transporter / Carrier Name *
+                {language === 'AM' ? 'የአጓጓዥ / ድርጅት ስም *' : language === 'OM' ? 'Maqaa Abbaa Fe\'isaa / Dhaabbataa *' : 'Transporter / Carrier Name *'}
               </label>
               <input
                 type="text"
@@ -247,7 +265,7 @@ export const RatingsTab: React.FC<RatingsTabProps> = ({
             {/* 1-5 Interactive Star Selector */}
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                Carrier Rating Score (1 to 5 Stars) *
+                {language === 'AM' ? 'የአጓጓዥ አፈጻጸም ነጥብ (ከ1 እስከ 5 ኮከቦች) *' : language === 'OM' ? 'Qabxii Sadarkaa Fe\'aa (Urjii 1 hanga 5) *' : 'Carrier Rating Score (1 to 5 Stars) *'}
               </label>
               <div className="flex items-center gap-2">
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -255,7 +273,7 @@ export const RatingsTab: React.FC<RatingsTabProps> = ({
                     key={star}
                     type="button"
                     onClick={() => setRatingStars(star)}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                       ratingStars >= star
                         ? 'bg-amber-400 text-slate-950 shadow-sm'
                         : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
@@ -271,24 +289,30 @@ export const RatingsTab: React.FC<RatingsTabProps> = ({
             {/* Review Comment */}
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Review Comments & Delivery Feedback *
+                {language === 'AM' ? 'የአስተያየት እና የርክክብ ግምገማ ዝርዝር *' : language === 'OM' ? 'Yaada fi Madaallii Geessaa *' : 'Review Comments & Delivery Feedback *'}
               </label>
               <textarea
                 rows={3}
                 required
                 value={ratingComment}
                 onChange={(e) => setRatingComment(e.target.value)}
-                placeholder="Enter post-trip delivery feedback (cargo care, punctuality, communication)..."
+                placeholder={
+                  language === 'AM'
+                    ? 'ስለ ጭነት እንክብካቤ፣ ሰዓት አክባሪነት፣ ተግባቦት ያለዎትን ግምገማ ያስገቡ...'
+                    : language === 'OM'
+                    ? 'Eegumsa fe\'isaa, sa\'aatii eeguu fi wal-qunnamtii irratti yaada keessan galchaa...'
+                    : 'Enter post-trip delivery feedback (cargo care, punctuality, communication)...'
+                }
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-sky-600 outline-none text-xs font-medium text-slate-900"
               />
             </div>
 
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-all"
+              className="px-6 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-all cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>Submit Carrier Rating & Feedback</span>
+              <span>{language === 'AM' ? 'የአጓጓዥ ደረጃ እና አስተያየትን መዝግብ' : language === 'OM' ? 'Sadarkaa fi Yaada Fe\'aa Galchi' : 'Submit Carrier Rating & Feedback'}</span>
             </button>
           </form>
         )}
@@ -304,9 +328,11 @@ export const RatingsTab: React.FC<RatingsTabProps> = ({
             </div>
             <div>
               <div className="text-[11px] font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
-                <span>My Shipper Reputation Score</span>
+                <span>{language === 'AM' ? 'የላኪነት ስም እና ዝና ነጥቤ' : language === 'OM' ? 'Qabxii Kabaja Abbaa Fe\'isaa Koo' : 'My Shipper Reputation Score'}</span>
                 <span className="text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-mono font-bold">
-                  {hasTransporterReviews ? 'VERIFIED RATING' : 'NOT RATED YET'}
+                  {hasTransporterReviews
+                    ? (language === 'AM' ? 'የተረጋገጠ ደረጃ' : language === 'OM' ? 'SADARKAA MIRKANAA\'E' : 'VERIFIED RATING')
+                    : (language === 'AM' ? 'እስካሁን ደረጃ አልተሰጠም' : language === 'OM' ? 'HIN LAFATAMNE' : 'NOT RATED YET')}
                 </span>
               </div>
               <div className="flex items-center gap-2 mt-0.5">
@@ -327,22 +353,22 @@ export const RatingsTab: React.FC<RatingsTabProps> = ({
                 </div>
                 <span className="text-xs text-slate-500 font-medium">
                   {hasTransporterReviews
-                    ? `(${transporterReviewsCount} verified transporter review${transporterReviewsCount > 1 ? 's' : ''})`
-                    : '(Awaiting first transporter review)'}
+                    ? `(${transporterReviewsCount} ${language === 'AM' ? 'የተረጋገጡ የአጓጓዥ አስተያየቶች' : language === 'OM' ? 'yaada fe\'aa mirkanaa\'an' : 'verified transporter reviews'})`
+                    : (language === 'AM' ? '(የመጀመሪያውን የአጓጓዥ አስተያየት በመጠባበቅ ላይ)' : '(Awaiting first transporter review)')}
                 </span>
               </div>
             </div>
           </div>
           <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200/80 font-bold self-stretch sm:self-auto justify-center">
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>Immutable Corridor Ledger</span>
+            <span>{language === 'AM' ? 'የማይለወጥ የኮሪደር መዝገብ' : language === 'OM' ? 'Galmee Kooridoorii Dhaabbataa' : 'Immutable Corridor Ledger'}</span>
           </div>
         </div>
 
         {/* Header & Filter Switcher */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2">
           <h3 className="text-sm font-bold text-slate-900">
-            Corridor Rating History & Verified Reviews
+            {language === 'AM' ? 'የኮሪደር ደረጃ ታሪክ እና የተረጋገጡ አስተያየቶች' : language === 'OM' ? 'Seenaa Sadarkaa fi Yaada Mirkanaa\'an' : 'Corridor Rating History & Verified Reviews'}
           </h3>
 
           <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold self-start">
@@ -355,7 +381,7 @@ export const RatingsTab: React.FC<RatingsTabProps> = ({
                   : 'text-slate-500 hover:text-slate-900'
               }`}
             >
-              All ({reviewsList.length})
+              {language === 'AM' ? 'ሁሉም' : language === 'OM' ? 'Hunda' : 'All'} ({reviewsList.length})
             </button>
             <button
               type="button"
@@ -366,7 +392,7 @@ export const RatingsTab: React.FC<RatingsTabProps> = ({
                   : 'text-slate-500 hover:text-slate-900'
               }`}
             >
-              Received ({receivedReviews.length})
+              {language === 'AM' ? 'የደረሱኝ' : language === 'OM' ? 'Kan Naaf Dhufe' : 'Received'} ({receivedReviews.length})
             </button>
             <button
               type="button"
@@ -377,7 +403,7 @@ export const RatingsTab: React.FC<RatingsTabProps> = ({
                   : 'text-slate-500 hover:text-slate-900'
               }`}
             >
-              Given ({givenReviews.length})
+              {language === 'AM' ? 'የሰጠኋቸው' : language === 'OM' ? 'Kan Ani Kenne' : 'Given'} ({givenReviews.length})
             </button>
           </div>
         </div>
@@ -387,13 +413,17 @@ export const RatingsTab: React.FC<RatingsTabProps> = ({
             <Star className="w-8 h-8 text-slate-400 mx-auto" />
             <div className="text-xs font-bold text-slate-700">
               {filterType === 'RECEIVED'
-                ? 'No reviews received from transporters yet'
+                ? (language === 'AM' ? 'እስካሁን ከአጓጓዦች የተሰጠ ምንም አስተያየት የለም' : language === 'OM' ? 'Fe\'aa irraa yaanni dhufe hin jiru' : 'No reviews received from transporters yet')
                 : filterType === 'GIVEN'
-                ? 'You have not submitted any carrier reviews yet'
-                : 'No verified reviews recorded yet'}
+                ? (language === 'AM' ? 'እስካሁን ለአጓጓዥ ምንም ደረጃ አልሰጡም' : language === 'OM' ? 'Fe\'aadhaaf sadarkaan hin kennamne' : 'You have not submitted any carrier reviews yet')
+                : (language === 'AM' ? 'እስካሁን ምንም የተመዘገቡ ደረጃዎች እና አስተያየቶች የሉም' : language === 'OM' ? 'Yaanni mirkanaa\'e hin jiru' : 'No verified reviews recorded yet')}
             </div>
             <p className="text-[11px] text-slate-500">
-              Carrier ratings and post-trip reviews will be cataloged here for complete marketplace transparency.
+              {language === 'AM'
+                ? 'የአጓጓዥ ደረጃዎች እና ከጉዞ በኋላ የሚሰጡ አስተያየቶች ለገበያው ግልጽነት እዚህ ይመዘገባሉ።'
+                : language === 'OM'
+                ? 'Sadarkaan fe\'aa fi yaanni iftoomina gabaaf asirratti galmaa\'u.'
+                : 'Carrier ratings and post-trip reviews will be cataloged here for complete marketplace transparency.'}
             </p>
           </div>
         ) : (
@@ -411,11 +441,11 @@ export const RatingsTab: React.FC<RatingsTabProps> = ({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-slate-900">
-                        {rev.fromUser?.companyName || rev.fromUser?.fullName || 'Verified Corridor Partner'}
+                        {rev.fromUser?.companyName || rev.fromUser?.fullName || (language === 'AM' ? 'የተረጋገጠ አጋር' : 'Verified Corridor Partner')}
                       </span>
                       {isReceived && (
                         <span className="text-[10px] bg-sky-50 text-sky-700 px-1.5 py-0.5 rounded font-bold border border-sky-200">
-                          To You
+                          {language === 'AM' ? 'ለእርስዎ የቀረበ' : language === 'OM' ? 'Siif' : 'To You'}
                         </span>
                       )}
                     </div>
@@ -429,10 +459,10 @@ export const RatingsTab: React.FC<RatingsTabProps> = ({
                   </p>
                   <div className="text-[10px] text-slate-400 flex items-center justify-between pt-1 border-t border-slate-100">
                     <span className="truncate max-w-[150px]">
-                      Recipient: {rev.toUser?.companyName || rev.toUser?.fullName || 'Transporter'}
+                      {language === 'AM' ? 'ተቀባይ፦' : language === 'OM' ? 'Fudhaa:' : 'Recipient:'} {rev.toUser?.companyName || rev.toUser?.fullName || 'Transporter'}
                     </span>
                     <span className="flex items-center gap-1 text-emerald-600 font-semibold shrink-0">
-                      <Lock className="w-2.5 h-2.5" /> Immutable
+                      <Lock className="w-2.5 h-2.5" /> {language === 'AM' ? 'የማይለወጥ' : language === 'OM' ? 'Hin Jijjiiramne' : 'Immutable'}
                     </span>
                     <span className="shrink-0">{new Date(rev.createdAt).toLocaleDateString()}</span>
                   </div>

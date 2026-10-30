@@ -25,6 +25,10 @@ import { PaymentsTab } from '../modules/shipper/tabs/PaymentsTab';
 import { RatingsTab } from '../modules/shipper/tabs/RatingsTab';
 import { PricingContractsTab } from '../modules/shipper/tabs/PricingContractsTab';
 
+// SRS High-Value Analytics Components (FR-05, FR-07)
+import { FuelSecurityRouteOptimizationCard } from '../modules/shipper/components/FuelSecurityRouteOptimizationCard';
+import { FuelConsumptionAnalyticsCard } from '../modules/shipper/components/FuelConsumptionAnalyticsCard';
+
 // Modular Modal
 import { TelebirrEscrowModal } from '../modules/shipper/components/TelebirrEscrowModal';
 
@@ -33,6 +37,12 @@ export const ShipperPortalPage: React.FC = () => {
   const { tab } = useParams<{ tab?: string }>();
   const navigate = useNavigate();
   const activeTab = tab || 'dashboard';
+
+  React.useEffect(() => {
+    if (tab === 'security-zones' || tab === 'performance') {
+      navigate('/shipper/dashboard', { replace: true });
+    }
+  }, [tab, navigate]);
 
   const handleTabChange = (newTab: string) => {
     navigate(`/shipper/${newTab}`);
@@ -65,8 +75,12 @@ export const ShipperPortalPage: React.FC = () => {
   const [mapModalOpen, setMapModalOpen] = useState<boolean>(false);
   const [mapModalTarget, setMapModalTarget] = useState<'ORIGIN' | 'DESTINATION'>('ORIGIN');
 
-  const [pickupDate, setPickupDate] = useState<string>('');
-  const [pickupTimeWindow, setPickupTimeWindow] = useState<string>('');
+  const [pickupDate, setPickupDate] = useState<string>(() => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  });
+  const [pickupTimeWindow, setPickupTimeWindow] = useState<string>('08:00 AM - 12:00 PM (Morning)');
   const [specialHandling, setSpecialHandling] = useState<string>('Standard Heavy Freight');
   const [targetBudget, setTargetBudget] = useState<string>('');
 
@@ -274,6 +288,7 @@ export const ShipperPortalPage: React.FC = () => {
               createdAt: new Date(l.createdAt).toLocaleDateString(),
               bidsCount: l.bids?.length || 0,
               cargoDescription: l.cargoDescription || '',
+              bookingMethod: l.bookingOption || l.bookingMethod || 'COMPETITIVE_BIDDING',
             };
           });
           setShipments(mapped);
@@ -797,6 +812,20 @@ export const ShipperPortalPage: React.FC = () => {
 
         {/* 8. DYNAMIC PRICING & CONTRACT RATE MANAGEMENT (FR-04) */}
         {activeTab === 'pricing-contracts' && <PricingContractsTab />}
+
+        {/* 9. FUEL & SECURITY-AWARE ROUTE OPTIMIZATION (FR-05) */}
+        {activeTab === 'route-optimization' && (
+          <div className="space-y-6">
+            <FuelSecurityRouteOptimizationCard />
+          </div>
+        )}
+
+        {/* 10. FUEL CONSUMPTION ANALYTICS (FR-07) */}
+        {activeTab === 'fuel-analytics' && (
+          <div className="space-y-6">
+            <FuelConsumptionAnalyticsCard />
+          </div>
+        )}
       </div>
 
       {/* INTERACTIVE MAP MODAL */}

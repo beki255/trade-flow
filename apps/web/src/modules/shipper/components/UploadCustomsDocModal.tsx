@@ -13,6 +13,8 @@ import {
   FileUp,
 } from 'lucide-react';
 
+import { useLanguage } from '../../../context/LanguageContext';
+
 export interface CustomsDocUploadData {
   docType: string;
   docNumber: string;
@@ -50,6 +52,7 @@ export const UploadCustomsDocModal: React.FC<UploadCustomsDocModalProps> = ({
   isResubmission = false,
   rejectionReason,
 }) => {
+  const { language } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [docType, setDocType] = useState(initialData?.docType || 'COMMERCIAL_INVOICE');
@@ -74,20 +77,36 @@ export const UploadCustomsDocModal: React.FC<UploadCustomsDocModalProps> = ({
   const [fileFormatError, setFileFormatError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
 
-  // Sync state if initialData changes
+  // Track modal opening to only initialize fields once when modal opens (prevents wiping user input on parent re-renders)
+  const prevIsOpenRef = useRef(false);
+
   React.useEffect(() => {
-    if (initialData) {
-      if (initialData.docType) setDocType(initialData.docType);
-      if (initialData.docNumber) setDocNumber(initialData.docNumber);
-      if (initialData.weightTons) setWeightTons(initialData.weightTons);
-      if (initialData.declaredValueEtb) setDeclaredValueEtb(initialData.declaredValueEtb);
-      if (initialData.issuingAuthority) setIssuingAuthority(initialData.issuingAuthority);
-      if (initialData.issueDate) setIssueDate(initialData.issueDate);
-      if (initialData.fileName) setFileName(initialData.fileName);
-      if (initialData.fileSizeKb) setFileSizeKb(initialData.fileSizeKb);
-      if (initialData.shipmentId) setSelectedShipmentId(initialData.shipmentId);
+    if (isOpen && !prevIsOpenRef.current) {
+      if (initialData) {
+        if (initialData.docType) setDocType(initialData.docType);
+        setDocNumber(initialData.docNumber ?? '');
+        setWeightTons(initialData.weightTons ?? '');
+        setDeclaredValueEtb(initialData.declaredValueEtb ?? '');
+        setIssuingAuthority(initialData.issuingAuthority ?? 'Ethiopian Customs Commission');
+        setIssueDate(initialData.issueDate || new Date().toISOString().split('T')[0]);
+        setFileName(initialData.fileName ?? '');
+        setFileSizeKb(initialData.fileSizeKb ?? 0);
+        if (initialData.shipmentId) setSelectedShipmentId(initialData.shipmentId);
+      } else {
+        setDocNumber('');
+        setWeightTons('');
+        setDeclaredValueEtb('');
+        setFileName('');
+        setFileSizeKb(0);
+        setSelectedFile(null);
+        setFileFormatError(null);
+        if (availableShipments[0]?.id) {
+          setSelectedShipmentId(availableShipments[0].id);
+        }
+      }
     }
-  }, [initialData]);
+    prevIsOpenRef.current = isOpen;
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -149,10 +168,20 @@ export const UploadCustomsDocModal: React.FC<UploadCustomsDocModalProps> = ({
       return;
     }
 
-    // Default simulated URL or real base64
-    const resolvedUrl = selectedFile
-      ? `https://tradeflow.et/docs/${encodeURIComponent(fileName || docNumber)}`
-      : initialData?.fileUrl || `https://tradeflow.et/docs/${docNumber}.pdf`;
+    // Convert file to real base64 DataURL so user can view their exact uploaded file
+    let resolvedUrl = initialData?.fileUrl || `https://tradeflow.et/docs/${docNumber.trim()}.pdf`;
+    if (selectedFile) {
+      try {
+        resolvedUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = () => resolve(`https://tradeflow.et/docs/${encodeURIComponent(fileName || docNumber)}`);
+          reader.readAsDataURL(selectedFile);
+        });
+      } catch (e) {
+        resolvedUrl = `https://tradeflow.et/docs/${encodeURIComponent(fileName || docNumber)}`;
+      }
+    }
 
     await onSubmit({
       docType,
@@ -184,10 +213,24 @@ export const UploadCustomsDocModal: React.FC<UploadCustomsDocModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-black text-slate-900 tracking-tight">
-                {isResubmission ? 'Update Consignment Document' : 'Upload Consignment Document'}
+                {isResubmission
+                  ? language === 'AM'
+                    ? 'የጭነት ሰነድ አሻሽል'
+                    : language === 'OM'
+                    ? 'Sanada Fe\'isaa Fooyyessi'
+                    : 'Update Consignment Document'
+                  : language === 'AM'
+                  ? 'የጭነት ሰነድ ጫን'
+                  : language === 'OM'
+                  ? 'Sanada Fe\'isaa Olfe\'i'
+                  : 'Upload Consignment Document'}
               </h3>
               <p className="text-xs text-slate-500">
-                Attach trade invoices, packing lists, or bills of lading for freight transit.
+                {language === 'AM'
+                  ? 'ለንግድ ጭነት የንግድ ደረሰኝ፣ የማሸጊያ ዝርዝር ወይም የጉዞ ሰነድ (B/L) ያያይዙ።'
+                  : language === 'OM'
+                  ? 'Ce\'umsa fe\'isaatiif inwooysii daldalaa, tarree saamsamaa, ykn sanada geejjibaa qabsiisaa.'
+                  : 'Attach trade invoices, packing lists, or bills of lading for freight transit.'}
               </p>
             </div>
           </div>
@@ -204,7 +247,13 @@ export const UploadCustomsDocModal: React.FC<UploadCustomsDocModalProps> = ({
           <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-900 space-y-1">
             <div className="flex items-center gap-1.5 font-bold">
               <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-              <span>Document Revision Notice</span>
+              <span>
+                {language === 'AM'
+                  ? 'የሰነድ ማሻሻያ ማስታወቂያ'
+                  : language === 'OM'
+                  ? 'Beeksisa Fooyya\'iinsa Sanadaa'
+                  : 'Document Revision Notice'}
+              </span>
             </div>
             <p className="text-[11.5px] text-rose-700 leading-relaxed pl-5">
               {rejectionReason}
@@ -218,7 +267,11 @@ export const UploadCustomsDocModal: React.FC<UploadCustomsDocModalProps> = ({
           {availableShipments.length > 0 && (
             <div>
               <label className="block font-bold text-slate-700 mb-1">
-                Target Consignment / Shipment *
+                {language === 'AM'
+                  ? 'የተመረጠው የጭነት ስምሪት / ጭነት *'
+                  : language === 'OM'
+                  ? 'Fe\'isa / Konzaayinmantii Filatame *'
+                  : 'Target Consignment / Shipment *'}
               </label>
               <select
                 value={selectedShipmentId}
@@ -237,19 +290,35 @@ export const UploadCustomsDocModal: React.FC<UploadCustomsDocModalProps> = ({
           {/* Document Type Selector */}
           <div>
             <label className="block font-bold text-slate-700 mb-1">
-              Document Type *
+              {language === 'AM'
+                ? 'የሰነድ ዓይነት *'
+                : language === 'OM'
+                ? 'Gosa Sanadaa *'
+                : 'Document Type *'}
             </label>
             <select
               value={docType}
               onChange={(e) => setDocType(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white font-bold text-slate-900 outline-none focus:border-sky-600"
             >
-              <option value="COMMERCIAL_INVOICE">Commercial Invoice</option>
-              <option value="PACKING_LIST">Packing List</option>
-              <option value="BILL_OF_LADING">Bill of Lading (B/L)</option>
-              <option value="CERTIFICATE_OF_ORIGIN">Certificate of Origin</option>
-              <option value="CONSIGNMENT_WAYBILL">Consignment Waybill / Proof of Dispatch</option>
-              <option value="INSURANCE_CERTIFICATE">Transit Insurance Certificate (GIT)</option>
+              <option value="COMMERCIAL_INVOICE">
+                {language === 'AM' ? 'የንግድ ደረሰኝ (Commercial Invoice)' : language === 'OM' ? 'Inwooysii Daldalaa (Commercial Invoice)' : 'Commercial Invoice'}
+              </option>
+              <option value="PACKING_LIST">
+                {language === 'AM' ? 'የማሸጊያ ዝርዝር (Packing List)' : language === 'OM' ? 'Tarree Saamsamaa (Packing List)' : 'Packing List'}
+              </option>
+              <option value="BILL_OF_LADING">
+                {language === 'AM' ? 'የጉዞ ሰነድ (Bill of Lading - B/L)' : language === 'OM' ? 'Sanada Geejjibaa (Bill of Lading)' : 'Bill of Lading (B/L)'}
+              </option>
+              <option value="CERTIFICATE_OF_ORIGIN">
+                {language === 'AM' ? 'የትውልድ ሀገር ምስክር ወረቀት (Certificate of Origin)' : language === 'OM' ? 'Waraqaa Eenyummaa Maddaa' : 'Certificate of Origin'}
+              </option>
+              <option value="CONSIGNMENT_WAYBILL">
+                {language === 'AM' ? 'የጭነት መንገድ ወረቀት / የስምሪት ማረጋገጫ' : language === 'OM' ? 'Waraqaa Daandii Fe\'isaa' : 'Consignment Waybill / Proof of Dispatch'}
+              </option>
+              <option value="INSURANCE_CERTIFICATE">
+                {language === 'AM' ? 'የትራንዚት ኢንሹራንስ ሰርተፍኬት (GIT)' : language === 'OM' ? 'Waraqaa Inshuraansii Ce\'umsaa (GIT)' : 'Transit Insurance Certificate (GIT)'}
+              </option>
             </select>
           </div>
 
@@ -257,7 +326,11 @@ export const UploadCustomsDocModal: React.FC<UploadCustomsDocModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block font-bold text-slate-700 mb-1">
-                Document Reference Number *
+                {language === 'AM'
+                  ? 'የሰነድ መለያ ቁጥር *'
+                  : language === 'OM'
+                  ? 'Lakkoofsa Eenyummaa Sanadaa *'
+                  : 'Document Reference Number *'}
               </label>
               <input
                 type="text"
@@ -271,7 +344,11 @@ export const UploadCustomsDocModal: React.FC<UploadCustomsDocModalProps> = ({
 
             <div>
               <label className="block font-bold text-slate-700 mb-1">
-                Issue Date *
+                {language === 'AM'
+                  ? 'የተሰጠበት ቀን *'
+                  : language === 'OM'
+                  ? 'Guyyaa Kenname *'
+                  : 'Issue Date *'}
               </label>
               <div className="relative">
                 <input
@@ -290,7 +367,13 @@ export const UploadCustomsDocModal: React.FC<UploadCustomsDocModalProps> = ({
             <div>
               <label className="block font-bold text-slate-700 mb-1 flex items-center gap-1">
                 <Scale className="w-3.5 h-3.5 text-slate-400" />
-                <span>Declared Cargo Weight (Tons) *</span>
+                <span>
+                  {language === 'AM'
+                    ? 'የተገለጸው የጭነት ክብደት (ቶን) *'
+                    : language === 'OM'
+                    ? 'Ulfaatina Fe\'isaa Beeksisame (Toonii) *'
+                    : 'Declared Cargo Weight (Tons) *'}
+                </span>
               </label>
               <input
                 type="number"
@@ -302,14 +385,24 @@ export const UploadCustomsDocModal: React.FC<UploadCustomsDocModalProps> = ({
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-semibold text-slate-900 outline-none focus:border-sky-600"
               />
               <span className="text-[10px] text-slate-500 mt-0.5 block">
-                Must align within ±0.1T across Invoice, Packing List, and B/L.
+                {language === 'AM'
+                  ? 'በደረሰኝ፣ ማሸጊያ ዝርዝር እና B/L መካከል ልዩነቱ ከ±0.1 ቶን መብለጥ የለበትም።'
+                  : language === 'OM'
+                  ? 'Inwooysii, tarree saamsamaa fi B/L gidduutti garaagarummaan ±0.1T caaluu hin qabu.'
+                  : 'Must align within ±0.1T across Invoice, Packing List, and B/L.'}
               </span>
             </div>
 
             <div>
               <label className="block font-bold text-slate-700 mb-1 flex items-center gap-1">
                 <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Declared Value (ETB) *</span>
+                <span>
+                  {language === 'AM'
+                    ? 'የተገለጸው ዋጋ (ብር) *'
+                    : language === 'OM'
+                    ? 'Gatii Beeksisame (ETB) *'
+                    : 'Declared Value (ETB) *'}
+                </span>
               </label>
               <input
                 type="number"
@@ -320,7 +413,11 @@ export const UploadCustomsDocModal: React.FC<UploadCustomsDocModalProps> = ({
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-semibold text-slate-900 outline-none focus:border-sky-600"
               />
               <span className="text-[10px] text-slate-500 mt-0.5 block">
-                Total declared cargo value for this document.
+                {language === 'AM'
+                  ? 'ለዚህ ሰነድ የተገለጸው አጠቃላይ የጭነት ዋጋ።'
+                  : language === 'OM'
+                  ? 'Waliigala gatii fe\'isaa sanada kanaaf beeksisame.'
+                  : 'Total declared cargo value for this document.'}
               </span>
             </div>
           </div>
@@ -329,7 +426,13 @@ export const UploadCustomsDocModal: React.FC<UploadCustomsDocModalProps> = ({
           <div>
             <label className="block font-bold text-slate-700 mb-1 flex items-center gap-1">
               <Building className="w-3.5 h-3.5 text-slate-400" />
-              <span>Issuing Authority / Agency</span>
+              <span>
+                {language === 'AM'
+                  ? 'ሰነዱን ያወጣው ባለስልጣን / ተቋም'
+                  : language === 'OM'
+                  ? 'Abbaa Taayitaa / Dhaabbata Sanada Kenne'
+                  : 'Issuing Authority / Agency'}
+              </span>
             </label>
             <input
               type="text"
@@ -344,13 +447,23 @@ export const UploadCustomsDocModal: React.FC<UploadCustomsDocModalProps> = ({
           {isResubmission && (
             <div>
               <label className="block font-bold text-slate-700 mb-1">
-                Revision Notes *
+                {language === 'AM'
+                  ? 'የማሻሻያ ማስታወሻዎች *'
+                  : language === 'OM'
+                  ? 'Yaada Fooyya\'iinsaa *'
+                  : 'Revision Notes *'}
               </label>
               <textarea
                 rows={2}
                 value={resubmissionNotes}
                 onChange={(e) => setResubmissionNotes(e.target.value)}
-                placeholder="Explain the changes made (e.g. Harmonized gross weight to 28.5T and attached corrected B/L copy)."
+                placeholder={
+                  language === 'AM'
+                    ? 'የተደረገውን ለውጥ ያብራሩ (ለምሳሌ፡ ጠቅላላ ክብደቱን ወደ 28.5 ቶን በማስተካከል ትክክለኛውን B/L ቅጂ አያይዣለሁ)።'
+                    : language === 'OM'
+                    ? 'Jijjiirama ta\'e ibsaa (fakkeenyaaf ulfaatina waligalaa gara 28.5T sirreessuun kooppii B/L sirrii qabsiiseera).'
+                    : 'Explain the changes made (e.g. Harmonized gross weight to 28.5T and attached corrected B/L copy).'
+                }
                 className="w-full px-3.5 py-2 rounded-xl border border-slate-300 font-medium text-slate-900 outline-none focus:border-sky-600"
               />
             </div>
@@ -359,7 +472,11 @@ export const UploadCustomsDocModal: React.FC<UploadCustomsDocModalProps> = ({
           {/* Drag & Drop File Upload Area */}
           <div className="space-y-1.5">
             <label className="block font-bold text-slate-700">
-              Attach Clearance Document File *
+              {language === 'AM'
+                ? 'የጉምሩክ ክሊራንስ ሰነድ ፋይል ያያይዙ *'
+                : language === 'OM'
+                ? 'Faayila Sanada Gumruukaa Qabsiisaa *'
+                : 'Attach Clearance Document File *'}
             </label>
             <input
               ref={fileInputRef}
@@ -396,7 +513,13 @@ export const UploadCustomsDocModal: React.FC<UploadCustomsDocModalProps> = ({
                       {fileName.split('.').pop()?.toUpperCase()}
                     </span>
                     <span>{fileSizeKb} KB</span>
-                    <span className="text-emerald-600 font-bold">✓ Ready for Pre-Validation</span>
+                    <span className="text-emerald-600 font-bold">
+                      {language === 'AM'
+                        ? '✓ ለቅድመ-ምርመራ ዝግጁ ነው'
+                        : language === 'OM'
+                        ? '✓ Qorannoo duraatiif qophii dha'
+                        : '✓ Ready for Pre-Validation'}
+                    </span>
                   </div>
                   <button
                     type="button"
@@ -406,17 +529,26 @@ export const UploadCustomsDocModal: React.FC<UploadCustomsDocModalProps> = ({
                     }}
                     className="mt-1 text-[11px] text-sky-600 hover:text-sky-700 font-bold underline"
                   >
-                    Replace File
+                    {language === 'AM' ? 'ፋይል ቀይር' : language === 'OM' ? 'Faayila Jijjiiri' : 'Replace File'}
                   </button>
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-1">
                   <UploadCloud className="w-8 h-8 text-slate-400" />
                   <div className="font-bold text-slate-800 text-xs">
-                    Click to browse or drag & drop document
+                    {language === 'AM'
+                      ? 'ፋይል ለመምረጥ እዚህ ይጫኑ ወይም ጎትተው ያስገቡ'
+                      : language === 'OM'
+                      ? 'Faayila filachuuf as tuqaa ykn harkisaa galchaa'
+                      : 'Click to browse or drag & drop document'}
                   </div>
                   <div className="text-[10px] text-slate-500">
-                    Supported formats: <strong className="text-slate-700">PDF, JPEG, PNG</strong> (Max 15MB)
+                    {language === 'AM'
+                      ? 'የሚደገፉ ፎርማቶች፡ '
+                      : language === 'OM'
+                      ? 'Bifa deeggaramu: '
+                      : 'Supported formats: '}
+                    <strong className="text-slate-700">PDF, JPEG, PNG</strong> (Max 15MB)
                   </div>
                 </div>
               )}
@@ -438,7 +570,7 @@ export const UploadCustomsDocModal: React.FC<UploadCustomsDocModalProps> = ({
               disabled={loading}
               className="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-colors cursor-pointer"
             >
-              Cancel
+              {language === 'AM' ? 'ሰርዝ' : language === 'OM' ? 'Haqi' : 'Cancel'}
             </button>
 
             <button
@@ -448,7 +580,7 @@ export const UploadCustomsDocModal: React.FC<UploadCustomsDocModalProps> = ({
               className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               <FileText className="w-3.5 h-3.5 text-slate-300" />
-              <span>Save as Draft</span>
+              <span>{language === 'AM' ? 'እንደ ረቂቅ አስቀምጥ' : language === 'OM' ? 'Akka Waraqaa Duraatti Olkaawi' : 'Save as Draft'}</span>
             </button>
 
             <button
@@ -458,7 +590,19 @@ export const UploadCustomsDocModal: React.FC<UploadCustomsDocModalProps> = ({
               className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>{loading ? 'Uploading...' : 'Upload Document'}</span>
+              <span>
+                {loading
+                  ? language === 'AM'
+                    ? 'በመጫን ላይ...'
+                    : language === 'OM'
+                    ? 'Olfe\'amaa jira...'
+                    : 'Uploading...'
+                  : language === 'AM'
+                  ? 'ሰነዱን ጫን'
+                  : language === 'OM'
+                  ? 'Sanada Olfe\'i'
+                  : 'Upload Document'}
+              </span>
             </button>
           </div>
         </div>

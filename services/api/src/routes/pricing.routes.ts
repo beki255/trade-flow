@@ -7,6 +7,8 @@ import {
   lockContractRate,
   approveContractRate,
   submitContractRenegotiation,
+  deleteContract,
+  clearContracts,
 } from '../controllers/pricing.controller';
 
 const router = Router();
@@ -19,6 +21,8 @@ router.get('/contracts', getContracts);
 router.post('/contracts/lock', lockContractRate);
 router.post('/contracts/:id/approve', approveContractRate);
 router.post('/contracts/:id/renegotiate', submitContractRenegotiation);
+router.delete('/contracts/:id', deleteContract);
+router.delete('/contracts', clearContracts);
 router.post('/contract-rate/check', checkContractDivergence);
 
 // 3. Get pricing audit trail (4.4.3)

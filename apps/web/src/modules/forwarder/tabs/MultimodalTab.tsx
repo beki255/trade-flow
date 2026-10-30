@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   Clock,
   ShieldCheck,
-  RefreshCw,
   Navigation,
   ArrowRight
 } from 'lucide-react';
@@ -26,7 +25,7 @@ export const MultimodalTab: React.FC<MultimodalTabProps> = ({
   loading,
   onRefresh,
 }) => {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
 
   return (
     <div className="space-y-6">
@@ -41,15 +40,6 @@ export const MultimodalTab: React.FC<MultimodalTabProps> = ({
             {t('forwarder.multimodalSubtitle')}
           </p>
         </div>
-
-        <button
-          type="button"
-          onClick={onRefresh}
-          className="relative z-10 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs hover:shadow flex items-center gap-2 cursor-pointer shrink-0"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          <span>Sync Fleet</span>
-        </button>
       </div>
 
       {/* 2. Corridor Multimodal 4-Leg Reference Guide */}
@@ -57,37 +47,53 @@ export const MultimodalTab: React.FC<MultimodalTabProps> = ({
         <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1.5">
           <div className="text-[10.5px] font-bold text-sky-700 uppercase flex items-center gap-1.5">
             <Ship className="w-3.5 h-3.5 text-sky-600" />
-            <span>Leg 1: Ocean Discharge</span>
+            <span>{language === 'AM' ? 'ምዕራፍ 1፦ የባህር ማራገፍ' : language === 'OM' ? 'Marsaa 1: Galaana Irraa Buusuu' : 'Leg 1: Ocean Discharge'}</span>
           </div>
-          <div className="text-xs font-black text-slate-900">Djibouti Port Terminal</div>
-          <div className="text-[10px] text-slate-400">Vessel unberthing & handling</div>
+          <div className="text-xs font-black text-slate-900">
+            {language === 'AM' ? 'የጅቡቲ ወደብ ተርሚናል' : language === 'OM' ? 'Buufata Doonii Jibuutii' : 'Djibouti Port Terminal'}
+          </div>
+          <div className="text-[10px] text-slate-400">
+            {language === 'AM' ? 'የመርከብ ማስተናገጃና አያያዝ' : language === 'OM' ? 'Doonii buusuu fi qabuu' : 'Vessel unberthing & handling'}
+          </div>
         </div>
 
         <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1.5">
           <div className="text-[10.5px] font-bold text-indigo-700 uppercase flex items-center gap-1.5">
             <Train className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Leg 2: Corridor Transit</span>
+            <span>{language === 'AM' ? 'ምዕራፍ 2፦ የኮሪደር ጉዞ' : language === 'OM' ? 'Marsaa 2: Imala Koriidoorii' : 'Leg 2: Corridor Transit'}</span>
           </div>
-          <div className="text-xs font-black text-slate-900">Heavy Freight Rail / Highway</div>
-          <div className="text-[10px] text-slate-400">Galafi Border ➔ Dire Dawa</div>
+          <div className="text-xs font-black text-slate-900">
+            {language === 'AM' ? 'ከባድ የጭነት ባቡር / አውራ ጎዳና' : language === 'OM' ? 'Baabura Feʼiisaa / Daandii Guddaa' : 'Heavy Freight Rail / Highway'}
+          </div>
+          <div className="text-[10px] text-slate-400">
+            {language === 'AM' ? 'የገላፊ ድንበር ➔ ድሬዳዋ' : language === 'OM' ? 'Daangaa Galafii ➔ Dirre Dhawaa' : 'Galafi Border ➔ Dire Dawa'}
+          </div>
         </div>
 
         <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1.5">
           <div className="text-[10.5px] font-bold text-emerald-700 uppercase flex items-center gap-1.5">
             <Building className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Leg 3: Dry Port In-Bond</span>
+            <span>{language === 'AM' ? 'ምዕራፍ 3፦ የደረቅ ወደብ ክምችት' : language === 'OM' ? 'Marsaa 3: Buufata Gogogaa' : 'Leg 3: Dry Port In-Bond'}</span>
           </div>
-          <div className="text-xs font-black text-slate-900">Modjo Multimodal Terminal</div>
-          <div className="text-[10px] text-slate-400">Customs clearance & green line</div>
+          <div className="text-xs font-black text-slate-900">
+            {language === 'AM' ? 'የሞድጆ መልቲሞዳል ተርሚናል' : language === 'OM' ? 'Buufata Moojoo Multimodal' : 'Modjo Multimodal Terminal'}
+          </div>
+          <div className="text-[10px] text-slate-400">
+            {language === 'AM' ? 'የጉምሩክ ፍተሻና አረንጓዴ መስመር' : language === 'OM' ? 'Eeyyama gumruukaa fi sarara magariisaa' : 'Customs clearance & green line'}
+          </div>
         </div>
 
         <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1.5">
           <div className="text-[10.5px] font-bold text-purple-700 uppercase flex items-center gap-1.5">
             <Truck className="w-3.5 h-3.5 text-purple-600" />
-            <span>Leg 4: Final Regional Delivery</span>
+            <span>{language === 'AM' ? 'ምዕራፍ 4፦ የመጨረሻ መድረሻ ማድረስ' : language === 'OM' ? 'Marsaa 4: Bakka Dhumaatti Geessuu' : 'Leg 4: Final Regional Delivery'}</span>
           </div>
-          <div className="text-xs font-black text-slate-900">Addis Ababa / Regional Hubs</div>
-          <div className="text-[10px] text-slate-400">Direct warehouse delivery</div>
+          <div className="text-xs font-black text-slate-900">
+            {language === 'AM' ? 'አዲስ አበባ / የክልል ማዕከላት' : language === 'OM' ? 'Finfinnee / Wiirtuuwwan Naannoo' : 'Addis Ababa / Regional Hubs'}
+          </div>
+          <div className="text-[10px] text-slate-400">
+            {language === 'AM' ? 'ቀጥታ የመጋዘን ርክክብ' : language === 'OM' ? 'Mana kuusaatti kallattiin kennuu' : 'Direct warehouse delivery'}
+          </div>
         </div>
       </div>
 
@@ -95,15 +101,27 @@ export const MultimodalTab: React.FC<MultimodalTabProps> = ({
       <div className="space-y-3">
         <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
           <GitMerge className="w-4 h-4 text-sky-600" />
-          <span>Active Intermodal Container Consignments ({containers.length}):</span>
+          <span>
+            {language === 'AM'
+              ? `ንቁ የኢንተርሞዳል ኮንቴነር ጭነቶች (${containers.length}):`
+              : language === 'OM'
+              ? `Imala Konteenara Intermodal (${containers.length}):`
+              : `Active Intermodal Container Consignments (${containers.length}):`}
+          </span>
         </h3>
 
         {containers.length === 0 ? (
           <div className="p-8 text-center rounded-3xl bg-white border border-slate-200 space-y-2">
             <GitMerge className="w-8 h-8 text-slate-300 mx-auto" />
-            <div className="text-xs font-bold text-slate-700">No Active Intermodal Shipments</div>
+            <div className="text-xs font-bold text-slate-700">
+              {language === 'AM' ? 'ምንም ንቁ የኢንተርሞዳል ጭነቶች የሉም' : language === 'OM' ? 'Feʼiisni intermodal hojiirra jiru hin jiru' : 'No Active Intermodal Shipments'}
+            </div>
             <p className="text-[11px] text-slate-500">
-              When corridor shipments depart from origin or transit through Modjo Dry Port, they will appear here.
+              {language === 'AM'
+                ? 'የኮሪደር ጭነቶች ከመነሻቸው ሲነሱ ወይም በሞድጆ ደረቅ ወደብ ሲያልፉ እዚህ ይታያሉ።'
+                : language === 'OM'
+                ? 'Feʼiisni koriidoorii yeroo buʼuura irraa kaʼu ykn buufata Moojootiin darbu asitti mulʼata.'
+                : 'When corridor shipments depart from origin or transit through Modjo Dry Port, they will appear here.'}
             </p>
           </div>
         ) : (
@@ -126,12 +144,16 @@ export const MultimodalTab: React.FC<MultimodalTabProps> = ({
                         {c.status}
                       </span>
                     </div>
-                    <h4 className="text-sm font-black text-slate-900">{c.title} ({c.weightTons} Tons)</h4>
+                    <h4 className="text-sm font-black text-slate-900">
+                      {c.title} ({c.weightTons} {language === 'AM' ? 'ቶን' : language === 'OM' ? 'Toonii' : 'Tons'})
+                    </h4>
                   </div>
 
                   <div className="text-right shrink-0">
                     <div className="text-xs font-bold text-slate-900 font-mono">{c.estimatedArrival}</div>
-                    <div className="text-[10px] text-slate-400">Dynamic ETA Margin</div>
+                    <div className="text-[10px] text-slate-400">
+                      {language === 'AM' ? 'ተለዋዋጭ የመድረሻ ጊዜ' : language === 'OM' ? 'Yeroo Gaʼiinsaa Tilmaamamaa' : 'Dynamic ETA Margin'}
+                    </div>
                   </div>
                 </div>
 
@@ -155,7 +177,14 @@ export const MultimodalTab: React.FC<MultimodalTabProps> = ({
                           <div className={`text-[10px] font-bold ${
                             isCurrent ? 'text-sky-700' : isPastOrCurrent ? 'text-emerald-700' : 'text-slate-400'
                           }`}>
-                            Leg {leg}: {leg === 1 ? 'Ocean' : leg === 2 ? 'Corridor' : leg === 3 ? 'Dry Port' : 'Last Mile'}
+                            {language === 'AM' ? `ምዕራፍ ${leg}: ` : language === 'OM' ? `Marsaa ${leg}: ` : `Leg ${leg}: `}
+                            {leg === 1
+                              ? (language === 'AM' ? 'የባህር' : language === 'OM' ? 'Galaana' : 'Ocean')
+                              : leg === 2
+                              ? (language === 'AM' ? 'ኮሪደር' : language === 'OM' ? 'Koriidoorii' : 'Corridor')
+                              : leg === 3
+                              ? (language === 'AM' ? 'ደረቅ ወደብ' : language === 'OM' ? 'Buufata Gogogaa' : 'Dry Port')
+                              : (language === 'AM' ? 'የመጨረሻ ርክክብ' : language === 'OM' ? 'Goolaba' : 'Last Mile')}
                           </div>
                         </div>
                       );
@@ -163,8 +192,12 @@ export const MultimodalTab: React.FC<MultimodalTabProps> = ({
                   </div>
 
                   <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-700 flex items-center justify-between">
-                    <span>Active Stage: <strong className="text-slate-900">{c.legLabel}</strong></span>
-                    <span className="text-slate-500 font-mono text-[11px]">Carrier: {c.carrier}</span>
+                    <span>
+                      {language === 'AM' ? 'ንቁ ደረጃ፦' : language === 'OM' ? 'Sadarkaa Hojiirra Jiru:' : 'Active Stage:'} <strong className="text-slate-900">{c.legLabel}</strong>
+                    </span>
+                    <span className="text-slate-500 font-mono text-[11px]">
+                      {language === 'AM' ? 'አጓጓዥ፦' : language === 'OM' ? 'Geessisaa:' : 'Carrier:'} {c.carrier}
+                    </span>
                   </div>
                 </div>
               </div>

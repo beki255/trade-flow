@@ -22,70 +22,27 @@ function haversineDistanceKm(lat1: number, lon1: number, lat2: number, lon2: num
 // In-memory active reroute overrides for active shipments
 const activeAlternateReroutes = new Map<string, any>();
 
+const MOCK_ZONE_IDS = [
+  'RZ-AFAR-NORTH-01',
+  'RZ-AFAR-SOMALI-02',
+  'RZ-GALAFI-CHOKE-03',
+  'RZ-AWASH-GORGE-04',
+  'RZ-AFAR-BORDER',
+  'RZ-AWASH-GORGE',
+];
+
 /**
- * Seed authentic corridor risk zones if table is empty or missing full coverage
+ * Automatically purge mock risk zones from the database
  */
-async function ensureCorridorRiskZones(): Promise<void> {
+async function cleanupMockRiskZones(): Promise<void> {
   try {
-    const existing = await prisma.riskZone.findMany();
-    const existingIds = new Set(existing.map((z) => z.id));
-
-    const defaultZones = [
-      {
-        id: 'RZ-AFAR-NORTH-01',
-        name: 'Northern Corridor Escarpment Security Hotspot',
-        description:
-          '[Source: Government Security Advisory - Federal Police & Ministry of Peace] Armed skirmishes reported near northern escarpment bypass. Mandatory military convoy escort required.',
-        severity: RiskLevel.CRITICAL,
-        centerLat: 11.75,
-        centerLng: 41.05,
-        radiusKm: 30.0,
-        isActive: true,
+    await prisma.riskZone.deleteMany({
+      where: {
+        id: { in: MOCK_ZONE_IDS },
       },
-      {
-        id: 'RZ-AFAR-SOMALI-02',
-        name: 'Afar–Somali Border Transit Corridor Buffer Zone',
-        description:
-          '[Source: Regional Security Authority Report] Inter-regional boundary friction point. Nighttime freight transit curfews enforced between 19:00 and 06:00.',
-        severity: RiskLevel.HIGH,
-        centerLat: 10.45,
-        centerLng: 41.25,
-        radiusKm: 25.0,
-        isActive: true,
-      },
-      {
-        id: 'RZ-GALAFI-CHOKE-03',
-        name: 'Galafi Customs Border Approach Freight Chokepoint',
-        description:
-          '[Source: Verified Driver Crowdsourcing Feeds] High congestion delay, localized civil demonstrations, and border transit holds extending beyond 6 hours.',
-        severity: RiskLevel.MEDIUM,
-        centerLat: 11.71,
-        centerLng: 41.83,
-        radiusKm: 20.0,
-        isActive: true,
-      },
-      {
-        id: 'RZ-AWASH-GORGE-04',
-        name: 'Awash Gorge Sharp Descent & Mountain Incline Zone',
-        description:
-          '[Source: Ethiopian Roads Administration Safety Bulletin] Severe 8% downhill incline, blind hairpins, rockfall risks, and strong lateral crosswinds.',
-        severity: RiskLevel.LOW,
-        centerLat: 8.95,
-        centerLng: 40.2,
-        radiusKm: 15.0,
-        isActive: true,
-      },
-    ];
-
-    for (const z of defaultZones) {
-      if (!existingIds.has(z.id)) {
-        await prisma.riskZone.create({
-          data: z,
-        });
-      }
-    }
+    });
   } catch (err) {
-    console.warn('Risk zone initialization note:', err);
+    // ignore
   }
 }
 
@@ -112,11 +69,13 @@ function extractSourceFromDescription(desc: string): { source: string; cleanDesc
  */
 export const getRiskZones = async (req: Request, res: Response): Promise<void> => {
   try {
-    await ensureCorridorRiskZones();
+    await cleanupMockRiskZones();
 
     const { severity, isActive, search } = req.query;
 
-    const where: any = {};
+    const where: any = {
+      id: { notIn: MOCK_ZONE_IDS },
+    };
     if (severity && typeof severity === 'string' && severity !== 'ALL') {
       where.severity = severity.toUpperCase();
     }
@@ -124,9 +83,14 @@ export const getRiskZones = async (req: Request, res: Response): Promise<void> =
       where.isActive = String(isActive) === 'true';
     }
     if (search && typeof search === 'string') {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
+      where.AND = [
+        { id: { notIn: MOCK_ZONE_IDS } },
+        {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { description: { contains: search, mode: 'insensitive' } },
+          ],
+        },
       ];
     }
 
@@ -268,6 +232,35 @@ export const updateRiskZone = async (req: Request, res: Response): Promise<void>
 };
 
 /**
+ * Delete a specific risk zone
+ * DELETE /api/security/risk-zones/:id
+ */
+export const deleteRiskZone = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    await prisma.riskZone.delete({
+      where: { id },
+    });
+    res.json({ success: true, message: 'Risk zone deleted successfully' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to delete risk zone' });
+  }
+};
+
+/**
+ * Clear all mock or existing risk zones
+ * DELETE /api/security/risk-zones
+ */
+export const clearAllRiskZones = async (req: Request, res: Response): Promise<void> => {
+  try {
+    await prisma.riskZone.deleteMany({});
+    res.json({ success: true, message: 'All risk zones cleared' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to clear risk zones' });
+  }
+};
+
+/**
  * 2. Proactive Geofence Alerts (FR-08.2)
  * GET /api/security/geofence-alerts
  *
@@ -276,12 +269,24 @@ export const updateRiskZone = async (req: Request, res: Response): Promise<void>
  */
 export const getProactiveGeofenceAlerts = async (req: Request, res: Response): Promise<void> => {
   try {
-    await ensureCorridorRiskZones();
+    await cleanupMockRiskZones();
 
-    // 1. Fetch active risk zones
+    // 1. Fetch active risk zones (excluding mock data)
     const activeRiskZones = await prisma.riskZone.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        id: { notIn: MOCK_ZONE_IDS },
+      },
     });
+
+    if (activeRiskZones.length === 0) {
+      res.json({
+        success: true,
+        totalCount: 0,
+        alerts: [],
+      });
+      return;
+    }
 
     // 2. Fetch all active in-transit shipments with vehicle, driver, and latest tracking event
     const activeShipments = await prisma.shipment.findMany({
@@ -302,38 +307,13 @@ export const getProactiveGeofenceAlerts = async (req: Request, res: Response): P
     const GEOFENCE_ALERT_THRESHOLD_KM = 25.0;
     const generatedAlerts: any[] = [];
 
-    // Synthetic fallback coordinates for corridor test tracking if no live GPS points
-    const defaultCorridorPositions = [
-      { lat: 10.38, lng: 41.18, name: 'Approaching Afar Border', speed: 58 },
-      { lat: 11.68, lng: 41.72, name: 'Approaching Galafi Checkpoint', speed: 42 },
-      { lat: 8.92, lng: 40.12, name: 'Entering Awash Valley', speed: 64 },
-    ];
-
-    let targetShipments = activeShipments;
-    // If no active shipments currently in transit, simulate alerts using registered shipments or fleet
-    if (targetShipments.length === 0) {
-      const anyShipments = await prisma.shipment.findMany({
-        take: 3,
-        include: {
-          load: true,
-          vehicle: true,
-          driver: { include: { user: true } },
-          trackingEvents: {
-            orderBy: { timestamp: 'desc' },
-            take: 1,
-          },
-        },
-        orderBy: { updatedAt: 'desc' },
-      });
-      targetShipments = anyShipments;
-    }
-
-    targetShipments.forEach((s, sIdx) => {
-      // Current vehicle GPS coordinates
+    activeShipments.forEach((s) => {
+      // Current vehicle GPS coordinates from real tracking telemetry
       const latestEvent = s.trackingEvents?.[0];
-      const sim = defaultCorridorPositions[sIdx % defaultCorridorPositions.length];
-      const currentLat = s.currentLat || latestEvent?.latitude || sim.lat;
-      const currentLng = s.currentLng || latestEvent?.longitude || sim.lng;
+      const currentLat = s.currentLat || latestEvent?.latitude || s.load?.originLat;
+      const currentLng = s.currentLng || latestEvent?.longitude || s.load?.originLng;
+
+      if (!currentLat || !currentLng) return;
 
       // Check distance against each active risk zone
       activeRiskZones.forEach((rz) => {
@@ -364,9 +344,9 @@ export const getProactiveGeofenceAlerts = async (req: Request, res: Response): P
             shipmentId: s.id,
             shipmentCode: s.load.title || 'Freight Consignment',
             cargoTitle: s.load.title,
-            vehiclePlate: s.vehicle?.plateNumber || `ET-3-${88210 + sIdx}`,
-            driverName: s.driver?.user?.fullName || 'Verified Corridor Driver',
-            driverPhone: s.driver?.user?.phone || '+251 911 234 567',
+            vehiclePlate: s.vehicle?.plateNumber || 'ASHHS333',
+            driverName: s.driver?.user?.fullName || 'Assigned Driver',
+            driverPhone: s.driver?.user?.phone || 'N/A',
             riskZoneId: rz.id,
             riskZoneName: rz.name,
             severity: rz.severity,

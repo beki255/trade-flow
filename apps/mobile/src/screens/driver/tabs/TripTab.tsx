@@ -42,8 +42,9 @@ const capitalizeWords = (str: string) =>
 
 export const formatCleanLocation = (raw?: string): string => {
   if (!raw || typeof raw !== 'string') return 'Corridor Hub';
-  const parts = raw.split(',').map((p) => p.trim()).filter(Boolean);
-  if (parts.length <= 1) return capitalizeWords(raw.trim());
+  const unquoted = raw.replace(/[`'"]/g, (m) => m === '`' ? '' : m).trim();
+  const parts = unquoted.split(',').map((p) => p.trim()).filter(Boolean);
+  if (parts.length <= 1) return capitalizeWords(unquoted.trim());
 
   const seen = new Set<string>();
   const cleaned: string[] = [];
@@ -102,7 +103,7 @@ export const TripTab: React.FC<TripTabProps> = ({
   onEnableGps,
   onMapInteractionChange,
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const isInTransit = activeTrip?.status?.toUpperCase() === 'IN_TRANSIT';
   const isDelivered = activeTrip?.status?.toUpperCase() === 'DELIVERED';
   const isDispatched = !!activeTrip && !isInTransit && !isDelivered;
@@ -220,13 +221,13 @@ export const TripTab: React.FC<TripTabProps> = ({
           >
             {isInTransit
               ? isMoving
-                ? `GPS Live: Driving (${activeTrip?.speedKmh || 58} km/h)`
-                : `GPS Live: Resting (0 km/h)`
-              : `Ready for Departure`}
+                ? (language === 'AM' ? `ቀጥታ ጂፒኤስ: በመጓዝ ላይ (${activeTrip?.speedKmh || 58} ኪ.ሜ/ሰ)` : language === 'OM' ? `GPS Hojirra: Oofaa jira (${activeTrip?.speedKmh || 58} km/h)` : `GPS Live: Driving (${activeTrip?.speedKmh || 58} km/h)`)
+                : (language === 'AM' ? `ቀጥታ ጂፒኤስ: በእረፍት ላይ (0 ኪ.ሜ/ሰ)` : language === 'OM' ? `GPS Hojirra: Boqonnaarra (0 km/h)` : `GPS Live: Resting (0 km/h)`)
+              : (language === 'AM' ? 'ለመነሳት ዝግጁ' : language === 'OM' ? 'Ka’uuf Qophii' : 'Ready for Departure')}
           </Text>
         </View>
         <Text style={tabStyles.statusPillDistance}>
-          {totalKm} km
+          {totalKm} {language === 'AM' ? 'ኪ.ሜ' : 'km'}
         </Text>
       </View>
 
@@ -237,14 +238,14 @@ export const TripTab: React.FC<TripTabProps> = ({
           <View style={{ flex: 1, marginRight: 8 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               <Text style={tabStyles.titleText} numberOfLines={1}>
-                {activeTrip.title || 'Corridor Freight'}
+                {activeTrip.title || (language === 'AM' ? 'የኮሪደር ጭነት' : 'Corridor Freight')}
               </Text>
               <View style={tabStyles.idBadge}>
                 <Text style={tabStyles.idBadgeText}>{cleanLoadId}</Text>
               </View>
             </View>
             <Text style={tabStyles.subText} numberOfLines={1}>
-              {activeTrip.cargo || 'General Cargo'}{activeTrip.weight ? ` • ${activeTrip.weight}` : ''}
+              {activeTrip.cargo || (language === 'AM' ? 'አጠቃላይ ጭነት' : 'General Cargo')}{activeTrip.weight ? ` • ${activeTrip.weight}` : ''}
             </Text>
           </View>
 
@@ -260,7 +261,9 @@ export const TripTab: React.FC<TripTabProps> = ({
                 isInTransit ? { color: '#047857' } : { color: '#B45309' },
               ]}
             >
-              {isInTransit ? 'IN TRANSIT' : 'READY'}
+              {isInTransit
+                ? (language === 'AM' ? 'በጉዞ ላይ' : language === 'OM' ? 'ADEEMSARRA' : 'IN TRANSIT')
+                : (language === 'AM' ? 'ዝግጁ' : language === 'OM' ? 'QOPHII' : 'READY')}
             </Text>
           </View>
         </View>
@@ -269,22 +272,26 @@ export const TripTab: React.FC<TripTabProps> = ({
         <View style={tabStyles.routeBox}>
           {/* Origin */}
           <View style={tabStyles.routeColLeft}>
-            <Text style={tabStyles.routeRole}>ORIGIN</Text>
-            <Text style={tabStyles.routeCity} numberOfLines={1}>
+            <Text style={tabStyles.routeRole}>
+              {language === 'AM' ? 'መነሻ' : language === 'OM' ? 'KA\'UMSA' : 'ORIGIN'}
+            </Text>
+            <Text style={tabStyles.routeCity} numberOfLines={2}>
               {cleanOrigin}
             </Text>
           </View>
 
           {/* Direction Arrow & Distance */}
           <View style={tabStyles.routeColCenter}>
-            <Text style={tabStyles.routeDistanceText}>{totalKm} km</Text>
+            <Text style={tabStyles.routeDistanceText}>{totalKm} {language === 'AM' ? 'ኪ.ሜ' : 'km'}</Text>
             <RouteArrowIcon size={20} color="#0284C7" />
           </View>
 
           {/* Destination */}
           <View style={tabStyles.routeColRight}>
-            <Text style={[tabStyles.routeRole, { textAlign: 'right' }]}>DESTINATION</Text>
-            <Text style={[tabStyles.routeCity, { textAlign: 'right' }]} numberOfLines={1}>
+            <Text style={[tabStyles.routeRole, { textAlign: 'right' }]}>
+              {language === 'AM' ? 'መድረሻ' : language === 'OM' ? 'GAHUMSA' : 'DESTINATION'}
+            </Text>
+            <Text style={[tabStyles.routeCity, { textAlign: 'right' }]} numberOfLines={2}>
               {cleanDestination}
             </Text>
           </View>
@@ -302,7 +309,7 @@ export const TripTab: React.FC<TripTabProps> = ({
             <View style={tabStyles.specPill}>
               <ShipperIcon size={12} color="#475569" />
               <Text style={tabStyles.specPillText} numberOfLines={1}>
-                Shipper: {activeTrip.shipperName}
+                {language === 'AM' ? 'ላኪ:' : language === 'OM' ? 'Ergaa:' : 'Shipper:'} {activeTrip.shipperName}
               </Text>
             </View>
           ) : null}
@@ -321,7 +328,7 @@ export const TripTab: React.FC<TripTabProps> = ({
             ) : (
               <>
                 <PlayIcon size={14} color="#FFFFFF" />
-                <Text style={tabStyles.startTripBtnText}>{t('startTrip') || 'Start Trip'}</Text>
+                <Text style={tabStyles.startTripBtnText}>{t('startTrip') || (language === 'AM' ? 'ጉዞ ጀምር' : 'Start Trip')}</Text>
               </>
             )}
           </TouchableOpacity>
@@ -340,12 +347,16 @@ export const TripTab: React.FC<TripTabProps> = ({
               {isDriving ? (
                 <>
                   <PauseIcon size={13} color="#92400E" />
-                  <Text style={tabStyles.pauseBtnText}>Take a Rest</Text>
+                  <Text style={tabStyles.pauseBtnText}>
+                    {language === 'AM' ? 'እረፍት ውሰድ' : language === 'OM' ? 'Boqonnaa Fudhadhu' : 'Take a Rest'}
+                  </Text>
                 </>
               ) : (
                 <>
                   <PlayIcon size={13} color="#047857" />
-                  <Text style={tabStyles.resumeBtnText}>Resume Drive</Text>
+                  <Text style={tabStyles.resumeBtnText}>
+                    {language === 'AM' ? 'ጉዞ ቀጥል' : language === 'OM' ? 'Oofuu Itti Fufi' : 'Resume Drive'}
+                  </Text>
                 </>
               )}
             </TouchableOpacity>
@@ -358,7 +369,9 @@ export const TripTab: React.FC<TripTabProps> = ({
               style={tabStyles.deliveredBtn}
             >
               <CheckIcon size={14} color="#FFFFFF" />
-              <Text style={tabStyles.deliveredBtnText}>Mark Delivered</Text>
+              <Text style={tabStyles.deliveredBtnText}>
+                {language === 'AM' ? 'ደርሷል ብለህ መዝግብ' : language === 'OM' ? 'Ga’eera Jechuun Galmeessi' : 'Mark Delivered'}
+              </Text>
             </TouchableOpacity>
           </View>
         ) : null}
@@ -370,13 +383,19 @@ export const TripTab: React.FC<TripTabProps> = ({
         <View style={tabStyles.kpiCard}>
           <View style={tabStyles.kpiHeaderRow}>
             <SpeedometerIcon size={13} color="#0284C7" />
-            <Text style={tabStyles.kpiLabel}>Speed</Text>
+            <Text style={tabStyles.kpiLabel}>
+              {language === 'AM' ? 'ፍጥነት' : language === 'OM' ? 'Saffisa' : 'Speed'}
+            </Text>
           </View>
           <Text style={tabStyles.kpiValue}>
             {isInTransit ? (isDriving ? `${activeTrip?.speedKmh || 58} km/h` : '0 km/h') : '0 km/h'}
           </Text>
           <Text style={tabStyles.kpiSub}>
-            {isInTransit ? (isDriving ? 'Moving' : 'Resting') : 'At Origin'}
+            {isInTransit
+              ? (isDriving
+                  ? (language === 'AM' ? 'በእንቅስቃሴ ላይ' : language === 'OM' ? 'Socho’aa jira' : 'Moving')
+                  : (language === 'AM' ? 'በእረፍት ላይ' : language === 'OM' ? 'Boqonnaarra' : 'Resting'))
+              : (language === 'AM' ? 'በመነሻ ላይ' : language === 'OM' ? 'Iddoo Ka’umsaa' : 'At Origin')}
           </Text>
         </View>
 
@@ -384,13 +403,17 @@ export const TripTab: React.FC<TripTabProps> = ({
         <View style={tabStyles.kpiCard}>
           <View style={tabStyles.kpiHeaderRow}>
             <ClockIcon size={13} color="#059669" />
-            <Text style={tabStyles.kpiLabel}>Dynamic ETA</Text>
+            <Text style={tabStyles.kpiLabel}>
+              {language === 'AM' ? 'የሚደርስበት ሰዓት' : language === 'OM' ? 'Yeroo Gahumsaa' : 'Dynamic ETA'}
+            </Text>
           </View>
           <Text style={[tabStyles.kpiValue, { color: '#0284C7' }]}>
-            {isInTransit ? activeTrip?.estimatedEta || '--' : 'Ready'}
+            {isInTransit ? activeTrip?.estimatedEta || '--' : (language === 'AM' ? 'ዝግጁ' : 'Ready')}
           </Text>
           <Text style={[tabStyles.kpiSub, { color: '#059669' }]}>
-            {isInTransit ? activeTrip?.etaConfidenceText || 'Live' : 'Departure'}
+            {isInTransit
+              ? activeTrip?.etaConfidenceText || (language === 'AM' ? 'ቀጥታ' : 'Live')
+              : (language === 'AM' ? 'መነሻ' : language === 'OM' ? 'Ka’umsa' : 'Departure')}
           </Text>
         </View>
 
@@ -398,11 +421,15 @@ export const TripTab: React.FC<TripTabProps> = ({
         <View style={tabStyles.kpiCard}>
           <View style={tabStyles.kpiHeaderRow}>
             <RouteIcon size={13} color="#7C3AED" />
-            <Text style={tabStyles.kpiLabel}>Distance</Text>
+            <Text style={tabStyles.kpiLabel}>
+              {language === 'AM' ? 'ርቀት' : language === 'OM' ? 'Fageenya' : 'Distance'}
+            </Text>
           </View>
-          <Text style={tabStyles.kpiValue}>{totalKm} km</Text>
+          <Text style={tabStyles.kpiValue}>{totalKm} {language === 'AM' ? 'ኪ.ሜ' : 'km'}</Text>
           <Text style={tabStyles.kpiSub}>
-            {isInTransit ? `${activeTrip?.remainingKm ?? totalKm} km left` : 'Total road'}
+            {isInTransit
+              ? (language === 'AM' ? `${activeTrip?.remainingKm ?? totalKm} ኪ.ሜ ቀርቷል` : language === 'OM' ? `km ${activeTrip?.remainingKm ?? totalKm} hafeera` : `${activeTrip?.remainingKm ?? totalKm} km left`)
+              : (language === 'AM' ? 'አጠቃላይ መንገድ' : language === 'OM' ? 'Waliigala daandii' : 'Total road')}
           </Text>
         </View>
       </View>
@@ -412,12 +439,16 @@ export const TripTab: React.FC<TripTabProps> = ({
         <View style={tabStyles.mapHeaderRow}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <NavigationIcon size={14} color="#0284C7" />
-            <Text style={tabStyles.mapTitle}>Live Corridor Navigation</Text>
+            <Text style={tabStyles.mapTitle}>
+              {language === 'AM' ? 'የቀጥታ ኮሪደር አሰሳ' : language === 'OM' ? 'Kallattii Koriidarii Qabatamaa' : 'Live Corridor Navigation'}
+            </Text>
           </View>
           <View style={tabStyles.mapBadge}>
             <View style={tabStyles.mapDot} />
             <Text style={tabStyles.mapBadgeText}>
-              {gpsStatus === 'GRANTED' ? 'GPS Active' : 'Corridor Route'}
+              {gpsStatus === 'GRANTED'
+                ? (language === 'AM' ? 'ንቁ ጂፒኤስ' : language === 'OM' ? 'GPS Hojiirra' : 'GPS Active')
+                : (language === 'AM' ? 'የኮሪደር መስመር' : language === 'OM' ? 'Daandii Koriidarii' : 'Corridor Route')}
             </Text>
           </View>
         </View>

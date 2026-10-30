@@ -3,12 +3,15 @@ export interface WaypointItem {
   name: string;
   status: 'COMPLETED' | 'ACTIVE_NOW' | 'PENDING';
   time: string;
+  description?: string;
 }
 
 export interface CheckinRecord {
   id: string;
   time: string;
   coords: string;
+  locationName?: string;
+  waypointId?: string;
 }
 
 export interface IncidentRecord {
@@ -38,6 +41,19 @@ export interface DynamicRerouteProposal {
   status: 'PENDING_CONFIRMATION' | 'CONFIRMED' | 'DECLINED';
   createdAt?: string;
   bypassPolyline?: Array<{ lat: number; lng: number }>;
+}
+
+export interface DriverCustomsPass {
+  status: string;
+  isCleared: boolean;
+  certificateNo: string;
+  clearingStation: string;
+  clearedAt?: string;
+  digitalSeal: string;
+  authority: string;
+  transitPassage: string;
+  qrData?: string;
+  documentsCount?: number;
 }
 
 export interface ActiveTripDetails {
@@ -72,6 +88,7 @@ export interface ActiveTripDetails {
   dispatchedAt?: string;
   weatherNote?: string;
   waypoints?: WaypointItem[];
+  customsClearance?: DriverCustomsPass | null;
 }
 
 export type DriverTabType = 'trip' | 'nav' | 'checkin' | 'incident' | 'pod';

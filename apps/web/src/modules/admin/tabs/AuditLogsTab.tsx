@@ -9,7 +9,7 @@ interface AuditLogsTabProps {
 }
 
 export const AuditLogsTab: React.FC<AuditLogsTabProps> = ({ auditLogs, onRefresh }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [activeLogSection, setActiveLogSection] = useState<'SYSTEM' | 'PRICING'>('SYSTEM');
   const [pricingLogs, setPricingLogs] = useState<any[]>([]);
   const [pricingLoading, setPricingLoading] = useState<boolean>(false);
@@ -57,7 +57,7 @@ export const AuditLogsTab: React.FC<AuditLogsTabProps> = ({ auditLogs, onRefresh
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              System Operations ({auditLogs.length})
+              {language === 'AM' ? 'የስርዓት ክንውኖች' : language === 'OM' ? 'Hojiiwwan Sirnichaa' : 'System Operations'} ({auditLogs.length})
             </button>
             <button
               type="button"
@@ -72,7 +72,7 @@ export const AuditLogsTab: React.FC<AuditLogsTabProps> = ({ auditLogs, onRefresh
               }`}
             >
               <TrendingUp className="w-3.5 h-3.5 text-sky-600" />
-              <span>Pricing Engine Audit</span>
+              <span>{language === 'AM' ? 'የዋጋ ስሌት ኦዲት' : language === 'OM' ? 'Ooditii Shallaggii Gatii' : 'Pricing Engine Audit'}</span>
             </button>
           </div>
 
@@ -84,7 +84,7 @@ export const AuditLogsTab: React.FC<AuditLogsTabProps> = ({ auditLogs, onRefresh
             className="px-3.5 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-all flex items-center gap-2 shadow-sm cursor-pointer"
           >
             <History className="w-3.5 h-3.5" />
-            <span>Refresh</span>
+            <span>{language === 'AM' ? 'አድስ' : language === 'OM' ? 'Haaromsi' : 'Refresh'}</span>
           </button>
         </div>
       </div>
@@ -94,19 +94,19 @@ export const AuditLogsTab: React.FC<AuditLogsTabProps> = ({ auditLogs, onRefresh
         <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
           {auditLogs.length === 0 ? (
             <div className="p-8 text-center text-xs text-slate-400">
-              No audit trail recorded yet.
+              {language === 'AM' ? 'ምንም የኦዲት መዝገብ አልተገኘም።' : language === 'OM' ? 'Galmeen ooditii hin jiru.' : 'No audit trail recorded yet.'}
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[10px] tracking-wider font-bold">
-                    <th className="py-3.5 px-4">Timestamp</th>
-                    <th className="py-3.5 px-4">Action & Category</th>
-                    <th className="py-3.5 px-4">Target Organization</th>
-                    <th className="py-3.5 px-4">Status Transition</th>
-                    <th className="py-3.5 px-4">Admin ID / Actor</th>
-                    <th className="py-3.5 px-4">Audit Notes</th>
+                    <th className="py-3.5 px-4">{language === 'AM' ? 'ቀንና ሰዓት' : language === 'OM' ? 'Yeroo' : 'Timestamp'}</th>
+                    <th className="py-3.5 px-4">{language === 'AM' ? 'ክንውን እና ምድብ' : language === 'OM' ? 'Tarkaanfii fi Garee' : 'Action & Category'}</th>
+                    <th className="py-3.5 px-4">{language === 'AM' ? 'የሚመለከተው ድርጅት' : language === 'OM' ? 'Dhaabbata Xiyyeeffatame' : 'Target Organization'}</th>
+                    <th className="py-3.5 px-4">{language === 'AM' ? 'የሁኔታ ለውጥ' : language === 'OM' ? 'Jijjiirama Haalaa' : 'Status Transition'}</th>
+                    <th className="py-3.5 px-4">{language === 'AM' ? 'አስተዳዳሪ / ፈጻሚ' : language === 'OM' ? 'Bulchaa / Raawwataa' : 'Admin ID / Actor'}</th>
+                    <th className="py-3.5 px-4">{language === 'AM' ? 'የኦዲት ማስታወሻዎች' : language === 'OM' ? 'Yaadannoo Ooditii' : 'Audit Notes'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-mono text-[11px]">
@@ -174,11 +174,16 @@ export const AuditLogsTab: React.FC<AuditLogsTabProps> = ({ auditLogs, onRefresh
             <div className="flex items-center gap-2">
               <Scale className="w-4 h-4 text-sky-600 shrink-0" />
               <span>
-                <strong>Dispute Resolution & Audit Access:</strong> All rate variables recorded at calculation time are logged for compliance review and invoice dispute arbitration.
+                <strong>{language === 'AM' ? 'የክርክር መፍቻ እና የኦዲት መረጃ፡' : language === 'OM' ? 'Furmaata Falmii fi Odeeffannoo Ooditii:' : 'Dispute Resolution & Audit Access:'}</strong>{' '}
+                {language === 'AM'
+                  ? 'በስሌት ጊዜ የተመዘገቡ ሁሉም የዋጋ ተለዋዋጮች ለህጋዊ ግምገማና ለሂሳብ ክርክር ሽምግልና ተመዝግበው ተቀምጠዋል።'
+                  : language === 'OM'
+                  ? 'Jijjiiramoonni gatii shallaggii yeroo raawwataman hundi gamaaggama seeraa fi araara falmii kaffaltiif galmaa\'aniiru.'
+                  : 'All rate variables recorded at calculation time are logged for compliance review and invoice dispute arbitration.'}
               </span>
             </div>
             <span className="text-[10px] font-mono font-bold bg-sky-100 text-sky-800 px-2 py-0.5 rounded border border-sky-300">
-              {pricingLogs.length} Calculations Logged
+              {pricingLogs.length} {language === 'AM' ? 'የዋጋ ስሌቶች ተመዝግበዋል' : language === 'OM' ? 'Shallaggiin Galmaa\'e' : 'Calculations Logged'}
             </span>
           </div>
 
@@ -186,22 +191,22 @@ export const AuditLogsTab: React.FC<AuditLogsTabProps> = ({ auditLogs, onRefresh
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[10px] tracking-wider font-bold">
-                  <th className="py-3 px-3.5">Timestamp</th>
-                  <th className="py-3 px-3.5">Corridor Route</th>
-                  <th className="py-3 px-3.5">Distance</th>
-                  <th className="py-3 px-3.5">Base Rate</th>
-                  <th className="py-3 px-3.5">Demand Ratio</th>
-                  <th className="py-3 px-3.5">Fuel Multiplier</th>
-                  <th className="py-3 px-3.5">Checkpoint Delay</th>
-                  <th className="py-3 px-3.5">Floor / Ceiling Band</th>
-                  <th className="py-3 px-3.5 font-black text-slate-900">Calculated Spot</th>
+                  <th className="py-3 px-3.5">{language === 'AM' ? 'ቀንና ሰዓት' : language === 'OM' ? 'Yeroo' : 'Timestamp'}</th>
+                  <th className="py-3 px-3.5">{language === 'AM' ? 'የኮሪደር መስመር' : language === 'OM' ? 'Daandii Koriidarii' : 'Corridor Route'}</th>
+                  <th className="py-3 px-3.5">{language === 'AM' ? 'ርቀት' : language === 'OM' ? 'Fageenya' : 'Distance'}</th>
+                  <th className="py-3 px-3.5">{language === 'AM' ? 'መነሻ ተመን' : language === 'OM' ? 'Gatii Ka\'umsaa' : 'Base Rate'}</th>
+                  <th className="py-3 px-3.5">{language === 'AM' ? 'የፍላጎት ምጣኔ' : language === 'OM' ? 'Reeshoo Fedhii' : 'Demand Ratio'}</th>
+                  <th className="py-3 px-3.5">{language === 'AM' ? 'የነዳጅ ማባዣ' : language === 'OM' ? 'Gatii Boba\'aa' : 'Fuel Multiplier'}</th>
+                  <th className="py-3 px-3.5">{language === 'AM' ? 'የኬላ መዘግየት' : language === 'OM' ? 'Dabalata Sakatta\'aa' : 'Checkpoint Delay'}</th>
+                  <th className="py-3 px-3.5">{language === 'AM' ? 'ዝቅተኛ / ከፍተኛ ወሰን' : language === 'OM' ? 'Daangaa Gadiaana / Ol\'aana' : 'Floor / Ceiling Band'}</th>
+                  <th className="py-3 px-3.5 font-black text-slate-900">{language === 'AM' ? 'የተሰላ ዋጋ' : language === 'OM' ? 'Gatii Shallagame' : 'Calculated Spot'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-mono text-[11px]">
                 {pricingLogs.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="py-8 text-center text-slate-400 font-sans">
-                      No pricing calculations recorded yet.
+                      {language === 'AM' ? 'ምንም የተመዘገበ የዋጋ ስሌት የለም።' : language === 'OM' ? 'Shallaggiin gatii hin jiru.' : 'No pricing calculations recorded yet.'}
                     </td>
                   </tr>
                 ) : (

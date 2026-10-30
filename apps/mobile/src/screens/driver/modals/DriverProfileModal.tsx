@@ -20,6 +20,7 @@ import { apiFetch } from '../../../utils/api';
 import { useLanguage } from '../../../context/LanguageContext';
 import { useTheme } from '../../../context/ThemeContext';
 import { isValidImageUri, uriToDataUrl } from '../../../utils/imageUtils';
+import { validatePassword, validatePasswordMatch } from '../../../utils/validation';
 
 interface DriverProfileModalProps {
   visible: boolean;
@@ -199,13 +200,20 @@ export const DriverProfileModal: React.FC<DriverProfileModalProps> = ({
   };
 
   const handleUpdatePassword = async () => {
-    if (!newPassword || newPassword.trim().length < 4) {
-      Alert.alert('Validation Error', 'New password must be at least 4 characters long.');
+    if (!oldPassword || !oldPassword.trim()) {
+      Alert.alert('Validation Error', 'Please enter your current password.');
       return;
     }
 
-    if (newPassword !== confirmPassword) {
-      Alert.alert('Validation Error', 'New password and confirmation do not match.');
+    const passRes = validatePassword(newPassword);
+    if (!passRes.isValid) {
+      Alert.alert('Validation Error', passRes.error || 'Password must be at least 8 characters long and contain at least one letter and one number.');
+      return;
+    }
+
+    const matchRes = validatePasswordMatch(newPassword, confirmPassword);
+    if (!matchRes.isValid) {
+      Alert.alert('Validation Error', matchRes.error || 'New password and confirmation do not match.');
       return;
     }
 
@@ -286,28 +294,8 @@ export const DriverProfileModal: React.FC<DriverProfileModalProps> = ({
             showsVerticalScrollIndicator={false}
             contentContainerStyle={drawerStyles.scrollContent}
           >
-            {/* 1. Driver Profile Photo Card */}
+            {/* 1. Driver Profile Summary Card */}
             <View style={drawerStyles.profileSummaryCard}>
-              <TouchableOpacity
-                style={drawerStyles.photoCircle}
-                onPress={pickDriverPhoto}
-                activeOpacity={0.8}
-                disabled={photoUploading}
-              >
-                {isValidImageUri(profilePhoto) ? (
-                  <Image source={{ uri: profilePhoto }} style={drawerStyles.photoImg} resizeMode="cover" />
-                ) : (
-                  <Ionicons name="person" size={28} color="#0284C7" />
-                )}
-                <View style={drawerStyles.photoEditBadge}>
-                  {photoUploading ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <Ionicons name="camera" size={11} color="#FFFFFF" />
-                  )}
-                </View>
-              </TouchableOpacity>
-
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={drawerStyles.userName} numberOfLines={1}>
                   {user?.fullName || 'Bereket Sahlemariam'}
@@ -332,16 +320,6 @@ export const DriverProfileModal: React.FC<DriverProfileModalProps> = ({
                 </View>
               </View>
             </View>
-
-            {/* Change Photo Action Button */}
-            <TouchableOpacity
-              style={drawerStyles.photoChangeBtn}
-              onPress={pickDriverPhoto}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="image-outline" size={14} color="#38BDF8" />
-              <Text style={drawerStyles.photoChangeBtnText}>Change Profile Photo / Doc</Text>
-            </TouchableOpacity>
 
             {/* 2. Driver Credentials & Fleet Assignment */}
             <View style={drawerStyles.sectionCard}>
@@ -376,15 +354,9 @@ export const DriverProfileModal: React.FC<DriverProfileModalProps> = ({
               </View>
             </View>
 
-            {/* 2.5 Driver Corridor Reputation & Received Reviews (Immutable Ledger) */}
+            {/* 2.5 Driver Corridor Reputation & Received Reviews */}
             <View style={drawerStyles.sectionCard}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={drawerStyles.sectionTitle}>CORRIDOR REPUTATION & REVIEWS</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <Ionicons name="lock-closed" size={11} color="#10B981" />
-                  <Text style={{ fontSize: 9.5, fontWeight: '700', color: '#10B981' }}>SEALED AUDIT LEDGER</Text>
-                </View>
-              </View>
+              <Text style={drawerStyles.sectionTitle}>CORRIDOR REPUTATION & REVIEWS</Text>
 
               {/* Score Highlight Box */}
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: '#0F172A', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#334155', marginTop: 8 }}>
@@ -498,7 +470,7 @@ export const DriverProfileModal: React.FC<DriverProfileModalProps> = ({
                 <View style={drawerStyles.passwordBox}>
                   <TextInput
                     style={drawerStyles.input}
-                    placeholder="Min. 4 characters"
+                    placeholder="Min. 8 chars (letter + number)"
                     placeholderTextColor="#64748B"
                     secureTextEntry={!showNewPassword}
                     value={newPassword}

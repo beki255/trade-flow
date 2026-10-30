@@ -46,7 +46,7 @@ export const VerificationQueueTab: React.FC<VerificationQueueTabProps> = ({
   verifiedCount,
   suspendedCount,
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [isProvisionOpen, setIsProvisionOpen] = React.useState(false);
   const [provisionNotice, setProvisionNotice] = React.useState('');
 
@@ -65,7 +65,7 @@ export const VerificationQueueTab: React.FC<VerificationQueueTabProps> = ({
         </div>
         <div className="relative z-10 px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold flex items-center gap-2 shrink-0">
           <ShieldCheck className="w-4 h-4 text-emerald-600" />
-          <span>Active Compliance Engine</span>
+          <span>{language === 'AM' ? 'ንቁ የቁጥጥርና ህግ ማክበሪያ ሞተር' : language === 'OM' ? 'Mootora Hordoffii Qulqullinaa' : 'Active Compliance Engine'}</span>
         </div>
       </div>
 
@@ -86,10 +86,10 @@ export const VerificationQueueTab: React.FC<VerificationQueueTabProps> = ({
         <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-base font-black text-slate-900 tracking-tight">
-              Onboarding Verification Queue ({filteredUsers.length} of {totalUsersCount})
+              {language === 'AM' ? 'የተጠቃሚዎች ማረጋገጫ ተራ' : language === 'OM' ? 'Dabareen Mirkaneessa Galmee' : 'Onboarding Verification Queue'} ({filteredUsers.length} / {totalUsersCount})
             </h2>
             <p className="text-xs text-slate-400">
-              Review legal identities, trade licenses, and insurance certificates
+              {language === 'AM' ? 'ህጋዊ መታወቂያዎችን፣ የንግድ ፈቃዶችን እና የኢንሹራንስ ሰርተፊኬቶችን ይገምግሙ' : language === 'OM' ? 'Waraqaa eenyummaa seeraa, eeyyama daldalaa fi inshuraansii sakatta\'aa' : 'Review legal identities, trade licenses, and insurance certificates'}
             </p>
           </div>
           <div className="flex items-center gap-2 self-start sm:self-auto">
@@ -97,13 +97,13 @@ export const VerificationQueueTab: React.FC<VerificationQueueTabProps> = ({
               onClick={() => setIsProvisionOpen(true)}
               className="px-3.5 py-2 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
             >
-              <span>+ Commission Customs Inspector</span>
+              <span>{language === 'AM' ? '+ የጉምሩክ ተቆጣጣሪ መድብ' : language === 'OM' ? '+ To\'ataa Gumurukaa Ramadaa' : '+ Commission Customs Inspector'}</span>
             </button>
             <button
               onClick={onRefresh}
               className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all shadow-sm cursor-pointer"
             >
-              Refresh Queue
+              {language === 'AM' ? 'ተራውን አድስ' : language === 'OM' ? 'Dabaree Haaromsi' : 'Refresh Queue'}
             </button>
           </div>
         </div>

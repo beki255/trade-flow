@@ -37,7 +37,9 @@ import { PodTab } from './tabs/PodTab';
 import { DriverTopHeader } from './components/DriverTopHeader';
 import { DriverBottomNavBar } from './components/DriverBottomNavBar';
 import { DriverProfileModal } from './modals/DriverProfileModal';
+import { CustomsQrPassModal } from './modals/CustomsQrPassModal';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface DriverPortalScreenProps {
   onLogout: () => void;
@@ -46,6 +48,7 @@ interface DriverPortalScreenProps {
 
 export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout, user }) => {
   const { colors } = useTheme();
+  const { language } = useLanguage();
   const [currentUser, setCurrentUser] = useState<any>(user);
   const [activeTab, setActiveTab] = useState<DriverTabType>(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
@@ -64,6 +67,7 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
   }, [activeTab]);
   const [refreshing, setRefreshing] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showCustomsPassModal, setShowCustomsPassModal] = useState(false);
 
   // Sync currentUser when parent user prop updates
   useEffect(() => {
@@ -312,6 +316,17 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
           setActiveTrip(null);
         }
 
+        const serverCheckins = data.checkinHistory || data.activeTrip?.checkinHistory;
+        if (serverCheckins && Array.isArray(serverCheckins)) {
+          setCheckinHistory(serverCheckins);
+        }
+
+        if (data.pendingReroute) {
+          setPendingReroute(data.pendingReroute);
+        } else {
+          setPendingReroute(null);
+        }
+
         if (data.deliveredHistory && Array.isArray(data.deliveredHistory)) {
           setDeliveredHistory(data.deliveredHistory);
         } else {
@@ -507,25 +522,91 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
 
   const waypoints: WaypointItem[] = useMemo(() => {
     if (!activeTrip) return [];
+    let baseList: WaypointItem[] = [];
     if (activeTrip.waypoints && activeTrip.waypoints.length > 2) {
-      return activeTrip.waypoints;
+      baseList = activeTrip.waypoints;
+    } else {
+      baseList = getDynamicCorridorWaypoints(
+        activeTrip.origin,
+        activeTrip.destination,
+        activeTrip.originLat,
+        activeTrip.originLng,
+        activeTrip.destLat,
+        activeTrip.destLng,
+        activeTrip.progressPercentage ?? 0,
+        activeTrip.status ?? 'IN_TRANSIT'
+      );
     }
-    return getDynamicCorridorWaypoints(
-      activeTrip.origin,
-      activeTrip.destination,
-      activeTrip.originLat,
-      activeTrip.originLng,
-      activeTrip.destLat,
-      activeTrip.destLng,
-      activeTrip.progressPercentage ?? 0,
-      activeTrip.status ?? 'IN_TRANSIT'
+
+    if (!baseList || baseList.length === 0) return [];
+
+    // Dynamically advance waypoints based on checkinHistory to prevent duplicates and advance along the corridor
+    const checkedNames = new Set(
+      checkinHistory.map((chk) => {
+        const match = chk.coords?.match(/\((.*?)\)/);
+        return ((chk.locationName || (match ? match[1] : chk.coords)) || '').trim().toLowerCase();
+      })
     );
-  }, [activeTrip]);
+
+    let highestCheckedIdx = -1;
+    baseList.forEach((w, idx) => {
+      if (checkedNames.has(w.name.trim().toLowerCase())) {
+        highestCheckedIdx = Math.max(highestCheckedIdx, idx);
+      }
+    });
+
+    if (highestCheckedIdx >= 0) {
+      return baseList.map((w, idx) => {
+        if (idx <= highestCheckedIdx) {
+          return {
+            ...w,
+            status: 'COMPLETED' as const,
+            time: 'Passed ✓',
+          };
+        } else if (idx === highestCheckedIdx + 1) {
+          return {
+            ...w,
+            status: 'ACTIVE_NOW' as const,
+            time: 'Current Point',
+          };
+        } else {
+          return {
+            ...w,
+            status: 'PENDING' as const,
+            time: idx === highestCheckedIdx + 2 ? 'Next Checkpoint' : 'En Route',
+          };
+        }
+      });
+    }
+
+    return baseList;
+  }, [activeTrip, checkinHistory]);
 
   const handleCheckin = async () => {
-    const activeWp = waypoints.find((w) => w.status === 'ACTIVE_NOW') || waypoints[0];
-    const lat = realGpsLocation?.latitude ?? (activeWp as any)?.latitude ?? (activeWp as any)?.lat ?? activeTrip?.originLat;
-    const lng = realGpsLocation?.longitude ?? (activeWp as any)?.longitude ?? (activeWp as any)?.lng ?? activeTrip?.originLng;
+    const activeWp = waypoints.find((w) => w.status === 'ACTIVE_NOW') || (waypoints.every((w) => w.status === 'COMPLETED') ? waypoints[waypoints.length - 1] : waypoints[0]);
+    if (!activeWp) return;
+
+    // Strict duplicate check: prevent checking in at the same waypoint more than once
+    const isAlreadyCheckedIn = checkinHistory.some((chk) => {
+      const match = chk.coords?.match(/\((.*?)\)/);
+      const name = ((chk.locationName || (match ? match[1] : chk.coords)) || '').trim().toLowerCase();
+      return name === activeWp.name.trim().toLowerCase();
+    });
+
+    if (isAlreadyCheckedIn) {
+      Alert.alert(
+        language === 'AM' ? 'ቀድሞ የተረጋገጠ' : 'Already Checked In',
+        language === 'AM'
+          ? `በ${activeWp.name} ላይ ቀድመው ቼክ-ኢን አድርገዋል! እባክዎ ወደ ቀጣዩ ኬላ ይቀጥሉ።`
+          : `You have already checked in at ${activeWp.name}. Proceed along the corridor to the next checkpoint.`
+      );
+      return;
+    }
+
+    const wpLat = (activeWp as any)?.latitude ?? (activeWp as any)?.lat;
+    const wpLng = (activeWp as any)?.longitude ?? (activeWp as any)?.lng;
+    const lat = wpLat ?? realGpsLocation?.latitude ?? activeTrip?.originLat;
+    const lng = wpLng ?? realGpsLocation?.longitude ?? activeTrip?.originLng;
 
     if (lat === undefined || lng === undefined) return;
 
@@ -536,6 +617,8 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
       id: `CHK-${nowEpoch.toString().slice(-4)}`,
       time: new Date(nowEpoch).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       coords: `${coords} (${locName})`,
+      locationName: locName,
+      waypointId: activeWp?.id,
     };
     setCheckinHistory([record, ...checkinHistory]);
 
@@ -582,9 +665,11 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
   // Handle Driver Geotagged Incident Reporting with Offline Queuing (NFR 7.2)
   const handleSendIncident = async () => {
     if (!incidentType) return;
-    const activeWp = waypoints.find((w) => w.status === 'ACTIVE_NOW') || waypoints[0];
-    const incidentLat = realGpsLocation?.latitude ?? (activeWp as any)?.latitude ?? (activeWp as any)?.lat ?? activeTrip?.originLat ?? 8.895;
-    const incidentLng = realGpsLocation?.longitude ?? (activeWp as any)?.longitude ?? (activeWp as any)?.lng ?? activeTrip?.originLng ?? 38.765;
+    const activeWp = waypoints.find((w) => w.status === 'ACTIVE_NOW') || (waypoints.every((w) => w.status === 'COMPLETED') ? waypoints[waypoints.length - 1] : waypoints[0]);
+    const wpLat = (activeWp as any)?.latitude ?? (activeWp as any)?.lat;
+    const wpLng = (activeWp as any)?.longitude ?? (activeWp as any)?.lng;
+    const incidentLat = wpLat ?? realGpsLocation?.latitude ?? activeTrip?.originLat ?? 8.895;
+    const incidentLng = wpLng ?? realGpsLocation?.longitude ?? activeTrip?.originLng ?? 38.765;
     const incidentLocName = activeWp?.name || activeTrip?.route || 'Djibouti-Addis Corridor Route Checkpoint';
     const nowEpoch = Date.now();
 
@@ -778,6 +863,89 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
         </View>
       )}
 
+      {/* Dynamic Corridor Reroute Proposal Alert Banner */}
+      {pendingReroute && pendingReroute.status === 'PENDING_CONFIRMATION' && (
+        <View
+          style={{
+            backgroundColor: '#FFFBEB',
+            borderBottomWidth: 1,
+            borderColor: '#FDE68A',
+            paddingVertical: 9,
+            paddingHorizontal: 12,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 8,
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, flex: 1 }}>
+            <Ionicons name="warning" size={17} color="#D97706" />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 11, fontWeight: '800', color: '#92400E' }}>
+                {language === 'AM' ? 'የኮሪደር መስመር ለውጥ ጥቆማ' : language === 'OM' ? 'Yaada Daandii Jijjiirraa' : 'Reroute Proposal'}
+              </Text>
+              <Text style={{ fontSize: 9.5, color: '#B45309', fontWeight: '600' }} numberOfLines={1}>
+                -{pendingReroute.estimatedTimeSavingMins} {language === 'AM' ? 'ደቂቃ ያድናል' : 'min'} | {language === 'AM' ? 'በደወሌ በኩል' : 'via Dewele'}
+              </Text>
+            </View>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+            <TouchableOpacity
+              onPress={() => handleConfirmReroute('ACCEPT')}
+              style={{
+                backgroundColor: '#059669',
+                paddingHorizontal: 10,
+                paddingVertical: 5,
+                borderRadius: 7,
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '800' }}>
+                {language === 'AM' ? 'ተቀበል' : 'Accept'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setActiveTab('incident')}
+              style={{
+                backgroundColor: '#0F172A',
+                paddingHorizontal: 8,
+                paddingVertical: 5,
+                borderRadius: 7,
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '700' }}>
+                {language === 'AM' ? 'ዝርዝር' : 'Details'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* Active Dewele Southern Bypass Active Notice */}
+      {activeTrip?.isRerouted && (
+        <View
+          style={{
+            backgroundColor: '#F0FDF4',
+            borderBottomWidth: 1,
+            borderColor: '#BBF7D0',
+            paddingVertical: 5,
+            paddingHorizontal: 12,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+          }}
+        >
+          <Ionicons name="git-branch" size={13} color="#059669" />
+          <Text style={{ fontSize: 10, fontWeight: '700', color: '#065F46' }}>
+            {language === 'AM'
+              ? 'ጭነቱ በደቡባዊ አማራጭ ኮሪደር (በደወሌ ድንበር) በኩል በመጓዝ ላይ ይገኛል'
+              : 'Shipment active on Southern Bypass Corridor (via Dewele Border)'}
+          </Text>
+        </View>
+      )}
+
       {/* Main Scrollable Content */}
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -818,8 +986,9 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
             checkinHistory={checkinHistory}
             onCheckin={handleCheckin}
             activeTrip={activeTrip}
-            activeWaypoint={waypoints.find((w) => w.status === 'ACTIVE_NOW') || waypoints[0]}
+            activeWaypoint={waypoints.find((w) => w.status === 'ACTIVE_NOW') || (waypoints.every((w) => w.status === 'COMPLETED') ? waypoints[waypoints.length - 1] : waypoints[0])}
             realGpsLocation={realGpsLocation}
+            onOpenCustomsPass={() => setShowCustomsPassModal(true)}
           />
         )}
 
@@ -839,7 +1008,7 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
             onSendIncident={handleSendIncident}
             realGpsLocation={realGpsLocation}
             activeTrip={activeTrip}
-            activeWaypoint={waypoints.find((w) => w.status === 'ACTIVE_NOW') || waypoints[0]}
+            activeWaypoint={waypoints.find((w) => w.status === 'ACTIVE_NOW') || (waypoints.every((w) => w.status === 'COMPLETED') ? waypoints[waypoints.length - 1] : waypoints[0])}
             pendingReroute={pendingReroute}
             onConfirmReroute={handleConfirmReroute}
           />
@@ -874,6 +1043,14 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
         user={currentUser}
         onPhotoUpdated={handlePhotoUpdated}
         onLogout={onLogout}
+      />
+
+      {/* Official Customs Transit Clearance QR Pass Modal */}
+      <CustomsQrPassModal
+        visible={showCustomsPassModal}
+        onClose={() => setShowCustomsPassModal(false)}
+        activeTrip={activeTrip}
+        customsPass={activeTrip?.customsClearance}
       />
     </SafeAreaView>
   );

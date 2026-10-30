@@ -209,9 +209,12 @@ export const calculateAIMatches = async (req: Request, res: Response): Promise<v
       const ratingNormalized = hasRatings ? (carrier.ratingAvg / 5.0) : 0.75;
       const reliabilityScorePct = Math.round(ratingNormalized * 99);
 
-      // 3. Fuel Eco Score (S_fuel): Fleet optimization & capacity fit
+      // 3. Capacity & Fleet Fit Score (S_fuel): Vehicles must support cargo tonnage
+      const matchingVehicle = carrier.vehicles?.find((v: any) => (v.capacityTons || 0) >= cargoWeight)
+        || carrier.vehicles?.[0];
+      const hasCapacityFit = matchingVehicle && (matchingVehicle.capacityTons || 0) >= cargoWeight;
       const hasVehicles = carrier.vehicles && carrier.vehicles.length > 0;
-      const fuelEcoScorePct = hasVehicles ? 95 : 85;
+      const fuelEcoScorePct = hasCapacityFit ? 98 : hasVehicles ? 72 : 55;
 
       // 4. Proximity & Speed Score (S_proximity): Availability at origin hub & transit readiness
       const proximityScorePct = Math.max(80, 96 - (index * 3));
@@ -225,7 +228,7 @@ export const calculateAIMatches = async (req: Request, res: Response): Promise<v
       );
 
       const totalMatchScorePct = parseFloat((weightedUtility * 100).toFixed(1));
-      const primaryVehicle = carrier.vehicles?.[0];
+      const primaryVehicle = matchingVehicle || carrier.vehicles?.[0];
 
       return {
         carrierId: carrier.id,
@@ -236,7 +239,8 @@ export const calculateAIMatches = async (req: Request, res: Response): Promise<v
         totalCompletedTrips: carrier.totalRatingsCount || 0,
         assignedTruckPlate: primaryVehicle?.plateNumber || 'No Truck Registered',
         vehicleType: primaryVehicle?.vehicleType || 'Fleet Vehicle',
-        payloadCapacityTons: primaryVehicle?.capacityTons || 35,
+        payloadCapacityTons: primaryVehicle?.capacityTons || 0,
+        capacityMatched: Boolean(hasCapacityFit),
         calculatedSpotRateEtb: Math.round(baseQuote),
         estimatedTransitHours: index === 0 ? '16–18 Hours' : '18–22 Hours',
         currentLocation: 'Corridor Logistics Hub',

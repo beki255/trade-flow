@@ -269,6 +269,57 @@ function MainApp() {
 function ThemedAppContainer({ isDesktopWeb }: { isDesktopWeb: boolean }) {
   const { colors, isDark } = useTheme();
 
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      const dynamicStyleId = 'tradeflow-mobile-theme-overrides';
+      let styleTag = document.getElementById(dynamicStyleId) as HTMLStyleElement;
+      if (!styleTag) {
+        styleTag = document.createElement('style');
+        styleTag.id = dynamicStyleId;
+        document.head.appendChild(styleTag);
+      }
+      if (isDark) {
+        styleTag.innerHTML = `
+          /* Mobile Dark Mode web surface overrides */
+          div[style*="background-color: rgb(244, 249, 253)"],
+          div[style*="background-color: #F4F9FD"],
+          div[style*="background-color: #f4f9fd"] {
+            background-color: #090E17 !important;
+          }
+          div[style*="background-color: rgb(255, 255, 255)"]:not([style*="color: rgb(255, 255, 255)"]),
+          div[style*="background-color: #FFFFFF"],
+          div[style*="background-color: #ffffff"] {
+            background-color: #0F172A !important;
+            border-color: #1E293B !important;
+          }
+          div[style*="background-color: rgb(248, 250, 252)"],
+          div[style*="background-color: #F8FAFC"],
+          div[style*="background-color: rgb(241, 245, 249)"],
+          div[style*="background-color: #F1F5F9"] {
+            background-color: #1E293B !important;
+            border-color: #334155 !important;
+          }
+          div[style*="border-color: rgb(226, 234, 242)"],
+          div[style*="border-color: #E2EAF2"],
+          div[style*="border-color: #e2eaf2"],
+          div[style*="border-color: #E2E8F0"] {
+            border-color: #1E293B !important;
+          }
+          div[style*="color: rgb(15, 23, 42)"],
+          div[style*="color: #0F172A"] {
+            color: #F8FAFC !important;
+          }
+          div[style*="color: rgb(51, 65, 85)"],
+          div[style*="color: #334155"] {
+            color: #E2E8F0 !important;
+          }
+        `;
+      } else {
+        styleTag.innerHTML = '';
+      }
+    }
+  }, [isDark]);
+
   return (
     <View style={[styles.outerRoot, !isDesktopWeb && { backgroundColor: colors.background }]}>
       <View

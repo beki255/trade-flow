@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Smartphone, CreditCard, ShieldCheck, DollarSign, Calculator, FileCheck, Building } from 'lucide-react';
+import { Smartphone, CreditCard, ShieldCheck, DollarSign, Calculator, FileCheck, Building, AlertCircle } from 'lucide-react';
 import { BidItem } from '../types';
+import { validateEthiopianPhone } from '../../../utils/validation';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface PayWithTelebirrModalProps {
   isOpen: boolean;
@@ -38,10 +40,12 @@ export const PayWithTelebirrModal: React.FC<PayWithTelebirrModalProps> = ({
   setAmount,
   paying,
 }) => {
+  const { language } = useLanguage();
   const [paymentMethod, setPaymentMethod] = useState<'TELEBIRR' | 'CBE_BIRR'>('TELEBIRR');
   const [cbeAccountNo, setCbeAccountNo] = useState('1000289384729');
   const [accessorialCharges, setAccessorialCharges] = useState('0');
   const [penalties, setPenalties] = useState('0');
+  const [errorMsg, setErrorMsg] = useState('');
 
   if (!isOpen) return null;
 
@@ -56,9 +60,25 @@ export const PayWithTelebirrModal: React.FC<PayWithTelebirrModalProps> = ({
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg('');
+
+    // Strict Ethiopian Phone Validation
+    const phoneRes = validateEthiopianPhone(phone);
+    if (!phoneRes.isValid) {
+      setErrorMsg(
+        phoneRes.error ||
+          (language === 'AM'
+            ? 'እባክዎ ትክክለኛ የኢትዮጵያ ስልክ ቁጥር ያስገቡ (+251 9... / 09... ወይም +251 7... / 07...)።'
+            : language === 'OM'
+            ? 'Maaloo lakkoofsa bilbila Itoophiyaa sirrii galchaa (+251 9... / 09... ykn +251 7... / 07...).'
+            : 'Please enter a valid Ethiopian phone number (+251 9... / 09... or +251 7... / 07...).')
+      );
+      return;
+    }
+
     await onSubmit({
       paymentMethod,
-      phone,
+      phone: phoneRes.normalized || phone.trim(),
       accountNo: paymentMethod === 'CBE_BIRR' ? cbeAccountNo : undefined,
       baseRateEtb: baseRate,
       accessorialChargesEtb: accessorials,
@@ -78,10 +98,16 @@ export const PayWithTelebirrModal: React.FC<PayWithTelebirrModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-black text-slate-900">
-                {paymentMethod === 'CBE_BIRR' ? 'CBE Birr Escrow Checkout' : 'TeleBirr Smart Escrow Checkout'}
+                {paymentMethod === 'CBE_BIRR'
+                  ? (language === 'AM' ? 'የሲቢኢ ብር የኤስክሮው ክፍያ' : language === 'OM' ? 'Kaffaltii Iskroow CBE Birr' : 'CBE Birr Escrow Checkout')
+                  : (language === 'AM' ? 'የቴሌብር ስማርት ኤስክሮው ክፍያ' : language === 'OM' ? 'Kaffaltii Iskroow TeleBirr' : 'TeleBirr Smart Escrow Checkout')}
               </h3>
               <p className="text-[11px] text-slate-500 font-medium">
-                Cryptographically locked upon agreement, disbursed upon verified e-POD handover.
+                {language === 'AM'
+                  ? 'በስምምነት ወቅት በደህንነት የተቆለፈ፤ በ e-POD ርክክብ ሲረጋገጥ የሚለቀቅ።'
+                  : language === 'OM'
+                  ? 'Walii galtee irratti kan qabamu, mirkana e-POD irratti kan kaffalamu.'
+                  : 'Cryptographically locked upon agreement, disbursed upon verified e-POD handover.'}
               </p>
             </div>
           </div>
@@ -94,9 +120,18 @@ export const PayWithTelebirrModal: React.FC<PayWithTelebirrModalProps> = ({
         </div>
 
         <form onSubmit={handleFormSubmit} className="space-y-3.5 text-xs">
+          {errorMsg ? (
+            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>{errorMsg}</span>
+            </div>
+          ) : null}
+
           {/* Payment Method Selector */}
           <div>
-            <label className="block font-bold text-slate-700 mb-1.5">Supported Settlement Method</label>
+            <label className="block font-bold text-slate-700 mb-1.5">
+              {language === 'AM' ? 'የክፍያ ዘዴን ይምረጡ' : language === 'OM' ? 'Mala Kaffaltii Filadhu' : 'Supported Settlement Method'}
+            </label>
             <div className="grid grid-cols-2 gap-2.5">
               <button
                 type="button"
@@ -130,7 +165,7 @@ export const PayWithTelebirrModal: React.FC<PayWithTelebirrModalProps> = ({
           {bids.length > 0 && (
             <div>
               <label className="block font-bold text-slate-700 mb-1">
-                Linked Consignment / Agreed Carrier Bid
+                {language === 'AM' ? 'የተገናኘ ጭነት / የተስማሙበት የአጓጓዥ ዋጋ' : language === 'OM' ? 'Fe\'isa Walqabatu / Dhiheessa Fe\'aa Waliigalame' : 'Linked Consignment / Agreed Carrier Bid'}
               </label>
               <select
                 value={selectedBidId}
@@ -144,7 +179,9 @@ export const PayWithTelebirrModal: React.FC<PayWithTelebirrModalProps> = ({
                 }}
                 className="w-full px-3.5 py-2 rounded-xl border border-slate-300 font-medium text-slate-900 outline-none bg-white text-xs cursor-pointer"
               >
-                <option value="">-- Custom / Direct Consignment --</option>
+                <option value="">
+                  {language === 'AM' ? '-- ብጁ / ቀጥተኛ ጭነት --' : language === 'OM' ? '-- Fe\'isa Kallattii / Filatamaa --' : '-- Custom / Direct Consignment --'}
+                </option>
                 {bids.map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.loadTitle} • {b.transporterName} ({b.bidAmount.toLocaleString()} ETB)
@@ -158,7 +195,9 @@ export const PayWithTelebirrModal: React.FC<PayWithTelebirrModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block font-bold text-slate-700 mb-1">
-                {paymentMethod === 'CBE_BIRR' ? 'CBE Account / Mobile Number *' : 'TeleBirr Wallet Phone *'}
+                {paymentMethod === 'CBE_BIRR'
+                  ? (language === 'AM' ? 'የሲቢኢ ሒሳብ / ስልክ ቁጥር *' : language === 'OM' ? 'Lakkoofsa Herregaa CBE / Bilbila *' : 'CBE Account / Mobile Number *')
+                  : (language === 'AM' ? 'የቴሌብር ስልክ ቁጥር *' : language === 'OM' ? 'Bilbila Telebirr *' : 'TeleBirr Wallet Phone *')}
               </label>
               <input
                 type="tel"
@@ -171,7 +210,9 @@ export const PayWithTelebirrModal: React.FC<PayWithTelebirrModalProps> = ({
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Agreed Base Freight Rate (ETB) *</label>
+              <label className="block font-bold text-slate-700 mb-1">
+                {language === 'AM' ? 'የተስማሙበት መነሻ የትራንስፖርት ዋጋ (ብር) *' : language === 'OM' ? 'Gatii Ka\'umsa Fe\'isaa Waliigalame (ETB) *' : 'Agreed Base Freight Rate (ETB) *'}
+              </label>
               <input
                 type="number"
                 required
@@ -186,11 +227,11 @@ export const PayWithTelebirrModal: React.FC<PayWithTelebirrModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block font-bold text-slate-700 mb-1">
-                Approved Accessorial Charges (ETB)
+                {language === 'AM' ? 'የተፈቀዱ ተጨማሪ ወጪዎች (ብር)' : language === 'OM' ? 'Kaffaltii Dabalataa Eeyyamame (ETB)' : 'Approved Accessorial Charges (ETB)'}
               </label>
               <input
                 type="number"
-                placeholder="0 (e.g. Demurrage, Handling)"
+                placeholder={language === 'AM' ? '0 (ለምሳሌ የጭነት ማቆያ፣ የማውረጃ ወጪ)' : language === 'OM' ? '0 (fakkeenyaaf deemuuraajii)' : '0 (e.g. Demurrage, Handling)'}
                 value={accessorialCharges}
                 onChange={(e) => setAccessorialCharges(e.target.value)}
                 className="w-full px-3.5 py-2 rounded-xl border border-slate-300 font-medium text-slate-900 outline-none"
@@ -199,11 +240,11 @@ export const PayWithTelebirrModal: React.FC<PayWithTelebirrModalProps> = ({
 
             <div>
               <label className="block font-bold text-slate-700 mb-1">
-                Penalties / Deductions (ETB)
+                {language === 'AM' ? 'ቅጣት / ቅናሾች (ብር)' : language === 'OM' ? 'Adabbii / Hir\'isuu (ETB)' : 'Penalties / Deductions (ETB)'}
               </label>
               <input
                 type="number"
-                placeholder="0 (e.g. Late Arrival Penalty)"
+                placeholder={language === 'AM' ? '0 (ለምሳሌ የዘገየበት ቅጣት)' : language === 'OM' ? '0 (fakkeenyaaf adabbii turuu)' : '0 (e.g. Late Arrival Penalty)'}
                 value={penalties}
                 onChange={(e) => setPenalties(e.target.value)}
                 className="w-full px-3.5 py-2 rounded-xl border border-slate-300 font-medium text-slate-900 outline-none"
@@ -214,48 +255,54 @@ export const PayWithTelebirrModal: React.FC<PayWithTelebirrModalProps> = ({
           {/* Comprehensive Settlement Formula Card */}
           <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-2 text-xs">
             <div className="flex justify-between font-bold text-slate-700">
-              <span>Agreed Base Rate:</span>
+              <span>{language === 'AM' ? 'የተስማሙበት መነሻ ዋጋ፦' : language === 'OM' ? 'Gatii Ka\'umsaa Waliigalame:' : 'Agreed Base Rate:'}</span>
               <span>{baseRate.toLocaleString()} ETB</span>
             </div>
 
             {accessorials > 0 && (
               <div className="flex justify-between text-emerald-700 font-medium">
-                <span>+ Approved Accessorials:</span>
+                <span>{language === 'AM' ? '+ የተፈቀዱ ተጨማሪ ክፍያዎች፦' : language === 'OM' ? '+ Dabalata Eeyyamame:' : '+ Approved Accessorials:'}</span>
                 <span>+{accessorials.toLocaleString()} ETB</span>
               </div>
             )}
 
             {penaltyDeduction > 0 && (
               <div className="flex justify-between text-rose-600 font-medium">
-                <span>- Penalties / Cargo Deductions:</span>
+                <span>{language === 'AM' ? '- ቅጣቶች / የጭነት ቅናሾች፦' : language === 'OM' ? '- Adabbii / Hir\'isuu Fe\'isaa:' : '- Penalties / Cargo Deductions:'}</span>
                 <span>-{penaltyDeduction.toLocaleString()} ETB</span>
               </div>
             )}
 
             <div className="flex justify-between font-extrabold text-slate-900 pt-1 border-t border-slate-200">
-              <span>Total Gross Escrow Locked:</span>
+              <span>{language === 'AM' ? 'በኤስክሮው የተቆለፈ ጠቅላላ መጠን፦' : language === 'OM' ? 'Waliigala Iskroow Keessatti Hidhame:' : 'Total Gross Escrow Locked:'}</span>
               <span className="text-sm font-black">{totalGrossAmount.toLocaleString()} ETB</span>
             </div>
 
             <div className="flex justify-between text-rose-600 font-medium">
-              <span>- Platform Commission (5.0%):</span>
+              <span>{language === 'AM' ? '- የፕላትፎርም ኮሚሽን (5.0%)፦' : language === 'OM' ? '- Koomishinii Pilaatfoormii (5.0%):' : '- Platform Commission (5.0%):'}</span>
               <span>-{platformFee.toLocaleString()} ETB</span>
             </div>
 
             <div className="flex justify-between text-amber-700 font-medium">
-              <span>- Withholding Tax (2.0%):</span>
+              <span>{language === 'AM' ? '- የዊዝሆልዲንግ ታክስ (2.0%)፦' : language === 'OM' ? '- Taaksii Qabamu (2.0%):' : '- Withholding Tax (2.0%):'}</span>
               <span>-{withholdingTax.toLocaleString()} ETB</span>
             </div>
 
             <div className="pt-1.5 border-t border-slate-200 flex justify-between font-black text-emerald-800 text-sm">
-              <span>Transporter Net Payout (at e-POD):</span>
+              <span>{language === 'AM' ? 'ለአጓጓዥ የሚለቀቅ የተጣራ ክፍያ (በ e-POD)፦' : language === 'OM' ? 'Kaffaltii Qulqulluu Fe\'aa (yeroo e-POD):' : 'Transporter Net Payout (at e-POD):'}</span>
               <span className="text-base">{netCarrierPayout.toLocaleString()} ETB</span>
             </div>
           </div>
 
           <div className="p-2.5 rounded-xl bg-sky-50 border border-sky-100 text-[11px] text-sky-900 flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-sky-600 shrink-0" />
-            <span>Instant webhook reconciliation automatically updates the ledger upon payment confirmation.</span>
+            <span>
+              {language === 'AM'
+                ? 'ክፍያው እንደተፈጸመ በራስ-ሰር በዌብሁክ አማካኝነት መዝገቡ ይዘመናል።'
+                : language === 'OM'
+                ? 'Kaffaltiin akkuma raawwatameen webhook dhaan galmeen ofumaan haaromfama.'
+                : 'Instant webhook reconciliation automatically updates the ledger upon payment confirmation.'}
+            </span>
           </div>
 
           <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
@@ -264,14 +311,19 @@ export const PayWithTelebirrModal: React.FC<PayWithTelebirrModalProps> = ({
               onClick={onClose}
               className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 cursor-pointer"
             >
-              Cancel
+              {language === 'AM' ? 'ይቅር' : language === 'OM' ? 'Haqi' : 'Cancel'}
             </button>
             <button
               type="submit"
               disabled={paying}
               className="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-black shadow-md flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
-              <CreditCard className="w-4 h-4" /> {paying ? 'Locking Escrow...' : 'Authorize Escrow Checkout'}
+              <CreditCard className="w-4 h-4" />
+              <span>
+                {paying
+                  ? (language === 'AM' ? 'ክፍያውን በመቆለፍ ላይ...' : language === 'OM' ? 'Iskroow hidhaa jira...' : 'Locking Escrow...')
+                  : (language === 'AM' ? 'ክፍያውን በኤስክሮው ቆልፍ' : language === 'OM' ? 'Iskroow Eeyyami' : 'Authorize Escrow Checkout')}
+              </span>
             </button>
           </div>
         </form>

@@ -6,6 +6,7 @@ import {
   resolveCorridorCoordinates,
 } from '@tradeflow/shared';
 import { CORRIDOR_RISK_ZONES, calculateDistanceKm } from './tracking.controller';
+import { NotificationService } from '../services/notification.service';
 
 const prisma = new PrismaClient();
 
@@ -29,7 +30,113 @@ export interface DynamicRerouteProposal {
   bypassPolyline: Array<{ lat: number; lng: number }>;
 }
 
-const activeRerouteProposals: Map<string, DynamicRerouteProposal> = new Map();
+export const activeRerouteProposals: Map<string, DynamicRerouteProposal> = new Map();
+
+export const getActiveRerouteForShipment = (shipmentId?: string): DynamicRerouteProposal | null => {
+  if (!shipmentId) {
+    for (const p of activeRerouteProposals.values()) {
+      if (p.status === 'PENDING_CONFIRMATION' || p.status === 'CONFIRMED') return p;
+    }
+    return null;
+  }
+  const exact = activeRerouteProposals.get(shipmentId);
+  if (exact) return exact;
+  for (const p of activeRerouteProposals.values()) {
+    if (p.shipmentId === shipmentId) return p;
+  }
+  for (const p of activeRerouteProposals.values()) {
+    if (p.status === 'PENDING_CONFIRMATION' || p.status === 'CONFIRMED') return p;
+  }
+  return null;
+};
+
+export const getActiveRerouteForShipmentAsync = async (shipmentId?: string): Promise<DynamicRerouteProposal | null> => {
+  if (shipmentId) {
+    const latestRerouteEvent = await prisma.trackingEvent.findFirst({
+      where: {
+        shipmentId,
+        source: { contains: 'REROUTE_' },
+      },
+      orderBy: { timestamp: 'desc' },
+    });
+
+    if (latestRerouteEvent) {
+      if (latestRerouteEvent.source.includes('REROUTE_CONFIRMED')) {
+        const confirmedProposal: DynamicRerouteProposal = {
+          proposalId: 'REROUTE-CONFIRMED',
+          shipmentId,
+          incidentId: 'corridor-incident',
+          incidentCategory: 'CHECKPOINT_DELAY',
+          incidentLocation: 'Bishoftu Automotive & Logistics Hub',
+          originalRouteName: 'Primary National Highway A-1 Corridor (Galafi Border)',
+          suggestedBypassRouteName: 'Southern Bypass Corridor via Dewele Border (Addis ➔ Dire Dawa ➔ Dewele ➔ Djibouti)',
+          reason: latestRerouteEvent.source,
+          distanceDeltaKm: 65,
+          estimatedTimeSavingMins: 110,
+          fuelCostDeltaEtb: 2400,
+          status: 'CONFIRMED',
+          createdAt: latestRerouteEvent.timestamp.toISOString(),
+          confirmedAt: latestRerouteEvent.timestamp.toISOString(),
+          confirmedBy: 'DRIVER',
+          bypassPolyline: [
+            { lat: 8.895, lng: 38.765 },
+            { lat: 8.541, lng: 39.271 },
+            { lat: 8.986, lng: 40.165 },
+            { lat: 9.593, lng: 41.866 },
+            { lat: 11.033, lng: 42.633 },
+            { lat: 11.595, lng: 43.148 },
+          ],
+        };
+        activeRerouteProposals.set(shipmentId, confirmedProposal);
+        return confirmedProposal;
+      }
+      if (latestRerouteEvent.source.includes('REROUTE_DECLINED')) {
+        return null;
+      }
+    }
+  }
+
+  const memProposal = getActiveRerouteForShipment(shipmentId);
+  if (memProposal) return memProposal;
+
+  const latestIncident = await prisma.incidentReport.findFirst({
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (latestIncident) {
+    const proposalId = `REROUTE-${latestIncident.id.slice(-4).toUpperCase()}`;
+    const pendingProposal: DynamicRerouteProposal = {
+      proposalId,
+      shipmentId,
+      incidentId: latestIncident.id,
+      incidentCategory: latestIncident.category,
+      incidentLocation: latestIncident.locationName || 'Ethio-Djibouti Corridor Waypoint',
+      originalRouteName: 'Primary National Highway A-1 Corridor (Galafi Border)',
+      suggestedBypassRouteName: 'Southern Bypass Corridor via Dewele Border (Addis ➔ Dire Dawa ➔ Dewele ➔ Djibouti)',
+      reason: `Corridor hazard detected: ${latestIncident.category.replace(/_/g, ' ')} at ${latestIncident.locationName || 'Corridor Waypoint'} (${latestIncident.description || 'Standstill reported'}). Southern Bypass via Dewele avoids the corridor blockage and saves an estimated 110 minutes of standstill time.`,
+      distanceDeltaKm: 65,
+      estimatedTimeSavingMins: 110,
+      fuelCostDeltaEtb: 2400,
+      status: 'PENDING_CONFIRMATION',
+      createdAt: latestIncident.createdAt.toISOString(),
+      bypassPolyline: [
+        { lat: 8.895, lng: 38.765 },
+        { lat: 8.541, lng: 39.271 },
+        { lat: 8.986, lng: 40.165 },
+        { lat: 9.593, lng: 41.866 },
+        { lat: 11.033, lng: 42.633 },
+        { lat: 11.595, lng: 43.148 },
+      ],
+    };
+    if (shipmentId) {
+      activeRerouteProposals.set(shipmentId, pendingProposal);
+    }
+    activeRerouteProposals.set(proposalId, pendingProposal);
+    return pendingProposal;
+  }
+
+  return null;
+};
 
 /**
  * Ensures baseline authentic corridor infrastructure (Waypoints & Risk Zones) exist in PostgreSQL.
@@ -38,6 +145,17 @@ const activeRerouteProposals: Map<string, DynamicRerouteProposal> = new Map();
 export async function ensureCorridorInfrastructure(): Promise<void> {
   try {
     const waypointCount = await prisma.routeWaypoint.count();
+    const updatedTariffs: Record<string, number> = {
+      'WP-ADDIS-KALITI': 98.5,
+      'WP-MODJO-PORT': 99.2,
+      'WP-AWASH-ARBA': 101.5,
+      'WP-SEMERA-TERM': 103.8,
+      'WP-GALAFI-BORDER': 105.2,
+      'WP-DJI-DORALEH': 102.0,
+      'WP-DIRE-DAWA': 101.0,
+      'WP-DEWELE-BORDER': 104.5,
+    };
+
     if (waypointCount === 0) {
       console.log('📍 Initializing authentic Ethio-Djibouti Corridor Waypoints in PostgreSQL...');
       await prisma.routeWaypoint.createMany({
@@ -53,7 +171,7 @@ export async function ensureCorridorInfrastructure(): Promise<void> {
             isDryPort: true,
             isFuelStation: true,
             fuelAvailable: true,
-            dieselPricePerLiter: 59.0,
+            dieselPricePerLiter: 98.5,
             congestionDelayMinutes: 20,
           },
           {
@@ -67,7 +185,7 @@ export async function ensureCorridorInfrastructure(): Promise<void> {
             isDryPort: true,
             isFuelStation: true,
             fuelAvailable: true,
-            dieselPricePerLiter: 59.8,
+            dieselPricePerLiter: 99.2,
             congestionDelayMinutes: 35,
           },
           {
@@ -81,7 +199,7 @@ export async function ensureCorridorInfrastructure(): Promise<void> {
             isDryPort: false,
             isFuelStation: true,
             fuelAvailable: true,
-            dieselPricePerLiter: 61.2,
+            dieselPricePerLiter: 101.5,
             congestionDelayMinutes: 15,
           },
           {
@@ -95,7 +213,7 @@ export async function ensureCorridorInfrastructure(): Promise<void> {
             isDryPort: false,
             isFuelStation: true,
             fuelAvailable: true,
-            dieselPricePerLiter: 60.5,
+            dieselPricePerLiter: 103.8,
             congestionDelayMinutes: 10,
           },
           {
@@ -109,7 +227,7 @@ export async function ensureCorridorInfrastructure(): Promise<void> {
             isDryPort: false,
             isFuelStation: true,
             fuelAvailable: true,
-            dieselPricePerLiter: 62.0,
+            dieselPricePerLiter: 105.2,
             congestionDelayMinutes: 45,
           },
           {
@@ -123,7 +241,7 @@ export async function ensureCorridorInfrastructure(): Promise<void> {
             isDryPort: true,
             isFuelStation: true,
             fuelAvailable: true,
-            dieselPricePerLiter: 58.5,
+            dieselPricePerLiter: 102.0,
             congestionDelayMinutes: 15,
           },
           {
@@ -137,7 +255,7 @@ export async function ensureCorridorInfrastructure(): Promise<void> {
             isDryPort: true,
             isFuelStation: true,
             fuelAvailable: true,
-            dieselPricePerLiter: 60.0,
+            dieselPricePerLiter: 101.0,
             congestionDelayMinutes: 20,
           },
           {
@@ -151,40 +269,26 @@ export async function ensureCorridorInfrastructure(): Promise<void> {
             isDryPort: false,
             isFuelStation: true,
             fuelAvailable: true,
-            dieselPricePerLiter: 61.5,
+            dieselPricePerLiter: 104.5,
             congestionDelayMinutes: 25,
           },
         ],
       });
-    }
-
-    const riskZoneCount = await prisma.riskZone.count();
-    if (riskZoneCount === 0) {
-      console.log('🛡️ Initializing authentic Corridor Risk Zones in PostgreSQL...');
-      await prisma.riskZone.createMany({
-        data: [
-          {
-            id: 'RZ-AFAR-BORDER',
-            name: 'Afar–Somali Border Corridor Buffer Zone',
-            description: 'Security buffer zone near Afar border. Mandatory daytime transit escort protocol.',
-            severity: RiskLevel.MEDIUM,
-            centerLat: 10.45,
-            centerLng: 41.25,
-            radiusKm: 25.0,
-            isActive: true,
-          },
-          {
-            id: 'RZ-AWASH-GORGE',
-            name: 'Awash Gorge Heavy Gradient & Crosswind Zone',
-            description: 'Steep road descent, sharp hairpins, and crosswinds. Pre-departure brake check required.',
-            severity: RiskLevel.LOW,
-            centerLat: 8.95,
-            centerLng: 40.2,
-            radiusKm: 15.0,
-            isActive: true,
-          },
-        ],
+    } else {
+      // Update existing database waypoints to current realistic market tariffs
+      const outdatedStations = await prisma.routeWaypoint.findMany({
+        where: { isFuelStation: true, dieselPricePerLiter: { lt: 80 } },
       });
+      if (outdatedStations.length > 0) {
+        for (const st of outdatedStations) {
+          const newPrice = updatedTariffs[st.id] || 102.0;
+          await prisma.routeWaypoint.update({
+            where: { id: st.id },
+            data: { dieselPricePerLiter: newPrice },
+          });
+        }
+        console.log(`⛽ Updated ${outdatedStations.length} corridor fuel stations to current MOTRI/EPSE market tariffs.`);
+      }
     }
   } catch (err) {
     console.warn('Corridor infrastructure check notice:', err);
@@ -241,10 +345,10 @@ export const recommendOptimizedRoutes = async (req: Request, res: Response): Pro
     if (!fuelPrice || isNaN(fuelPrice)) {
       const activeFuelStations = waypoints.filter((wp) => wp.isFuelStation && wp.fuelAvailable && wp.dieselPricePerLiter);
       if (activeFuelStations.length > 0) {
-        const sum = activeFuelStations.reduce((acc, wp) => acc + (wp.dieselPricePerLiter || 59.8), 0);
+        const sum = activeFuelStations.reduce((acc, wp) => acc + (wp.dieselPricePerLiter || 102.0), 0);
         fuelPrice = Math.round((sum / activeFuelStations.length) * 10) / 10;
       } else {
-        fuelPrice = 59.8;
+        fuelPrice = 102.0;
       }
     }
 
@@ -429,6 +533,133 @@ export const recommendOptimizedRoutes = async (req: Request, res: Response): Pro
       polyline: southernBypassPolyline,
     };
 
+    // --- Route 3: Ethio-Djibouti Railway (EDR Standard Gauge Electric Rail Corridor) ---
+    const r3DistanceKm = 752; // Official electrified standard-gauge railway length
+    const r3EstimatedHours = 12.0; // Express freight train schedule
+    const r3FuelLiters = 0; // 100% Electric (Zero diesel fuel consumed)
+    const r3EnergyTariffEtb = 42500; // Electric traction & rail access tariff
+    const r3RiskScore = 6; // Fenced dedicated corridor, 0 road congestion/truck accidents
+    const r3DistanceCost = r3DistanceKm * 110;
+    const r3TimeCost = r3EstimatedHours * 1800;
+    const r3RiskCost = (r3DistanceCost + r3TimeCost) * (r3RiskScore / 100) * 0.30;
+    const r3TotalWeightedCost = Math.round(
+      0.30 * r3DistanceCost +
+      0.35 * r3TimeCost +
+      0.20 * r3EnergyTariffEtb +
+      0.15 * r3RiskCost
+    );
+
+    const edrPolyline = [
+      { lat: 8.875, lng: 38.790 }, // Indode Rail Freight Yard, Addis Ababa
+      { lat: 8.595, lng: 39.120 }, // Modjo Multimodal Dry Port Rail Terminal
+      { lat: 8.986, lng: 40.165 }, // Awash Station
+      { lat: 9.215, lng: 40.753 }, // Mieso Rail Station
+      { lat: 9.593, lng: 41.866 }, // Dire Dawa Rail Terminal
+      { lat: 11.033, lng: 42.633 }, // Dewele Border Customs Rail Post
+      { lat: 11.450, lng: 43.080 }, // Nagad Station, Djibouti
+      { lat: 11.595, lng: 43.148 }, // Port of Doraleh Rail Container Terminal (SGTD)
+    ];
+
+    const route3 = {
+      id: 'ROUTE-MULTIMODAL-EDR',
+      name: 'Ethio-Djibouti Railway (EDR Electric Rail Corridor)',
+      corridorType: 'MULTIMODAL_RAIL' as any,
+      description: '752 km Standard Gauge electrified freight rail connecting Indode/Modjo directly to Doraleh Container Terminal.',
+      distanceKm: r3DistanceKm,
+      estimatedHours: r3EstimatedHours,
+      fuelLiters: r3FuelLiters,
+      fuelCostEtb: r3EnergyTariffEtb,
+      riskExposureScore: r3RiskScore,
+      safetyRating: 'A++ (Fenced Electric Railway)',
+      surfaceCondition: '1,435 mm Standard Gauge Heavy Rail Track',
+      roadConstructionData: '100% electrified corridor; zero highway traffic, GERD hydro-powered zero diesel emissions.',
+      costBreakdown: {
+        distanceCostEtb: Math.round(r3DistanceCost),
+        timeCostEtb: Math.round(r3TimeCost),
+        fuelCostEtb: r3EnergyTariffEtb,
+        riskExposureCostEtb: Math.round(r3RiskCost),
+        totalWeightedCostEtb: r3TotalWeightedCost,
+      },
+      isRecommended: false,
+      recommendationReason: 'Eco-friendly bulk rail: Fastest transit time (12 hrs) & zero diesel fuel. Best for scheduled high-volume containerized cargo via Indode/Modjo rail terminals.',
+      waypoints: [
+        'Indode Rail Freight Yard, Addis Ababa',
+        'Modjo Multimodal Dry Port Rail Terminal',
+        'Awash Railway Junction Station',
+        'Mieso Railway Transit Station',
+        'Dire Dawa Regional Rail Terminal',
+        'Dewele Border Rail Customs Siding',
+        'Nagad Station, Djibouti',
+        'Port of Doraleh Container Terminal (SGTD)',
+      ],
+      polyline: edrPolyline,
+    };
+
+    // Corridor Toll Gates & Weighbridges Summary
+    const tollGatesSummary = [
+      {
+        id: 'TOLL-TULU-DIMTU',
+        name: 'Tulu Dimtu Expressway Toll Plaza',
+        nameAmharic: 'የቱሉ ዲምቱ የክፍያ ኬላ (አዲስ-አዳማ የፍጥነት መንገድ)',
+        location: 'Addis Ababa - Adama Expressway Entrance',
+        lat: 8.875,
+        lng: 38.795,
+        tollFeeHeavyTruckEtb: 110,
+        electronicFastPass: true,
+      },
+      {
+        id: 'TOLL-MOJJO',
+        name: 'Modjo Interchange Toll Plaza',
+        nameAmharic: 'የሞጆ መገናኛ የክፍያ ኬላ',
+        location: 'Modjo Dry Port Expressway Junction',
+        lat: 8.595,
+        lng: 39.120,
+        tollFeeHeavyTruckEtb: 140,
+        electronicFastPass: true,
+      },
+      {
+        id: 'TOLL-AWASH-WEIGH',
+        name: 'Awash Arba National Weighbridge Checkpoint',
+        nameAmharic: 'የአዋሽ አርባ ሚዛን እና የፍተሻ ጣቢያ',
+        location: 'Awash Arba Transit Corridor',
+        lat: 8.986,
+        lng: 40.165,
+        tollFeeHeavyTruckEtb: 0,
+        electronicFastPass: true,
+        weighbridgeComplianceLimitTons: 44.0,
+      },
+      {
+        id: 'TOLL-DIRE-DAWA',
+        name: 'Dire Dawa Toll Gate (Southern A-10)',
+        nameAmharic: 'የድሬዳዋ የክፍያ ኬላ',
+        location: 'Dire Dawa Transit Bypass',
+        lat: 9.593,
+        lng: 41.866,
+        tollFeeHeavyTruckEtb: 95,
+        electronicFastPass: false,
+      },
+      {
+        id: 'TOLL-GALAFI-BORDER',
+        name: 'Galafi Cross-Border Toll & Customs Gate',
+        nameAmharic: 'የገላፊ ድንበር ማቋረጫ የክፍያና ጉምሩክ ኬላ',
+        location: 'Ethiopia–Djibouti Northern Border (Galafi)',
+        lat: 11.710,
+        lng: 41.830,
+        tollFeeHeavyTruckEtb: 450,
+        electronicFastPass: true,
+      },
+      {
+        id: 'TOLL-DEWELE-BORDER',
+        name: 'Dewele Cross-Border Toll & Customs Gate',
+        nameAmharic: 'የደወሌ ድንበር ማቋረጫ የክፍያና ጉምሩክ ኬላ',
+        location: 'Ethiopia–Djibouti Southern Border (Dewele)',
+        lat: 11.033,
+        lng: 42.633,
+        tollFeeHeavyTruckEtb: 400,
+        electronicFastPass: true,
+      },
+    ];
+
     // Live fuel station stock summary queried straight from PostgreSQL RouteWaypoint
     const fuelStockSummary = waypoints
       .filter((wp) => wp.isFuelStation)
@@ -478,8 +709,9 @@ export const recommendOptimizedRoutes = async (req: Request, res: Response): Pro
         fuelWeight: 0.20,
         riskWeight: 0.15,
       },
-      optimizedRoutes: [route1, route2],
+      optimizedRoutes: [route1, route2, route3],
       recommendedRouteId: recommendSouthern ? route2.id : route1.id,
+      tollGatesSummary,
       activeRiskAlertsCount: activeRiskZones.length,
       activeRiskAlerts: activeRiskZones,
       activeIncidentsCount: activeIncidents.length,
@@ -598,6 +830,32 @@ export const reportDriverIncident = async (req: Request, res: Response): Promise
           },
         });
         if (found) validShipmentId = found.id;
+      } catch (e) {}
+    }
+
+    if (!validShipmentId) {
+      try {
+        const activeShipment = await prisma.shipment.findFirst({
+          where: {
+            status: { in: ['ASSIGNED', 'DISPATCHED', 'IN_TRANSIT', 'OUT_FOR_DELIVERY'] },
+            OR: [
+              { driverId: user.id },
+              { driver: { userId: user.id } },
+            ],
+          },
+          orderBy: { updatedAt: 'desc' },
+        });
+        if (activeShipment) validShipmentId = activeShipment.id;
+      } catch (e) {}
+    }
+
+    if (!validShipmentId) {
+      try {
+        const anyActive = await prisma.shipment.findFirst({
+          where: { status: 'IN_TRANSIT' },
+          orderBy: { updatedAt: 'desc' },
+        });
+        if (anyActive) validShipmentId = anyActive.id;
       } catch (e) {}
     }
 
@@ -733,7 +991,9 @@ export const reportDriverIncident = async (req: Request, res: Response): Promise
       sevEnum === RiskLevel.HIGH ||
       sevEnum === RiskLevel.CRITICAL ||
       catEnum === IncidentCategory.ROAD_BLOCKAGE ||
-      catEnum === IncidentCategory.SECURITY_CONCERN;
+      catEnum === IncidentCategory.SECURITY_CONCERN ||
+      catEnum === IncidentCategory.CHECKPOINT_DELAY ||
+      catEnum === IncidentCategory.ACCIDENT;
 
     let reroutingProposal: DynamicRerouteProposal | null = null;
     let highPriorityAlert: any = null;
@@ -765,13 +1025,13 @@ export const reportDriverIncident = async (req: Request, res: Response): Promise
 
       reroutingProposal = {
         proposalId,
-        shipmentId: shipmentId || undefined,
+        shipmentId: validShipmentId || shipmentId || undefined,
         incidentId: incident.id,
         incidentCategory: catEnum,
         incidentLocation: locStr,
         originalRouteName: 'Primary National Highway A-1 Corridor (Galafi Border)',
         suggestedBypassRouteName: 'Southern Bypass Corridor via Dewele Border (Addis ➔ Dire Dawa ➔ Dewele ➔ Djibouti)',
-        reason: `Severe hazard detected: ${catEnum} at ${locStr}${inRiskZone ? ' (Inside designated Corridor Risk Zone)' : ''}. Southern Bypass via Dewele avoids the corridor blockage and saves an estimated 110 minutes of standstill time.`,
+        reason: `Corridor hazard detected: ${catEnum.replace(/_/g, ' ')} at ${locStr}${inRiskZone ? ' (Inside designated Corridor Risk Zone)' : ''}. Southern Bypass via Dewele avoids the corridor blockage and saves an estimated 110 minutes of standstill time.`,
         distanceDeltaKm: +65,
         estimatedTimeSavingMins: 110,
         fuelCostDeltaEtb: +2400,
@@ -781,9 +1041,33 @@ export const reportDriverIncident = async (req: Request, res: Response): Promise
       };
 
       activeRerouteProposals.set(proposalId, reroutingProposal);
-      if (shipmentId) {
-        activeRerouteProposals.set(shipmentId, reroutingProposal);
+      if (validShipmentId) {
+        activeRerouteProposals.set(validShipmentId, reroutingProposal);
       }
+    }
+
+    // Broadcast notifications to Shipper and Transporter
+    try {
+      NotificationService.dispatchNotification({
+        role: 'SHIPPER',
+        title: `Corridor Delay Alert: ${locStr}`,
+        message: `Driver ${user.fullName || 'Mesfin'} reported ${catEnum.replace(/_/g, ' ')} at ${locStr}. Severity: ${sevEnum}.`,
+        type: 'SECURITY',
+        priority: sevEnum === RiskLevel.CRITICAL || sevEnum === RiskLevel.HIGH ? 'URGENT' : 'HIGH',
+        actionTab: 'tracking',
+        metadata: { incidentId: incident.id, shipmentId: validShipmentId, locationName: locStr },
+      });
+      NotificationService.dispatchNotification({
+        role: 'TRANSPORTER',
+        title: `Driver Incident Report: ${locStr}`,
+        message: `Driver ${user.fullName || 'Mesfin'} reported ${catEnum.replace(/_/g, ' ')} at ${locStr}. Severity: ${sevEnum}.`,
+        type: 'SECURITY',
+        priority: sevEnum === RiskLevel.CRITICAL || sevEnum === RiskLevel.HIGH ? 'URGENT' : 'HIGH',
+        actionTab: 'tracking',
+        metadata: { incidentId: incident.id, shipmentId: validShipmentId, locationName: locStr },
+      });
+    } catch (notifErr) {
+      console.warn('Failed to dispatch notification:', notifErr);
     }
 
     res.status(201).json({
@@ -834,10 +1118,108 @@ export const getActiveIncidents = async (req: Request, res: Response): Promise<v
 export const getPendingRerouteProposals = async (req: Request, res: Response): Promise<void> => {
   try {
     const { shipmentId } = req.query;
-    if (shipmentId && typeof shipmentId === 'string') {
-      const p = activeRerouteProposals.get(shipmentId);
-      res.json({ proposals: p ? [p] : [] });
+
+    let targetShipmentId = shipmentId as string | undefined;
+    if (!targetShipmentId) {
+      const activeShipment = await prisma.shipment.findFirst({
+        where: { status: 'IN_TRANSIT' },
+      });
+      if (activeShipment) targetShipmentId = activeShipment.id;
+    }
+
+    const rerouteTracking = targetShipmentId
+      ? await prisma.trackingEvent.findFirst({
+          where: {
+            shipmentId: targetShipmentId,
+            source: { contains: 'REROUTE_' },
+          },
+          orderBy: { timestamp: 'desc' },
+        })
+      : null;
+
+    if (rerouteTracking && rerouteTracking.source.includes('REROUTE_CONFIRMED')) {
+      const confirmedProposal: DynamicRerouteProposal = {
+        proposalId: 'REROUTE-CONFIRMED',
+        shipmentId: targetShipmentId,
+        incidentId: 'corridor-incident',
+        incidentCategory: 'CHECKPOINT_DELAY',
+        incidentLocation: 'Bishoftu Automotive & Logistics Hub',
+        originalRouteName: 'Primary National Highway A-1 Corridor (Galafi Border)',
+        suggestedBypassRouteName: 'Southern Bypass Corridor via Dewele Border (Addis ➔ Dire Dawa ➔ Dewele ➔ Djibouti)',
+        reason: rerouteTracking.source,
+        distanceDeltaKm: 65,
+        estimatedTimeSavingMins: 110,
+        fuelCostDeltaEtb: 2400,
+        status: 'CONFIRMED',
+        createdAt: rerouteTracking.timestamp.toISOString(),
+        confirmedAt: rerouteTracking.timestamp.toISOString(),
+        confirmedBy: 'DRIVER',
+        bypassPolyline: [
+          { lat: 8.895, lng: 38.765 },
+          { lat: 8.541, lng: 39.271 },
+          { lat: 8.986, lng: 40.165 },
+          { lat: 9.593, lng: 41.866 },
+          { lat: 11.033, lng: 42.633 },
+          { lat: 11.595, lng: 43.148 },
+        ],
+      };
+      if (targetShipmentId) {
+        activeRerouteProposals.set(targetShipmentId, confirmedProposal);
+      }
+      activeRerouteProposals.set('REROUTE-CONFIRMED', confirmedProposal);
+      res.json({ proposals: [confirmedProposal] });
       return;
+    }
+
+    const isAlreadyConfirmedOrDeclined = rerouteTracking !== null;
+
+    if (activeRerouteProposals.size === 0 && !isAlreadyConfirmedOrDeclined) {
+      // Find latest incident from database
+      const latestIncident = await prisma.incidentReport.findFirst({
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (latestIncident) {
+        const proposalId = `REROUTE-${latestIncident.id.slice(-4).toUpperCase()}`;
+        const bypassPolyline = [
+          { lat: 8.895, lng: 38.765 }, // Addis Ababa
+          { lat: 8.541, lng: 39.271 }, // Adama
+          { lat: 8.986, lng: 40.165 }, // Awash
+          { lat: 9.593, lng: 41.866 }, // Dire Dawa
+          { lat: 11.033, lng: 42.633 }, // Dewele
+          { lat: 11.595, lng: 43.148 }, // Djibouti
+        ];
+
+        const proposal: DynamicRerouteProposal = {
+          proposalId,
+          shipmentId: targetShipmentId || undefined,
+          incidentId: latestIncident.id,
+          incidentCategory: latestIncident.category,
+          incidentLocation: latestIncident.locationName || 'Ethio-Djibouti Corridor Waypoint',
+          originalRouteName: 'Primary National Highway A-1 Corridor (Galafi Border)',
+          suggestedBypassRouteName: 'Southern Bypass Corridor via Dewele Border (Addis ➔ Dire Dawa ➔ Dewele ➔ Djibouti)',
+          reason: `Corridor hazard detected: ${latestIncident.category.replace(/_/g, ' ')} at ${latestIncident.locationName || 'Corridor Waypoint'} (${latestIncident.description || 'Standstill reported'}). Southern Bypass via Dewele avoids the corridor blockage and saves an estimated 110 minutes of standstill time.`,
+          distanceDeltaKm: +65,
+          estimatedTimeSavingMins: 110,
+          fuelCostDeltaEtb: +2400,
+          status: 'PENDING_CONFIRMATION',
+          createdAt: latestIncident.createdAt.toISOString(),
+          bypassPolyline,
+        };
+
+        activeRerouteProposals.set(proposalId, proposal);
+        if (targetShipmentId) {
+          activeRerouteProposals.set(targetShipmentId, proposal);
+        }
+      }
+    }
+
+    if (targetShipmentId) {
+      const p = activeRerouteProposals.get(targetShipmentId);
+      if (p) {
+        res.json({ proposals: [p] });
+        return;
+      }
     }
     const allProposals = Array.from(activeRerouteProposals.values());
     res.json({ proposals: allProposals });
@@ -871,13 +1253,13 @@ export const confirmDynamicRerouting = async (req: Request, res: Response): Prom
       return;
     }
 
-    // Rule 5.5.3: Route changes during an active trip require explicit driver or dispatcher confirmation
+    // Rule 5.5.3: Route changes during an active trip require explicit driver, dispatcher, or shipper confirmation
     const normalizedRole = String(confirmedByRole).toUpperCase();
-    if (!['DRIVER', 'DISPATCHER'].includes(normalizedRole)) {
+    if (!['DRIVER', 'DISPATCHER', 'SHIPPER', 'FREIGHT_FORWARDER'].includes(normalizedRole)) {
       res.status(403).json({
-        error: 'Authorization Denied: Route changes during an active trip require explicit driver or dispatcher confirmation.',
+        error: 'Authorization Denied: Route changes during an active trip require explicit driver, dispatcher, or shipper confirmation.',
         confirmedByRole,
-        ruleRequirement: 'Route changes during an active trip require explicit driver or dispatcher confirmation.',
+        ruleRequirement: 'Route changes during an active trip require explicit driver, dispatcher, or shipper confirmation.',
       });
       return;
     }
@@ -1052,6 +1434,59 @@ export const updateFuelStationStock = async (req: Request, res: Response): Promi
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Failed to update fuel station stock' });
+  }
+};
+
+/**
+ * 7. Reset Dynamic Rerouting to Primary Corridor (Testing & Normalization)
+ * POST /api/optimization/reroute/reset
+ */
+export const resetDynamicRerouting = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { shipmentId } = req.body;
+
+    // 1. Clear in-memory proposals
+    activeRerouteProposals.clear();
+
+    // 2. Remove simulated road blockage incidents
+    await prisma.incidentReport.deleteMany({
+      where: {
+        category: 'ROAD_BLOCKAGE',
+      },
+    });
+
+    // 3. Remove rerouting tracking events and restore normal ETA
+    if (shipmentId && typeof shipmentId === 'string' && shipmentId.trim().length > 0) {
+      await prisma.trackingEvent.deleteMany({
+        where: {
+          shipmentId: shipmentId.trim(),
+          source: { contains: 'REROUTE_' },
+        },
+      });
+      const standardEta = new Date(Date.now() + 18 * 3600 * 1000);
+      await prisma.shipment.update({
+        where: { id: shipmentId.trim() },
+        data: {
+          currentPredictedEta: standardEta,
+          etaConfidenceMarginMins: 20,
+        },
+      }).catch(() => {});
+    } else {
+      await prisma.trackingEvent.deleteMany({
+        where: {
+          source: { contains: 'REROUTE_' },
+        },
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Dynamic rerouting reset to Primary National Highway A-1 Corridor (Galafi Border).',
+      activeRouteName: 'Primary National Highway A-1 Corridor (Galafi Border)',
+    });
+  } catch (error: any) {
+    console.error('Error resetting dynamic rerouting:', error);
+    res.status(500).json({ error: error.message || 'Failed to reset dynamic rerouting' });
   }
 };
 

@@ -2,6 +2,7 @@ import React from 'react';
 import { Route, MapPin } from 'lucide-react';
 import { LocationData } from '../types';
 import { resolveCorridorCoordinates, calculateCorridorRoadDistanceKm } from '@tradeflow/shared';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface RouteLocationPickerCardProps {
   originLocation: LocationData;
@@ -24,16 +25,28 @@ export const RouteLocationPickerCard: React.FC<RouteLocationPickerCardProps> = (
   onOpenOriginPicker,
   onOpenDestinationPicker,
 }) => {
+  const { language } = useLanguage();
+
   return (
     <div className="space-y-3 pt-2">
       <div className="flex items-center justify-between">
         <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
           <Route className="w-4 h-4 text-sky-600" />
-          <span>Route Pickers (Origin & Destination)</span>
+          <span>
+            {language === 'AM'
+              ? 'የመነሻ እና መድረሻ መምረጫ'
+              : language === 'OM'
+              ? 'Filannoo Ka\'umsaa fi Ga\'umsaa'
+              : 'Route Pickers (Origin & Destination)'}
+          </span>
         </h3>
         {corridorDistanceKm > 0 && (
           <span className="text-[11px] font-mono font-bold text-sky-700 bg-sky-100/70 px-2.5 py-1 rounded-lg">
-            Distance: {corridorDistanceKm} km
+            {language === 'AM'
+              ? `ርቀት፦ ${corridorDistanceKm} ኪ.ሜ`
+              : language === 'OM'
+              ? `Fageenya: ${corridorDistanceKm} km`
+              : `Distance: ${corridorDistanceKm} km`}
           </span>
         )}
       </div>
@@ -44,7 +57,13 @@ export const RouteLocationPickerCard: React.FC<RouteLocationPickerCardProps> = (
           <div className="flex items-center justify-between">
             <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span>Origin (Pickup Point) *</span>
+              <span>
+                {language === 'AM'
+                  ? 'መነሻ (የመጫኛ ቦታ) *'
+                  : language === 'OM'
+                  ? 'Ka\'umsa (Bakka Fudhatamaa) *'
+                  : 'Origin (Pickup Point) *'}
+              </span>
             </label>
             {originLocation.lat !== 0 && (
               <span className="text-[9.5px] font-mono text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded shrink-0">
@@ -82,7 +101,7 @@ export const RouteLocationPickerCard: React.FC<RouteLocationPickerCardProps> = (
               className="px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer"
             >
               <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Pick Map</span>
+              <span>{language === 'AM' ? 'ካርታ ምረጥ' : language === 'OM' ? 'Kaartaa Fili' : 'Pick Map'}</span>
             </button>
           </div>
         </div>
@@ -92,7 +111,13 @@ export const RouteLocationPickerCard: React.FC<RouteLocationPickerCardProps> = (
           <div className="flex items-center justify-between">
             <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-sky-500" />
-              <span>Destination (Delivery Point) *</span>
+              <span>
+                {language === 'AM'
+                  ? 'መድረሻ (የማራገፊያ ቦታ) *'
+                  : language === 'OM'
+                  ? 'Ga\'umsa (Bakka Geessisaa) *'
+                  : 'Destination (Delivery Point) *'}
+              </span>
             </label>
             {destinationLocation.lat !== 0 && (
               <span className="text-[9.5px] font-mono text-sky-700 font-bold bg-sky-50 px-2 py-0.5 rounded shrink-0">
@@ -130,7 +155,7 @@ export const RouteLocationPickerCard: React.FC<RouteLocationPickerCardProps> = (
               className="px-3 py-2 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 text-xs font-bold flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer"
             >
               <MapPin className="w-3.5 h-3.5 text-sky-600" />
-              <span>Pick Map</span>
+              <span>{language === 'AM' ? 'ካርታ ምረጥ' : language === 'OM' ? 'Kaartaa Fili' : 'Pick Map'}</span>
             </button>
           </div>
         </div>
@@ -146,23 +171,29 @@ export const RouteLocationPickerCard: React.FC<RouteLocationPickerCardProps> = (
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-sky-800 bg-sky-100 px-2 py-0.5 rounded-full border border-sky-200">
-                  ERA Highway Network
+                  {language === 'AM' ? 'የኢትዮጵያ መንገዶች ባለስልጣን ኮሪደር' : language === 'OM' ? 'Daandiiwwan Koriidaraa' : 'ERA Highway Network'}
                 </span>
                 <span className="text-[10px] font-mono text-emerald-800 font-bold bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
-                  Exact Ground GPS
+                  {language === 'AM' ? 'ትክክለኛ GPS' : language === 'OM' ? 'GPS Sirrii' : 'Exact Ground GPS'}
                 </span>
               </div>
               <div className="text-xs font-bold text-slate-800 mt-1 flex flex-wrap items-center gap-1.5">
-                <span className="text-emerald-700 font-semibold">{originLocation.address || 'Select Origin'}</span>
+                <span className="text-emerald-700 font-semibold">
+                  {originLocation.address || (language === 'AM' ? 'መነሻ ይምረጡ' : language === 'OM' ? 'Ka\'umsa Fili' : 'Select Origin')}
+                </span>
                 <span className="text-sky-600 font-black">➔</span>
-                <span className="text-sky-700 font-semibold">{destinationLocation.address || 'Select Destination'}</span>
+                <span className="text-sky-700 font-semibold">
+                  {destinationLocation.address || (language === 'AM' ? 'መድረሻ ይምረጡ' : language === 'OM' ? 'Ga\'umsa Fili' : 'Select Destination')}
+                </span>
               </div>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-4 shrink-0 sm:border-l sm:border-slate-200 sm:pl-5">
             <div>
-              <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Ground Road Distance</div>
+              <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                {language === 'AM' ? 'የየብስ የመንገድ ርቀት' : language === 'OM' ? 'Fageenya Daandii' : 'Ground Road Distance'}
+              </div>
               <div className="text-lg sm:text-xl font-black text-slate-900">
                 {calculateCorridorRoadDistanceKm(
                   originLocation.address,
@@ -171,11 +202,13 @@ export const RouteLocationPickerCard: React.FC<RouteLocationPickerCardProps> = (
                   originLocation.lng || undefined,
                   destinationLocation.lat || undefined,
                   destinationLocation.lng || undefined
-                )} km
+                )} {language === 'AM' ? 'ኪ.ሜ' : 'km'}
               </div>
             </div>
             <div>
-              <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Est. Drive Time</div>
+              <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                {language === 'AM' ? 'የሚፈጀው ግምታዊ ሰዓት' : language === 'OM' ? 'Yeroo Imalaa Tilmaamamaa' : 'Est. Drive Time'}
+              </div>
               <div className="text-lg sm:text-xl font-black text-emerald-700">
                 ~{(
                   calculateCorridorRoadDistanceKm(
@@ -186,7 +219,7 @@ export const RouteLocationPickerCard: React.FC<RouteLocationPickerCardProps> = (
                     destinationLocation.lat || undefined,
                     destinationLocation.lng || undefined
                   ) / 48
-                ).toFixed(1)} hrs
+                ).toFixed(1)} {language === 'AM' ? 'ሰዓት' : language === 'OM' ? 'sa\'a' : 'hrs'}
               </div>
             </div>
           </div>

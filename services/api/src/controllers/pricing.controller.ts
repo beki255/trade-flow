@@ -563,3 +563,22 @@ export const getPricingAuditLogs = async (req: Request, res: Response): Promise<
   }
 };
 
+/**
+ * 7. Delete / Cancel a Contract
+ * DELETE /api/pricing/contracts/:id
+ */
+export const deleteContract = async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  lockedContractsStore = lockedContractsStore.filter((c) => c.id !== id && c.contractCode !== id);
+  res.json({ success: true, message: 'Contract removed successfully' });
+};
+
+/**
+ * 8. Clear All Contracts (Testing reset)
+ * DELETE /api/pricing/contracts
+ */
+export const clearContracts = async (_req: Request, res: Response): Promise<void> => {
+  lockedContractsStore = [];
+  res.json({ success: true, message: 'All contracts cleared' });
+};
+

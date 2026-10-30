@@ -29,3 +29,208 @@
   background-color: #E0F2FE;
   border: 1px solid #BAE6FD;
 }
+
+/* ==========================================================================
+   TRADEFLOW DARK THEME ENGINE
+   When html has .dark (or .dark class), seamlessly theme all cards, surfaces,
+   texts, borders, inputs, and tables across every portal role.
+   ========================================================================== */
+
+html.dark body {
+  background-color: #0B0F19 !important;
+  color: #F8FAFC !important;
+}
+
+/* Background utilities */
+html.dark .bg-white {
+  background-color: #131B2E !important;
+}
+
+html.dark .bg-slate-50,
+html.dark .bg-slate-50\/70,
+html.dark .bg-slate-50\/50,
+html.dark .bg-slate-50\/40,
+html.dark .bg-slate-50\/30,
+html.dark .bg-gray-50 {
+  background-color: #0F172A !important;
+}
+
+html.dark .bg-slate-100,
+html.dark .bg-slate-100\/70,
+html.dark .bg-slate-100\/50,
+html.dark .bg-gray-100 {
+  background-color: #1E293B !important;
+}
+
+html.dark .bg-slate-200,
+html.dark .bg-gray-200 {
+  background-color: #334155 !important;
+}
+
+/* Border utilities */
+html.dark .border-slate-200,
+html.dark .border-slate-200\/90,
+html.dark .border-slate-200\/80,
+html.dark .border-slate-200\/70,
+html.dark .border-slate-200\/60,
+html.dark .border-slate-200\/50,
+html.dark .border-slate-300,
+html.dark .border-slate-100,
+html.dark .border-gray-200,
+html.dark .border-gray-100,
+html.dark .divide-slate-200,
+html.dark .divide-slate-100 {
+  border-color: #1E293B !important;
+}
+
+/* Text color utilities */
+html.dark .text-slate-900,
+html.dark .text-slate-800,
+html.dark .text-gray-900,
+html.dark .text-gray-800 {
+  color: #F8FAFC !important;
+}
+
+html.dark .text-slate-700,
+html.dark .text-gray-700 {
+  color: #E2E8F0 !important;
+}
+
+html.dark .text-slate-600,
+html.dark .text-gray-600 {
+  color: #94A3B8 !important;
+}
+
+html.dark .text-slate-500,
+html.dark .text-gray-500 {
+  color: #94A3B8 !important;
+}
+
+html.dark .text-slate-400,
+html.dark .text-gray-400 {
+  color: #64748B !important;
+}
+
+/* Colored highlight text for dark mode */
+html.dark .text-amber-700,
+html.dark .text-amber-800,
+html.dark .text-amber-900 {
+  color: #FBBF24 !important;
+}
+
+html.dark .text-emerald-700,
+html.dark .text-emerald-800,
+html.dark .text-emerald-900 {
+  color: #34D399 !important;
+}
+
+html.dark .text-rose-700,
+html.dark .text-rose-800,
+html.dark .text-rose-900 {
+  color: #F87171 !important;
+}
+
+html.dark .text-sky-700,
+html.dark .text-sky-800,
+html.dark .text-blue-700 {
+  color: #38BDF8 !important;
+}
+
+/* Subtle alert/accent card backgrounds */
+html.dark .bg-emerald-50,
+html.dark .bg-emerald-50\/40,
+html.dark .bg-emerald-50\/50,
+html.dark .bg-green-50 {
+  background-color: rgba(16, 185, 129, 0.12) !important;
+  border-color: rgba(16, 185, 129, 0.25) !important;
+}
+
+html.dark .bg-amber-50,
+html.dark .bg-amber-50\/90,
+html.dark .bg-amber-50\/80,
+html.dark .bg-amber-50\/70,
+html.dark .bg-yellow-50 {
+  background-color: rgba(245, 158, 11, 0.12) !important;
+  border-color: rgba(245, 158, 11, 0.25) !important;
+}
+
+html.dark .bg-rose-50,
+html.dark .bg-rose-50\/40,
+html.dark .bg-rose-50\/50,
+html.dark .bg-red-50 {
+  background-color: rgba(239, 68, 68, 0.12) !important;
+  border-color: rgba(239, 68, 68, 0.25) !important;
+}
+
+html.dark .bg-sky-50,
+html.dark .bg-sky-50\/50,
+html.dark .bg-sky-100\/50,
+html.dark .bg-blue-50 {
+  background-color: rgba(2, 132, 199, 0.12) !important;
+  border-color: rgba(2, 132, 199, 0.25) !important;
+}
+
+html.dark .bg-purple-50,
+html.dark .bg-indigo-50 {
+  background-color: rgba(139, 92, 246, 0.12) !important;
+  border-color: rgba(139, 92, 246, 0.25) !important;
+}
+
+/* Form Inputs, Selects, and Textareas */
+html.dark input:not([type="checkbox"]):not([type="radio"]),
+html.dark select,
+html.dark textarea {
+  background-color: #0F172A !important;
+  border-color: #334155 !important;
+  color: #F8FAFC !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #64748B !important;
+}
+
+/* Hover States */
+html.dark .hover\:bg-slate-50:hover,
+html.dark .hover\:bg-slate-100:hover,
+html.dark .hover\:bg-gray-50:hover {
+  background-color: #1E293B !important;
+}
+
+html.dark .hover\:text-slate-900:hover,
+html.dark .hover\:text-slate-800:hover {
+  color: #FFFFFF !important;
+}
+
+/* Tables */
+html.dark table {
+  color: #F8FAFC !important;
+}
+
+html.dark thead {
+  background-color: #0F172A !important;
+}
+
+html.dark th {
+  color: #94A3B8 !important;
+  border-color: #1E293B !important;
+}
+
+html.dark td {
+  border-color: #1E293B !important;
+}
+
+/* Modal and Dropdown Panels */
+html.dark .bg-white\/95,
+html.dark .bg-white\/90,
+html.dark .bg-white\/80 {
+  background-color: rgba(19, 27, 46, 0.95) !important;
+}
+
+/* Filter pills active/inactive states */
+html.dark .bg-slate-100 button.bg-white {
+  background-color: #0F172A !important;
+  color: #38BDF8 !important;
+  border: 1px solid #1E293B !important;
+}
+

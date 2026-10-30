@@ -23,6 +23,7 @@ export interface ShipmentItem {
   createdAt: string;
   bidsCount?: number;
   cargoDescription?: string;
+  bookingMethod?: 'INSTANT_MATCH' | 'COMPETITIVE_BIDDING' | string;
 }
 
 export interface BidItem {
@@ -74,6 +75,8 @@ export interface AIMatchCarrier {
   totalMatchScorePct: number;
   calculatedSpotRateEtb: number;
   assignedTruckPlate: string;
+  payloadCapacityTons?: number;
+  capacityMatched?: boolean;
   estimatedTransitHours: string;
   breakdownScores: {
     costOptimization: string | number;
@@ -137,7 +140,8 @@ export interface LockedContractItem {
   startDate: string;
   endDate: string;
   committedWeeklyLoads: number;
-  status: 'ACTIVE_LOCKED' | 'FLAGGED_FOR_RENEGOTIATION' | 'UNDER_RENEGOTIATION' | 'RENEGOTIATED_RENEWED';
+  status: 'ACTIVE_LOCKED' | 'FLAGGED_FOR_RENEGOTIATION' | 'UNDER_RENEGOTIATION' | 'RENEGOTIATED_RENEWED' | 'PENDING_ADMIN_APPROVAL';
+  adminApprovalRequired?: boolean;
   renegotiationNotes?: string;
   proposedNewRateEtb?: number;
   lastEvaluatedAt: string;

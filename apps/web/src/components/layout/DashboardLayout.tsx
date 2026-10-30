@@ -23,6 +23,9 @@ import {
   Activity,
   ShieldAlert,
   History,
+  Route,
+  Fuel,
+  BarChart3,
   LogOut,
   Bell,
   Menu,
@@ -32,9 +35,12 @@ import {
   TrendingUp,
   Globe,
   Settings,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { UserProfileSettingsModal } from '../profile/UserProfileSettingsModal';
+import { NotificationDropdown } from '../notifications/NotificationDropdown';
 
 interface NavItem {
   id: string;
@@ -75,7 +81,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 }) => {
   const { user, logout, isVerifyingSession } = useAuth();
   const { language, setLanguage, t } = useLanguage();
-  const { isDark } = useTheme();
+  const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -103,15 +109,18 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           { id: 'consignments', label: t('dashboard.nav.consignments'), icon: Package },
           { id: 'bids', label: t('dashboard.nav.bids'), icon: Gavel },
           { id: 'tracking', label: t('dashboard.nav.tracking'), icon: Navigation },
+          { id: 'route-optimization', label: language === 'AM' ? 'የመስመር ማመቻቸት' : language === 'OM' ? 'Mijeessuu Daandii' : 'Route Optimization', icon: Route },
           { id: 'documents', label: t('dashboard.nav.documents'), icon: FileText },
           { id: 'payments', label: t('dashboard.nav.payments'), icon: CreditCard },
           { id: 'pricing-contracts', label: t('dashboard.nav.pricingContracts'), icon: TrendingUp },
+          { id: 'fuel-analytics', label: language === 'AM' ? 'የነዳጅ ትንተና' : language === 'OM' ? 'Xiinxala Boba\'aa' : 'Fuel Analytics', icon: Fuel },
           { id: 'ratings', label: t('dashboard.nav.ratings'), icon: Star },
         ];
       case 'FORWARDER':
         return [
           { id: 'multi-shipper', label: t('dashboard.nav.multiShipper'), icon: Users },
           { id: 'consolidation', label: t('dashboard.nav.consolidation'), icon: Layers },
+          { id: 'transporter-bidding', label: language === 'AM' ? 'የአጓጓዥ ጨረታ' : language === 'OM' ? 'Caalbaasii Geejjibaa' : 'Transporter Bidding', icon: Gavel },
           { id: 'customs-coord', label: t('dashboard.nav.customsCoord'), icon: FileCheck2 },
           { id: 'multimodal', label: t('dashboard.nav.multimodal'), icon: GitMerge },
         ];
@@ -190,22 +199,30 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <span className="text-[10px] uppercase font-extrabold tracking-wider text-[#38BDF8]">
                 {portalInfo.badge}
               </span>
-              <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${
-                verificationStatus === 'VERIFIED'
-                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                  : verificationStatus === 'PENDING'
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                  : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-              }`}>
-                {verificationStatus}
-              </span>
+              {portalRole !== 'ADMIN' && (
+                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${
+                  verificationStatus === 'VERIFIED'
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    : verificationStatus === 'PENDING'
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                }`}>
+                  {verificationStatus}
+                </span>
+              )}
             </div>
             <span className="text-xs font-bold text-white truncate">
               {user?.companyName || user?.fullName || 'Active Session'}
             </span>
-            <div className="text-[10px] text-slate-400 truncate">
-              TIN: {user?.tin || '0098473621'}
-            </div>
+            {portalRole !== 'ADMIN' ? (
+              <div className="text-[10px] text-slate-400 truncate">
+                TIN: {user?.tin || '0098473621'}
+              </div>
+            ) : (
+              <div className="text-[10px] text-slate-400 truncate">
+                {user?.email || 'Platform Management & Control'}
+              </div>
+            )}
           </div>
         )}
 
@@ -290,9 +307,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 <span className="text-[10px] uppercase font-bold text-[#38BDF8]">
                   {portalInfo.badge}
                 </span>
-                <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/20 text-emerald-300">
-                  {verificationStatus}
-                </span>
+                {portalRole !== 'ADMIN' && (
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/20 text-emerald-300">
+                    {verificationStatus}
+                  </span>
+                )}
               </div>
               <div className="text-xs font-bold text-white truncate mt-1 flex items-center justify-between">
                 <span>{user?.fullName || 'Active User'}</span>
@@ -368,11 +387,28 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             {/* Elegant Language Dropdown */}
             <LanguageDropdown dark={isDark} />
 
-            {/* Notifications */}
-            <button className="relative p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 transition">
-              <Bell className="w-4 h-4" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#0284C7]" />
+            {/* Quick Theme Toggle (Sun / Moon) */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-amber-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 transition cursor-pointer flex items-center justify-center"
+              title={isDark ? (language === 'AM' ? 'ወደ ብርሃን ገጽታ ቀይር' : language === 'OM' ? 'Gara Ifaatti Jijjiiri' : 'Switch to Light Mode') : (language === 'AM' ? 'ወደ ጨለማ ገጽታ ቀይር' : language === 'OM' ? 'Gara Dukkanaatti Jijjiiri' : 'Switch to Dark Mode')}
+              aria-label="Toggle Theme"
+            >
+              {isDark ? (
+                <Sun className="w-4 h-4 text-amber-400 hover:rotate-90 transition-transform duration-300" />
+              ) : (
+                <Moon className="w-4 h-4 text-slate-600 hover:-rotate-12 transition-transform duration-300" />
+              )}
             </button>
+
+            {/* Real-Time Interactive Notification Center */}
+            <NotificationDropdown
+              role={portalRole}
+              userId={user?.id}
+              onSelectTab={onTabChange}
+              isDark={isDark}
+              language={language as any}
+            />
 
             {/* User Avatar & Status - CLICKABLE TRIGGER */}
             <button
@@ -392,7 +428,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   <span>{user?.fullName || 'User'}</span>
                 </div>
                 <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                  {portalRole} • {verificationStatus}
+                  {portalRole === 'ADMIN' ? 'Platform Administrator' : `${portalRole} • ${verificationStatus}`}
                 </div>
               </div>
               <Settings className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#0284C7] dark:group-hover:text-[#38BDF8] transition hidden sm:block ml-0.5" />

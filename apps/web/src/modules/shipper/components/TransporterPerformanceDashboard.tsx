@@ -9,7 +9,6 @@ import {
   Truck,
   CheckCircle2,
   AlertTriangle,
-  RefreshCw,
   BarChart3,
   DollarSign,
   ChevronRight,
@@ -20,6 +19,7 @@ import {
   Gauge,
   Percent,
 } from 'lucide-react';
+import { useLanguage } from '../../../context/LanguageContext';
 
 export interface TransporterKPIs {
   onTimeDeliveryRatePct: number;
@@ -74,6 +74,10 @@ export const TransporterPerformanceDashboard: React.FC<TransporterPerformanceDas
   transporterId,
   onRefresh,
 }) => {
+  const { language: rawLanguage } = useLanguage();
+  const isAm = (rawLanguage || '').toUpperCase() === 'AM';
+  const isOm = (rawLanguage || '').toUpperCase() === 'OM';
+  const language = isAm ? 'am' : isOm ? 'om' : 'en';
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -100,7 +104,36 @@ export const TransporterPerformanceDashboard: React.FC<TransporterPerformanceDas
 
   useEffect(() => {
     fetchPerformance();
+    const timer = setInterval(fetchPerformance, 12000);
+    return () => clearInterval(timer);
   }, [transporterId]);
+
+  const translateMetricLabel = (label: string) => {
+    switch (label) {
+      case 'On-Time Delivery Rate':
+        return language === 'am' ? 'በሰዓቱ የማድረስ ምጣኔ' : language === 'om' ? 'Hamma Yeroon Dhaqqabuu' : label;
+      case 'Fleet Fuel Economy':
+        return language === 'am' ? 'የተሽከርካሪዎች ነዳጅ ቁጠባ' : language === 'om' ? "Qusannaa Boba'aa Konkolaattotaa" : label;
+      case 'Incident Rate (per 100 trips)':
+        return language === 'am' ? 'የአደጋ ምጣኔ (በ100 ጉዞ)' : language === 'om' ? 'Hamma Balaa (imala 100 keessatti)' : label;
+      case 'Customer Satisfaction Rating':
+        return language === 'am' ? 'የደንበኛ እርካታ ደረጃ' : language === 'om' ? 'Sadarkaa Itti Quufinsa Maamilaa' : label;
+      default:
+        return label;
+    }
+  };
+
+  const translatePercentileRank = (rankStr: string) => {
+    if (!rankStr) return '';
+    if (rankStr.includes('Top 6% on Djibouti Corridor')) {
+      return language === 'am'
+        ? 'በጅቡቲ ኮሪደር ከፍተኛ 6% ውስጥ'
+        : language === 'om'
+        ? 'Koriidarii Jibuutii irratti 6% Olaanaa'
+        : rankStr;
+    }
+    return rankStr;
+  };
 
   if (loading && !data) {
     return (
@@ -108,34 +141,46 @@ export const TransporterPerformanceDashboard: React.FC<TransporterPerformanceDas
         <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 mx-auto">
           <TrendingUp className="w-6 h-6 animate-pulse" />
         </div>
-        <h4 className="text-base font-black text-slate-800">Calculating Corridor Fleet Benchmarks...</h4>
-        <p className="text-xs text-slate-500">Querying completed shipments, telemetry averages, and rating aggregates.</p>
+        <h4 className="text-base font-black text-slate-800">
+          {language === 'am'
+            ? 'የኮሪደር ተሽከርካሪዎች መመዘኛ በመሰላት ላይ...'
+            : language === 'om'
+            ? 'Madaallii Konkolaattota Koriidarii Hissabamaa Jira...'
+            : 'Calculating Corridor Fleet Benchmarks...'}
+        </h4>
+        <p className="text-xs text-slate-500">
+          {language === 'am'
+            ? 'የተጠናቀቁ ጭነቶች፣ የቴሌሜትሪ አማካዮች እና የደረጃ ውጤቶች በመፈለግ ላይ።'
+            : language === 'om'
+            ? "Fe'iinsa xumuraman, giddu-galeessa telemetirii fi madaalliiwwan barbaadamaa jiru."
+            : 'Querying completed shipments, telemetry averages, and rating aggregates.'}
+        </p>
       </div>
     );
   }
 
   const kpis: TransporterKPIs = data?.summaryKpis || {
-    onTimeDeliveryRatePct: 96.5,
-    incidentRatePer100Trips: 1.2,
-    averageFuelEfficiencyKmL: 2.84,
-    customerSatisfactionStars: 4.88,
-    totalReviewsCount: 42,
-    totalTripsCompleted: 28,
-    grossRevenueEarnedEtb: 5180000,
-    netPayoutsReceivedEtb: 4921000,
-    platformCommissionDeductedEtb: 259000,
-    totalActiveVehicles: 14,
+    onTimeDeliveryRatePct: 0,
+    incidentRatePer100Trips: 0,
+    averageFuelEfficiencyKmL: 0,
+    customerSatisfactionStars: 0,
+    totalReviewsCount: 0,
+    totalTripsCompleted: 0,
+    grossRevenueEarnedEtb: 0,
+    netPayoutsReceivedEtb: 0,
+    platformCommissionDeductedEtb: 0,
+    totalActiveVehicles: 0,
   };
 
   const benchmarks = data?.benchmarkingComparison || {
-    transporterName: 'Ethio-Djibouti Express Transport S.C.',
-    percentileRank: 'Top 6% on Djibouti Corridor',
+    transporterName: '—',
+    percentileRank: '',
     metrics: [],
     percentileGauges: {
-      deliveryAdherence: 95,
-      fuelEcoEfficiency: 92,
-      cargoSafetyScore: 97,
-      shipperSatisfaction: 96,
+      deliveryAdherence: 0,
+      fuelEcoEfficiency: 0,
+      cargoSafetyScore: 0,
+      shipperSatisfaction: 0,
     },
   };
 
@@ -150,30 +195,31 @@ export const TransporterPerformanceDashboard: React.FC<TransporterPerformanceDas
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1">
             <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-              Transporter Performance & Corridor Benchmarking
+              {language === 'am'
+                ? 'የትራንስፖርተር ብቃት እና የኮሪደር ንጽጽር መመዘኛ'
+                : language === 'om'
+                ? "Ga'umsa Fe'aa fi Madaallii Koriidarii"
+                : 'Transporter Performance & Corridor Benchmarking'}
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
-              Self-service performance evaluation comparing fleet operational KPIs against anonymized corridor averages and top-tier 10% performers on the Addis Ababa – Djibouti trade corridor.
+              {language === 'am'
+                ? 'የተሽከርካሪዎችን የሥራ አፈጻጸም ቁልፍ መለኪያዎች (KPI) በአዲስ አበባ - ጅቡቲ የንግድ ኮሪደር ላይ ካሉ አማካዮች እና ከፍተኛ 10% ፈጻሚዎች ጋር በማነጻጸር የቀረበ ራስ-አገዝ ግምገማ።'
+                : language === 'om'
+                ? 'Madaallii raawwii konkolaattotaa kan kpi hojii giddu-galeessa koriidarii Finfinnee - Jibuutii fi 10% raawwattoota olaanoo waliin madaalu.'
+                : 'Self-service performance evaluation comparing fleet operational KPIs against anonymized corridor averages and top-tier 10% performers on the Addis Ababa – Djibouti trade corridor.'}
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3 relative z-10">
             <div className="px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-left">
-              <span className="text-[10px] font-bold uppercase text-slate-500 block">Fleet Standing</span>
+              <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                {language === 'am' ? 'የተሽከርካሪዎች ደረጃ' : language === 'om' ? 'Sadarkaa Konkolaattotaa' : 'Fleet Standing'}
+              </span>
               <span className="text-sm font-extrabold text-indigo-900 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                {benchmarks.percentileRank}
+                {translatePercentileRank(benchmarks.percentileRank)}
               </span>
             </div>
-
-            <button
-              onClick={fetchPerformance}
-              disabled={loading}
-              className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all shadow-xs hover:shadow flex items-center gap-2 cursor-pointer disabled:opacity-50"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              <span>Sync Metrics</span>
-            </button>
           </div>
         </div>
       </div>
@@ -183,7 +229,9 @@ export const TransporterPerformanceDashboard: React.FC<TransporterPerformanceDas
         {/* KPI 1: On-Time Delivery */}
         <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">On-Time Rate</span>
+            <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">
+              {language === 'am' ? 'በሰዓቱ የመድረስ ምጣኔ' : language === 'om' ? 'Hamma Yeroon Dhaqqabuu' : 'On-Time Rate'}
+            </span>
             <div className="w-7 h-7 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
               <Clock className="w-4 h-4" />
             </div>
@@ -192,14 +240,20 @@ export const TransporterPerformanceDashboard: React.FC<TransporterPerformanceDas
             {kpis.onTimeDeliveryRatePct}%
           </div>
           <div className="text-[10px] text-emerald-600 font-bold">
-            Corridor Avg: 89.4% (+7.1%)
+            {language === 'am'
+              ? 'የኮሪደሩ አማካይ: 89.4% (+7.1%)'
+              : language === 'om'
+              ? 'Giddu-galeessa Koriidarii: 89.4% (+7.1%)'
+              : 'Corridor Avg: 89.4% (+7.1%)'}
           </div>
         </div>
 
         {/* KPI 2: Incident Rate */}
         <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">Incident Rate</span>
+            <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">
+              {language === 'am' ? 'የአደጋ ምጣኔ' : language === 'om' ? 'Hamma Balaa' : 'Incident Rate'}
+            </span>
             <div className="w-7 h-7 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
               <ShieldCheck className="w-4 h-4" />
             </div>
@@ -208,30 +262,37 @@ export const TransporterPerformanceDashboard: React.FC<TransporterPerformanceDas
             {kpis.incidentRatePer100Trips}
           </div>
           <div className="text-[10px] text-slate-500 font-medium">
-            Per 100 Completed Trips
+            {language === 'am' ? 'በየ 100 የተጠናቀቁ ጉዞዎች' : language === 'om' ? 'Imala 100 Xumurame Keessaa' : 'Per 100 Completed Trips'}
           </div>
         </div>
 
         {/* KPI 3: Fuel Efficiency */}
         <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">Fuel Economy</span>
+            <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">
+              {language === 'am' ? 'የነዳጅ ቁጠባ' : language === 'om' ? "Qusannaa Boba'aa" : 'Fuel Economy'}
+            </span>
             <div className="w-7 h-7 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
               <Fuel className="w-4 h-4" />
             </div>
           </div>
           <div className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-            {kpis.averageFuelEfficiencyKmL} <span className="text-xs font-bold text-slate-500">km/L</span>
+            {kpis.averageFuelEfficiencyKmL}{' '}
+            <span className="text-xs font-bold text-slate-500">
+              {language === 'am' ? 'ኪ.ሜ/ሊ' : 'km/L'}
+            </span>
           </div>
           <div className="text-[10px] text-emerald-600 font-bold">
-            Benchmark: 2.75 km/L
+            {language === 'am' ? 'መመዘኛ: 2.75 ኪ.ሜ/ሊ' : language === 'om' ? 'Madaallii: 2.75 km/L' : 'Benchmark: 2.75 km/L'}
           </div>
         </div>
 
         {/* KPI 4: Customer Satisfaction */}
         <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">Satisfaction</span>
+            <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">
+              {language === 'am' ? 'የደንበኛ እርካታ' : language === 'om' ? 'Itti Quufinsa' : 'Satisfaction'}
+            </span>
             <div className="w-7 h-7 rounded-xl bg-yellow-50 text-yellow-600 flex items-center justify-center">
               <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
             </div>
@@ -241,14 +302,20 @@ export const TransporterPerformanceDashboard: React.FC<TransporterPerformanceDas
             <span className="text-xs font-bold text-slate-400">/ 5.0</span>
           </div>
           <div className="text-[10px] text-slate-500 font-medium">
-            From {kpis.totalReviewsCount} Verified Reviews
+            {language === 'am'
+              ? `ከ ${kpis.totalReviewsCount} የተረጋገጡ አስተያየቶች`
+              : language === 'om'
+              ? `Yaada Mirkanaa'e ${kpis.totalReviewsCount} Irraa`
+              : `From ${kpis.totalReviewsCount} Verified Reviews`}
           </div>
         </div>
 
         {/* KPI 5: Gross Revenue Earned */}
         <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-1 col-span-2 sm:col-span-2 lg:col-span-1">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">Gross Revenue</span>
+            <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">
+              {language === 'am' ? 'ጠቅላላ ገቢ' : language === 'om' ? 'Galii Waliigalaa' : 'Gross Revenue'}
+            </span>
             <div className="w-7 h-7 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
               <DollarSign className="w-4 h-4" />
             </div>
@@ -257,7 +324,11 @@ export const TransporterPerformanceDashboard: React.FC<TransporterPerformanceDas
             {(kpis.grossRevenueEarnedEtb / 1000000).toFixed(2)}M <span className="text-xs font-bold text-slate-500">ETB</span>
           </div>
           <div className="text-[10px] text-slate-500 font-medium">
-            Across {kpis.totalTripsCompleted} Completed Trips
+            {language === 'am'
+              ? `በ ${kpis.totalTripsCompleted} የተጠናቀቁ ጉዞዎች`
+              : language === 'om'
+              ? `Imala ${kpis.totalTripsCompleted} Xumurame Keessaa`
+              : `Across ${kpis.totalTripsCompleted} Completed Trips`}
           </div>
         </div>
       </div>
@@ -268,14 +339,28 @@ export const TransporterPerformanceDashboard: React.FC<TransporterPerformanceDas
           <div>
             <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
               <Gauge className="w-4 h-4 text-indigo-600" />
-              <span>Corridor Comparative Benchmarking Matrix</span>
+              <span>
+                {language === 'am'
+                  ? 'የኮሪደሩ የንጽጽር መመዘኛ ማትሪክስ'
+                  : language === 'om'
+                  ? 'Madaallii Waliin Dorgommii Koriidarii'
+                  : 'Corridor Comparative Benchmarking Matrix'}
+              </span>
             </h3>
             <p className="text-xs text-slate-500">
-              Evaluated against 420+ registered commercial transport operators on the Ethio-Djibouti corridor.
+              {language === 'am'
+                ? 'በኢትዮ-ጅቡቲ ኮሪደር ላይ ካሉ ከ 420+ በላይ የተመዘገቡ የንግድ ትራንስፖርት ኦፕሬተሮች ጋር የተነጻጸረ።'
+                : language === 'om'
+                ? "Fe'attoota daldalaa galmaa'an 420+ koriidarii Itoophiyaa-Jibuutii waliin kan madaalame."
+                : 'Evaluated against 420+ registered commercial transport operators on the Ethio-Djibouti corridor.'}
             </p>
           </div>
           <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-xl">
-            ✓ Top-Tier Operator Status
+            {language === 'am'
+              ? '✓ ከፍተኛ ደረጃ ኦፕሬተር'
+              : language === 'om'
+              ? '✓ Sadarkaa Fe\'aa Olaanaa'
+              : '✓ Top-Tier Operator Status'}
           </span>
         </div>
 
@@ -283,17 +368,27 @@ export const TransporterPerformanceDashboard: React.FC<TransporterPerformanceDas
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 text-[10px] font-black uppercase text-slate-400 tracking-wider border-b border-slate-100">
               <tr>
-                <th className="py-3 px-4">Core Metric</th>
-                <th className="py-3 px-4 text-center">Your Fleet</th>
-                <th className="py-3 px-4 text-center">Corridor Average</th>
-                <th className="py-3 px-4 text-center">Top 10% Leaders</th>
-                <th className="py-3 px-4 text-center">Corridor Standing</th>
+                <th className="py-3 px-4">
+                  {language === 'am' ? 'ዋና መለኪያ' : language === 'om' ? 'Ulaagaa Bu\'uuraa' : 'Core Metric'}
+                </th>
+                <th className="py-3 px-4 text-center">
+                  {language === 'am' ? 'የእርስዎ ተሽከርካሪዎች' : language === 'om' ? 'Konkolaattota Keessan' : 'Your Fleet'}
+                </th>
+                <th className="py-3 px-4 text-center">
+                  {language === 'am' ? 'የኮሪደሩ አማካይ' : language === 'om' ? 'Giddu-galeessa Koriidarii' : 'Corridor Average'}
+                </th>
+                <th className="py-3 px-4 text-center">
+                  {language === 'am' ? 'ከፍተኛ 10% መሪዎች' : language === 'om' ? 'Dursitoota 10% Olaanoo' : 'Top 10% Leaders'}
+                </th>
+                <th className="py-3 px-4 text-center">
+                  {language === 'am' ? 'በኮሪደሩ ያለው ደረጃ' : language === 'om' ? 'Sadarkaa Koriidarii' : 'Corridor Standing'}
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {benchmarks.metrics.map((m: BenchmarkMetric) => (
                 <tr key={m.label} className="hover:bg-slate-50/80 transition-colors">
-                  <td className="py-3.5 px-4 font-black text-slate-900">{m.label}</td>
+                  <td className="py-3.5 px-4 font-black text-slate-900">{translateMetricLabel(m.label)}</td>
                   <td className="py-3.5 px-4 text-center font-extrabold text-indigo-700 text-sm">
                     {m.transporterValue}
                   </td>
@@ -305,7 +400,11 @@ export const TransporterPerformanceDashboard: React.FC<TransporterPerformanceDas
                   </td>
                   <td className="py-3.5 px-4 text-center">
                     <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800">
-                      {m.percentileScore}th Percentile
+                      {language === 'am'
+                        ? `${m.percentileScore}ኛ ፐርሰንታይል`
+                        : language === 'om'
+                        ? `Dhibbeentaa ${m.percentileScore}ffaa`
+                        : `${m.percentileScore}th Percentile`}
                     </span>
                   </td>
                 </tr>
@@ -322,18 +421,38 @@ export const TransporterPerformanceDashboard: React.FC<TransporterPerformanceDas
           <div>
             <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
               <Percent className="w-4 h-4 text-sky-600" />
-              <span>Operational Percentile Gauges</span>
+              <span>
+                {language === 'am'
+                  ? 'የአሠራር ብቃት መለኪያ ፐርሰንታይሎች'
+                  : language === 'om'
+                  ? 'Safartuuwwan Dhibbeentaa Hojii'
+                  : 'Operational Percentile Gauges'}
+              </span>
             </h3>
             <p className="text-xs text-slate-500">
-              Performance positioning relative to all active corridor carriers.
+              {language === 'am'
+                ? 'ከሁሉም ንቁ የኮሪደር አጓጓዦች አንጻር ያለው የአፈጻጸም አቀማመጥ።'
+                : language === 'om'
+                ? "Sadarkaa raawwii fe'attoota koriidarii socho'an hunda waliin."
+                : 'Performance positioning relative to all active corridor carriers.'}
             </p>
           </div>
 
           <div className="space-y-4 pt-2">
             <div>
               <div className="flex items-center justify-between text-xs mb-1.5 font-bold">
-                <span className="text-slate-700">Delivery Schedule Adherence</span>
-                <span className="text-indigo-600">{benchmarks.percentileGauges?.deliveryAdherence}% (Top 5%)</span>
+                <span className="text-slate-700">
+                  {language === 'am'
+                    ? 'የማድረሻ የጊዜ ሰሌዳን ማክበር'
+                    : language === 'om'
+                    ? 'Sagantaa Dhaqqabii Kabajuu'
+                    : 'Delivery Schedule Adherence'}
+                </span>
+                <span className="text-indigo-600">
+                  {benchmarks.percentileGauges?.deliveryAdherence}% (
+                  {language === 'am' ? 'ከፍተኛ 5% ውስጥ' : language === 'om' ? '5% Olaanaa' : 'Top 5%'}
+                  )
+                </span>
               </div>
               <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
                 <div
@@ -345,8 +464,18 @@ export const TransporterPerformanceDashboard: React.FC<TransporterPerformanceDas
 
             <div>
               <div className="flex items-center justify-between text-xs mb-1.5 font-bold">
-                <span className="text-slate-700">Fuel Eco-Efficiency Score</span>
-                <span className="text-emerald-600">{benchmarks.percentileGauges?.fuelEcoEfficiency}% (Top 8%)</span>
+                <span className="text-slate-700">
+                  {language === 'am'
+                    ? 'የነዳጅ ቆጣቢነት ውጤት'
+                    : language === 'om'
+                    ? "Qabxii Qusannaa Boba'aa"
+                    : 'Fuel Eco-Efficiency Score'}
+                </span>
+                <span className="text-emerald-600">
+                  {benchmarks.percentileGauges?.fuelEcoEfficiency}% (
+                  {language === 'am' ? 'ከፍተኛ 8% ውስጥ' : language === 'om' ? '8% Olaanaa' : 'Top 8%'}
+                  )
+                </span>
               </div>
               <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
                 <div
@@ -358,8 +487,18 @@ export const TransporterPerformanceDashboard: React.FC<TransporterPerformanceDas
 
             <div>
               <div className="flex items-center justify-between text-xs mb-1.5 font-bold">
-                <span className="text-slate-700">Cargo Safety & Zero-Incident Record</span>
-                <span className="text-sky-600">{benchmarks.percentileGauges?.cargoSafetyScore}% (Top 3%)</span>
+                <span className="text-slate-700">
+                  {language === 'am'
+                    ? 'የጭነት ደህንነት እና ከጉዳት ነጻ መዝገብ'
+                    : language === 'om'
+                    ? "Nageenya Fe'iinsaa fi Galmee Balaa Malee"
+                    : 'Cargo Safety & Zero-Incident Record'}
+                </span>
+                <span className="text-sky-600">
+                  {benchmarks.percentileGauges?.cargoSafetyScore}% (
+                  {language === 'am' ? 'ከፍተኛ 3% ውስጥ' : language === 'om' ? '3% Olaanaa' : 'Top 3%'}
+                  )
+                </span>
               </div>
               <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
                 <div
@@ -371,8 +510,18 @@ export const TransporterPerformanceDashboard: React.FC<TransporterPerformanceDas
 
             <div>
               <div className="flex items-center justify-between text-xs mb-1.5 font-bold">
-                <span className="text-slate-700">Shipper Loyalty & Satisfaction Index</span>
-                <span className="text-amber-600">{benchmarks.percentileGauges?.shipperSatisfaction}% (Top 4%)</span>
+                <span className="text-slate-700">
+                  {language === 'am'
+                    ? 'የላኪዎች ታማኝነት እና እርካታ መረጃ ጠቋሚ'
+                    : language === 'om'
+                    ? 'Amanamtummaa fi Itti Quufinsa Ergitootaa'
+                    : 'Shipper Loyalty & Satisfaction Index'}
+                </span>
+                <span className="text-amber-600">
+                  {benchmarks.percentileGauges?.shipperSatisfaction}% (
+                  {language === 'am' ? 'ከፍተኛ 4% ውስጥ' : language === 'om' ? '4% Olaanaa' : 'Top 4%'}
+                  )
+                </span>
               </div>
               <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
                 <div
@@ -390,9 +539,21 @@ export const TransporterPerformanceDashboard: React.FC<TransporterPerformanceDas
             <div>
               <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
                 <BarChart3 className="w-4 h-4 text-emerald-600" />
-                <span>Historical Monthly Trend Lines</span>
+                <span>
+                  {language === 'am'
+                    ? 'የወርሃዊ አዝማሚያ ታሪክ'
+                    : language === 'om'
+                    ? 'Teephoo Raawwii Ji\'ootaa'
+                    : 'Historical Monthly Trend Lines'}
+                </span>
               </h3>
-              <p className="text-xs text-slate-500">6-month rolling operational trends.</p>
+              <p className="text-xs text-slate-500">
+                {language === 'am'
+                  ? 'የ 6 ወራት ተከታታይ የሥራ አዝማሚያ።'
+                  : language === 'om'
+                  ? "Adeemsa hojii ji'oota 6 darban."
+                  : '6-month rolling operational trends.'}
+              </p>
             </div>
           </div>
 
@@ -404,10 +565,14 @@ export const TransporterPerformanceDashboard: React.FC<TransporterPerformanceDas
               >
                 <span className="text-xs font-black text-slate-700 uppercase">{t.month}</span>
                 <div className="text-base font-black text-slate-900">
-                  {t.onTimeRatePct}% <span className="text-[10px] font-bold text-slate-400">On-Time</span>
+                  {t.onTimeRatePct}%{' '}
+                  <span className="text-[10px] font-bold text-slate-400">
+                    {language === 'am' ? 'በሰዓቱ' : language === 'om' ? 'Yeroon' : 'On-Time'}
+                  </span>
                 </div>
                 <div className="text-[10px] text-slate-500 font-bold">
-                  {t.tripsCompleted} Trips • {t.fuelEfficiencyKmL} km/L
+                  {t.tripsCompleted} {language === 'am' ? 'ጉዞዎች' : language === 'om' ? 'Imala' : 'Trips'} • {t.fuelEfficiencyKmL}{' '}
+                  {language === 'am' ? 'ኪ.ሜ/ሊ' : 'km/L'}
                 </div>
                 <div className="text-[10px] text-emerald-700 font-extrabold pt-1 border-t border-slate-200">
                   {(t.grossRevenueEtb / 1000).toFixed(0)}k ETB
@@ -424,10 +589,20 @@ export const TransporterPerformanceDashboard: React.FC<TransporterPerformanceDas
           <div>
             <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
               <Truck className="w-4 h-4 text-sky-600" />
-              <span>Assigned Fleet Vehicle Efficiency Breakdown</span>
+              <span>
+                {language === 'am'
+                  ? 'የተመደቡ ተሽከርካሪዎች የብቃት ዝርዝር'
+                  : language === 'om'
+                  ? "Caccabsa Ga'umsa Konkolaattota Ramadamanii"
+                  : 'Assigned Fleet Vehicle Efficiency Breakdown'}
+              </span>
             </h3>
             <p className="text-xs text-slate-500">
-              Individual truck performance compared against corridor engineering benchmark targets.
+              {language === 'am'
+                ? 'የእያንዳንዱ ተሽከርካሪ አፈጻጸም ከኮሪደሩ የምህንድስና መመዘኛ ኢላማዎች ጋር ተነጻጽሯል።'
+                : language === 'om'
+                ? 'Raawwiin tokkoon tokkoo makiinaa madaallii injinarummaa koriidarii waliin madaalameera.'
+                : 'Individual truck performance compared against corridor engineering benchmark targets.'}
             </p>
           </div>
 
@@ -439,13 +614,22 @@ export const TransporterPerformanceDashboard: React.FC<TransporterPerformanceDas
                   <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${
                     v.status === 'OPTIMAL' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                   }`}>
-                    {v.status === 'OPTIMAL' ? 'Optimal' : 'Below Target'}
+                    {v.status === 'OPTIMAL'
+                      ? language === 'am' ? 'ምርጥ' : language === 'om' ? 'Gaarii' : 'Optimal'
+                      : language === 'am' ? 'ከዒላማው በታች' : language === 'om' ? 'Ilaalcha Gadi' : 'Below Target'}
                   </span>
                 </div>
-                <div className="text-xs text-slate-500">{v.vehicleType} • {v.capacityTons}T</div>
+                <div className="text-xs text-slate-500">
+                  {v.vehicleType} • {v.capacityTons}{language === 'am' ? 'ቶን' : language === 'om' ? 'T' : 'T'}
+                </div>
                 <div className="flex items-baseline justify-between pt-1 border-t border-slate-200 text-xs">
-                  <span className="text-slate-500">Actual: <strong className="text-slate-900">{v.actualKmL} km/L</strong></span>
-                  <span className="text-slate-400">Target: {v.benchmarkKmL} km/L</span>
+                  <span className="text-slate-500">
+                    {language === 'am' ? 'ትክክለኛ:' : language === 'om' ? 'Qabatamaa:' : 'Actual:'}{' '}
+                    <strong className="text-slate-900">{v.actualKmL} {language === 'am' ? 'ኪ.ሜ/ሊ' : 'km/L'}</strong>
+                  </span>
+                  <span className="text-slate-400">
+                    {language === 'am' ? 'ዒላማ:' : language === 'om' ? 'Ilaalcha:' : 'Target:'} {v.benchmarkKmL} {language === 'am' ? 'ኪ.ሜ/ሊ' : 'km/L'}
+                  </span>
                 </div>
               </div>
             ))}

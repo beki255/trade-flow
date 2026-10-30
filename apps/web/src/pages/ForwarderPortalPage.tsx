@@ -14,6 +14,7 @@ import { MultiShipperTab } from '../modules/forwarder/tabs/MultiShipperTab';
 import { ConsolidationTab } from '../modules/forwarder/tabs/ConsolidationTab';
 import { CustomsCoordinationTab } from '../modules/forwarder/tabs/CustomsCoordinationTab';
 import { MultimodalTab } from '../modules/forwarder/tabs/MultimodalTab';
+import { TransporterBiddingTab } from '../modules/forwarder/tabs/TransporterBiddingTab';
 
 export const ForwarderPortalPage: React.FC = () => {
   const { tab } = useParams<{ tab?: string }>();
@@ -147,12 +148,17 @@ export const ForwarderPortalPage: React.FC = () => {
         )}
 
         {/* 4. MULTI-MODAL CORRIDOR TRACKING */}
-        {(activeTab === 'multimodal' || activeTab === 'transporter-bidding') && (
+        {activeTab === 'multimodal' && (
           <MultimodalTab
             containers={multimodalContainers}
             loading={loading}
             onRefresh={fetchForwarderData}
           />
+        )}
+
+        {/* 5. MASTER TRANSPORTER CORRIDOR BIDDING */}
+        {activeTab === 'transporter-bidding' && (
+          <TransporterBiddingTab />
         )}
       </div>
     </DashboardLayout>

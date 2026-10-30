@@ -38,7 +38,7 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
   onQuickApprove,
   onViewCertificate,
 }) => {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'CLEARED' | 'REVISION'>('ALL');
   const [approvingId, setApprovingId] = useState<string | null>(null);
@@ -117,7 +117,7 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
             {stats.pendingReviews}
           </div>
           <div className="text-[10px] text-slate-400 font-medium">
-            Galafi & Mojo Terminals
+            {language === 'AM' ? 'የጋላፊ እና ሞጆ ኬላዎች' : language === 'OM' ? 'Buufatawwan Galaafii fi Moodjoo' : 'Galafi & Mojo Terminals'}
           </div>
         </div>
 
@@ -130,7 +130,7 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
             {stats.greenLineCleared}
           </div>
           <div className="text-[10px] text-emerald-600 font-semibold">
-            Zero Delay Transit Pass
+            {language === 'AM' ? 'ያለ መዘግየት የትራንዚት ፈቃድ' : language === 'OM' ? 'Tureetii Malee Darbiinsa' : 'Zero Delay Transit Pass'}
           </div>
         </div>
 
@@ -143,7 +143,7 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
             {stats.revisionsRequested}
           </div>
           <div className="text-[10px] text-slate-400 font-medium">
-            Requires Shipper Correction
+            {language === 'AM' ? 'የላኪ ማስተካከያ ያስፈልጋል' : language === 'OM' ? 'Sirreeffama Abbaa Fe\'isaa Barbaada' : 'Requires Shipper Correction'}
           </div>
         </div>
 
@@ -153,10 +153,10 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
             <span>{t('customs.avgProcessing')}</span>
           </div>
           <div className="text-2xl font-black text-slate-900">
-            {stats.averageProcessingMins || 14} mins
+            {stats.averageProcessingMins || 14} {language === 'AM' ? 'ደቂቃ' : language === 'OM' ? 'daqiiqaa' : 'mins'}
           </div>
           <div className="text-[10px] text-slate-400 font-medium">
-            Single Window SLA
+            {language === 'AM' ? 'የነጠላ መስኮት SLA' : 'Single Window SLA'}
           </div>
         </div>
       </div>
@@ -173,7 +173,7 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            All Dossiers ({dossiers.length})
+            {language === 'AM' ? `ሁሉም ዶሴዎች (${dossiers.length})` : language === 'OM' ? `Sanadoota Hundaa (${dossiers.length})` : `All Dossiers (${dossiers.length})`}
           </button>
           <button
             type="button"
@@ -184,7 +184,7 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Pending Review ({stats.pendingReviews})
+            {language === 'AM' ? `የሚጠባበቁ (${stats.pendingReviews})` : language === 'OM' ? `Eegamu (${stats.pendingReviews})` : `Pending Review (${stats.pendingReviews})`}
           </button>
           <button
             type="button"
@@ -195,7 +195,7 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Green Line Cleared ({stats.greenLineCleared})
+            {language === 'AM' ? `አረንጓዴ መስመር (${stats.greenLineCleared})` : language === 'OM' ? `Sarara Magariisaa (${stats.greenLineCleared})` : `Green Line Cleared (${stats.greenLineCleared})`}
           </button>
           <button
             type="button"
@@ -206,7 +206,7 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Revisions / Holds ({stats.revisionsRequested})
+            {language === 'AM' ? `ማስተካከያ/እገዳ (${stats.revisionsRequested})` : language === 'OM' ? `Sirreeffama/Qabannaa (${stats.revisionsRequested})` : `Revisions / Holds (${stats.revisionsRequested})`}
           </button>
         </div>
 
@@ -214,7 +214,7 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search by Cargo, Shipper TIN, or Route..."
+            placeholder={language === 'AM' ? 'በጭነት፣ ላኪ ቲን (TIN) ወይም መስመር ፈልግ...' : language === 'OM' ? 'Fe\'isa, TIN ykn Daandiin Barbaadi...' : 'Search by Cargo, Shipper TIN, or Route...'}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3.5 py-1.5 text-xs rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium"
@@ -227,12 +227,14 @@ export const ReviewQueueTab: React.FC<ReviewQueueTabProps> = ({
         <div className="p-12 text-center rounded-3xl bg-white border border-dashed border-slate-200 space-y-3">
           <Inbox className="w-10 h-10 text-slate-300 mx-auto" />
           <div className="text-sm font-bold text-slate-700">
-            {dossiers.length === 0 ? 'No Customs Submissions in Queue' : 'No Matching Customs Submissions Found'}
+            {dossiers.length === 0
+              ? (language === 'AM' ? 'በወረፋው ውስጥ ምንም የጉምሩክ ሰነድ የለም' : language === 'OM' ? 'Galmeen Gumruukaa Tarree Keessa Hin Jiru' : 'No Customs Submissions in Queue')
+              : (language === 'AM' ? 'የተገኘ የጉምሩክ ሰነድ የለም' : language === 'OM' ? 'Galmeen Gumruukaa Walsaamu Hin Argamne' : 'No Matching Customs Submissions Found')}
           </div>
           <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
             {dossiers.length === 0
-              ? 'When Shippers or Freight Forwarders upload trade documents for corridor shipments, they will appear here for officer verification.'
-              : 'Try clearing your search query or switching to another filter tab.'}
+              ? (language === 'AM' ? 'ላኪዎች ወይም አስተላላፊዎች ለኮሪደሩ ጭነቶች የንግድ ሰነዶችን ሲሰቅሉ፣ ለመርማሪ ማረጋገጫ እዚህ ይታያሉ።' : 'When Shippers or Freight Forwarders upload trade documents for corridor shipments, they will appear here for officer verification.')
+              : (language === 'AM' ? 'የፍለጋ ቃልዎን ያጽዱ ወይም ወደ ሌላ ማጣሪያ ይቀይሩ።' : 'Try clearing your search query or switching to another filter tab.')}
           </p>
         </div>
       ) : (

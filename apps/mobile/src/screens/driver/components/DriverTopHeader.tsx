@@ -60,12 +60,14 @@ export const DriverTopHeader: React.FC<DriverTopHeaderProps> = ({
             </View>
 
             <View style={{ flex: 1, minWidth: 0, paddingRight: 4 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                <Text style={styles.brandTitle} numberOfLines={1} ellipsizeMode="tail">
-                  {user?.fullName || t('driverTitle')}
-                </Text>
-                <Ionicons name="chevron-forward" size={12} color="#94A3B8" />
-              </View>
+              <Text
+                style={styles.brandTitle}
+                numberOfLines={1}
+                adjustsFontSizeToFit={true}
+                minimumFontScale={0.85}
+              >
+                {user?.fullName || t('driverTitle')}
+              </Text>
               <Text style={styles.truckSub} numberOfLines={1}>
                 {user?.driverProfile?.licenseClass || 'Grade 5 Heavy'} • {user?.driverProfile?.assignedVehicle?.plateNumber || 'Fleet Vehicle'}
               </Text>

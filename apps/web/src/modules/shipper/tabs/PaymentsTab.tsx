@@ -20,11 +20,13 @@ import {
   ChevronRight,
   Receipt,
   Percent,
+  Lock,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { useLanguage } from '../../../context/LanguageContext';
 import { BidItem, ShipmentItem } from '../types';
 import { PayWithTelebirrModal } from '../components/PayWithTelebirrModal';
+import { DisputeEscrowModal } from '../components/DisputeEscrowModal';
 
 export interface PaymentRecord {
   id: string;
@@ -40,6 +42,9 @@ export interface PaymentRecord {
   status: 'PENDING' | 'CONFIRMED' | 'SETTLED' | 'DISPUTED' | 'HELD_IN_ESCROW';
   paidAt: string;
   settledAt?: string;
+  shipmentStatus?: string;
+  loadStatus?: string;
+  isDelivered: boolean;
 }
 
 interface PaymentsTabProps {
@@ -49,7 +54,7 @@ interface PaymentsTabProps {
 
 export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments = [] }) => {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -58,10 +63,14 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
   // Payment Initiation Modal State
   const [payModalOpen, setPayModalOpen] = useState(false);
   const [selectedBidId, setSelectedBidId] = useState<string>('');
-  const [phone, setPhone] = useState(user?.phone || '+251911445566');
-  const [amount, setAmount] = useState('185000');
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [amount, setAmount] = useState('');
   const [paying, setPaying] = useState(false);
   const [paySuccess, setPaySuccess] = useState('');
+
+  // Dispute Modal State
+  const [disputeModalOpen, setDisputeModalOpen] = useState(false);
+  const [selectedPaymentForDispute, setSelectedPaymentForDispute] = useState<PaymentRecord | null>(null);
 
   // Fetch real payment ledger from backend
   const fetchLedger = async () => {
@@ -77,6 +86,10 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
             const comm = Number(p.platformCommissionEtb || Math.round(gross * 0.05));
             const withTax = Math.round(gross * 0.02);
             const net = Number(p.netTransporterPayoutEtb || gross - comm - withTax);
+
+            const shipmentStatus = p.shipment?.status;
+            const loadStatus = p.shipment?.load?.status;
+            const isDelivered = shipmentStatus === 'DELIVERED' || loadStatus === 'DELIVERED';
 
             return {
               id: p.id,
@@ -100,6 +113,9 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
                 minute: '2-digit',
               }),
               settledAt: p.settledAt ? new Date(p.settledAt).toLocaleDateString() : undefined,
+              shipmentStatus,
+              loadStatus,
+              isDelivered,
             };
           });
           setPayments(mapped);
@@ -166,8 +182,16 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
     }
   };
 
-  // Handle Instant Escrow Settlement (upon e-POD confirmation)
+  // Handle Escrow Settlement Release (strictly after verified delivery)
   const handleSettlePayment = async (paymentId: string, shipmentId?: string) => {
+    const target = payments.find((p) => p.id === paymentId || p.shipmentId === shipmentId);
+    if (target && !target.isDelivered) {
+      alert(
+        '⚠️ Cannot settle escrow payout:\n\nThis consignment has not been delivered by the driver yet. Escrow funds will remain safely held in the TradeFlow vault until the driver reaches destination and uploads verified Proof of Delivery (e-POD).'
+      );
+      return;
+    }
+
     try {
       const res = await fetch('/api/payments/settle', {
         method: 'POST',
@@ -175,17 +199,62 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
         body: JSON.stringify({
           paymentId,
           shipmentId,
-          recipientName: 'Authorized Consignee Agent',
         }),
       });
 
       if (res.ok) {
-        setPaySuccess('✓ Escrow funds settled & disbursed to carrier mobile wallet upon verified e-POD!');
+        setPaySuccess('✓ Escrow funds settled & disbursed to carrier mobile wallet upon verified delivery!');
         await fetchLedger();
         setTimeout(() => setPaySuccess(''), 5000);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || 'Failed to settle escrow payout');
       }
     } catch (e) {
       console.warn('Settlement error:', e);
+    }
+  };
+
+  // Open Dispute Modal for a specific escrow payment
+  const handleOpenDispute = (p: PaymentRecord) => {
+    setSelectedPaymentForDispute(p);
+    setDisputeModalOpen(true);
+  };
+
+  // Submit dispute to backend /api/payments/dispute
+  const handleSubmitDispute = async (
+    reason: string,
+    claimedAmount: number,
+    photoUrl?: string,
+    requestedResolution?: string
+  ) => {
+    if (!selectedPaymentForDispute) return;
+    try {
+      const res = await fetch('/api/payments/dispute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paymentId: selectedPaymentForDispute.id,
+          shipmentId: selectedPaymentForDispute.shipmentId,
+          disputeReason: reason,
+          claimedAmountEtb: claimedAmount,
+          requestedResolution: requestedResolution || 'Escrow Adjustment & Partial Refund',
+          photoUrl: photoUrl || undefined,
+        }),
+      });
+
+      if (res.ok) {
+        setPaySuccess('✓ Dispute registered! Escrow locked & ticket routed to Platform Admin Mediation Console.');
+        setDisputeModalOpen(false);
+        setSelectedPaymentForDispute(null);
+        await fetchLedger();
+        setTimeout(() => setPaySuccess(''), 5000);
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Failed to file dispute');
+      }
+    } catch (err) {
+      console.warn('Dispute error:', err);
     }
   };
 
@@ -244,9 +313,13 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
                 <CreditCard className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-[10px] font-bold uppercase text-slate-400">Total Escrow Volume</div>
+                <div className="text-[10px] font-bold uppercase text-slate-400">
+                  {language === 'AM' ? 'አጠቃላይ የኤስክሮው መጠን' : language === 'OM' ? 'Waliigala Hanga Iskroow' : 'Total Escrow Volume'}
+                </div>
                 <div className="text-xl font-black text-slate-900">{totalEscrow.toLocaleString()} ETB</div>
-                <div className="text-[10px] text-emerald-600 font-bold mt-0.5">TeleBirr & CBE Birr</div>
+                <div className="text-[10px] text-emerald-600 font-bold mt-0.5">
+                  {language === 'AM' ? 'ቴሌብር እና ሲቢኢ ብር' : language === 'OM' ? 'Telebirr fi CBE Birr' : 'TeleBirr & CBE Birr'}
+                </div>
               </div>
             </div>
 
@@ -255,9 +328,13 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
                 <Percent className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-[10px] font-bold uppercase text-slate-400">Platform Commission (5.0%)</div>
+                <div className="text-[10px] font-bold uppercase text-slate-400">
+                  {language === 'AM' ? 'የፕላትፎርም ኮሚሽን (5.0%)' : language === 'OM' ? 'Koomishinii Pilaatfoormii (5.0%)' : 'Platform Commission (5.0%)'}
+                </div>
                 <div className="text-xl font-black text-indigo-900">{totalCommission.toLocaleString()} ETB</div>
-                <div className="text-[10px] text-slate-500 font-medium mt-0.5">Automated Deduction</div>
+                <div className="text-[10px] text-slate-500 font-medium mt-0.5">
+                  {language === 'AM' ? 'በራስ-ሰር የሚቀነስ' : language === 'OM' ? 'Ofumaan kan Hir\'ifamu' : 'Automated Deduction'}
+                </div>
               </div>
             </div>
 
@@ -266,9 +343,13 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-[10px] font-bold uppercase text-slate-400">Carrier Net Payouts</div>
+                <div className="text-[10px] font-bold uppercase text-slate-400">
+                  {language === 'AM' ? 'የአጓጓዥ የተጣራ ክፍያ' : language === 'OM' ? 'Kaffaltii Qulqulluu Fe\'aa' : 'Carrier Net Payouts'}
+                </div>
                 <div className="text-xl font-black text-emerald-700">{totalNetPayout.toLocaleString()} ETB</div>
-                <div className="text-[10px] text-emerald-600 font-bold mt-0.5">Net of 2% Withholding</div>
+                <div className="text-[10px] text-emerald-600 font-bold mt-0.5">
+                  {language === 'AM' ? 'የ 2% ዊዝሆልዲንግ ታክስ ተቀንሶ' : language === 'OM' ? 'Taaksii 2% erga hir\'ifamee booda' : 'Net of 2% Withholding'}
+                </div>
               </div>
             </div>
 
@@ -277,9 +358,15 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
                 <CheckCircle2 className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-[10px] font-bold uppercase text-slate-400">Reconciled Settlements</div>
-                <div className="text-xl font-black text-purple-900">{settledCount} Settled</div>
-                <div className="text-[10px] text-slate-500 font-medium mt-0.5">e-POD Verified Disbursed</div>
+                <div className="text-[10px] font-bold uppercase text-slate-400">
+                  {language === 'AM' ? 'የተወራረዱ ክፍያዎች' : language === 'OM' ? 'Kaffaltiiwwan Murteeffaman' : 'Reconciled Settlements'}
+                </div>
+                <div className="text-xl font-black text-purple-900">
+                  {settledCount} {language === 'AM' ? 'የተወራረደ' : language === 'OM' ? 'Murteeffame' : 'Settled'}
+                </div>
+                <div className="text-[10px] text-slate-500 font-medium mt-0.5">
+                  {language === 'AM' ? 'በተረጋገጠ e-POD የተከፈለ' : language === 'OM' ? 'e-POD Mirkanaa\'een kan Kaffalame' : 'e-POD Verified Disbursed'}
+                </div>
               </div>
             </div>
           </div>
@@ -294,7 +381,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
                   statusFilter === 'ALL' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
                 }`}
               >
-                All Transactions ({payments.length})
+                {language === 'AM' ? 'ሁሉም ዝውውሮች' : language === 'OM' ? 'Daldala Hunda' : 'All Transactions'} ({payments.length})
               </button>
               <button
                 type="button"
@@ -303,7 +390,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
                   statusFilter === 'HELD_IN_ESCROW' ? 'bg-amber-600 text-white' : 'text-slate-600 hover:bg-slate-100'
                 }`}
               >
-                In Escrow ({payments.filter((p) => p.status === 'HELD_IN_ESCROW').length})
+                {language === 'AM' ? 'በኤስክሮው የተያዘ' : language === 'OM' ? 'Iskroow Keessatti' : 'In Escrow'} ({payments.filter((p) => p.status === 'HELD_IN_ESCROW').length})
               </button>
               <button
                 type="button"
@@ -312,7 +399,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
                   statusFilter === 'SETTLED' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-100'
                 }`}
               >
-                Settled ({settledCount})
+                {language === 'AM' ? 'የተወራረደ' : language === 'OM' ? 'Murteeffame' : 'Settled'} ({settledCount})
               </button>
               <button
                 type="button"
@@ -321,7 +408,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
                   statusFilter === 'DISPUTED' ? 'bg-rose-600 text-white' : 'text-slate-600 hover:bg-slate-100'
                 }`}
               >
-                Disputed ({payments.filter((p) => p.status === 'DISPUTED').length})
+                {language === 'AM' ? 'አለመግባባት ያለበት' : language === 'OM' ? 'Mormii Qabu' : 'Disputed'} ({payments.filter((p) => p.status === 'DISPUTED').length})
               </button>
             </div>
 
@@ -329,7 +416,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Search trip ID, transaction..."
+                placeholder={language === 'AM' ? 'በመለያ ቁጥር፣ በግብይት ይፈልጉ...' : language === 'OM' ? 'ID imalaatiin, daldalaan barbaadi...' : 'Search trip ID, transaction...'}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-sky-500"
@@ -342,34 +429,39 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
             <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <h3 className="text-sm font-black text-slate-900">
-                  Automated Reconciliation Ledger & Payout Schedule
+                  {language === 'AM' ? 'የክፍያ ማወራረጃ እና የገንዘብ ዝውውር መዝገብ' : language === 'OM' ? 'Galmee Kaffaltii fi Sagantaa Kaffaltii Ofumaa' : 'Automated Reconciliation Ledger & Payout Schedule'}
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Transactions reconciled against trip completion IDs, webhook confirmations, and e-POD signatures.
+                  {language === 'AM' ? 'ክፍያዎች በጉዞ ማጠናቀቂያ መለያዎች፣ በዲጂታል ፊርማ እና በ e-POD የተረጋገጡ ናቸው።' : language === 'OM' ? 'Kaffaltiiwwan ID xumura imalaatiin, mirkaneessa webhook fi mallattoo e-POD tiin wal-simataniiru.' : 'Transactions reconciled against trip completion IDs, webhook confirmations, and e-POD signatures.'}
                 </p>
               </div>
               <div className="text-xs font-bold text-slate-400">
-                {filteredPayments.length} Reconciled Records
+                {filteredPayments.length} {language === 'AM' ? 'የተመዘገቡ ክፍያዎች' : language === 'OM' ? 'Galmeewwan Kaffaltii' : 'Reconciled Records'}
               </div>
             </div>
 
             {filteredPayments.length === 0 ? (
               <div className="p-12 text-center text-slate-500 space-y-2">
                 <CreditCard className="w-8 h-8 text-slate-300 mx-auto" />
-                <p className="text-xs font-bold">No payment ledger records found matching filter.</p>
+                <p className="text-xs font-bold">
+                  {language === 'AM' ? 'የተመረጠውን ማጣሪያ የሚያሟላ ምንም የክፍያ መዝገብ አልተገኘም።' : language === 'OM' ? 'Galmeen kaffaltii filannoo wajjin walsimu hin argamne.' : 'No payment ledger records found matching filter.'}
+                </p>
+                <p className="text-[11px] text-slate-400">
+                  {language === 'AM' ? 'ዝውውሮችን ለማየት ፍለጋውን ያጽዱ ወይም ማጣሪያዎችን ያስተካክሉ።' : language === 'OM' ? 'Daldaloota ilaaluuf barbaacha qulqulleessi ykn calaltuu sirreessi.' : 'Clear search or adjust filters to view corridor transactions.'}
+                </p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-slate-50 text-[10px] font-black uppercase text-slate-400 tracking-wider border-b border-slate-100">
                     <tr>
-                      <th className="py-3 px-4">Trip Code & Route</th>
-                      <th className="py-3 px-4">Gateway & Tx No</th>
-                      <th className="py-3 px-4 text-right">Gross Amount</th>
-                      <th className="py-3 px-4 text-right">Fee (5%) & Tax (2%)</th>
-                      <th className="py-3 px-4 text-right">Net Payout</th>
-                      <th className="py-3 px-4 text-center">Settlement Status</th>
-                      <th className="py-3 px-4 text-center">Actions</th>
+                      <th className="py-3 px-4">{language === 'AM' ? 'የጉዞ መለያ እና መስመር' : language === 'OM' ? 'Koodii Imalaa fi Daandii' : 'Trip Code & Route'}</th>
+                      <th className="py-3 px-4">{language === 'AM' ? 'የክፍያ ዘዴ እና የግብይት ቁጥር' : language === 'OM' ? 'Mala Kaffaltii fi Lakkoofsa Tx' : 'Gateway & Tx No'}</th>
+                      <th className="py-3 px-4 text-right">{language === 'AM' ? 'ጠቅላላ ክፍያ' : language === 'OM' ? 'Hanga Waliigalaa' : 'Gross Amount'}</th>
+                      <th className="py-3 px-4 text-right">{language === 'AM' ? 'ኮሚሽን (5%) እና ታክስ (2%)' : language === 'OM' ? 'Koomishinii (5%) fi Taaksii (2%)' : 'Fee (5%) & Tax (2%)'}</th>
+                      <th className="py-3 px-4 text-right">{language === 'AM' ? 'የተጣራ ክፍያ' : language === 'OM' ? 'Kaffaltii Qulqulluu' : 'Net Payout'}</th>
+                      <th className="py-3 px-4 text-center">{language === 'AM' ? 'የክፍያው ሁኔታ' : language === 'OM' ? 'Haala Kaffaltii' : 'Settlement Status'}</th>
+                      <th className="py-3 px-4 text-center">{language === 'AM' ? 'እርምጃዎች' : language === 'OM' ? 'Tarkaanfiiwwan' : 'Actions'}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -409,7 +501,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
                               -{p.commissionEtb.toLocaleString()} ETB
                             </div>
                             <div className="text-amber-700 text-[10px] font-medium">
-                              -{(p.withholdingTaxEtb || 0).toLocaleString()} ETB (Tax)
+                              -{(p.withholdingTaxEtb || 0).toLocaleString()} ETB ({language === 'AM' ? 'ታክስ' : language === 'OM' ? 'Taaksii' : 'Tax'})
                             </div>
                           </td>
 
@@ -417,7 +509,9 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
                             <div className="font-black text-emerald-700 text-sm">
                               {p.netPayoutEtb.toLocaleString()} ETB
                             </div>
-                            <div className="text-[10px] text-slate-400">Scheduled Payout</div>
+                            <div className="text-[10px] text-slate-400">
+                              {language === 'AM' ? 'የሚለቀቅ ክፍያ' : language === 'OM' ? 'Kaffaltii Saganteeffame' : 'Scheduled Payout'}
+                            </div>
                           </td>
 
                           <td className="py-3.5 px-4 text-center">
@@ -431,32 +525,58 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
                               {isSettled ? (
                                 <>
                                   <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                                  <span>Settled</span>
+                                  <span>{language === 'AM' ? 'የተወራረደ' : language === 'OM' ? 'Murteeffame' : 'Settled'}</span>
                                 </>
                               ) : isDisputed ? (
                                 <>
                                   <AlertCircle className="w-3 h-3 text-rose-600" />
-                                  <span>Disputed</span>
+                                  <span>{language === 'AM' ? 'አለመግባባት ያለበት' : language === 'OM' ? 'Mormii Qabu' : 'Disputed'}</span>
                                 </>
                               ) : (
                                 <>
                                   <Clock className="w-3 h-3 text-amber-600" />
-                                  <span>Held in Escrow</span>
+                                  <span>{language === 'AM' ? 'በኤስክሮው የተያዘ' : language === 'OM' ? 'Iskroow Keessatti' : 'Held in Escrow'}</span>
                                 </>
                               )}
                             </span>
                           </td>
 
                           <td className="py-3.5 px-4 text-center">
-                            <div className="flex items-center justify-center gap-1.5">
+                            <div className="flex items-center justify-center gap-1.5 flex-wrap">
                               {isEscrow && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleSettlePayment(p.id, p.shipmentId)}
-                                  className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] transition shadow-xs cursor-pointer"
-                                >
-                                  Settle Payout
-                                </button>
+                                <>
+                                  {!p.isDelivered ? (
+                                    <span
+                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold"
+                                      title={language === 'AM' ? 'ክፍያው በካዝና ውስጥ ተቆልፏል። ሹፌሩ እቃውን አድርሶ e-POD ሲያስመዘግብ ይለቀቃል።' : 'Escrow is locked in vault. Release will become active once the driver completes delivery and collects verified e-POD.'}
+                                    >
+                                      <Lock className="w-3 h-3 text-amber-600" />
+                                      <span>{language === 'AM' ? 'ተቆልፏል (በጉዞ ላይ)' : language === 'OM' ? 'Cufameera (Imala Keessa)' : 'Locked (In Transit)'}</span>
+                                    </span>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSettlePayment(p.id, p.shipmentId)}
+                                      className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] transition shadow-xs cursor-pointer flex items-center gap-1"
+                                      title={language === 'AM' ? 'ጭነቱ በተረጋገጠ e-POD ደርሷል። ክፍያውን ልቀቅ።' : 'Consignment delivered with verified e-POD. Release escrow funds.'}
+                                    >
+                                      <CheckCircle2 className="w-3 h-3" />
+                                      <span>{language === 'AM' ? 'ክፍያውን ልቀቅ' : language === 'OM' ? 'Iskroow Gadi Dhiisi' : 'Release Escrow'}</span>
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenDispute(p)}
+                                    className="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-[10px] transition shadow-xs cursor-pointer"
+                                  >
+                                    {language === 'AM' ? 'ቅሬታ አቅርብ' : language === 'OM' ? 'Mormii Kaasi' : 'Raise Dispute'}
+                                  </button>
+                                </>
+                              )}
+                              {isDisputed && (
+                                <span className="text-[10px] font-bold text-rose-600 italic">
+                                  {language === 'AM' ? 'በሽምግልና ሂደት ላይ' : language === 'OM' ? 'Adeemsa Araaraa Keessa' : 'Under Mediation'}
+                                </span>
                               )}
                             </div>
                           </td>
@@ -483,6 +603,18 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ bids = [], shipments =
         amount={amount}
         setAmount={setAmount}
         paying={paying}
+      />
+
+      {/* Dispute Modal */}
+      <DisputeEscrowModal
+        isOpen={disputeModalOpen}
+        onClose={() => {
+          setDisputeModalOpen(false);
+          setSelectedPaymentForDispute(null);
+        }}
+        onSubmit={handleSubmitDispute}
+        paymentRef={selectedPaymentForDispute?.telebirrTxNo || selectedPaymentForDispute?.shipmentCode}
+        defaultAmount={selectedPaymentForDispute ? Math.round(selectedPaymentForDispute.grossAmountEtb * 0.25) : 25000}
       />
     </div>
   );

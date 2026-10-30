@@ -13,6 +13,7 @@ import {
   Platform,
 } from 'react-native';
 import { useLanguage } from '../context/LanguageContext';
+import { lightColors } from '../context/ThemeContext';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { Ionicons } from '@expo/vector-icons';
 import { CorridorIsometricIllustration } from '../components/CorridorIsometricIllustration';
@@ -30,6 +31,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
 }) => {
   const [activeDot, setActiveDot] = useState(0);
   const { t } = useLanguage();
+  const isDark = false;
+  const colors = lightColors;
   const { width } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
 
@@ -65,17 +68,22 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F4F9FD" />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.background}
+      />
 
       {/* Main Container */}
       <View style={styles.content}>
         
         {/* Top Header: TradeFlow Branding & Language Indicator */}
         <View style={styles.header}>
-          <View style={styles.headerSpacer} />
-          <Text style={styles.brandTitle}>TradeFlow</Text>
-          <LanguageSwitcher variant="light" />
+          <View style={styles.brandTitleContainer} pointerEvents="none">
+            <Text style={[styles.brandTitle, { color: colors.text }]}>TradeFlow</Text>
+          </View>
+
+          <LanguageSwitcher dark={false} />
         </View>
 
         {/* Center Illustration Area: Full Edge-to-Edge Cross-Platform Carousel */}
@@ -111,10 +119,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
 
         {/* Dynamic Titles & Descriptions synced with Carousel Swipe */}
         <View style={styles.textContainer}>
-          <Text style={styles.slideTitle}>
+          <Text style={[styles.slideTitle, { color: colors.text }]}>
             {slideData[activeDot].title}
           </Text>
-          <Text style={styles.slideDescription}>
+          <Text style={[styles.slideDescription, { color: colors.textMuted }]}>
             {slideData[activeDot].desc}
           </Text>
         </View>
@@ -131,7 +139,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
               <View
                 style={[
                   styles.paginationDot,
-                  activeDot === idx ? styles.dotActive : styles.dotInactive,
+                  activeDot === idx
+                    ? styles.dotActive
+                    : [styles.dotInactive, { backgroundColor: isDark ? '#334155' : '#CBD5E1' }],
                 ]}
               />
             </TouchableOpacity>
@@ -152,11 +162,24 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
 
           {/* Secondary Outlined Button: Create Account */}
           <TouchableOpacity
-            style={styles.registerButton}
+            style={[
+              styles.registerButton,
+              {
+                borderColor: isDark ? '#38BDF8' : '#0284C7',
+                backgroundColor: isDark ? 'rgba(56, 189, 248, 0.08)' : 'transparent',
+              },
+            ]}
             onPress={onNavigateRegister}
             activeOpacity={0.85}
           >
-            <Text style={styles.registerButtonText}>{t('createAccount')}</Text>
+            <Text
+              style={[
+                styles.registerButtonText,
+                { color: isDark ? '#38BDF8' : '#0284C7' },
+              ]}
+            >
+              {t('createAccount')}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -179,15 +202,23 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     paddingTop: 14,
     paddingBottom: 4,
     paddingHorizontal: 22,
     width: '100%',
+    position: 'relative',
     zIndex: 100,
   },
-  headerSpacer: {
-    width: 65,
+  brandTitleContainer: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: -1,
   },
   brandTitle: {
     fontSize: 24,

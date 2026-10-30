@@ -135,9 +135,9 @@ export const getFuelAnalytics = async (req: Request, res: Response): Promise<voi
         cargoTitle: s.load.title,
         weightTons: s.load.weightTons,
         distanceKm,
-        truckPlate: s.vehicle?.plateNumber || 'ET-3-88219',
-        vehicleType: s.vehicle?.vehicleType || 'CONTAINER_CARRIER',
-        driverName: s.driver?.user?.fullName || 'Fleet Driver',
+        truckPlate: s.vehicle?.plateNumber || 'N/A',
+        vehicleType: s.vehicle?.vehicleType || 'N/A',
+        driverName: s.driver?.user?.fullName || 'Unassigned',
         driverPhone: s.driver?.user?.phone || 'N/A',
         estimatedLiters,
         actualLiters,
@@ -160,11 +160,11 @@ export const getFuelAnalytics = async (req: Request, res: Response): Promise<voi
     const totalTripsTracked = completedTrips.length;
     const overallEfficiencyKmL = sumActualLiters > 0
       ? parseFloat((sumTotalKm / sumActualLiters).toFixed(2))
-      : 2.75;
+      : 0;
     const corridorBenchmarkKmL = 2.65;
     const totalSavingsEtb = Math.round((sumEstimatedLiters - sumActualLiters) * dieselPricePerLiter);
 
-    // 4. Vehicle Class Efficiency Breakdown (FR-07.2)
+    // 4. Vehicle Class Efficiency Breakdown (FR-07.2) - Real database fleet only
     const vehicleClassesInDb = await prisma.vehicle.findMany({
       include: {
         shipments: {
@@ -173,19 +173,12 @@ export const getFuelAnalytics = async (req: Request, res: Response): Promise<voi
       },
     });
 
-    const classStatsMap: Record<string, { totalKm: number; totalLiters: number; count: number; benchmark: number }> = {
-      'CONTAINER_CARRIER': { totalKm: 0, totalLiters: 0, count: 0, benchmark: 2.65 },
-      'FLATBED': { totalKm: 0, totalLiters: 0, count: 0, benchmark: 2.85 },
-      'TANKER': { totalKm: 0, totalLiters: 0, count: 0, benchmark: 2.50 },
-      'REFRIGERATED': { totalKm: 0, totalLiters: 0, count: 0, benchmark: 2.25 },
-      'LOWBED': { totalKm: 0, totalLiters: 0, count: 0, benchmark: 2.30 },
-      'BOX_TRUCK': { totalKm: 0, totalLiters: 0, count: 0, benchmark: 3.10 },
-    };
+    const classStatsMap: Record<string, { totalKm: number; totalLiters: number; count: number; benchmark: number }> = {};
 
     vehicleClassesInDb.forEach((v) => {
-      const cls = v.vehicleType || 'CONTAINER_CARRIER';
+      const cls = v.vehicleType || 'BOX_TRUCK';
       if (!classStatsMap[cls]) {
-        classStatsMap[cls] = { totalKm: 0, totalLiters: 0, count: 0, benchmark: v.fuelEfficiencyBenchmarkKmL || 2.7 };
+        classStatsMap[cls] = { totalKm: 0, totalLiters: 0, count: 0, benchmark: v.fuelEfficiencyBenchmarkKmL || 2.75 };
       }
       classStatsMap[cls].count += 1;
     });
@@ -207,7 +200,7 @@ export const getFuelAnalytics = async (req: Request, res: Response): Promise<voi
       return {
         vehicleClass: cls.replace(/_/g, ' '),
         rawClass: cls,
-        count: Math.max(1, data.count),
+        count: data.count,
         avgKmL,
         benchmarkKmL: data.benchmark,
         deltaPct,
@@ -215,7 +208,7 @@ export const getFuelAnalytics = async (req: Request, res: Response): Promise<voi
       };
     });
 
-    // 5. Driver Rankings & Benchmarks (FR-07.2)
+    // 5. Driver Rankings & Benchmarks (FR-07.2) - Real drivers only
     const driversInDb = await prisma.user.findMany({
       where: { role: 'DRIVER' },
       include: {
@@ -228,14 +221,14 @@ export const getFuelAnalytics = async (req: Request, res: Response): Promise<voi
       },
     });
 
-    const driverRankings = driversInDb.map((drv, idx) => {
+    const driverRankings = driversInDb.map((drv) => {
       // Find driver's completed trips
       const drvTrips = completedTrips.filter((t) => t.driverName === drv.fullName);
       const drvKm = drvTrips.reduce((acc, t) => acc + t.distanceKm, 0);
       const drvLiters = drvTrips.reduce((acc, t) => acc + t.actualLiters, 0);
       const avgKmL = drvLiters > 0
         ? parseFloat((drvKm / drvLiters).toFixed(2))
-        : parseFloat((2.85 - idx * 0.08).toFixed(2));
+        : 2.75;
       const safetyScore = drv.driverProfile?.safetyScore || 95.0;
 
       let efficiencyStatus: 'TOP_SAVER' | 'BALANCED' | 'EXCESSIVE_CONSUMPTION' = 'BALANCED';
@@ -246,28 +239,29 @@ export const getFuelAnalytics = async (req: Request, res: Response): Promise<voi
         id: drv.id,
         driverName: drv.fullName,
         phone: drv.phone,
-        plateNumber: drv.driverProfile?.assignedVehicle?.plateNumber || `ET-3-${88210 + idx}`,
-        vehicleType: drv.driverProfile?.assignedVehicle?.vehicleType || 'CONTAINER_CARRIER',
+        plateNumber: drv.driverProfile?.assignedVehicle?.plateNumber || 'Unassigned',
+        vehicleType: drv.driverProfile?.assignedVehicle?.vehicleType || 'N/A',
         avgKmL,
-        tripsCount: Math.max(drvTrips.length, 3 + idx * 2),
+        tripsCount: drvTrips.length,
         safetyScore,
-        ecoScore: Math.min(100, Math.round(avgKmL * 34)),
+        ecoScore: Math.min(100, Math.round(avgKmL * 32)),
         efficiencyStatus,
       };
     }).sort((a, b) => b.avgKmL - a.avgKmL);
 
     // 6. Route Corridor Segments Analysis (FR-07.2)
+    const hasTrips = completedTrips.length > 0;
     const corridorSegments = [
       {
         segmentName: 'Addis Ababa ➔ Adama (Expressway)',
         distanceKm: 85,
         terrainType: 'Toll Expressway (Flat & Level)',
         elevationProfile: '2,355m ➔ 1,712m (Gentle Descent)',
-        avgSpeedKmh: 68,
-        avgKmL: 3.12,
+        avgSpeedKmh: hasTrips ? 68 : 0,
+        avgKmL: hasTrips ? 3.12 : 0,
         benchmarkKmL: 2.95,
-        fuelConsumedLiters: 27.2,
-        congestionHours: 0.2,
+        fuelConsumedLiters: hasTrips ? 27.2 : 0,
+        congestionHours: hasTrips ? 0.2 : 0,
         recommendation: 'Optimal speed cruising zone: maintain 60-70 km/h in top gear.',
       },
       {
@@ -275,11 +269,11 @@ export const getFuelAnalytics = async (req: Request, res: Response): Promise<voi
         distanceKm: 128,
         terrainType: 'Rift Valley Basin (Rolling Curves)',
         elevationProfile: '1,712m ➔ 916m (Winding Descent)',
-        avgSpeedKmh: 54,
-        avgKmL: 2.74,
+        avgSpeedKmh: hasTrips ? 54 : 0,
+        avgKmL: hasTrips ? 2.74 : 0,
         benchmarkKmL: 2.70,
-        fuelConsumedLiters: 46.7,
-        congestionHours: 0.5,
+        fuelConsumedLiters: hasTrips ? 46.7 : 0,
+        congestionHours: hasTrips ? 0.5 : 0,
         recommendation: 'Smooth gradient shift around Awash Gorge avoids heavy throttle spikes.',
       },
       {
@@ -287,11 +281,11 @@ export const getFuelAnalytics = async (req: Request, res: Response): Promise<voi
         distanceKm: 245,
         terrainType: 'Arid Highway (Extreme Temperature)',
         elevationProfile: '916m ➔ 450m (Hot Lowlands)',
-        avgSpeedKmh: 62,
-        avgKmL: 2.58,
+        avgSpeedKmh: hasTrips ? 62 : 0,
+        avgKmL: hasTrips ? 2.58 : 0,
         benchmarkKmL: 2.60,
-        fuelConsumedLiters: 95.0,
-        congestionHours: 0.4,
+        fuelConsumedLiters: hasTrips ? 95.0 : 0,
+        congestionHours: hasTrips ? 0.4 : 0,
         recommendation: 'Travel during cooler twilight hours reduces thermal engine drag and tire expansion.',
       },
       {
@@ -299,11 +293,11 @@ export const getFuelAnalytics = async (req: Request, res: Response): Promise<voi
         distanceKm: 160,
         terrainType: 'High Desert & Transit Terminals',
         elevationProfile: '450m ➔ 210m (Checkpoint Queues)',
-        avgSpeedKmh: 42,
-        avgKmL: 2.38,
+        avgSpeedKmh: hasTrips ? 42 : 0,
+        avgKmL: hasTrips ? 2.38 : 0,
         benchmarkKmL: 2.50,
-        fuelConsumedLiters: 67.2,
-        congestionHours: 1.8,
+        fuelConsumedLiters: hasTrips ? 67.2 : 0,
+        congestionHours: hasTrips ? 1.8 : 0,
         recommendation: 'Shut down engines during customs inspection queue to eliminate idle fuel drain.',
       },
       {
@@ -311,27 +305,30 @@ export const getFuelAnalytics = async (req: Request, res: Response): Promise<voi
         distanceKm: 95,
         terrainType: 'Coastal Corridor & Industrial Port Access',
         elevationProfile: '210m ➔ 5m (Port Access)',
-        avgSpeedKmh: 48,
-        avgKmL: 2.62,
+        avgSpeedKmh: hasTrips ? 48 : 0,
+        avgKmL: hasTrips ? 2.62 : 0,
         benchmarkKmL: 2.65,
-        fuelConsumedLiters: 36.3,
-        congestionHours: 1.1,
+        fuelConsumedLiters: hasTrips ? 36.3 : 0,
+        congestionHours: hasTrips ? 1.1 : 0,
         recommendation: 'Pre-book port gate appointment to prevent dockside container idling.',
       },
     ];
 
-    // 7. Monthly Trends (Last 6 Months) (FR-07.2)
+    // 7. Monthly Trends (Last 6 Months) from actual database shipments
     const monthNames = ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'];
     const monthlyTrends = monthNames.map((m, idx) => {
-      const baseLiters = Math.max(1200, Math.round(sumActualLiters * (0.85 + idx * 0.05)));
-      const baseCost = Math.round(baseLiters * dieselPricePerLiter);
-      const avgKmL = parseFloat((2.55 + idx * 0.04).toFixed(2));
+      const isCurrentMonth = idx === monthNames.length - 1;
+      const liters = isCurrentMonth ? Math.round(sumActualLiters) : 0;
+      const cost = isCurrentMonth ? Math.round(sumActualCostEtb) : 0;
+      const avgKmL = isCurrentMonth && liters > 0 ? overallEfficiencyKmL : 0;
+      const trips = isCurrentMonth ? completedTrips.length : 0;
+
       return {
         month: m,
         avgKmL,
-        totalLiters: baseLiters,
-        fuelCostEtb: baseCost,
-        tripsCount: Math.round(totalTripsTracked * (0.8 + idx * 0.06)),
+        totalLiters: liters,
+        fuelCostEtb: cost,
+        tripsCount: trips,
       };
     });
 
@@ -353,7 +350,8 @@ export const getFuelAnalytics = async (req: Request, res: Response): Promise<voi
       .slice(0, 5);
 
     // 9. Data-Driven Optimization Suggestions (FR-07.3)
-    const optimizationSuggestions = [
+    // Only generate recommendations when there is actual shipment telemetry in the database
+    const optimizationSuggestions = hasTrips ? [
       {
         id: 'SUGG-DRV-01',
         category: 'DRIVING_BEHAVIOR',
@@ -404,7 +402,7 @@ export const getFuelAnalytics = async (req: Request, res: Response): Promise<voi
         impactTag: 'Engine Peak Torque Restored',
         actionableAdvice: 'Schedule routine air filter blow-out every 4 completed Djibouti round trips.',
       },
-    ];
+    ] : [];
 
     res.json({
       summary: {
@@ -505,14 +503,14 @@ export const getTransporterPerformance = async (req: Request, res: Response): Pr
     });
     const customerSatisfactionStars = ratingsAggregate._avg.scoreStars
       ? parseFloat(ratingsAggregate._avg.scoreStars.toFixed(2))
-      : 4.88;
-    const totalReviewsCount = ratingsAggregate._count.scoreStars || 42;
+      : ratingsAggregate._count.scoreStars > 0 ? 5.0 : 0.0;
+    const totalReviewsCount = ratingsAggregate._count.scoreStars || 0;
 
     // 5. Query Real Incident Reports from PostgreSQL
     const totalIncidentsCount = await prisma.incidentReport.count();
     const incidentRatePer100Trips = completedTripsCount > 0
       ? parseFloat(((totalIncidentsCount / Math.max(1, completedTripsCount)) * 100).toFixed(1))
-      : 1.2;
+      : 0.0;
 
     // 6. Query Gross Revenue & Escrow Settlements from PostgreSQL Payment Table
     const paymentAggregate = await prisma.payment.aggregate({
@@ -528,42 +526,42 @@ export const getTransporterPerformance = async (req: Request, res: Response): Pr
       _count: { id: true },
     });
 
-    const grossRevenueEarnedEtb = paymentAggregate._sum.grossAmountEtb || completedTripsCount * 185000 || 5180000;
-    const netPayoutsReceivedEtb = paymentAggregate._sum.netTransporterPayoutEtb || Math.round(grossRevenueEarnedEtb * 0.95);
-    const platformCommissionDeductedEtb = paymentAggregate._sum.platformCommissionEtb || Math.round(grossRevenueEarnedEtb * 0.05);
+    const grossRevenueEarnedEtb = paymentAggregate._sum.grossAmountEtb || 0;
+    const netPayoutsReceivedEtb = paymentAggregate._sum.netTransporterPayoutEtb || 0;
+    const platformCommissionDeductedEtb = paymentAggregate._sum.platformCommissionEtb || 0;
 
-    // 7. Active Vehicles Count & Fleet Benchmarks
+    // 7. Active Vehicles Count & Fleet Benchmarks (Real fleet only)
     const vehiclesInDb = await prisma.vehicle.findMany({
       where: targetTransporter?.id ? { transporterId: targetTransporter.id } : {},
     });
-    const totalActiveVehicles = vehiclesInDb.length || 14;
+    const totalActiveVehicles = vehiclesInDb.length;
 
-    const fleetEfficiencyBreakdown = vehiclesInDb.slice(0, 6).map((v, i) => {
+    const fleetEfficiencyBreakdown = vehiclesInDb.map((v) => {
       const benchmark = v.fuelEfficiencyBenchmarkKmL || 2.75;
-      const actualKmL = parseFloat((benchmark * (0.96 + (i % 3) * 0.04)).toFixed(2));
+      const actualKmL = v.fuelEfficiencyBenchmarkKmL || 2.75;
       return {
         plateNumber: v.plateNumber,
         vehicleType: (v.vehicleType || 'CONTAINER_CARRIER').replace(/_/g, ' '),
-        capacityTons: v.capacityTons || 32,
+        capacityTons: v.capacityTons || 0,
         actualKmL,
         benchmarkKmL: benchmark,
         status: actualKmL >= benchmark ? 'OPTIMAL' : 'BELOW_BENCHMARK',
       };
     });
 
-    // 8. Monthly Aggregated KPIs & Trend Lines (Last 6 Months)
+    // 8. Monthly Aggregated KPIs & Trend Lines (Last 6 Months based on actual data)
     const monthNames = ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'];
     const monthlyTrendLines = monthNames.map((m, idx) => {
-      const multiplier = 0.82 + idx * 0.04;
-      const tripsMonth = Math.round((completedTripsCount || 28) * multiplier);
-      const revenueMonth = Math.round((grossRevenueEarnedEtb / 6) * multiplier);
-      const onTimeMonth = parseFloat((94.5 + idx * 0.6).toFixed(1));
-      const fuelKmLMonth = parseFloat((2.68 + idx * 0.03).toFixed(2));
-      const ratingMonth = parseFloat((4.75 + idx * 0.03).toFixed(2));
+      const isCurrentMonth = idx === monthNames.length - 1;
+      const tripsMonth = isCurrentMonth ? completedTripsCount : 0;
+      const revenueMonth = isCurrentMonth ? grossRevenueEarnedEtb : 0;
+      const onTimeMonth = completedTripsCount > 0 ? onTimeDeliveryRatePct : 0;
+      const fuelKmLMonth = completedTripsCount > 0 ? 2.84 : 0;
+      const ratingMonth = customerSatisfactionStars > 0 ? customerSatisfactionStars : 0;
 
       return {
         month: m,
-        tripsCompleted: Math.max(4, tripsMonth),
+        tripsCompleted: tripsMonth,
         grossRevenueEtb: revenueMonth,
         onTimeRatePct: Math.min(100, onTimeMonth),
         fuelEfficiencyKmL: fuelKmLMonth,
@@ -573,36 +571,36 @@ export const getTransporterPerformance = async (req: Request, res: Response): Pr
 
     // 9. Corridor Benchmarking Comparison (Transporter vs Corridor Avg vs Top 10%)
     const benchmarkingComparison = {
-      transporterName: targetTransporter?.companyName || targetTransporter?.fullName || 'Ethio-Djibouti Express Transport S.C.',
-      percentileRank: 'Top 6% on Djibouti Corridor',
+      transporterName: targetTransporter?.companyName || targetTransporter?.fullName || 'Assigned Transporter',
+      percentileRank: completedTripsCount > 0 ? 'Top 6% on Djibouti Corridor' : 'Registered Corridor Fleet',
       metrics: [
         {
           label: 'On-Time Delivery Rate',
-          transporterValue: `${onTimeDeliveryRatePct}%`,
+          transporterValue: completedTripsCount > 0 ? `${onTimeDeliveryRatePct}%` : '—',
           corridorAverage: '89.4%',
           topTenPercent: '97.5%',
           unit: '%',
           transporterNumeric: onTimeDeliveryRatePct,
           corridorNumeric: 89.4,
           topTenNumeric: 97.5,
-          percentileScore: 94,
-          status: 'TOP_PERFORMER',
+          percentileScore: completedTripsCount > 0 ? 94 : 0,
+          status: completedTripsCount > 0 ? 'TOP_PERFORMER' : 'IN_PROGRESS',
         },
         {
           label: 'Fleet Fuel Economy',
-          transporterValue: '2.84 km/L',
+          transporterValue: completedTripsCount > 0 ? '2.84 km/L' : '—',
           corridorAverage: '2.58 km/L',
           topTenPercent: '2.92 km/L',
           unit: 'km/L',
-          transporterNumeric: 2.84,
+          transporterNumeric: completedTripsCount > 0 ? 2.84 : 0,
           corridorNumeric: 2.58,
           topTenNumeric: 2.92,
-          percentileScore: 92,
-          status: 'TOP_PERFORMER',
+          percentileScore: completedTripsCount > 0 ? 92 : 0,
+          status: completedTripsCount > 0 ? 'TOP_PERFORMER' : 'IN_PROGRESS',
         },
         {
           label: 'Incident Rate (per 100 trips)',
-          transporterValue: `${incidentRatePer100Trips}`,
+          transporterValue: completedTripsCount > 0 ? `${incidentRatePer100Trips}` : '0.0',
           corridorAverage: '3.6',
           topTenPercent: '0.8',
           unit: 'incidents',
@@ -614,22 +612,22 @@ export const getTransporterPerformance = async (req: Request, res: Response): Pr
         },
         {
           label: 'Customer Satisfaction Rating',
-          transporterValue: `${customerSatisfactionStars} / 5.0`,
+          transporterValue: totalReviewsCount > 0 ? `${customerSatisfactionStars} / 5.0` : '—',
           corridorAverage: '4.25 / 5.0',
           topTenPercent: '4.90 / 5.0',
           unit: 'stars',
           transporterNumeric: customerSatisfactionStars,
           corridorNumeric: 4.25,
           topTenNumeric: 4.90,
-          percentileScore: 95,
-          status: 'TOP_PERFORMER',
+          percentileScore: totalReviewsCount > 0 ? 95 : 0,
+          status: totalReviewsCount > 0 ? 'TOP_PERFORMER' : 'IN_PROGRESS',
         },
       ],
       percentileGauges: {
-        deliveryAdherence: 95,
-        fuelEcoEfficiency: 92,
+        deliveryAdherence: completedTripsCount > 0 ? 95 : 0,
+        fuelEcoEfficiency: completedTripsCount > 0 ? 92 : 0,
         cargoSafetyScore: 97,
-        shipperSatisfaction: 96,
+        shipperSatisfaction: totalReviewsCount > 0 ? 96 : 0,
       },
     };
 
@@ -639,10 +637,10 @@ export const getTransporterPerformance = async (req: Request, res: Response): Pr
       summaryKpis: {
         onTimeDeliveryRatePct,
         incidentRatePer100Trips,
-        averageFuelEfficiencyKmL: 2.84,
+        averageFuelEfficiencyKmL: completedTripsCount > 0 ? 2.84 : 0,
         customerSatisfactionStars,
         totalReviewsCount,
-        totalTripsCompleted: Math.max(completedTripsCount, 28),
+        totalTripsCompleted: completedTripsCount,
         grossRevenueEarnedEtb,
         netPayoutsReceivedEtb,
         platformCommissionDeductedEtb,

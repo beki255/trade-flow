@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ShieldCheck, X } from 'lucide-react';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface CommissionCustomsModalProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ export const CommissionCustomsModal: React.FC<CommissionCustomsModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const { language } = useLanguage();
   const [officerName, setOfficerName] = useState('');
   const [officerEmail, setOfficerEmail] = useState('');
   const [officerStation, setOfficerStation] = useState('Galafi Border Checkpoint');
@@ -66,10 +68,10 @@ export const CommissionCustomsModal: React.FC<CommissionCustomsModalProps> = ({
             </div>
             <div>
               <h3 className="text-sm font-black text-slate-900">
-                Commission Customs Officer
+                {language === 'AM' ? 'የጉምሩክ መኮንን መድብ' : language === 'OM' ? 'Hojjataa Gumruukaa Ramadi' : 'Commission Customs Officer'}
               </h3>
               <p className="text-[11px] text-slate-500">
-                Register verified regulatory account for the Ethiopian Customs Commission
+                {language === 'AM' ? 'ለኢትዮጵያ ጉምሩክ ኮሚሽን የተረጋገጠ የቁጥጥር አካውንት ይመዝግቡ' : language === 'OM' ? 'Koomishinii Gumruukaa Itoophiyaatiif herrega mirkanaa\'aa galmeessi' : 'Register verified regulatory account for the Ethiopian Customs Commission'}
               </p>
             </div>
           </div>
@@ -91,12 +93,12 @@ export const CommissionCustomsModal: React.FC<CommissionCustomsModalProps> = ({
         <form onSubmit={handleProvisionInspector} className="space-y-3.5">
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Inspector Full Name *
+              {language === 'AM' ? 'የተቆጣጣሪው ሙሉ ስም *' : language === 'OM' ? 'Maqaa Guutuu To\'ataa *' : 'Inspector Full Name *'}
             </label>
             <input
               type="text"
               required
-              placeholder="e.g. Inspector Alula Haile"
+              placeholder={language === 'AM' ? 'ምሳሌ፡ ኢንስፔክተር አሉላ ኃይሌ' : 'e.g. Inspector Alula Haile'}
               value={officerName}
               onChange={(e) => setOfficerName(e.target.value)}
               className="w-full px-3.5 py-2 text-xs font-medium rounded-xl border border-slate-300 focus:border-teal-600 outline-none text-slate-900"
@@ -105,7 +107,7 @@ export const CommissionCustomsModal: React.FC<CommissionCustomsModalProps> = ({
 
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Official Government / Commission Email *
+              {language === 'AM' ? 'ኦፊሴላዊ የመንግስት / የኮሚሽን ኢሜይል *' : language === 'OM' ? 'Imeeyilii Mootummaa / Koomishinii *' : 'Official Government / Commission Email *'}
             </label>
             <input
               type="email"
@@ -120,7 +122,7 @@ export const CommissionCustomsModal: React.FC<CommissionCustomsModalProps> = ({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Assigned Station *
+                {language === 'AM' ? 'የተመደበበት ጣቢያ *' : language === 'OM' ? 'Buufata Ramadame *' : 'Assigned Station *'}
               </label>
               <select
                 value={officerStation}
@@ -136,7 +138,7 @@ export const CommissionCustomsModal: React.FC<CommissionCustomsModalProps> = ({
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Badge / Officer ID *
+                {language === 'AM' ? 'ባጅ / የመኮንን መለያ ቁጥር *' : language === 'OM' ? 'Baajii / Waraqaa Eenyummaa *' : 'Badge / Officer ID *'}
               </label>
               <input
                 type="text"
@@ -150,14 +152,14 @@ export const CommissionCustomsModal: React.FC<CommissionCustomsModalProps> = ({
 
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Temporary Password *
+              {language === 'AM' ? 'ጊዜያዊ የይለፍ ቃል *' : language === 'OM' ? 'Jecha Icchitii Yeroo *' : 'Temporary Password *'}
             </label>
             <input
               type="text"
               required
               value={officerPassword}
               onChange={(e) => setOfficerPassword(e.target.value)}
-              placeholder="Enter temporary password"
+              placeholder={language === 'AM' ? 'ጊዜያዊ የይለፍ ቃል ያስገቡ' : 'Enter temporary password'}
               className="w-full px-3.5 py-2 text-xs font-mono rounded-xl border border-slate-300 focus:border-teal-600 outline-none text-slate-900"
             />
           </div>
@@ -168,7 +170,7 @@ export const CommissionCustomsModal: React.FC<CommissionCustomsModalProps> = ({
               onClick={onClose}
               className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
             >
-              Cancel
+              {language === 'AM' ? 'ሰርዝ' : language === 'OM' ? 'Dhiisi' : 'Cancel'}
             </button>
             <button
               type="submit"
@@ -176,7 +178,11 @@ export const CommissionCustomsModal: React.FC<CommissionCustomsModalProps> = ({
               className="px-5 py-2 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-50"
             >
               <ShieldCheck className="w-4 h-4 text-teal-300" />
-              <span>{provisioning ? 'Commissioning...' : 'Commission Official Inspector'}</span>
+              <span>
+                {provisioning
+                  ? (language === 'AM' ? 'በመመደብ ላይ...' : language === 'OM' ? 'Ramadamaa jira...' : 'Commissioning...')
+                  : (language === 'AM' ? 'ኦፊሴላዊ ተቆጣጣሪውን መድብ' : language === 'OM' ? 'To\'ataa Seera Qabeessa Ramadi' : 'Commission Official Inspector')}
+              </span>
             </button>
           </div>
         </form>

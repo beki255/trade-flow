@@ -22,14 +22,14 @@ export const HeroMap: React.FC = () => {
         
         {/* Left Column: Clean Typography & Quick Actions */}
         <div className="lg:col-span-5 flex flex-col items-start gap-3.5 sm:gap-4">
-          <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-black tracking-tight text-slate-900 leading-[1.14]">
+          <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-black tracking-tight text-slate-900 dark:text-white leading-[1.14]">
             {t('hero.titlePart1')} <br className="hidden sm:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-blue-700">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-blue-700 dark:from-sky-400 dark:to-blue-400">
               {t('hero.titlePart2')}
             </span>
           </h1>
 
-          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-md">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-md">
             {t('hero.subtitle')}
           </p>
 
@@ -37,14 +37,14 @@ export const HeroMap: React.FC = () => {
           <div className="flex items-center gap-3 pt-1">
             <a
               href="#pricing"
-              className="px-5 py-2.5 rounded-full text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 transition-all shadow-sm cursor-pointer"
+              className="px-5 py-2.5 rounded-full text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-sky-600 dark:hover:bg-sky-500 transition-all shadow-sm cursor-pointer"
             >
               {t('hero.viewPricing')}
             </a>
 
             <a
               href="/login"
-              className="px-5 py-2.5 rounded-full text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 shadow-2xs transition-all cursor-pointer"
+              className="px-5 py-2.5 rounded-full text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 shadow-2xs transition-all cursor-pointer"
             >
               {t('hero.signInPortals')}
             </a>

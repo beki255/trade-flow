@@ -3,6 +3,8 @@ import {
   getRiskZones,
   createRiskZone,
   updateRiskZone,
+  deleteRiskZone,
+  clearAllRiskZones,
   getProactiveGeofenceAlerts,
   calculateAlternateRoutes,
   applyAlternateRoute,
@@ -14,6 +16,8 @@ const router = Router();
 router.get('/risk-zones', getRiskZones);
 router.post('/risk-zones', createRiskZone);
 router.patch('/risk-zones/:id', updateRiskZone);
+router.delete('/risk-zones/:id', deleteRiskZone);
+router.delete('/risk-zones', clearAllRiskZones);
 
 // 2. Proactive Geofence Alerts (FR-08.2)
 router.get('/geofence-alerts', getProactiveGeofenceAlerts);

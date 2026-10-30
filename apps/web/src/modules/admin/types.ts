@@ -150,7 +150,7 @@ export interface FraudAlertItem {
   title: string;
   description: string;
   detectedAt: string;
-  status: 'OPEN' | 'INVESTIGATING' | 'RESOLVED' | 'SUSPENDED';
+  status: 'OPEN' | 'INVESTIGATING' | 'RESOLVED' | 'SUSPENDED' | 'DISMISSED';
   riskScore: number;
   targetUser?: {
     id: string;

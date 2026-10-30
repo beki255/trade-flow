@@ -16,6 +16,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { transporterStyles as styles } from './transporterStyles';
 import { UserProfile, TruckItem, DriverItem, LoadItem, BidItem, TransporterTabType } from './types';
 import { getApiBaseUrl, apiFetch } from '../../utils/api';
+import { validateEthiopianPhone } from '../../utils/validation';
 
 // Modular Tabs
 import { OverviewTab } from './tabs/OverviewTab';
@@ -30,6 +31,7 @@ import { AddDriverModal } from './modals/AddDriverModal';
 import { DispatchModal } from './modals/DispatchModal';
 import { ProfileModal } from './modals/ProfileModal';
 import { RatingModal } from './modals/RatingModal';
+import { NotificationsModal } from './modals/NotificationsModal';
 
 // Modular Screen Components
 import { TransporterHeader } from './components/TransporterHeader';
@@ -80,7 +82,6 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
       ? 'SUSPENDED'
       : 'PENDING'
   );
-  const [showApprovalNotice, setShowApprovalNotice] = useState(false);
 
   // Check if compliance credentials & documents are complete
   const isProfileComplete = Boolean(
@@ -106,20 +107,25 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
   const [selectedAcceptedBid, setSelectedAcceptedBid] = useState<BidItem | null>(null);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [selectedRatingBid, setSelectedRatingBid] = useState<BidItem | null>(null);
+  const [showNotificationsModal, setShowNotificationsModal] = useState(false);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
 
-  // Add Truck Form State
+  // Add / Edit Truck Form State
+  const [editingTruck, setEditingTruck] = useState<TruckItem | null>(null);
   const [truckPlate, setTruckPlate] = useState('');
   const [truckType, setTruckType] = useState('Flatbed');
   const [truckFuelType, setTruckFuelType] = useState('Diesel');
   const [truckCapacity, setTruckCapacity] = useState('28.0');
   const [truckDriver, setTruckDriver] = useState('');
-  const [insuranceDoc, setInsuranceDoc] = useState(true);
-  const [roadworthinessDoc, setRoadworthinessDoc] = useState(true);
+  const [insuranceDoc, setInsuranceDoc] = useState(false);
+  const [roadworthinessDoc, setRoadworthinessDoc] = useState(false);
   const [showDriverDropdown, setShowDriverDropdown] = useState(false);
 
-  // Add Driver Form State
+  // Add / Edit Driver Form State
+  const [editingDriver, setEditingDriver] = useState<DriverItem | null>(null);
   const [driverFullName, setDriverFullName] = useState('');
   const [driverPhone, setDriverPhone] = useState('');
+  const [driverEmail, setDriverEmail] = useState('');
   const [driverLicense, setDriverLicense] = useState('');
   const [driverCategory, setDriverCategory] = useState('Grade 5 Heavy');
   const [driverExperience, setDriverExperience] = useState('5');
@@ -146,14 +152,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
   const [selectedRouteFilter, setSelectedRouteFilter] = useState('ALL');
   const [selectedTonnageFilter, setSelectedTonnageFilter] = useState('ALL');
 
-  // Real-time Bid Acceptance/Rejection Notification State & Ref (4.2.4)
-  const [bidNotification, setBidNotification] = useState<{
-    type: 'ACCEPTED' | 'REJECTED';
-    title: string;
-    message: string;
-    bidId: string;
-    amount?: string;
-  } | null>(null);
+  // Real-time Bid Acceptance/Rejection Status Ref
   const prevBidStatusesRef = useRef<Record<string, string>>({});
 
   // Dispatch Assignment State
@@ -171,15 +170,16 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
             if (loadsRes.ok) {
               const data = await loadsRes.json();
               if (data.loads) {
+                const cleanText = (str?: any) => (str ? String(str).replace(/^`+|`+$/g, '').trim() : '');
                 setLoadsList(
                   data.loads.map((l: any) => ({
                     id: l.id ? `LD-${l.id.slice(-4).toUpperCase()}` : 'LD-9901',
                     rawId: l.id,
-                    title: l.title || 'Corridor Consignment',
-                    origin: l.originAddress || l.originName || 'Addis Ababa',
-                    destination: l.destinationAddress || l.destName || 'Djibouti Port',
-                    route: `${l.originAddress || l.originName || 'Addis Ababa'} ➔ ${l.destinationAddress || l.destName || 'Djibouti Port'}`,
-                    cargoType: l.cargoType || 'General Freight',
+                    title: cleanText(l.title) || 'Corridor Consignment',
+                    origin: cleanText(l.originAddress || l.originName) || 'Addis Ababa',
+                    destination: cleanText(l.destinationAddress || l.destName) || 'Djibouti Port',
+                    route: `${cleanText(l.originAddress || l.originName) || 'Addis Ababa'} ➔ ${cleanText(l.destinationAddress || l.destName) || 'Djibouti Port'}`,
+                    cargoType: cleanText(l.cargoType) || 'General Freight',
                     weight: `${l.weightTons || 28.0} Tons`,
                     weightTons: parseFloat(l.weightTons) || 28.0,
                     pickupDate: l.pickupWindowStart ? new Date(l.pickupWindowStart).toLocaleDateString() : '',
@@ -311,23 +311,18 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
 
                   const isDispatched = Boolean(truck && driver && isActualDispatched);
 
-                  // Instant Acceptance/Rejection Status Detection (SRS 4.2.4)
+                  // Silent Bid Acceptance / Rejection Status Detection
                   const prev = prevBidStatusesRef.current[b.id];
                   if (prev && prev === 'PENDING' && b.status === 'ACCEPTED') {
-                    setBidNotification({
-                      type: 'ACCEPTED',
-                      title: 'QUOTE ACCEPTED BY SHIPPER!',
-                      message: `Your quote for "${b.load?.title || 'Corridor Consignment'}" was accepted! Digital Escrow deposit is funded. Dispatch your fleet now.`,
-                      bidId: b.id,
-                      amount: `${Number(b.proposedRateEtb).toLocaleString()} ETB`,
-                    });
-                  } else if (prev && prev === 'PENDING' && b.status === 'REJECTED') {
-                    setBidNotification({
-                      type: 'REJECTED',
-                      title: 'Quote Update: Declined',
-                      message: `The shipper accepted another quote for "${b.load?.title || 'Consignment'}". Explore other loads on the corridor board.`,
-                      bidId: b.id,
-                    });
+                    // Sync unread notification count for the header bell icon
+                    apiFetch(`/api/notifications?role=TRANSPORTER&userId=${user?.id || ''}`)
+                      .then((r) => r.json())
+                      .then((data) => {
+                        if (typeof data.unreadCount === 'number') {
+                          setUnreadNotifCount(data.unreadCount);
+                        }
+                      })
+                      .catch(() => {});
                   }
                   prevBidStatusesRef.current[b.id] = b.status;
 
@@ -383,6 +378,23 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
             console.warn('Bids fetch error:', e);
           }
         })(),
+
+        // 5. Fetch Real-Time Notifications Unread Count
+        (async () => {
+          try {
+            const notifRes = await apiFetch(
+              `/api/notifications?role=TRANSPORTER&userId=${user?.id || ''}`
+            );
+            if (notifRes.ok) {
+              const data = await notifRes.json();
+              if (typeof data.unreadCount === 'number') {
+                setUnreadNotifCount(data.unreadCount);
+              }
+            }
+          } catch (e) {
+            // silent ignore
+          }
+        })(),
       ]);
     } catch (err) {
       console.warn('API sync error:', err);
@@ -398,15 +410,10 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
       if (res.ok) {
         const data = await res.json();
         if (data.verificationStatus && data.verificationStatus !== carrierStatus) {
-          const oldStatus = carrierStatus;
           setCarrierStatus(data.verificationStatus);
           if (user) {
             user.verificationStatus = data.verificationStatus;
             user.isVerified = data.verificationStatus === 'VERIFIED';
-          }
-          if (oldStatus === 'PENDING' && data.verificationStatus === 'VERIFIED') {
-            setShowApprovalNotice(true);
-            setTimeout(() => setShowApprovalNotice(false), 8000);
           }
         }
       }
@@ -466,12 +473,93 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
       b.status === 'PENDING'
   );
 
-  // Add Truck Handler
+  // Open Create Truck Modal (reset form)
+  const handleOpenCreateTruck = () => {
+    setEditingTruck(null);
+    setTruckPlate('');
+    setTruckType('Flatbed');
+    setTruckFuelType('Diesel');
+    setTruckCapacity('28.0');
+    setTruckDriver('');
+    setInsuranceDoc(false);
+    setRoadworthinessDoc(false);
+    setShowAddTruck(true);
+  };
+
+  // Open Edit Truck Modal (populate form)
+  const handleOpenEditTruck = (truck: TruckItem) => {
+    setEditingTruck(truck);
+    setTruckPlate(truck.plate || (truck as any).plateNumber || '');
+    setTruckType(truck.type || 'Flatbed');
+    setTruckFuelType(truck.fuelType || 'Diesel');
+    setTruckCapacity(truck.capacity ? truck.capacity.replace(/[^0-9.]/g, '') : '28.0');
+    setTruckDriver(truck.driver && truck.driver !== 'Unassigned' ? truck.driver : '');
+    setInsuranceDoc(true);
+    setRoadworthinessDoc(true);
+    setShowAddTruck(true);
+  };
+
+  // Delete Truck Handler
+  const handleDeleteTruck = async (truckId: string) => {
+    try {
+      const res = await apiFetch(`/api/portal/vehicles/${truckId}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        Alert.alert('Vehicle Deleted', 'Vehicle was successfully removed from your fleet.');
+        await refreshAllData();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        Alert.alert('Cannot Delete Vehicle', errData.error || 'Failed to delete vehicle.');
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Failed to delete vehicle');
+    }
+  };
+
+  // Add or Update Truck Handler
   const handleAddTruck = async () => {
     if (!truckPlate) {
       Alert.alert('Missing Field', 'Please enter the vehicle license plate number.');
       return;
     }
+
+    // Branch for Editing Existing Truck
+    if (editingTruck) {
+      const truckId = editingTruck.id || (editingTruck as any).rawId;
+      try {
+        const res = await apiFetch(`/api/portal/vehicles/${truckId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            plateNumber: truckPlate.trim().toUpperCase(),
+            vehicleType: truckType,
+            fuelType: truckFuelType,
+            capacityTons: parseFloat(truckCapacity) || 30.0,
+            driverName: truckDriver,
+          }),
+        });
+        if (res.ok) {
+          Alert.alert('Success', `Vehicle ${truckPlate.trim().toUpperCase()} updated successfully!`);
+          await refreshAllData();
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          Alert.alert('Update Failed', errData.error || 'Could not update vehicle.');
+        }
+      } catch (err: any) {
+        Alert.alert('Error', err?.message || 'Failed to update vehicle');
+      }
+      setEditingTruck(null);
+      setTruckPlate('');
+      setTruckType('Flatbed');
+      setTruckFuelType('Diesel');
+      setTruckDriver('');
+      setInsuranceDoc(false);
+      setRoadworthinessDoc(false);
+      setShowAddTruck(false);
+      return;
+    }
+
     const apiUrl = getApiBaseUrl();
     const newTruck: TruckItem = {
       id: `TRK-${Date.now().toString().slice(-4)}`,
@@ -537,22 +625,127 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
     setTruckType('Flatbed');
     setTruckFuelType('Diesel');
     setTruckDriver('');
+    setInsuranceDoc(false);
+    setRoadworthinessDoc(false);
     setShowAddTruck(false);
     setActiveTab('fleet');
     setFleetSubTab('vehicles');
     Alert.alert('Success', `Vehicle ${newTruck.plate} registered successfully!`);
   };
 
-  // Add Driver Handler (Scoped to Logged-in Transporter)
+  // Open Create Driver Modal (reset form)
+  const handleOpenCreateDriver = () => {
+    setEditingDriver(null);
+    setDriverFullName('');
+    setDriverPhone('');
+    setDriverEmail('');
+    setDriverLicense('');
+    setDriverCategory('Grade 5 Heavy');
+    setDriverExperience('5');
+    setDriverAssignedPlate('');
+    setDriverPhoto('');
+    setDriverLicenseDoc('');
+    setLicenseDocName('');
+    setDriverTemporaryPassword(generateRandomPassword());
+    setShowAddDriver(true);
+  };
+
+  // Open Edit Driver Modal (populate form)
+  const handleOpenEditDriver = (driver: DriverItem) => {
+    setEditingDriver(driver);
+    setDriverFullName(driver.fullName || '');
+    setDriverPhone(driver.phone || '');
+    setDriverEmail((driver as any).email || (driver as any).user?.email || '');
+    setDriverLicense(driver.licenseNumber || '');
+    setDriverCategory(driver.licenseCategory || 'Grade 5 Heavy');
+    setDriverExperience(driver.experienceYears ? String(driver.experienceYears).replace(/[^0-9]/g, '') : '5');
+    setDriverAssignedPlate(driver.assignedTruckPlate && driver.assignedTruckPlate !== 'Unassigned' ? driver.assignedTruckPlate : '');
+    setDriverPhoto(driver.photoUrl || '');
+    setDriverLicenseDoc(driver.licenseDocUrl || '');
+    setLicenseDocName(driver.licenseDocUrl ? 'Driver_License_File' : '');
+    setDriverTemporaryPassword('');
+    setShowAddDriver(true);
+  };
+
+  // Delete Driver Handler
+  const handleDeleteDriver = async (driverId: string) => {
+    try {
+      const res = await apiFetch(`/api/portal/drivers/${driverId}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        Alert.alert('Driver Removed', 'Driver was successfully removed.');
+        await refreshAllData();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        Alert.alert('Cannot Remove Driver', errData.error || 'Failed to remove driver.');
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Failed to remove driver');
+    }
+  };
+
+  // Add or Update Driver Handler (Scoped to Logged-in Transporter)
   const handleAddDriver = async () => {
     if (!driverFullName || !driverPhone) {
       Alert.alert('Missing Fields', 'Please enter the driver legal name and phone number.');
       return;
     }
+
+    const phoneRes = validateEthiopianPhone(driverPhone);
+    if (!phoneRes.isValid) {
+      Alert.alert('Invalid Phone', phoneRes.error || 'Please enter a valid Ethiopian phone number (+251 9... / 09... or +251 7... / 07...).');
+      return;
+    }
+
+    const normalizedDriverPhone = phoneRes.normalized || driverPhone.trim();
+
+    // Branch for Editing Existing Driver
+    if (editingDriver) {
+      const driverId = editingDriver.id || (editingDriver as any).rawId;
+      try {
+        const res = await apiFetch(`/api/portal/drivers/${driverId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fullName: driverFullName.trim(),
+            phone: normalizedDriverPhone,
+            email: driverEmail.trim() ? driverEmail.trim().toLowerCase() : undefined,
+            licenseNo: driverLicense.trim() || undefined,
+            licenseClass: driverCategory,
+            experienceYears: parseInt(driverExperience) || 5,
+            assignedVehiclePlate: driverAssignedPlate || '',
+            password: driverTemporaryPassword.trim() ? driverTemporaryPassword.trim() : undefined,
+          }),
+        });
+        if (res.ok) {
+          Alert.alert('Success', `Driver ${driverFullName.trim()} profile updated successfully!`);
+          await refreshAllData();
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          Alert.alert('Update Failed', errData.error || 'Could not update driver.');
+        }
+      } catch (err: any) {
+        Alert.alert('Error', err?.message || 'Failed to update driver');
+      }
+      setEditingDriver(null);
+      setDriverFullName('');
+      setDriverPhone('');
+      setDriverEmail('');
+      setDriverLicense('');
+      setDriverAssignedPlate('');
+      setDriverPhoto('');
+      setDriverLicenseDoc('');
+      setLicenseDocName('');
+      setDriverTemporaryPassword(generateRandomPassword());
+      setShowAddDriver(false);
+      return;
+    }
+
     const newDriver: DriverItem = {
       id: `DRV-${Date.now().toString().slice(-4)}`,
       fullName: driverFullName.trim(),
-      phone: driverPhone.trim(),
+      phone: normalizedDriverPhone,
       licenseNumber: driverLicense.trim() || `ETH-DL-${Math.floor(100000 + Math.random() * 900000)}`,
       licenseCategory: driverCategory,
       experienceYears: driverExperience || '5',
@@ -573,13 +766,18 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
           transporterEmail: user?.email,
           fullName: newDriver.fullName,
           phone: newDriver.phone,
+          email: driverEmail.trim() ? driverEmail.trim().toLowerCase() : undefined,
           licenseNo: newDriver.licenseNumber,
           licenseClass: newDriver.licenseCategory,
           experienceYears: parseInt(driverExperience) || 5,
           assignedVehiclePlate: driverAssignedPlate,
           password: driverTemporaryPassword.trim(),
-          driverPhoto: driverPhoto || undefined,
-          licenseDoc: driverLicenseDoc || undefined,
+          driverPhoto: undefined,
+          licenseDoc: driverLicenseDoc
+            ? (driverLicenseDoc.startsWith('{')
+                ? driverLicenseDoc
+                : JSON.stringify({ name: licenseDocName || 'Commercial_Driver_License.jpg', data: driverLicenseDoc }))
+            : undefined,
         }),
       });
       if (res.ok) {
@@ -613,8 +811,10 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
     }
 
     const oneTimePass = driverTemporaryPassword;
+    const registeredEmail = driverEmail.trim().toLowerCase();
     setDriverFullName('');
     setDriverPhone('');
+    setDriverEmail('');
     setDriverLicense('');
     setDriverAssignedPlate('');
     setDriverPhoto('');
@@ -626,7 +826,7 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
     setFleetSubTab('drivers');
     Alert.alert(
       'Driver Registered Successfully',
-      `Driver: ${newDriver.fullName}\nPhone: ${newDriver.phone}\nOne-Time Password: ${oneTimePass}\n\nPlease share this temporary password with the driver. They can sign in on the TradeFlow Driver app and update it in their Profile.`
+      `Driver: ${newDriver.fullName}\nPhone: ${newDriver.phone}${registeredEmail ? `\nEmail: ${registeredEmail}` : ''}\nOne-Time Password: ${oneTimePass}\n\nPlease share this temporary password with the driver. They can sign in on the TradeFlow Driver app and update it in their Profile.`
     );
   };
 
@@ -848,6 +1048,19 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
       return;
     }
 
+    // Strict Guard: Vehicle Weight Capacity Match (FTA Corridor Weight Limit Regulations)
+    const cargoWeightTons = parseFloat((selectedAcceptedBid?.weight || '').replace(/[^0-9.]/g, '')) || 0;
+    if (vehicleObj) {
+      const truckCap = parseFloat((vehicleObj.capacity || '').replace(/[^0-9.]/g, '')) || 0;
+      if (cargoWeightTons > 0 && truckCap > 0 && truckCap < cargoWeightTons) {
+        Alert.alert(
+          'Weight Capacity Mismatch',
+          `This consignment weighs ${cargoWeightTons} Tons, but truck ${dispatchTruck} only has a maximum registered payload capacity of ${truckCap} Tons.\n\nFTA and Corridor safety regulations prohibit overloading. Please select a truck capable of carrying at least ${cargoWeightTons} Tons.`
+        );
+        return;
+      }
+    }
+
     // Strict Guard: Driver must be verified by Platform Admin
     const driverObj = driversList.find((d) => d.fullName === dispatchDriver);
     if (driverObj && driverObj.status === 'PENDING') {
@@ -980,6 +1193,8 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
         user={currentUser}
         carrierStatus={carrierStatus}
         onOpenProfile={() => setShowProfileModal(true)}
+        onOpenNotifications={() => setShowNotificationsModal(true)}
+        unreadCount={unreadNotifCount}
         onLogout={onLogout}
       />
 
@@ -988,30 +1203,6 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0284C7']} />}
       >
-        {/* Instant Real-Time Verification Celebration Banner */}
-        {showApprovalNotice && (
-          <View style={{
-            flexDirection: 'row',
-            backgroundColor: '#ECFDF5',
-            borderWidth: 1.5,
-            borderColor: '#86EFAC',
-            borderRadius: 16,
-            padding: 14,
-            gap: 12,
-            alignItems: 'center',
-            marginBottom: 10,
-          }}>
-            <Ionicons name="checkmark-circle" size={26} color="#059669" />
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, fontWeight: '900', color: '#065F46' }}>
-                Carrier Account Verified & Approved in Real Time!
-              </Text>
-              <Text style={{ fontSize: 11, color: '#047857', marginTop: 2, fontWeight: '600' }}>
-                Administrator has approved your compliance credentials. You can now submit quotes and bid on corridor consignments.
-              </Text>
-            </View>
-          </View>
-        )}
 
         {/* Verification Alert Banner */}
         {carrierStatus === 'PENDING' && (
@@ -1026,79 +1217,6 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
           </View>
         )}
 
-        {/* 4.2.4 Real-Time Bid Acceptance / Rejection Alert Banner */}
-        {bidNotification && (
-          <View
-            style={{
-              flexDirection: 'row',
-              backgroundColor: bidNotification.type === 'ACCEPTED' ? '#ECFDF5' : '#FFF1F2',
-              borderWidth: 1.5,
-              borderColor: bidNotification.type === 'ACCEPTED' ? '#10B981' : '#FDA4AF',
-              borderRadius: 16,
-              padding: 14,
-              gap: 12,
-              alignItems: 'center',
-              marginBottom: 10,
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.08,
-              shadowRadius: 4,
-              elevation: 2,
-            }}
-          >
-            <Ionicons
-              name={bidNotification.type === 'ACCEPTED' ? 'trophy' : 'information-circle'}
-              size={26}
-              color={bidNotification.type === 'ACCEPTED' ? '#059669' : '#E11D48'}
-            />
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  fontSize: 13,
-                  fontWeight: '900',
-                  color: bidNotification.type === 'ACCEPTED' ? '#065F46' : '#9F1239',
-                }}
-              >
-                {bidNotification.title}
-              </Text>
-              <Text
-                style={{
-                  fontSize: 11,
-                  color: bidNotification.type === 'ACCEPTED' ? '#047857' : '#881337',
-                  marginTop: 2,
-                  fontWeight: '600',
-                }}
-              >
-                {bidNotification.message}
-              </Text>
-
-              {bidNotification.type === 'ACCEPTED' && (
-                <TouchableOpacity
-                  style={{
-                    alignSelf: 'flex-start',
-                    backgroundColor: '#10B981',
-                    paddingHorizontal: 12,
-                    paddingVertical: 6,
-                    borderRadius: 8,
-                    marginTop: 8,
-                  }}
-                  onPress={() => {
-                    setBidNotification(null);
-                    setActiveTab('bidding');
-                  }}
-                >
-                  <Text style={{ fontSize: 11, fontWeight: '800', color: '#FFFFFF' }}>
-                    View & Dispatch Vehicle ➔
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-            <TouchableOpacity onPress={() => setBidNotification(null)} style={{ padding: 4 }}>
-              <Ionicons name="close" size={18} color="#64748B" />
-            </TouchableOpacity>
-          </View>
-        )}
-
         {/* 1. OVERVIEW TAB */}
         {activeTab === 'overview' && (
           <OverviewTab
@@ -1108,8 +1226,8 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
             submittedBids={submittedBids}
             setActiveTab={setActiveTab}
             setFleetSubTab={setFleetSubTab}
-            openAddTruckModal={() => setShowAddTruck(true)}
-            openAddDriverModal={() => setShowAddDriver(true)}
+            openAddTruckModal={handleOpenCreateTruck}
+            openAddDriverModal={handleOpenCreateDriver}
           />
         )}
 
@@ -1120,8 +1238,12 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
             driversList={driversList}
             fleetSubTab={fleetSubTab}
             setFleetSubTab={setFleetSubTab}
-            openAddTruckModal={() => setShowAddTruck(true)}
-            openAddDriverModal={() => setShowAddDriver(true)}
+            openAddTruckModal={handleOpenCreateTruck}
+            openAddDriverModal={handleOpenCreateDriver}
+            onEditTruck={handleOpenEditTruck}
+            onDeleteTruck={handleDeleteTruck}
+            onEditDriver={handleOpenEditDriver}
+            onDeleteDriver={handleDeleteDriver}
           />
         )}
 
@@ -1217,7 +1339,11 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
       {/* MODAL 1: Add Vehicle Modal */}
       <AddTruckModal
         visible={showAddTruck}
-        onClose={() => setShowAddTruck(false)}
+        onClose={() => {
+          setShowAddTruck(false);
+          setEditingTruck(null);
+        }}
+        isEditing={Boolean(editingTruck)}
         truckPlate={truckPlate}
         setTruckPlate={setTruckPlate}
         truckType={truckType}
@@ -1241,11 +1367,17 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
       {/* MODAL 2: Add Driver Modal */}
       <AddDriverModal
         visible={showAddDriver}
-        onClose={() => setShowAddDriver(false)}
+        onClose={() => {
+          setShowAddDriver(false);
+          setEditingDriver(null);
+        }}
+        isEditing={Boolean(editingDriver)}
         driverFullName={driverFullName}
         setDriverFullName={setDriverFullName}
         driverPhone={driverPhone}
         setDriverPhone={setDriverPhone}
+        driverEmail={driverEmail}
+        setDriverEmail={setDriverEmail}
         driverLicense={driverLicense}
         setDriverLicense={setDriverLicense}
         driverCategory={driverCategory}
@@ -1303,6 +1435,14 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
         onRatingSubmitted={async () => {
           await refreshAllData();
         }}
+      />
+
+      {/* MODAL 6: Notifications Modal */}
+      <NotificationsModal
+        visible={showNotificationsModal}
+        onClose={() => setShowNotificationsModal(false)}
+        onSelectTab={(tab) => setActiveTab(tab)}
+        onUnreadChange={(count) => setUnreadNotifCount(count)}
       />
     </SafeAreaView>
   );

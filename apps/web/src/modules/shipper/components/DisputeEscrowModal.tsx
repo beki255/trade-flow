@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Scale, Send, X, Camera, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface DisputeEscrowModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export const DisputeEscrowModal: React.FC<DisputeEscrowModalProps> = ({
   paymentRef,
   defaultAmount = 25000,
 }) => {
+  const { language } = useLanguage();
   const [disputeReason, setDisputeReason] = useState('');
   const [claimedAmount, setClaimedAmount] = useState(String(defaultAmount));
   const [photoUrl, setPhotoUrl] = useState('');
@@ -54,7 +56,9 @@ export const DisputeEscrowModal: React.FC<DisputeEscrowModalProps> = ({
           <div className="flex items-center gap-2">
             <Scale className="w-5 h-5 text-rose-600" />
             <div>
-              <h3 className="text-base font-black text-slate-900">File Payment Dispute Ticket</h3>
+              <h3 className="text-base font-black text-slate-900">
+                {language === 'AM' ? 'የክፍያ ቅሬታ ማመልከቻ መመዝገቢያ' : language === 'OM' ? 'Tikeettii Mormii Kaffaltii Galmeessi' : 'File Payment Dispute Ticket'}
+              </h3>
               {paymentRef && (
                 <span className="text-[11px] font-mono text-slate-400">Ref: {paymentRef}</span>
               )}
@@ -72,12 +76,18 @@ export const DisputeEscrowModal: React.FC<DisputeEscrowModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
           <div>
             <label className="block font-bold text-slate-700 mb-1">
-              Dispute Category & Issue Description *
+              {language === 'AM' ? 'የቅሬታው ዓይነት እና ዝርዝር ማብራሪያ *' : language === 'OM' ? 'Gosa Mormii fi Ibsa Rakkoo *' : 'Dispute Category & Issue Description *'}
             </label>
             <textarea
               rows={3}
               required
-              placeholder="Detail cargo damage, missing parcels, unapproved transit delays, or rate discrepancies..."
+              placeholder={
+                language === 'AM'
+                  ? 'የጭነት ጉዳት፣ የጎደለ እቃ፣ ያልተፈቀደ የጉዞ መዘግየት ወይም የዋጋ ልዩነትን በዝርዝር ይግለጹ...'
+                  : language === 'OM'
+                  ? 'Miidhaa fe\'isaa, qabeenya dhabame, tureetii imalaa hin heyyamamne ykn garaagarummaa gatii ibsaa...'
+                  : 'Detail cargo damage, missing parcels, unapproved transit delays, or rate discrepancies...'
+              }
               value={disputeReason}
               onChange={(e) => setDisputeReason(e.target.value)}
               className="w-full px-3.5 py-2 rounded-xl border border-slate-300 font-medium text-slate-900 outline-none focus:border-rose-500"
@@ -87,7 +97,7 @@ export const DisputeEscrowModal: React.FC<DisputeEscrowModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block font-bold text-slate-700 mb-1">
-                Claimed Compensation Amount (ETB) *
+                {language === 'AM' ? 'የሚጠየቀው የካሳ መጠን (ብር) *' : language === 'OM' ? 'Hanga Beenyaa Gaafatamu (ETB) *' : 'Claimed Compensation Amount (ETB) *'}
               </label>
               <input
                 type="number"
@@ -100,17 +110,25 @@ export const DisputeEscrowModal: React.FC<DisputeEscrowModalProps> = ({
 
             <div>
               <label className="block font-bold text-slate-700 mb-1">
-                Requested Settlement Resolution
+                {language === 'AM' ? 'የሚፈለገው የውሳኔ ዓይነት' : language === 'OM' ? 'Furmaata Mormii Barbaadame' : 'Requested Settlement Resolution'}
               </label>
               <select
                 value={requestedResolution}
                 onChange={(e) => setRequestedResolution(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-800 outline-none"
               >
-                <option value="Escrow Adjustment & Partial Refund">Escrow Adjustment & Partial Refund</option>
-                <option value="Full Escrow Refund (Severe Damage / Non-Delivery)">Full Escrow Refund</option>
-                <option value="Late Delivery Penalty Deduction">Late Delivery Penalty Deduction</option>
-                <option value="Administrative Mediation Hearing">Administrative Mediation Hearing</option>
+                <option value="Escrow Adjustment & Partial Refund">
+                  {language === 'AM' ? 'የኤስክሮው ማስተካከያ እና ከፊል ተመላሽ' : language === 'OM' ? 'Sirreeffama Iskroow fi Deebii Gamisaa' : 'Escrow Adjustment & Partial Refund'}
+                </option>
+                <option value="Full Escrow Refund (Severe Damage / Non-Delivery)">
+                  {language === 'AM' ? 'ሙሉ የገንዘብ ተመላሽ (ከባድ ጉዳት / ላልደረሰ ጭነት)' : language === 'OM' ? 'Deebii Guutuu (Miidhaa Cimaa / Kan Hin Geenyee)' : 'Full Escrow Refund'}
+                </option>
+                <option value="Late Delivery Penalty Deduction">
+                  {language === 'AM' ? 'የዘገየበት የቅጣት ቅናሽ' : language === 'OM' ? 'Adabbii Turuu Hir\'isuu' : 'Late Delivery Penalty Deduction'}
+                </option>
+                <option value="Administrative Mediation Hearing">
+                  {language === 'AM' ? 'የአስተዳዳሪ የሽምግልና ችሎት' : language === 'OM' ? 'Dhaddacha Araaraa Bulchaa' : 'Administrative Mediation Hearing'}
+                </option>
               </select>
             </div>
           </div>
@@ -118,7 +136,9 @@ export const DisputeEscrowModal: React.FC<DisputeEscrowModalProps> = ({
           <div>
             <label className="block font-bold text-slate-700 mb-1 flex items-center gap-1.5">
               <Camera className="w-3.5 h-3.5 text-slate-500" />
-              <span>Photo Evidence / Inspection Certificate Link (Optional)</span>
+              <span>
+                {language === 'AM' ? 'የፎቶ ማስረጃ / የፍተሻ ሰርተፊኬት ማስፈንጠሪያ (አማራጭ)' : language === 'OM' ? 'Ragaa Suuraa / Liinkii Waraqaa Sakatta\'aa (Filannoo)' : 'Photo Evidence / Inspection Certificate Link (Optional)'}
+              </span>
             </label>
             <input
               type="url"
@@ -132,7 +152,12 @@ export const DisputeEscrowModal: React.FC<DisputeEscrowModalProps> = ({
           <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-[11px] text-amber-900 leading-relaxed flex items-start gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
             <div>
-              <strong>Escrow Protection Protocol:</strong> Upon submission, escrow funds are immediately frozen in smart contract vault and routed to the <strong>Platform Administrator Console</strong> for mediation review.
+              <strong>{language === 'AM' ? 'የኤስክሮው ጥበቃ ሥርዓት፦' : language === 'OM' ? 'Sirna Eegumsa Iskroow:' : 'Escrow Protection Protocol:'}</strong>{' '}
+              {language === 'AM'
+                ? 'ቅሬታው እንደገባ የኤስክሮው ገንዘቡ ወዲያውኑ በስማርት ኮንትራክቱ ውስጥ ይታገዳል፤ እንዲሁም በፕላትፎርሙ አስተዳዳሪ የሽምግልና ሰሌዳ እንዲታይ ይላካል።'
+                : language === 'OM'
+                ? 'Akkuma galfameen maallaqni iskroow hatattamaan hidhama, gamaaggama araaraaf gara Boordii Bulchaa Pilaatfoormiitti ergama.'
+                : 'Upon submission, escrow funds are immediately frozen in smart contract vault and routed to the Platform Administrator Console for mediation review.'}
             </div>
           </div>
 
@@ -142,14 +167,19 @@ export const DisputeEscrowModal: React.FC<DisputeEscrowModalProps> = ({
               onClick={onClose}
               className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 cursor-pointer"
             >
-              Cancel
+              {language === 'AM' ? 'ይቅር' : language === 'OM' ? 'Haqi' : 'Cancel'}
             </button>
             <button
               type="submit"
               disabled={submitting}
               className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold shadow-md flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
-              <Send className="w-3.5 h-3.5" /> {submitting ? 'Submitting...' : 'Register Dispute Ticket'}
+              <Send className="w-3.5 h-3.5" />
+              <span>
+                {submitting
+                  ? (language === 'AM' ? 'በማስገባት ላይ...' : language === 'OM' ? 'Galchaa jira...' : 'Submitting...')
+                  : (language === 'AM' ? 'የቅሬታ ቲኬት መዝግብ' : language === 'OM' ? 'Tikeettii Mormii Galmeessi' : 'Register Dispute Ticket')}
+              </span>
             </button>
           </div>
         </form>

@@ -148,7 +148,7 @@ model User {
   roadworthinessDoc  String? // FTA Roadworthiness Certificate Document / URL
   verificationStatus VerificationStatus @default(PENDING)
   verificationNotes  String?
-  ratingAvg          Float              @default(5.0)
+  ratingAvg          Float              @default(0.0)
   totalRatingsCount  Int                @default(0)
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt

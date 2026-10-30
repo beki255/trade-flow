@@ -82,9 +82,32 @@ export const DispatchModal: React.FC<DispatchModalProps> = ({
 
   const isAlreadyDispatched = Boolean(selectedBid?.dispatchedTruck && selectedBid?.dispatchedDriver);
   const isEscrowSecured = selectedBid?.isEscrowLocked !== false;
-  const canDispatch = Boolean(dispatchTruck && dispatchDriver && !isAlreadyDispatched && isEscrowSecured);
 
-  const availableTrucksCount = fleetList.filter((t) => t.status !== 'IN_TRANSIT').length;
+  // Extract consignment weight in Tons (e.g. "32.0 Tons" -> 32)
+  const cargoWeightTons = parseFloat(
+    (selectedBid?.weight || '').replace(/[^0-9.]/g, '')
+  ) || 0;
+
+  // Find selected truck capacity and verify capacity match
+  const selectedTruckObj = fleetList.find((t) => t.plate === dispatchTruck);
+  const selectedTruckCap = parseFloat((selectedTruckObj?.capacity || '').replace(/[^0-9.]/g, '')) || 0;
+  const isSelectedTruckUnderCapacity = cargoWeightTons > 0 && selectedTruckCap > 0 && selectedTruckCap < cargoWeightTons;
+
+  const canDispatch = Boolean(
+    dispatchTruck &&
+    dispatchDriver &&
+    !isAlreadyDispatched &&
+    isEscrowSecured &&
+    !isSelectedTruckUnderCapacity
+  );
+
+  // Eligible trucks matching cargo weight and not busy
+  const eligibleTrucksCount = fleetList.filter((t) => {
+    if (t.status === 'IN_TRANSIT') return false;
+    const truckCap = parseFloat((t.capacity || '').replace(/[^0-9.]/g, '')) || 0;
+    return cargoWeightTons === 0 || truckCap >= cargoWeightTons;
+  }).length;
+
   const availableDriversCount = driversList.filter(
     (d) =>
       d.status !== 'IN_TRANSIT' &&
@@ -155,6 +178,14 @@ export const DispatchModal: React.FC<DispatchModalProps> = ({
                 {selectedBid?.route || 'Djibouti Port ➔ Modjo Dry Port'}
               </Text>
               <View style={modalStyles.routeMetaRow}>
+                {cargoWeightTons > 0 && (
+                  <View style={[modalStyles.routeMetaPill, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
+                    <MaterialCommunityIcons name="weight" size={13} color="#15803D" />
+                    <Text style={[modalStyles.routeMetaPillText, { color: '#15803D', fontWeight: '800' }]}>
+                      Weight: {selectedBid?.weight || `${cargoWeightTons} Tons`}
+                    </Text>
+                  </View>
+                )}
                 <View style={modalStyles.routeMetaPill}>
                   <Ionicons name="cash-outline" size={13} color="#0369A1" />
                   <Text style={modalStyles.routeMetaPillText}>
@@ -225,7 +256,7 @@ export const DispatchModal: React.FC<DispatchModalProps> = ({
                 </View>
                 <Text style={modalStyles.sectionTitle}>Select Fleet Vehicle</Text>
                 <Text style={modalStyles.sectionCountText}>
-                  ({availableTrucksCount} available)
+                  ({eligibleTrucksCount} capacity-matched)
                 </Text>
               </View>
 
@@ -244,7 +275,9 @@ export const DispatchModal: React.FC<DispatchModalProps> = ({
                   {fleetList.map((trk) => {
                     const isBusy = trk.status === 'IN_TRANSIT';
                     const isSelected = dispatchTruck === trk.plate;
-                    const isDisabled = isBusy || isAlreadyDispatched;
+                    const truckCap = parseFloat((trk.capacity || '').replace(/[^0-9.]/g, '')) || 0;
+                    const isUnderCapacity = cargoWeightTons > 0 && truckCap > 0 && truckCap < cargoWeightTons;
+                    const isDisabled = isBusy || isAlreadyDispatched || isUnderCapacity;
 
                     return (
                       <TouchableOpacity
@@ -255,6 +288,7 @@ export const DispatchModal: React.FC<DispatchModalProps> = ({
                           modalStyles.selectionCard,
                           isSelected && modalStyles.selectionCardActive,
                           isDisabled && modalStyles.selectionCardDisabled,
+                          isUnderCapacity && { borderColor: '#FCA5A5', backgroundColor: '#FFF5F5' },
                         ]}
                         onPress={() => !isDisabled && setDispatchTruck(trk.plate)}
                       >
@@ -264,12 +298,13 @@ export const DispatchModal: React.FC<DispatchModalProps> = ({
                             modalStyles.itemIconBox,
                             isSelected && modalStyles.itemIconBoxActive,
                             isBusy && { backgroundColor: '#F1F5F9' },
+                            isUnderCapacity && { backgroundColor: '#FEE2E2' },
                           ]}
                         >
                           <MaterialCommunityIcons
                             name="truck"
                             size={20}
-                            color={isSelected ? '#0284C7' : isBusy ? '#94A3B8' : '#475569'}
+                            color={isSelected ? '#0284C7' : isUnderCapacity ? '#DC2626' : isBusy ? '#94A3B8' : '#475569'}
                           />
                         </View>
 
@@ -281,6 +316,7 @@ export const DispatchModal: React.FC<DispatchModalProps> = ({
                                 modalStyles.itemTitle,
                                 isSelected && { color: '#0369A1' },
                                 isBusy && { color: '#94A3B8' },
+                                isUnderCapacity && { color: '#991B1B' },
                               ]}
                             >
                               {trk.plate}
@@ -301,9 +337,25 @@ export const DispatchModal: React.FC<DispatchModalProps> = ({
                               </Text>
                             </View>
                           </View>
-                          <Text style={modalStyles.itemSub}>
-                            {isBusy ? '⛔ Currently in transit on another load' : 'Ready for assignment • GPS enabled'}
-                          </Text>
+
+                          {/* Capacity Matching Feedback */}
+                          {isBusy ? (
+                            <Text style={modalStyles.itemSub}>⛔ Currently in transit on another load</Text>
+                          ) : isUnderCapacity ? (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
+                              <Ionicons name="alert-circle" size={13} color="#DC2626" />
+                              <Text style={{ fontSize: 11, fontWeight: '800', color: '#DC2626' }}>
+                                Under Capacity ({truckCap}T Max &lt; {cargoWeightTons}T Cargo)
+                              </Text>
+                            </View>
+                          ) : (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
+                              <Ionicons name="checkmark-circle" size={13} color="#059669" />
+                              <Text style={{ fontSize: 11, fontWeight: '700', color: '#059669' }}>
+                                Matched Capacity ({trk.capacity || `${truckCap} Tons`})
+                              </Text>
+                            </View>
+                          )}
                         </View>
 
                         {/* Selection Radio Circle */}

@@ -17,7 +17,7 @@ interface EarningsTabProps {
 }
 
 export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = [] }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [payments, setPayments] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -183,7 +183,7 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
             >
               <Ionicons name="refresh" size={11} color="#0284C7" />
               <Text style={{ fontSize: 9.5, fontWeight: '700', color: '#0284C7' }}>
-                Refresh
+                {language === 'AM' ? 'አድስ' : language === 'OM' ? 'Haaresi' : 'Refresh'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -212,9 +212,9 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
             const commission = Number(pay.platformCommissionEtb) || Math.round(grossAmount * 0.05);
             const prefix = pay.paymentMethod === 'CBE_BIRR' ? 'CBE-TF-' : 'TB-TF-';
             const txNo = pay.telebirrTransactionNo || pay.telebirrTxId || `${prefix}${pay.id.slice(0, 6)}`;
-            const cargoTitle = pay.shipment?.load?.title || pay.shipment?.load?.cargoType || 'Corridor Freight';
-            const destLocation = pay.shipment?.load?.destName || 'Addis Ababa';
-            const originLocation = pay.shipment?.load?.originName || 'Djibouti';
+            const cargoTitle = pay.shipment?.load?.title || pay.shipment?.load?.cargoType || (language === 'AM' ? 'የኮሪደር ጭነት' : 'Corridor Freight');
+            const destLocation = pay.shipment?.load?.destName || (language === 'AM' ? 'አዲስ አበባ' : 'Addis Ababa');
+            const originLocation = pay.shipment?.load?.originName || (language === 'AM' ? 'ጅቡቲ' : 'Djibouti');
             const settledDate = pay.settledAt || pay.paidAt || pay.createdAt;
 
             return (
@@ -266,7 +266,9 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
                           color: isSettled ? '#166534' : '#92400E',
                         }}
                       >
-                        {isSettled ? 'SETTLED' : 'IN ESCROW'}
+                        {isSettled
+                          ? (language === 'AM' ? 'ተጠናቋል' : language === 'OM' ? 'MIRKANAA\'E' : 'SETTLED')
+                          : (language === 'AM' ? 'በኤስክሮው ተይዟል' : language === 'OM' ? 'ESCROW KEESSA' : 'IN ESCROW')}
                       </Text>
                     </View>
                   </View>
@@ -275,7 +277,7 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
                 {/* Cargo & Route details */}
                 <View style={{ marginTop: 6, paddingVertical: 4, borderTopWidth: 1, borderTopColor: '#F1F5F9' }}>
                   <Text style={{ fontSize: 11, fontWeight: '700', color: '#1E293B' }} numberOfLines={1}>
-                    Cargo: {cargoTitle}
+                    {language === 'AM' ? 'ጭነት:' : language === 'OM' ? 'Fe\'isa:' : 'Cargo:'} {cargoTitle}
                   </Text>
                   <Text style={{ fontSize: 9.5, color: '#64748B' }} numberOfLines={1}>
                     {originLocation.split(',')[0]} → {destLocation.split(',')[0]}
@@ -285,17 +287,21 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 4, paddingTop: 6, borderTopWidth: 1, borderTopColor: '#F1F5F9' }}>
                   <View>
                     <Text style={{ fontSize: 9.5, color: '#64748B' }}>
-                      Gross: {grossAmount.toLocaleString()} ETB (5% fee)
+                      {language === 'AM' ? 'ጠቅላላ:' : language === 'OM' ? 'Waliigala:' : 'Gross:'} {grossAmount.toLocaleString()} ETB ({language === 'AM' ? '5% የአገልግሎት ክፍያ' : language === 'OM' ? 'Kaffaltii 5%' : '5% fee'})
                     </Text>
                     {settledDate && (
                       <Text style={{ fontSize: 9, color: '#94A3B8', marginTop: 1 }}>
-                        {isSettled ? 'Settled: ' : 'Deposited: '}
+                        {isSettled
+                          ? (language === 'AM' ? 'የተከፈለበት: ' : language === 'OM' ? 'Kan Kaffalame: ' : 'Settled: ')
+                          : (language === 'AM' ? 'የተቀመጠበት: ' : language === 'OM' ? 'Kan Qabame: ' : 'Deposited: ')}
                         {formatDate(settledDate)}
                       </Text>
                     )}
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={{ fontSize: 8.5, color: '#64748B', fontWeight: '600' }}>Transporter Net</Text>
+                    <Text style={{ fontSize: 8.5, color: '#64748B', fontWeight: '600' }}>
+                      {language === 'AM' ? 'የአጓጓዥ የተጣራ' : language === 'OM' ? 'Qulqulluu Geejjibaa' : 'Transporter Net'}
+                    </Text>
                     <Text style={{ fontSize: 13, fontWeight: '900', color: isSettled ? '#059669' : '#0284C7' }}>
                       {netAmount.toLocaleString()} ETB
                     </Text>
@@ -312,7 +318,9 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <View>
             <Text style={styles.cardTitle}>{t('carrierRatingTitle')}</Text>
-            <Text style={styles.emptySub}>Bidirectional shipper reviews score</Text>
+            <Text style={styles.emptySub}>
+              {language === 'AM' ? 'ከላኪዎች የተሰጠ የሁለትዮሽ ግምገማ ውጤት' : language === 'OM' ? 'Bu\'aa qorannoo ergitootaa' : 'Bidirectional shipper reviews score'}
+            </Text>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -320,7 +328,9 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
               <Ionicons name="star" size={16} color={hasRatings ? '#F59E0B' : '#CBD5E1'} />
             </View>
             <Text style={{ fontSize: 10, color: '#64748B' }}>
-              {hasRatings ? `${reviews.length} verified reviews` : 'New Carrier (Unrated)'}
+              {hasRatings
+                ? (language === 'AM' ? `${reviews.length} የተረጋገጡ ግምገማዎች` : language === 'OM' ? `Qorannoowwan ${reviews.length} mirkanaa\'an` : `${reviews.length} verified reviews`)
+                : (language === 'AM' ? 'አዲስ አጓጓዥ (ደረጃ ያልተሰጠው)' : language === 'OM' ? 'Geejjibaa Haaraa' : 'New Carrier (Unrated)')}
             </Text>
           </View>
         </View>
@@ -343,11 +353,11 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
           reviews.map((rev) => (
             <View key={rev.id} style={{ backgroundColor: '#F8FAFC', borderRadius: 10, padding: 12, marginBottom: 6 }}>
               <Text style={{ fontSize: 11, fontWeight: '700', color: '#1E293B' }}>
-                "{rev.comment || rev.reviewText || 'Delivered on time.'}"
+                "{rev.comment || rev.reviewText || (language === 'AM' ? 'በሰዓቱ ደርሷል።' : 'Delivered on time.')}"
               </Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
                 <Text style={{ fontSize: 9.5, color: '#64748B' }}>
-                  — {rev.fromUser?.companyName || rev.fromUser?.fullName || 'Verified Shipper'} •
+                  — {rev.fromUser?.companyName || rev.fromUser?.fullName || (language === 'AM' ? 'የተረጋገጠ ላኪ' : language === 'OM' ? 'Ergaa Mirkanaa\'e' : 'Verified Shipper')} •
                 </Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   {[1, 2, 3, 4, 5].map((s) => (

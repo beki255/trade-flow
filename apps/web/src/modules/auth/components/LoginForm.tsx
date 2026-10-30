@@ -6,6 +6,8 @@ import { GoogleAuthButton } from '../../../components/auth/GoogleAuthButton';
 import { Eye, EyeOff, CheckCircle2, Globe } from 'lucide-react';
 import { Logo } from '../../../components/Logo';
 import { LanguageDropdown } from '../../../components/LanguageDropdown';
+import { validateEthiopianPhone } from '../../../utils/validation';
+import { ForgotPasswordModal } from '../../../components/auth/ForgotPasswordModal';
 
 interface LoginFormProps {
   onAuthSuccess: (role: string) => void;
@@ -15,13 +17,27 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onAuthSuccess }) => {
   const { loginUser, googleAuthUser } = useAuth();
   const { language, setLanguage, t } = useLanguage();
 
-  const [email, setEmail] = useState<string>('');
+  const [email, setEmail] = useState<string>(() => {
+    try {
+      return localStorage.getItem('tradeflow_remembered_identifier') || '';
+    } catch {
+      return '';
+    }
+  });
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [rememberMe, setRememberMe] = useState<boolean>(true);
+  const [rememberMe, setRememberMe] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('tradeflow_remember_me');
+      return saved !== null ? saved === 'true' : true;
+    } catch {
+      return true;
+    }
+  });
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [notice, setNotice] = useState<string>('');
+  const [showForgotModal, setShowForgotModal] = useState<boolean>(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,11 +46,37 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onAuthSuccess }) => {
       return;
     }
 
+    // If identifier looks like a phone number (not an email), enforce Ethiopian phone code
+    const isLikelyPhone = !email.includes('@') && /[\d+]/.test(email);
+    let resolvedIdentifier = email.trim();
+    if (isLikelyPhone) {
+      const phoneRes = validateEthiopianPhone(email, language as any);
+      if (!phoneRes.isValid) {
+        setErrorMsg(phoneRes.error || 'Only Ethiopian phone numbers (+251 9... / 09... or +251 7... / 07...) are accepted.');
+        return;
+      }
+      resolvedIdentifier = phoneRes.normalized || resolvedIdentifier;
+    }
+
     setLoading(true);
     setErrorMsg('');
 
     try {
-      const res = await loginUser(email, password);
+      const res = await loginUser(resolvedIdentifier, password);
+      
+      // Persist or clear Remember Me preference in localStorage
+      try {
+        if (rememberMe) {
+          localStorage.setItem('tradeflow_remembered_identifier', email.trim());
+          localStorage.setItem('tradeflow_remember_me', 'true');
+        } else {
+          localStorage.removeItem('tradeflow_remembered_identifier');
+          localStorage.setItem('tradeflow_remember_me', 'false');
+        }
+      } catch (e) {
+        // ignore localStorage errors
+      }
+
       setLoading(false);
       const resolvedRole = res?.user?.role || 'SHIPPER';
       onAuthSuccess(resolvedRole);
@@ -167,9 +209,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onAuthSuccess }) => {
               />
               <span>{t('auth.rememberMe')}</span>
             </label>
-            <a href="#forgot" className="text-[#0284C7] hover:underline">
+            <button
+              type="button"
+              onClick={() => setShowForgotModal(true)}
+              className="text-[#0284C7] hover:underline font-semibold cursor-pointer"
+            >
               {t('auth.forgotPassword')}
-            </a>
+            </button>
           </div>
 
           {/* Submit Button */}
@@ -204,6 +250,16 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onAuthSuccess }) => {
           </Link>
         </div>
       </div>
+
+      {/* Forgot Password Modal via SMTP */}
+      <ForgotPasswordModal
+        isOpen={showForgotModal}
+        onClose={() => setShowForgotModal(false)}
+        defaultEmail={email}
+        onResetSuccess={() => {
+          setNotice('Password reset successful! You may now sign in with your new password.');
+        }}
+      />
     </div>
   );
 };

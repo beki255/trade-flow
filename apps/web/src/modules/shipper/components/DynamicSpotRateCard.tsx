@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { LocationData, SpotPricingResult } from '../types';
 import { useAuth } from '../../../context/AuthContext';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface DynamicSpotRateCardProps {
   originLocation: LocationData;
@@ -36,6 +37,10 @@ export const DynamicSpotRateCard: React.FC<DynamicSpotRateCardProps> = ({
   appliedBudget,
 }) => {
   const { user } = useAuth();
+  const { language: rawLanguage } = useLanguage();
+  const isAm = (rawLanguage || '').toUpperCase() === 'AM';
+  const isOm = (rawLanguage || '').toUpperCase() === 'OM';
+  const language = isAm ? 'am' : isOm ? 'om' : 'en';
   const [pricingResult, setPricingResult] = useState<SpotPricingResult | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [showItemizedBreakdown, setShowItemizedBreakdown] = useState<boolean>(true);
@@ -109,9 +114,13 @@ export const DynamicSpotRateCard: React.FC<DynamicSpotRateCardProps> = ({
       <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center text-xs text-slate-500">
         <div className="flex items-center justify-center gap-2 mb-1 text-slate-700 font-bold">
           <TrendingUp className="w-4 h-4 text-sky-600" />
-          <span>Dynamic Spot Rate Engine</span>
+          <span>{language === 'am' ? 'ተለዋዋጭ የቦታ ዋጋ ስሌት ሞተር' : language === 'om' ? 'Mootora Madaallii Gatii Naannoo' : 'Dynamic Spot Rate Engine'}</span>
         </div>
-        Select origin and destination locations above to compute real-time corridor spot rate with itemized transparency.
+        {language === 'am'
+          ? 'የወቅቱን ትክክለኛ የኮሪደር ስፖት ዋጋ ከዝርዝር ወጪ ክፍፍል ጋር ለማስላት የመነሻ እና መድረሻ አድራሻዎችን ከላይ ይምረጡ።'
+          : language === 'om'
+          ? 'Gatii ispoottii koriidarii yeroo ammaa ibsa bal’aa waliin shallaguuf bakka ka’umsaa fi ga’umsaa armaan olitti filadhaa.'
+          : 'Select origin and destination locations above to compute real-time corridor spot rate with itemized transparency.'}
       </div>
     );
   }
@@ -126,12 +135,16 @@ export const DynamicSpotRateCard: React.FC<DynamicSpotRateCardProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4 relative z-10">
         <div className="space-y-1">
           <h3 className="text-base sm:text-lg font-black tracking-tight text-slate-900 flex items-center gap-2">
-            Prevailing Corridor Benchmark Rate
+            {language === 'am' ? 'ወቅታዊ የኮሪደር መመዘኛ የታሪፍ ዋጋ' : language === 'om' ? 'Gatii Madaallii Koriidarii Yeroo Ammaa' : 'Prevailing Corridor Benchmark Rate'}
           </h3>
           <div className="flex items-center gap-2">
             <span className="text-[10px] text-slate-500 font-mono flex items-center gap-1">
               <Clock className="w-3 h-3 text-slate-400" />
-              Hourly Refresh: Valid for {countdownMinutes}m
+              {language === 'am'
+                ? `በየሰዓቱ የሚታደስ፡ የሚቆየው ለ ${countdownMinutes} ደቂቃ`
+                : language === 'om'
+                ? `Haareffama Sa’aatii: Yeroo hafe ${countdownMinutes}d`
+                : `Hourly Refresh: Valid for ${countdownMinutes}m`}
             </span>
           </div>
         </div>
@@ -143,7 +156,11 @@ export const DynamicSpotRateCard: React.FC<DynamicSpotRateCardProps> = ({
           className="self-start sm:self-auto px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
         >
           <RefreshCw className={`w-3.5 h-3.5 text-sky-400 ${loading ? 'animate-spin' : ''}`} />
-          <span>{loading ? 'Recalculating...' : 'Refresh Rate'}</span>
+          <span>
+            {loading
+              ? (language === 'am' ? 'በማስላት ላይ...' : language === 'om' ? 'Shallagaa jira...' : 'Recalculating...')
+              : (language === 'am' ? 'ዋጋ አድስ' : language === 'om' ? 'Gatii Haaressi' : 'Refresh Rate')}
+          </span>
         </button>
       </div>
 
@@ -153,20 +170,20 @@ export const DynamicSpotRateCard: React.FC<DynamicSpotRateCardProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 bg-slate-50 rounded-2xl p-4 border border-slate-200/80">
             <div>
               <span className="text-xs text-slate-500 font-medium block">
-                Calculated Spot Rate (Pre-Tax)
+                {language === 'am' ? 'የተሰላ ስፖት ዋጋ (ከታክስ በፊት)' : language === 'om' ? 'Gatii Ispoottii Shallagame (Gibira Dura)' : 'Calculated Spot Rate (Pre-Tax)'}
               </span>
               <div className="flex flex-wrap items-baseline gap-2 mt-0.5">
                 <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                   ETB {pricingResult.totalSpotRateEtb.toLocaleString()}
                 </span>
                 <span className="text-xs text-slate-500 font-mono">
-                  (ETB {pricingResult.itemizedBreakdown.totalWithVatEtb.toLocaleString()} incl. 15% VAT)
+                  (ETB {pricingResult.itemizedBreakdown.totalWithVatEtb.toLocaleString()} {language === 'am' ? 'ከ 15% ቫት ጋር' : language === 'om' ? 'VAT 15% dabalatee' : 'incl. 15% VAT'})
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500 mt-1.5 font-mono">
-                <span>Floor: ETB {pricingResult.floorBoundEtb.toLocaleString()} (-12%)</span>
+                <span>{language === 'am' ? 'ዝቅተኛ ወለል:' : language === 'om' ? 'Gadi-aanaa:' : 'Floor:'} ETB {pricingResult.floorBoundEtb.toLocaleString()} (-12%)</span>
                 <span>•</span>
-                <span>Ceiling: ETB {pricingResult.ceilingBoundEtb.toLocaleString()} (+18%)</span>
+                <span>{language === 'am' ? 'ከፍተኛ ጣሪያ:' : language === 'om' ? 'Olaanaa:' : 'Ceiling:'} ETB {pricingResult.ceilingBoundEtb.toLocaleString()} (+18%)</span>
               </div>
             </div>
 
@@ -185,7 +202,9 @@ export const DynamicSpotRateCard: React.FC<DynamicSpotRateCardProps> = ({
             >
               <CheckCircle className="w-4 h-4" />
               <span>
-                {isApplied || appliedSuccess ? 'Applied to Target Budget ✓' : 'Use Spot Rate as Budget'}
+                {isApplied || appliedSuccess
+                  ? (language === 'am' ? 'በዒላማ በጀት ላይ ተተግብሯል ✓' : language === 'om' ? 'Baajata Irratti Dabalameera ✓' : 'Applied to Target Budget ✓')
+                  : (language === 'am' ? 'ይህንን ስፖት ዋጋ እንደ በጀት ተጠቀም' : language === 'om' ? 'Gatii Kana Akka Baajataatti Fayyadami' : 'Use Spot Rate as Budget')}
               </span>
             </button>
           </div>
@@ -199,7 +218,9 @@ export const DynamicSpotRateCard: React.FC<DynamicSpotRateCardProps> = ({
             >
               <span className="flex items-center gap-2">
                 <Info className="w-3.5 h-3.5 text-sky-600" />
-                <span>Transparent Itemized Cost Breakdown</span>
+                <span>
+                  {language === 'am' ? 'ግልጽ የነጠላ ወጪዎች ዝርዝር ክፍፍል' : language === 'om' ? 'Ibsa Baasii Bal’aa Ifa Ta’e' : 'Transparent Itemized Cost Breakdown'}
+                </span>
               </span>
               {showItemizedBreakdown ? (
                 <ChevronUp className="w-4 h-4 text-slate-500" />
@@ -214,7 +235,11 @@ export const DynamicSpotRateCard: React.FC<DynamicSpotRateCardProps> = ({
                   {/* Base corridor rate */}
                   <div className="flex justify-between p-2 rounded-xl bg-white border border-slate-200">
                     <span className="text-slate-600">
-                      Base Corridor Rate ({pricingResult.itemizedBreakdown.baseRatePerKm} ETB/km × {pricingResult.distanceKm} km):
+                      {language === 'am'
+                        ? `የኮሪደሩ መነሻ ዋጋ (${pricingResult.itemizedBreakdown.baseRatePerKm} ብር/ኪ.ሜ × ${pricingResult.distanceKm} ኪ.ሜ):`
+                        : language === 'om'
+                        ? `Gatii Ka’umsaa Koriidarii (${pricingResult.itemizedBreakdown.baseRatePerKm} ETB/km × ${pricingResult.distanceKm} km):`
+                        : `Base Corridor Rate (${pricingResult.itemizedBreakdown.baseRatePerKm} ETB/km × ${pricingResult.distanceKm} km):`}
                     </span>
                     <span className="font-bold font-mono text-slate-900">
                       ETB {pricingResult.itemizedBreakdown.baseFreightEtb.toLocaleString()}
@@ -224,7 +249,11 @@ export const DynamicSpotRateCard: React.FC<DynamicSpotRateCardProps> = ({
                   {/* Demand index */}
                   <div className="flex justify-between p-2 rounded-xl bg-white border border-slate-200">
                     <span className="text-slate-600">
-                      Corridor Demand-to-Capacity ({pricingResult.itemizedBreakdown.demandIndexFactor}× index):
+                      {language === 'am'
+                        ? `የፍላጎት እና የአቅም ሚዛን (${pricingResult.itemizedBreakdown.demandIndexFactor}× ማባዣ):`
+                        : language === 'om'
+                        ? `Madaallii Fedhii fi Dandeettii (${pricingResult.itemizedBreakdown.demandIndexFactor}×):`
+                        : `Corridor Demand-to-Capacity (${pricingResult.itemizedBreakdown.demandIndexFactor}× index):`}
                     </span>
                     <span className="font-bold font-mono text-amber-700">
                       +ETB {pricingResult.itemizedBreakdown.demandAdjustmentEtb.toLocaleString()}
@@ -235,7 +264,11 @@ export const DynamicSpotRateCard: React.FC<DynamicSpotRateCardProps> = ({
                   <div className="flex justify-between p-2 rounded-xl bg-white border border-slate-200">
                     <span className="text-slate-600 flex items-center gap-1">
                       <Fuel className="w-3 h-3 text-sky-600" />
-                      Diesel Multiplier ({pricingResult.itemizedBreakdown.dieselPricePerLiter} ETB/L vs {pricingResult.itemizedBreakdown.baselineDieselPrice}):
+                      {language === 'am'
+                        ? `የናፍጣ ጭማሪ (${pricingResult.itemizedBreakdown.dieselPricePerLiter} ብር/ሊ vs ${pricingResult.itemizedBreakdown.baselineDieselPrice}):`
+                        : language === 'om'
+                        ? `Dabalata Dhiyeessii Boba’aa (${pricingResult.itemizedBreakdown.dieselPricePerLiter} ETB/L vs ${pricingResult.itemizedBreakdown.baselineDieselPrice}):`
+                        : `Diesel Multiplier (${pricingResult.itemizedBreakdown.dieselPricePerLiter} ETB/L vs ${pricingResult.itemizedBreakdown.baselineDieselPrice}):`}
                     </span>
                     <span className="font-bold font-mono text-sky-700">
                       +ETB {pricingResult.itemizedBreakdown.fuelSurchargeEtb.toLocaleString()}
@@ -245,7 +278,11 @@ export const DynamicSpotRateCard: React.FC<DynamicSpotRateCardProps> = ({
                   {/* Congestion surcharge */}
                   <div className="flex justify-between p-2 rounded-xl bg-white border border-slate-200">
                     <span className="text-slate-600">
-                      Checkpoint Delays (Galafi & Modjo):
+                      {language === 'am'
+                        ? 'የፍተሻ ኬላዎች መዘግየት (ገላፊ እና ሞጆ):'
+                        : language === 'om'
+                        ? 'Turtii Qorannoo Buufata (Galaafii fi Moojoo):'
+                        : 'Checkpoint Delays (Galafi & Modjo):'}
                     </span>
                     <span className="font-bold font-mono text-purple-700">
                       +ETB {pricingResult.itemizedBreakdown.congestionSurchargeEtb.toLocaleString()}
@@ -256,7 +293,11 @@ export const DynamicSpotRateCard: React.FC<DynamicSpotRateCardProps> = ({
                   {pricingResult.itemizedBreakdown.specialHandlingEtb > 0 && (
                     <div className="flex justify-between p-2 rounded-xl bg-white border border-slate-200 sm:col-span-2">
                       <span className="text-slate-600">
-                        Special Handling Surcharge (Reefer / Dangerous Goods Protocol):
+                        {language === 'am'
+                          ? 'ልዩ የአያያዝ ተጨማሪ ክፍያ (ማቀዝቀዣ / አደገኛ ዕቃዎች ፕሮቶኮል):'
+                          : language === 'om'
+                          ? 'Kaffaltii Dabalataa Qabiinsa Addaa (Reefer / Meeshaalee Balaa Qaban):'
+                          : 'Special Handling Surcharge (Reefer / Dangerous Goods Protocol):'}
                       </span>
                       <span className="font-bold font-mono text-rose-700">
                         +ETB {pricingResult.itemizedBreakdown.specialHandlingEtb.toLocaleString()}
@@ -266,7 +307,9 @@ export const DynamicSpotRateCard: React.FC<DynamicSpotRateCardProps> = ({
                 </div>
 
                 <div className="pt-2 border-t border-slate-200 flex justify-between text-xs font-bold">
-                  <span className="text-slate-600">15% Value Added Tax (VAT):</span>
+                  <span className="text-slate-600">
+                    {language === 'am' ? '15% የተጨማሪ እሴት ታክስ (ቫት):' : language === 'om' ? 'Gibira Dabalata Qabeenyaa 15% (VAT):' : '15% Value Added Tax (VAT):'}
+                  </span>
                   <span className="font-mono text-slate-900">
                     ETB {pricingResult.itemizedBreakdown.vat15PctEtb.toLocaleString()}
                   </span>
@@ -277,7 +320,7 @@ export const DynamicSpotRateCard: React.FC<DynamicSpotRateCardProps> = ({
         </div>
       ) : (
         <div className="p-4 text-center text-xs text-slate-500">
-          Computing dynamic corridor rates...
+          {language === 'am' ? 'ተለዋዋጭ የኮሪደር ዋጋ በመሰላት ላይ ነው...' : language === 'om' ? 'Gatiin koriidarii shallagamaa jira...' : 'Computing dynamic corridor rates...'}
         </div>
       )}
     </div>

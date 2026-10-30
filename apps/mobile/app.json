@@ -3,7 +3,7 @@
     "name": "TradeFlow Mobile",
     "slug": "tradeflow-mobile",
     "version": "1.0.0",
-    "sdkVersion": "52.0.0",
+    "sdkVersion": "58.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
@@ -19,6 +19,12 @@
         "ACCESS_COARSE_LOCATION",
         "CAMERA"
       ]
-    }
+    },
+    "plugins": [
+      "expo-asset",
+      "expo-font",
+      "expo-sqlite",
+      "expo-status-bar"
+    ]
   }
 }

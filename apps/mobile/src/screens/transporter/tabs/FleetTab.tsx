@@ -4,6 +4,7 @@ import {
   Text,
   TouchableOpacity,
   Image,
+  Alert,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { transporterStyles as styles } from '../transporterStyles';
@@ -18,6 +19,10 @@ interface FleetTabProps {
   openAddDriverModal: () => void;
   fleetSubTab?: 'vehicles' | 'drivers';
   setFleetSubTab?: (tab: 'vehicles' | 'drivers') => void;
+  onEditTruck?: (truck: TruckItem) => void;
+  onDeleteTruck?: (truckId: string) => void;
+  onEditDriver?: (driver: DriverItem) => void;
+  onDeleteDriver?: (driverId: string) => void;
 }
 
 export const FleetTab: React.FC<FleetTabProps> = ({
@@ -27,8 +32,12 @@ export const FleetTab: React.FC<FleetTabProps> = ({
   openAddDriverModal,
   fleetSubTab,
   setFleetSubTab,
+  onEditTruck,
+  onDeleteTruck,
+  onEditDriver,
+  onDeleteDriver,
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [internalSubTab, setInternalSubTab] = useState<'vehicles' | 'drivers'>('vehicles');
   const activeSubTab = fleetSubTab !== undefined ? fleetSubTab : internalSubTab;
   const changeSubTab = (tab: 'vehicles' | 'drivers') => {
@@ -75,7 +84,7 @@ export const FleetTab: React.FC<FleetTabProps> = ({
             style={[styles.fleetSubTabText, activeSubTab === 'vehicles' && styles.fleetSubTabTextActive]}
             numberOfLines={1}
           >
-            Vehicles ({fleetList.length})
+            {language === 'AM' ? 'ተሽከርካሪዎች' : language === 'OM' ? 'Konkolaattota' : 'Vehicles'} ({fleetList.length})
           </Text>
         </TouchableOpacity>
 
@@ -96,7 +105,7 @@ export const FleetTab: React.FC<FleetTabProps> = ({
             style={[styles.fleetSubTabText, activeSubTab === 'drivers' && styles.fleetSubTabTextActive]}
             numberOfLines={1}
           >
-            Drivers ({driversList.length})
+            {language === 'AM' ? 'አሽከርካሪዎች' : language === 'OM' ? 'Konkolaachistoota' : 'Drivers'} ({driversList.length})
           </Text>
           {pendingDriversCount > 0 && (
             <View
@@ -111,7 +120,7 @@ export const FleetTab: React.FC<FleetTabProps> = ({
               }}
             >
               <Text style={{ fontSize: 9, fontWeight: '800', color: '#B45309' }}>
-                {pendingDriversCount} Pending
+                {pendingDriversCount} {language === 'AM' ? 'በመጠባበቅ ላይ' : language === 'OM' ? 'Eeggachaa Jira' : 'Pending'}
               </Text>
             </View>
           )}
@@ -131,9 +140,15 @@ export const FleetTab: React.FC<FleetTabProps> = ({
           {fleetList.length === 0 ? (
             <View style={styles.emptyCard}>
               <MaterialCommunityIcons name="truck-trailer" size={40} color="#94A3B8" />
-              <Text style={styles.emptyTitle}>No Fleet Vehicles Registered</Text>
+              <Text style={styles.emptyTitle}>
+                {language === 'AM' ? 'የተመዘገበ ተሽከርካሪ የለም' : language === 'OM' ? 'Konkolaataan Galmaa’e Hin Jiru' : 'No Fleet Vehicles Registered'}
+              </Text>
               <Text style={styles.emptySub}>
-                Add your heavy freight vehicles to receive match requests along the Djibouti corridor.
+                {language === 'AM'
+                  ? 'በጅቡቲ ኮሪደር ላይ የማጓጓዣ ጥያቄዎችን ለመቀበል የከባድ ጭነት ተሽከርካሪዎችን ያስመዝግቡ።'
+                  : language === 'OM'
+                  ? 'Koriidarii Jibutii irratti gaaffii fe’iinsaa argachuuf konkolaattota galmeessaa.'
+                  : 'Add your heavy freight vehicles to receive match requests along the Djibouti corridor.'}
               </Text>
             </View>
           ) : (
@@ -195,7 +210,7 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1 }}>
                         <Ionicons name="person-outline" size={12} color="#64748B" />
                         <Text style={styles.collapsedPreviewText} numberOfLines={1}>
-                          {trk.driver || 'Unassigned'} • Fuel: {trk.fuelType || 'DIESEL'} •
+                          {trk.driver || (language === 'AM' ? 'ያልተመደበ' : language === 'OM' ? 'Hin Ramadamne' : 'Unassigned')} • {language === 'AM' ? 'ነዳጅ' : language === 'OM' ? 'Boba’aa' : 'Fuel'}: {trk.fuelType || 'DIESEL'} •
                         </Text>
                         <Ionicons
                           name={trk.gpsEnabled ? "radio-button-on" : "radio-button-off"}
@@ -203,10 +218,14 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                           color={trk.gpsEnabled ? "#10B981" : "#94A3B8"}
                         />
                         <Text style={[styles.collapsedPreviewText, { color: trk.gpsEnabled ? '#059669' : '#64748B' }]}>
-                          {trk.gpsEnabled ? 'Online' : 'Off'}
+                          {trk.gpsEnabled
+                            ? (language === 'AM' ? 'መስመር ላይ' : language === 'OM' ? 'Tamsaasa Irra' : 'Online')
+                            : (language === 'AM' ? 'ጠፍቷል' : language === 'OM' ? 'Dhaame' : 'Off')}
                         </Text>
                       </View>
-                      <Text style={styles.tapDetailsHint}>Details ▾</Text>
+                      <Text style={styles.tapDetailsHint}>
+                        {language === 'AM' ? 'ዝርዝር ▾' : language === 'OM' ? 'Bal’ina ▾' : 'Details ▾'}
+                      </Text>
                     </View>
                   )}
 
@@ -214,7 +233,9 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                     <View style={{ gap: 8, marginTop: 4 }}>
                       <View style={styles.cardDivider} />
                       <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Engine / Fuel Type:</Text>
+                        <Text style={styles.infoLabel}>
+                          {language === 'AM' ? 'የሞተር / ነዳጅ ዓይነት:' : language === 'OM' ? 'Gosa Boba’aa / Motooraa:' : 'Engine / Fuel Type:'}
+                        </Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                           <MaterialCommunityIcons name="gas-station" size={14} color="#0284C7" />
                           <Text style={[styles.infoValue, { color: '#0284C7', fontWeight: '700' }]}>
@@ -223,14 +244,20 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                         </View>
                       </View>
                       <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Assigned Driver:</Text>
+                        <Text style={styles.infoLabel}>
+                          {language === 'AM' ? 'የተመደበ አሽከርካሪ:' : language === 'OM' ? 'Konkolaachisaa Ramadame:' : 'Assigned Driver:'}
+                        </Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                           <Ionicons name="person-outline" size={14} color="#64748B" />
-                          <Text style={styles.infoValue}>{trk.driver || 'Unassigned'}</Text>
+                          <Text style={styles.infoValue}>
+                            {trk.driver || (language === 'AM' ? 'ያልተመደበ' : language === 'OM' ? 'Hin Ramadamne' : 'Unassigned')}
+                          </Text>
                         </View>
                       </View>
                       <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Telematics / GPS:</Text>
+                        <Text style={styles.infoLabel}>
+                          {language === 'AM' ? 'ቴሌማቲክስ / ጂፒኤስ:' : language === 'OM' ? 'Telematiiksii / GPS:' : 'Telematics / GPS:'}
+                        </Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                           <Ionicons
                             name={trk.gpsEnabled ? "radio-button-on" : "radio-button-off"}
@@ -238,18 +265,89 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                             color={trk.gpsEnabled ? '#059669' : '#DC2626'}
                           />
                           <Text style={[styles.infoValue, { color: trk.gpsEnabled ? '#059669' : '#DC2626' }]}>
-                            {trk.gpsEnabled ? 'Live Telematics Streaming' : 'Inactive'}
+                            {trk.gpsEnabled
+                              ? (language === 'AM' ? 'የቀጥታ ቴሌማቲክስ ስርጭት' : language === 'OM' ? 'Tamsaasa Telematiiksii Kallattii' : 'Live Telematics Streaming')
+                              : (language === 'AM' ? 'ቦዝኗል' : language === 'OM' ? 'Hojiirra Hin Jirre' : 'Inactive')}
                           </Text>
                         </View>
                       </View>
                       <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>GIT Cargo Insurance:</Text>
+                        <Text style={styles.infoLabel}>
+                          {language === 'AM' ? 'የዕቃ ማጓጓዣ ኢንሹራንስ:' : language === 'OM' ? 'Inshuraansii Meeshaa GIT:' : 'GIT Cargo Insurance:'}
+                        </Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                           <Ionicons name="shield-checkmark-outline" size={14} color="#059669" />
                           <Text style={[styles.infoValue, { color: '#059669' }]}>
                             {trk.insuranceStatus}
                           </Text>
                         </View>
+                      </View>
+
+                      {/* Fleet Vehicle Actions: Edit & Delete */}
+                      <View style={{ flexDirection: 'row', gap: 10, marginTop: 8, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#F1F5F9' }}>
+                        {onEditTruck && (
+                          <TouchableOpacity
+                            style={{
+                              flex: 1,
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 6,
+                              paddingVertical: 9,
+                              backgroundColor: '#F0F9FF',
+                              borderRadius: 8,
+                              borderWidth: 1,
+                              borderColor: '#BAE6FD',
+                            }}
+                            onPress={() => onEditTruck(trk)}
+                            activeOpacity={0.75}
+                          >
+                            <Ionicons name="create-outline" size={16} color="#0284C7" />
+                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#0284C7' }}>
+                              {language === 'AM' ? 'ተሽከርካሪ አርትዕ' : language === 'OM' ? 'Konkolaataa Gulaali' : 'Edit Vehicle'}
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                        {onDeleteTruck && (
+                          <TouchableOpacity
+                            style={{
+                              flex: 1,
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 6,
+                              paddingVertical: 9,
+                              backgroundColor: '#FEF2F2',
+                              borderRadius: 8,
+                              borderWidth: 1,
+                              borderColor: '#FECACA',
+                            }}
+                            onPress={() => {
+                              Alert.alert(
+                                language === 'AM' ? 'ተሽከርካሪ ሰርዝ' : language === 'OM' ? 'Konkolaataa Haqi' : 'Delete Vehicle',
+                                language === 'AM'
+                                  ? `እርግጠኛ ነዎት ተሽከርካሪ ${trk.plateNumber} መሰረዝ ይፈልጋሉ? ይህ እርምጃ ሊመለስ አይችልም።`
+                                  : language === 'OM'
+                                  ? `Konkolaataa ${trk.plateNumber} haquu barbaaduun keessan mirkanaa’aadhaa? Gochi kun deebifamuu hin danda’u.`
+                                  : `Are you sure you want to delete vehicle ${trk.plateNumber}? This action cannot be undone.`,
+                                [
+                                  { text: language === 'AM' ? 'ሰርዝ' : language === 'OM' ? 'Haqi' : 'Cancel', style: 'cancel' },
+                                  {
+                                    text: language === 'AM' ? 'አጥፋ' : language === 'OM' ? 'Balleessi' : 'Delete',
+                                    style: 'destructive',
+                                    onPress: () => onDeleteTruck(trk.id),
+                                  },
+                                ]
+                              );
+                            }}
+                            activeOpacity={0.75}
+                          >
+                            <Ionicons name="trash-outline" size={16} color="#DC2626" />
+                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#DC2626' }}>
+                              {language === 'AM' ? 'ሰርዝ' : language === 'OM' ? 'Haqi' : 'Delete'}
+                            </Text>
+                          </TouchableOpacity>
+                        )}
                       </View>
                     </View>
                   )}
@@ -273,9 +371,15 @@ export const FleetTab: React.FC<FleetTabProps> = ({
           {driversList.length === 0 ? (
             <View style={styles.emptyCard}>
               <Ionicons name="person-outline" size={40} color="#94A3B8" />
-              <Text style={styles.emptyTitle}>No Drivers Registered Yet</Text>
+              <Text style={styles.emptyTitle}>
+                {language === 'AM' ? 'እስካሁን የተመዘገበ አሽከርካሪ የለም' : language === 'OM' ? 'Konkolaachisaan Galmaa’e Hin Jiru' : 'No Drivers Registered Yet'}
+              </Text>
               <Text style={styles.emptySub}>
-                Add your verified heavy freight drivers to assign them to dispatches.
+                {language === 'AM'
+                  ? 'ለጉዞ ምደባ የተረጋገጡ የከባድ ጭነት አሽከርካሪዎችዎን ይመዝግቡ።'
+                  : language === 'OM'
+                  ? 'Ramaddii fe’iinsaatiif konkolaachistoota mirkanaa’an galmeessaa.'
+                  : 'Add your verified heavy freight drivers to assign them to dispatches.'}
               </Text>
             </View>
           ) : (
@@ -331,7 +435,11 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                               : { color: '#0369A1' },
                           ]}
                         >
-                          {isPending ? 'Pending' : drv.status}
+                          {isPending
+                            ? (language === 'AM' ? 'በመጠባበቅ ላይ' : language === 'OM' ? 'Eeggachaa Jira' : 'Pending')
+                            : drv.status === 'ACTIVE'
+                            ? (language === 'AM' ? 'ንቁ' : language === 'OM' ? 'Hojiirra' : 'Active')
+                            : drv.status}
                         </Text>
                       </View>
                       <View style={styles.chevronCircle}>
@@ -350,14 +458,16 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1 }}>
                           <Ionicons name="card-outline" size={12} color="#64748B" />
                           <Text style={styles.collapsedPreviewText} numberOfLines={1}>
-                            Lic: {drv.licenseNumber} •
+                            {language === 'AM' ? 'ፈቃድ:' : language === 'OM' ? 'Hayyama:' : 'Lic:'} {drv.licenseNumber} •
                           </Text>
                           <MaterialCommunityIcons name="truck-outline" size={12} color="#0284C7" />
                           <Text style={[styles.collapsedPreviewText, { color: drv.assignedTruckPlate ? '#0284C7' : '#64748B' }]}>
-                            {drv.assignedTruckPlate || 'Unassigned'}
+                            {drv.assignedTruckPlate || (language === 'AM' ? 'ያልተመደበ' : language === 'OM' ? 'Hin Ramadamne' : 'Unassigned')}
                           </Text>
                         </View>
-                        <Text style={styles.tapDetailsHint}>Details ▾</Text>
+                        <Text style={styles.tapDetailsHint}>
+                          {language === 'AM' ? 'ዝርዝር ▾' : language === 'OM' ? 'Bal’ina ▾' : 'Details ▾'}
+                        </Text>
                       </View>
                       {isPending && (
                         <View
@@ -375,7 +485,11 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                         >
                           <Ionicons name="time-outline" size={13} color="#D97706" />
                           <Text style={{ fontSize: 11, fontWeight: '700', color: '#B45309', flex: 1 }}>
-                            Pending Admin Verification (Cannot be dispatched yet)
+                            {language === 'AM'
+                              ? 'የአስተዳዳሪ ማረጋገጫ በመጠባበቅ ላይ (እስከሚረጋገጥ ሊመደብ አይችልም)'
+                              : language === 'OM'
+                              ? 'Mirkaneessi Bulchaa Eeggamaa Jira (Hanga mirkanaa’utti hin ramadamu)'
+                              : 'Pending Admin Verification (Cannot be dispatched yet)'}
                           </Text>
                         </View>
                       )}
@@ -389,69 +503,146 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                         <View
                           style={{
                             backgroundColor: '#FEF3C7',
-                            padding: 10,
+                            paddingHorizontal: 10,
+                            paddingVertical: 7,
                             borderRadius: 8,
                             borderWidth: 1,
                             borderColor: '#FCD34D',
-                            gap: 4,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 6,
                           }}
                         >
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                            <Ionicons name="shield-outline" size={15} color="#B45309" />
-                            <Text style={{ fontSize: 12, fontWeight: '800', color: '#92400E' }}>
-                              Awaiting Platform Admin Verification
-                            </Text>
-                          </View>
-                          <Text style={{ fontSize: 11, color: '#78350F', lineHeight: 16 }}>
-                            Driver credentials (Commercial Heavy Freight License & FTA status) are currently in the Platform Administrator Queue. Once approved, this driver can be dispatched on Djibouti corridor loads.
+                          <Ionicons name="shield-outline" size={15} color="#B45309" />
+                          <Text style={{ fontSize: 12, fontWeight: '800', color: '#92400E' }}>
+                            {language === 'AM' ? 'የአስተዳዳሪ ማረጋገጫ በመጠባበቅ ላይ' : language === 'OM' ? 'Mirkaneessa Bulchaa Eeggachaa Jira' : 'Awaiting Admin Verification'}
                           </Text>
                         </View>
                       )}
                       <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Driving License Number:</Text>
+                        <Text style={styles.infoLabel}>
+                          {language === 'AM' ? 'የመንጃ ፈቃድ ቁጥር:' : language === 'OM' ? 'Lakkoofsa Hayyama Konkolaachisummaa:' : 'Driving License Number:'}
+                        </Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                           <Ionicons name="card-outline" size={14} color="#64748B" />
                           <Text style={styles.infoValue}>{drv.licenseNumber}</Text>
                         </View>
                       </View>
                       <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Corridor Experience:</Text>
+                        <Text style={styles.infoLabel}>
+                          {language === 'AM' ? 'የኮሪደር ልምድ:' : language === 'OM' ? 'Muuxannoo Koriidarii:' : 'Corridor Experience:'}
+                        </Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                           <Ionicons name="ribbon-outline" size={14} color="#64748B" />
-                          <Text style={styles.infoValue}>{drv.experienceYears} Years</Text>
+                          <Text style={styles.infoValue}>
+                            {drv.experienceYears} {language === 'AM' ? 'ዓመታት' : language === 'OM' ? 'Waggaa' : 'Years'}
+                          </Text>
                         </View>
                       </View>
                       <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Assigned Truck:</Text>
+                        <Text style={styles.infoLabel}>
+                          {language === 'AM' ? 'የተመደበ ተሽከርካሪ:' : language === 'OM' ? 'Konkolaataa Ramadame:' : 'Assigned Truck:'}
+                        </Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                           <MaterialCommunityIcons name="truck" size={14} color="#0284C7" />
                           <Text style={[styles.infoValue, { color: '#0284C7', fontWeight: '700' }]}>
-                            {drv.assignedTruckPlate || 'Unassigned'}
+                            {drv.assignedTruckPlate || (language === 'AM' ? 'ያልተመደበ' : language === 'OM' ? 'Hin Ramadamne' : 'Unassigned')}
                           </Text>
                         </View>
                       </View>
                       {drv.photoUrl ? (
                         <View style={styles.infoRow}>
-                          <Text style={styles.infoLabel}>Driver Biometric / Photo ID:</Text>
+                          <Text style={styles.infoLabel}>
+                            {language === 'AM' ? 'የአሽከርካሪ ፎቶ / ባዮሜትሪክ:' : language === 'OM' ? 'Suuraa / Waraqaa Eenyummaa:' : 'Driver Biometric / Photo ID:'}
+                          </Text>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                             <Ionicons name="checkmark-circle" size={14} color="#10B981" />
                             <Text style={[styles.infoValue, { color: '#047857', fontWeight: '700' }]}>
-                              Attached (Verified EXIF)
+                              {language === 'AM' ? 'ተያይዟል (የተረጋገጠ)' : language === 'OM' ? 'Qabsiifameera (Mirkanaa’e)' : 'Attached (Verified EXIF)'}
                             </Text>
                           </View>
                         </View>
                       ) : null}
                       {drv.licenseDocUrl ? (
                         <View style={styles.infoRow}>
-                          <Text style={styles.infoLabel}>Physical License Scan:</Text>
+                          <Text style={styles.infoLabel}>
+                            {language === 'AM' ? 'የመንጃ ፈቃድ ቅጅ:' : language === 'OM' ? 'Waraqaa Hayyamaa Scan Ta’e:' : 'Physical License Scan:'}
+                          </Text>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                             <Ionicons name="document-attach-outline" size={14} color="#0284C7" />
                             <Text style={[styles.infoValue, { color: '#0284C7', fontWeight: '700' }]}>
-                              Uploaded & Available
+                              {language === 'AM' ? 'ተጭኗል / ይገኛል' : language === 'OM' ? 'Fe’ameera / Jira' : 'Uploaded & Available'}
                             </Text>
                           </View>
                         </View>
                       ) : null}
+
+                      {/* Driver Actions: Edit & Delete */}
+                      <View style={{ flexDirection: 'row', gap: 10, marginTop: 8, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#F1F5F9' }}>
+                        {onEditDriver && (
+                          <TouchableOpacity
+                            style={{
+                              flex: 1,
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 6,
+                              paddingVertical: 9,
+                              backgroundColor: '#F0F9FF',
+                              borderRadius: 8,
+                              borderWidth: 1,
+                              borderColor: '#BAE6FD',
+                            }}
+                            onPress={() => onEditDriver(drv)}
+                            activeOpacity={0.75}
+                          >
+                            <Ionicons name="create-outline" size={16} color="#0284C7" />
+                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#0284C7' }}>
+                              {language === 'AM' ? 'አሽከርካሪ አርትዕ' : language === 'OM' ? 'Konkolaachisaa Gulaali' : 'Edit Driver'}
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                        {onDeleteDriver && (
+                          <TouchableOpacity
+                            style={{
+                              flex: 1,
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 6,
+                              paddingVertical: 9,
+                              backgroundColor: '#FEF2F2',
+                              borderRadius: 8,
+                              borderWidth: 1,
+                              borderColor: '#FECACA',
+                            }}
+                            onPress={() => {
+                              Alert.alert(
+                                language === 'AM' ? 'አሽከርካሪ ሰርዝ' : language === 'OM' ? 'Konkolaachisaa Haqi' : 'Delete Driver',
+                                language === 'AM'
+                                  ? `እርግጠኛ ነዎት አሽከርካሪ ${drv.fullName} መሰረዝ ይፈልጋሉ? ይህ እርምጃ የተመደበውን ተሽከርካሪ የሚያላቅቅ ሲሆን የአሽከርካሪ መዳረሻንም ይሰርዛል።`
+                                  : language === 'OM'
+                                  ? `Konkolaachisaa ${drv.fullName} haquu barbaaduun keessan mirkanaa’aadhaa? Kun ramaddii konkolaataa ni kaasa, akkaawuntii isaaniis ni dorka.`
+                                  : `Are you sure you want to delete driver ${drv.fullName}? This will unassign any linked vehicle and remove their driver access.`,
+                                [
+                                  { text: language === 'AM' ? 'ሰርዝ' : language === 'OM' ? 'Haqi' : 'Cancel', style: 'cancel' },
+                                  {
+                                    text: language === 'AM' ? 'አጥፋ' : language === 'OM' ? 'Balleessi' : 'Delete',
+                                    style: 'destructive',
+                                    onPress: () => onDeleteDriver(drv.id),
+                                  },
+                                ]
+                              );
+                            }}
+                            activeOpacity={0.75}
+                          >
+                            <Ionicons name="trash-outline" size={16} color="#DC2626" />
+                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#DC2626' }}>
+                              {language === 'AM' ? 'ሰርዝ' : language === 'OM' ? 'Haqi' : 'Delete'}
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
                     </View>
                   )}
                 </TouchableOpacity>

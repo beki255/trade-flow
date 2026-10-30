@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Scale, ShieldCheck, Truck, X } from 'lucide-react';
 import { DisputeTicketItem } from '../types';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface DisputeArbitrationModalProps {
   activeTicket: DisputeTicketItem | null;
@@ -19,6 +20,7 @@ export const DisputeArbitrationModal: React.FC<DisputeArbitrationModalProps> = (
   onClose,
   onConfirm,
 }) => {
+  const { language } = useLanguage();
   const [verdict, setVerdict] = useState<'REFUND_SHIPPER' | 'RELEASE_TRANSPORTER' | 'PARTIAL_SPLIT'>('PARTIAL_SPLIT');
   const [customRefundAmount, setCustomRefundAmount] = useState<string>('20000');
   const [adminNotes, setAdminNotes] = useState<string>('');
@@ -73,7 +75,7 @@ export const DisputeArbitrationModal: React.FC<DisputeArbitrationModalProps> = (
               </span>
             </div>
             <h3 className="text-lg font-black text-slate-900 mt-1">
-              Smart Escrow Arbitration Verdict
+              {language === 'AM' ? 'የስማርት ኤስክሮው የሽምግልና ውሳኔ' : language === 'OM' ? 'Murtee Araara Eeskiroo Saayibarii' : 'Smart Escrow Arbitration Verdict'}
             </h3>
           </div>
           <button
@@ -81,26 +83,32 @@ export const DisputeArbitrationModal: React.FC<DisputeArbitrationModalProps> = (
             onClick={onClose}
             className="text-xs font-bold text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 cursor-pointer"
           >
-            ✕ Close
+            ✕ {language === 'AM' ? 'ዝጋ' : language === 'OM' ? 'Cufi' : 'Close'}
           </button>
         </div>
 
         {/* Escrow Financial Balance Overview */}
         <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 grid grid-cols-3 gap-3 text-center text-xs">
           <div>
-            <div className="text-[10px] uppercase font-bold text-slate-400">Total Escrow Funds</div>
+            <div className="text-[10px] uppercase font-bold text-slate-400">
+              {language === 'AM' ? 'ጠቅላላ የኤስክሮው ገንዘብ' : language === 'OM' ? 'Maallaqa Eeskiroo Waliigalaa' : 'Total Escrow Funds'}
+            </div>
             <div className="font-black text-slate-900 font-mono mt-0.5">
               {Number(activeTicket.grossAmountEtb).toLocaleString()} ETB
             </div>
           </div>
           <div>
-            <div className="text-[10px] uppercase font-bold text-slate-400">Platform Fee (5%)</div>
+            <div className="text-[10px] uppercase font-bold text-slate-400">
+              {language === 'AM' ? 'የፕላትፎርም ክፍያ (5%)' : language === 'OM' ? 'Kaffaltii Waltajjii (5%)' : 'Platform Fee (5%)'}
+            </div>
             <div className="font-bold text-slate-700 font-mono mt-0.5">
               {Number(activeTicket.platformCommissionEtb).toLocaleString()} ETB
             </div>
           </div>
           <div>
-            <div className="text-[10px] uppercase font-bold text-rose-500">Shipper Claimed</div>
+            <div className="text-[10px] uppercase font-bold text-rose-500">
+              {language === 'AM' ? 'ላኪው የጠየቀው' : language === 'OM' ? 'Ergaan Kan Gaafate' : 'Shipper Claimed'}
+            </div>
             <div className="font-black text-rose-600 font-mono mt-0.5">
               {Number(activeTicket.claimedAmountEtb).toLocaleString()} ETB
             </div>
@@ -110,7 +118,7 @@ export const DisputeArbitrationModal: React.FC<DisputeArbitrationModalProps> = (
         {/* 3 Verdict Radio Selections */}
         <div className="space-y-3">
           <label className="text-xs font-black text-slate-900 uppercase tracking-wider block">
-            Select Administrative Verdict:
+            {language === 'AM' ? 'የአስተዳዳሪ ውሳኔ ይምረጡ፦' : language === 'OM' ? 'Murtee Bulchiinsaa Filadhaa:' : 'Select Administrative Verdict:'}
           </label>
 
           {/* Option 1: Compromise Split */}
@@ -125,21 +133,25 @@ export const DisputeArbitrationModal: React.FC<DisputeArbitrationModalProps> = (
             <div className="flex items-center justify-between">
               <div className="font-bold text-slate-900 text-xs flex items-center gap-2">
                 <Scale className="w-4 h-4 text-amber-600" />
-                <span>Compromise Split Settlement</span>
+                <span>{language === 'AM' ? 'የስምምነት የክፍያ ክፍፍል' : language === 'OM' ? 'Kaffaltii Araaraa Qooduu' : 'Compromise Split Settlement'}</span>
               </div>
               <span className="text-[10px] font-black uppercase text-amber-700 bg-amber-100 px-2 py-0.5 rounded">
-                Recommended
+                {language === 'AM' ? 'የሚመከር' : language === 'OM' ? 'Kan Gorfamu' : 'Recommended'}
               </span>
             </div>
             <p className="text-[11px] text-slate-500">
-              Deduct agreed penalty from escrow to refund the shipper, and release the remaining balance to the carrier.
+              {language === 'AM'
+                ? 'የተስማሙበትን የቅጣት መጠን ከኤስክሮው በመቀነስ ለላኪው ይመልሱ፤ ቀሪውን ገንዘብ ለአጓጓዡ ይልቀቁ።'
+                : language === 'OM'
+                ? 'Adabbii irratti walii galame eeskiroo irraa hir\'isuun ergaaf deebisaa, hafe ammoo geessituuf gad-dhiisaa.'
+                : 'Deduct agreed penalty from escrow to refund the shipper, and release the remaining balance to the carrier.'}
             </p>
 
             {verdict === 'PARTIAL_SPLIT' && (
               <div className="pt-2 border-t border-amber-200/60 flex items-center gap-3">
                 <div className="flex-1">
                   <label className="text-[10px] font-bold text-slate-600 uppercase">
-                    Refund Amount to Shipper (ETB):
+                    {language === 'AM' ? 'ለላኪው የሚመለስ መጠን (ብር)፦' : language === 'OM' ? 'Hanga Ergaaf Deebi\'u (ETB):' : 'Refund Amount to Shipper (ETB):'}
                   </label>
                   <input
                     type="number"
@@ -150,7 +162,7 @@ export const DisputeArbitrationModal: React.FC<DisputeArbitrationModalProps> = (
                 </div>
                 <div className="flex-1">
                   <label className="text-[10px] font-bold text-slate-600 uppercase">
-                    Net Transporter Payout (ETB):
+                    {language === 'AM' ? 'ለአጓጓዥ የተጣራ ክፍያ (ብር)፦' : language === 'OM' ? 'Kaffaltii Qulqulluu Geessituu (ETB):' : 'Net Transporter Payout (ETB):'}
                   </label>
                   <div className="mt-1 px-3 py-1.5 text-xs font-mono font-black text-emerald-700 rounded-lg bg-white border border-slate-200">
                     {Math.max(
@@ -177,10 +189,14 @@ export const DisputeArbitrationModal: React.FC<DisputeArbitrationModalProps> = (
           >
             <div className="font-bold text-slate-900 text-xs flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-purple-600" />
-              <span>100% Full Refund to Shipper</span>
+              <span>{language === 'AM' ? '100% ሙሉ ተመላሽ ለላኪው' : language === 'OM' ? '100% Guutuu Ergaaf Deebisuu' : '100% Full Refund to Shipper'}</span>
             </div>
             <p className="text-[11px] text-slate-500">
-              Total escrow funds returned to Shipper digital mobile wallet. Transporter receives 0 ETB.
+              {language === 'AM'
+                ? 'ጠቅላላ የኤስክሮው ገንዘብ ወደ ላኪው የሞባይል ዋሌት ይመለሳል። አጓጓዡ 0 ብር ይቀበላል።'
+                : language === 'OM'
+                ? 'Maallaqni eeskiroo hundi boorsaa mobaayilaa ergaatti deebi\'a. Geessituun 0 ETB argata.'
+                : 'Total escrow funds returned to Shipper digital mobile wallet. Transporter receives 0 ETB.'}
             </p>
           </div>
 
@@ -195,20 +211,26 @@ export const DisputeArbitrationModal: React.FC<DisputeArbitrationModalProps> = (
           >
             <div className="font-bold text-slate-900 text-xs flex items-center gap-2">
               <Truck className="w-4 h-4 text-emerald-600" />
-              <span>Dismiss Claim & Disburse 100% to Transporter</span>
+              <span>{language === 'AM' ? 'ቅሬታውን ውድቅ አድርግና 100% ለአጓጓዥ ልቀቅ' : language === 'OM' ? 'Komicha Kuffisuun 100% Geessituuf Gad-dhiisi' : 'Dismiss Claim & Disburse 100% to Transporter'}</span>
             </div>
             <p className="text-[11px] text-slate-500">
-              Shipper claim dismissed. Full net payout ({Number(activeTicket.netTransporterPayoutEtb).toLocaleString()} ETB) disbursed to Carrier.
+              {language === 'AM'
+                ? `የላኪው ቅሬታ ውድቅ ተደርጓል። ሙሉ የተጣራ ክፍያ (${Number(activeTicket.netTransporterPayoutEtb).toLocaleString()} ብር) ለአጓጓዡ ይከፈላል።`
+                : language === 'OM'
+                ? `Komiin ergaa kuffifameera. Kaffaltiin qulqulluun (${Number(activeTicket.netTransporterPayoutEtb).toLocaleString()} ETB) geessituuf kaffalama.`
+                : `Shipper claim dismissed. Full net payout (${Number(activeTicket.netTransporterPayoutEtb).toLocaleString()} ETB) disbursed to Carrier.`}
             </p>
           </div>
         </div>
 
         {/* Legal Rationale Textarea */}
         <div className="space-y-1.5">
-          <label className="text-xs font-bold text-slate-700">Official Mediation Rationale / Verdict Notes *</label>
+          <label className="text-xs font-bold text-slate-700">
+            {language === 'AM' ? 'ኦፊሴላዊ የሽምግልና ምክንያት / የውሳኔ ማስታወሻ *' : language === 'OM' ? 'Sababa Araaraa Seera Qabeessa / Yaada Murtee *' : 'Official Mediation Rationale / Verdict Notes *'}
+          </label>
           <textarea
             rows={2}
-            placeholder="Detail reason for decision (e.g. Verified packaging defect on photo upload; compromise 15% penalty approved)..."
+            placeholder={language === 'AM' ? 'የውሳኔውን ምክንያት በዝርዝር ይጻፉ (ለምሳሌ፡ በፎቶው ላይ በተረጋገጠው ጉዳት ምክንያት 15% ተቀናሽ ተወስኗል)...' : language === 'OM' ? 'Sababa murtee bal\'inaan barreessaa...' : 'Detail reason for decision (e.g. Verified packaging defect on photo upload; compromise 15% penalty approved)...'}
             value={adminNotes}
             onChange={(e) => setAdminNotes(e.target.value)}
             className="w-full px-3.5 py-2 text-xs font-medium rounded-xl bg-slate-50 border border-slate-300 text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
@@ -222,7 +244,7 @@ export const DisputeArbitrationModal: React.FC<DisputeArbitrationModalProps> = (
             onClick={onClose}
             className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
           >
-            Cancel
+            {language === 'AM' ? 'ሰርዝ' : language === 'OM' ? 'Dhiisi' : 'Cancel'}
           </button>
 
           <button
@@ -232,7 +254,11 @@ export const DisputeArbitrationModal: React.FC<DisputeArbitrationModalProps> = (
             className="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-50"
           >
             <Scale className="w-4 h-4 text-amber-400" />
-            <span>{submitting ? 'Executing...' : 'Confirm Binding Verdict & Disburse'}</span>
+            <span>
+              {submitting
+                ? (language === 'AM' ? 'በማስፈጸም ላይ...' : language === 'OM' ? 'Raawwatamaa jira...' : 'Executing...')
+                : (language === 'AM' ? 'አስገዳጅ ውሳኔውን አጽድቅና ክፍያ ፈጽም' : language === 'OM' ? 'Murtee Dirqisiisaa Mirkaneessi & Kaffali' : 'Confirm Binding Verdict & Disburse')}
+            </span>
           </button>
         </div>
       </div>

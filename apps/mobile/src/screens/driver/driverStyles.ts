@@ -12,9 +12,9 @@ export const driverStyles = StyleSheet.create({
   },
   topHeader: {
     backgroundColor: '#0F172A',
-    paddingHorizontal: 10,
-    paddingTop: 10,
-    paddingBottom: 10,
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'android' ? Math.max((StatusBar.currentHeight || 0) + 14, 52) : 14,
+    paddingBottom: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

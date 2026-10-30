@@ -12,10 +12,10 @@ export const LanguageDropdown: React.FC<LanguageDropdownProps> = ({ dark = false
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const languages: { code: Language; label: string; subLabel: string; flag: string }[] = [
-    { code: 'EN', label: 'English', subLabel: 'English', flag: '🇬🇧' },
-    { code: 'AM', label: 'አማርኛ', subLabel: 'Amharic', flag: '🇪🇹' },
-    { code: 'OM', label: 'Afaan Oromoo', subLabel: 'Oromo', flag: '🌳' },
+  const languages: { code: Language; short: string; label: string; subLabel: string; flag: string }[] = [
+    { code: 'EN', short: 'EN', label: 'English', subLabel: 'English', flag: '🇬🇧' },
+    { code: 'AM', short: 'አማ', label: 'አማርኛ', subLabel: 'Amharic', flag: '🇪🇹' },
+    { code: 'OM', short: 'ORO', label: 'Afaan Oromoo', subLabel: 'Oromo', flag: '🌳' },
   ];
 
   const current = languages.find((l) => l.code === language) || languages[0];
@@ -35,7 +35,7 @@ export const LanguageDropdown: React.FC<LanguageDropdownProps> = ({ dark = false
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
           dark
             ? 'bg-slate-800/90 hover:bg-slate-700/90 text-white border-slate-700/80 shadow-xs'
             : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-200/90 shadow-2xs'
@@ -43,11 +43,8 @@ export const LanguageDropdown: React.FC<LanguageDropdownProps> = ({ dark = false
         aria-expanded={isOpen}
       >
         <Globe className={`w-3.5 h-3.5 ${dark ? 'text-[#38BDF8]' : 'text-[#0284C7]'}`} />
-        <span className="flex items-center gap-1.5">
-          <span>{current.flag}</span>
-          <span className="font-extrabold">{current.label}</span>
-        </span>
-        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''} text-slate-400`} />
+        <span className="font-extrabold tracking-wide">{current.short}</span>
+        <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''} text-slate-400`} />
       </button>
 
       {isOpen && (

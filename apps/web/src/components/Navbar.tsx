@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { Globe, Menu, X, ArrowRight, ShieldCheck } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
+import { Globe, Menu, X, ArrowRight, ShieldCheck, Sun, Moon } from 'lucide-react';
 import { Logo } from './Logo';
 import { LanguageDropdown } from './LanguageDropdown';
 import { Link, useLocation } from 'react-router-dom';
 
 export const Navbar: React.FC = () => {
   const { language, setLanguage, t } = useLanguage();
+  const { theme, isDark, toggleTheme } = useTheme();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
   const [scrolled, setScrolled] = useState(false);
@@ -125,8 +127,23 @@ export const Navbar: React.FC = () => {
           </a>
         </div>
 
-        {/* Right CTA Button & Language Switcher */}
+        {/* Right CTA Button & Language Switcher & Theme Switcher */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Theme Mode Toggle (Sun/Moon) */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="p-2 rounded-full text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-colors cursor-pointer"
+            title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            aria-label="Toggle theme mode"
+          >
+            {isDark ? (
+              <Sun className="w-4 h-4 text-amber-400" />
+            ) : (
+              <Moon className="w-4 h-4 text-sky-300" />
+            )}
+          </button>
+
           {/* Language Dropdown supporting EN, AM, OM */}
           <LanguageDropdown dark={true} />
 
@@ -154,6 +171,18 @@ export const Navbar: React.FC = () => {
       {/* Mobile Nav Dropdown */}
       {mobileNavOpen && (
         <div className="md:hidden mt-2 p-4 rounded-2xl bg-[#0B1220]/95 backdrop-blur-md border border-slate-800 shadow-2xl space-y-2.5 z-50 text-white animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-800/80 px-1">
+            <span className="text-xs font-bold text-slate-400">Theme</span>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-800 border border-slate-700 text-slate-200"
+            >
+              {isDark ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-sky-400" />}
+              <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+            </button>
+          </div>
+
           <a
             href="#home"
             onClick={(e) => handleNavClick('home', e)}

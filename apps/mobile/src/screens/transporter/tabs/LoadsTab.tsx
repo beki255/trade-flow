@@ -12,6 +12,8 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LoadItem, BidItem } from '../types';
 import { useLanguage } from '../../../context/LanguageContext';
 
+const cleanStr = (str?: string) => (str ? String(str).replace(/^`+|`+$/g, '').trim() : '');
+
 interface LoadsTabProps {
   loadsList: LoadItem[];
   filteredLoads: LoadItem[];
@@ -51,20 +53,53 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
   const [expandedLoadId, setExpandedLoadId] = useState<string | null>(null);
   const [corridorFilter, setCorridorFilter] = useState<'ALL' | 'DJI_TO_ADDIS' | 'ADDIS_TO_DJI' | 'HEAVY'>('ALL');
 
-  // Filter loads by quick corridor segment
+  // Helpers to accurately determine corridor direction
+  const isDjiOrigin = (item: LoadItem) => {
+    const o = (item.origin || '').toLowerCase();
+    const routeO = (item.route || '').split(/[➔→\->]+/)[0]?.toLowerCase() || '';
+    return (
+      o.includes('djibouti') ||
+      o.includes('doraleh') ||
+      o.includes('dji') ||
+      routeO.includes('djibouti') ||
+      routeO.includes('doraleh') ||
+      routeO.includes('dji')
+    );
+  };
+
+  const isDjiDest = (item: LoadItem) => {
+    const d = (item.destination || '').toLowerCase();
+    const routeD = (item.route || '').split(/[➔→\->]+/)[1]?.toLowerCase() || '';
+    return (
+      d.includes('djibouti') ||
+      d.includes('doraleh') ||
+      d.includes('dji') ||
+      routeD.includes('djibouti') ||
+      routeD.includes('doraleh') ||
+      routeD.includes('dji')
+    );
+  };
+
+  // Accurate Counts for each segment
+  const djiToAddisCount = filteredLoads.filter((l) => isDjiOrigin(l) && !isDjiDest(l)).length;
+  const addisToDjiCount = filteredLoads.filter((l) => isDjiDest(l) && !isDjiOrigin(l)).length;
+  const heavyCount = filteredLoads.filter((l) => {
+    const w = l.weightTons || parseFloat(l.weight || '0');
+    return w >= 40 || (l.weight || '').toLowerCase().includes('100');
+  }).length;
+
+  // Filter loads by quick corridor segment accurately
   const displayedLoads = filteredLoads.filter((item) => {
     if (corridorFilter === 'ALL') return true;
-    const lowerRoute = (item.route || '').toLowerCase();
-    const lowerOrigin = (item.origin || '').toLowerCase();
     if (corridorFilter === 'DJI_TO_ADDIS') {
-      return lowerRoute.includes('dji') || lowerOrigin.includes('dji') || lowerOrigin.includes('djibouti');
+      return isDjiOrigin(item) && !isDjiDest(item);
     }
     if (corridorFilter === 'ADDIS_TO_DJI') {
-      return lowerRoute.includes('addis') || lowerOrigin.includes('addis') || lowerOrigin.includes('modjo');
+      return isDjiDest(item) && !isDjiOrigin(item);
     }
     if (corridorFilter === 'HEAVY') {
-      const weightNum = parseFloat(item.weight || '0');
-      return weightNum >= 40 || (item.weight || '').toLowerCase().includes('100');
+      const w = item.weightTons || parseFloat(item.weight || '0');
+      return w >= 40 || (item.weight || '').toLowerCase().includes('100');
     }
     return true;
   });
@@ -74,9 +109,13 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
       {/* Header Row: Title & Active Count */}
       <View style={styles.headerRow}>
         <View style={{ flex: 1, marginRight: 8 }}>
-          <Text style={styles.pageTitle}>{t('loadBoardTitle') || 'Corridor Load Board'}</Text>
+          <Text style={styles.pageTitle}>{t('loadBoardTitle') || (language === 'AM' ? 'የኮሪደር ጭነቶች ቦርድ' : language === 'OM' ? 'Gabatee Fe’iinsaa Koriidarii' : 'Corridor Load Board')}</Text>
           <Text style={styles.pageSubtitle}>
-            {displayedLoads.length} available consignment{displayedLoads.length === 1 ? '' : 's'} on corridor
+            {language === 'AM'
+              ? `${displayedLoads.length} የሚገኙ የኮሪደር ጭነቶች`
+              : language === 'OM'
+              ? `Fe’iinsa koriidarii ${displayedLoads.length} qophaa’an`
+              : `${displayedLoads.length} available consignment${displayedLoads.length === 1 ? '' : 's'} on corridor`}
           </Text>
         </View>
 
@@ -106,7 +145,9 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
 
           <View style={styles.activePill}>
             <View style={styles.activeDot} />
-            <Text style={styles.activePillText}>{displayedLoads.length} Active</Text>
+            <Text style={styles.activePillText}>
+              {displayedLoads.length} {language === 'AM' ? 'ንቁ' : language === 'OM' ? 'Hojiirra' : 'Active'}
+            </Text>
           </View>
         </View>
       </View>
@@ -120,7 +161,7 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
                   <Ionicons name="flash" size={15} color="#D97706" />
                   <Text style={styles.aiMatchTitle} numberOfLines={1}>
-                    AI Match: {req.loadTitle}
+                    {language === 'AM' ? 'የ AI ማዛመጃ:' : language === 'OM' ? 'Walsimsiisa AI:' : 'AI Match:'} {req.loadTitle}
                   </Text>
                 </View>
                 <Text style={styles.aiMatchPrice}>{req.price}</Text>
@@ -129,7 +170,7 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
               <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 5 }}>
                 <Ionicons name="location-outline" size={13} color="#0284C7" style={{ marginTop: 2 }} />
                 <Text style={styles.aiMatchRoute}>
-                  {req.route} • {req.weight || 'Full Load'}
+                  {req.route} • {req.weight || (language === 'AM' ? 'ሙሉ ጭነት' : language === 'OM' ? 'Fe’iisa Guutuu' : 'Full Load')}
                 </Text>
               </View>
 
@@ -139,14 +180,18 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
                   onPress={() => onRespondDirectOffer(req.rawId || req.id, 'ACCEPT')}
                   activeOpacity={0.85}
                 >
-                  <Text style={styles.aiAcceptBtnText}>Accept & Dispatch ➔</Text>
+                  <Text style={styles.aiAcceptBtnText}>
+                    {language === 'AM' ? 'ተቀበል እና አሰማራ ➔' : language === 'OM' ? 'Fudhadhu & Ergi ➔' : 'Accept & Dispatch ➔'}
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.aiDeclineBtn}
                   onPress={() => onRespondDirectOffer(req.rawId || req.id, 'REJECT')}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.aiDeclineBtnText}>Decline</Text>
+                  <Text style={styles.aiDeclineBtnText}>
+                    {language === 'AM' ? 'አትቀበል' : language === 'OM' ? 'Didi' : 'Decline'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -159,7 +204,7 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
         <Ionicons name="search" size={16} color="#64748B" />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search by cargo, route, or weight..."
+          placeholder={language === 'AM' ? 'በጭነት፣ መስመር ወይም ክብደት ፈልግ...' : language === 'OM' ? 'Gosa meeshaa, daandii ykn ulfaatinan barbaadi...' : 'Search by cargo, route, or weight...'}
           placeholderTextColor="#94A3B8"
           value={loadSearchQuery}
           onChangeText={setLoadSearchQuery}
@@ -180,10 +225,22 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
       >
         {(
           [
-            { key: 'ALL', label: `All Loads (${loadsList.length})` },
-            { key: 'DJI_TO_ADDIS', label: 'Djibouti ➔ Addis' },
-            { key: 'ADDIS_TO_DJI', label: 'Addis ➔ Djibouti' },
-            { key: 'HEAVY', label: 'Heavy (>40t)' },
+            {
+              key: 'ALL',
+              label: `${language === 'AM' ? 'ሁሉም ጭነቶች' : language === 'OM' ? 'Fe’iinsa Hunda' : 'All Loads'} (${filteredLoads.length})`,
+            },
+            {
+              key: 'DJI_TO_ADDIS',
+              label: `${language === 'AM' ? 'ጅቡቲ ➔ አዲስ አበባ' : 'Djibouti ➔ Addis'} (${djiToAddisCount})`,
+            },
+            {
+              key: 'ADDIS_TO_DJI',
+              label: `${language === 'AM' ? 'አዲስ አበባ ➔ ጅቡቲ' : 'Addis ➔ Djibouti'} (${addisToDjiCount})`,
+            },
+            {
+              key: 'HEAVY',
+              label: `${language === 'AM' ? 'ከባድ (>40t)' : language === 'OM' ? 'Cimaa (>40t)' : 'Heavy (>40t)'} (${heavyCount})`,
+            },
           ] as const
         ).map((f) => {
           const active = corridorFilter === f.key;
@@ -206,15 +263,27 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
       {displayedLoads.length === 0 ? (
         <View style={styles.emptyCard}>
           <Ionicons name="cube-outline" size={38} color="#94A3B8" />
-          <Text style={styles.emptyTitle}>No Consignments Found</Text>
+          <Text style={styles.emptyTitle}>
+            {language === 'AM' ? 'ምንም የተገኘ ጭነት የለም' : language === 'OM' ? 'Fe’iinsi Hin Argamne' : 'No Consignments Found'}
+          </Text>
           <Text style={styles.emptySubtitle}>
             {loadSearchQuery
-              ? `No corridor freight matching "${loadSearchQuery}". Try clearing search.`
-              : 'New freight postings along the corridor will display here in real-time.'}
+              ? (language === 'AM' ? `ከ "${loadSearchQuery}" ጋር የሚዛመድ ጭነት የለም። ፍለጋውን ያጽዱ።` : language === 'OM' ? `"${loadSearchQuery}" wajjin kan walsimu hin argamne.` : `No corridor freight matching "${loadSearchQuery}". Try clearing search.`)
+              : corridorFilter !== 'ALL'
+              ? (language === 'AM' ? 'በተመረጠው የኮሪደር መስመር ላይ አሁን የሚገኝ ጭነት የለም።' : language === 'OM' ? 'Koriidarii filatame irratti fe’iinsi hin jiru.' : 'No active freight along this corridor segment currently.')
+              : (language === 'AM' ? 'በኮሪደሩ ላይ የሚለጠፉ አዳዲስ ጭነቶች እዚህ በቀጥታ ይታያሉ።' : language === 'OM' ? 'Fe’iinsi haaraan koriidarii irratti yeroo qabatamaatti asitti mul’ata.' : 'New freight postings along the corridor will display here in real-time.')}
           </Text>
           {loadSearchQuery ? (
             <TouchableOpacity onPress={() => setLoadSearchQuery('')} style={styles.clearBtn}>
-              <Text style={styles.clearBtnText}>Clear Search Filters</Text>
+              <Text style={styles.clearBtnText}>
+                {language === 'AM' ? 'የፍለጋ ማጣሪያን አጽዳ' : language === 'OM' ? 'Barbaacha Haqi' : 'Clear Search Filters'}
+              </Text>
+            </TouchableOpacity>
+          ) : corridorFilter !== 'ALL' ? (
+            <TouchableOpacity onPress={() => setCorridorFilter('ALL')} style={styles.clearBtn}>
+              <Text style={styles.clearBtnText}>
+                {language === 'AM' ? 'ሁሉንም ጭነቶች አሳይ' : language === 'OM' ? 'Fe’iinsa Hunda Agarsiisi' : 'Show All Loads'}
+              </Text>
             </TouchableOpacity>
           ) : (
             onRefresh && (
@@ -234,7 +303,7 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
               >
                 <Ionicons name="reload" size={16} color="#FFFFFF" />
                 <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 13 }}>
-                  {language === 'am' ? 'ጭነቶችን አድስ' : 'Refresh Loads'}
+                  {language === 'AM' ? 'ጭነቶችን አድስ' : language === 'OM' ? 'Fe’iinsa Haaresi' : 'Refresh Loads'}
                 </Text>
               </TouchableOpacity>
             )
@@ -262,27 +331,33 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
             <View key={item.id || idx} style={styles.loadCard}>
               {/* Card Header: Cargo, Weight & Budget */}
               <View style={styles.loadCardHeader}>
-                <View style={{ flex: 1, marginRight: 8 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Text style={styles.cargoTitle} numberOfLines={2}>
-                      {item.title}
-                    </Text>
-                    <View style={styles.weightBadge}>
-                      <Text style={styles.weightBadgeText}>{item.weight || 'Full Load'}</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.cargoTypeSub} numberOfLines={1}>
-                    {item.cargoType || 'General Freight'}
+                <View style={{ flex: 1, marginRight: 12 }}>
+                  <Text style={styles.cargoTitle} numberOfLines={2}>
+                    {cleanStr(item.title)}
                   </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                    <View style={styles.weightBadge}>
+                      <Text style={styles.weightBadgeText}>
+                        {cleanStr(item.weight) || (language === 'AM' ? 'ሙሉ ጭነት' : language === 'OM' ? 'Fe\'isa Guutuu' : 'Full Load')}
+                      </Text>
+                    </View>
+                    <Text style={styles.cargoTypeSub} numberOfLines={1}>
+                      {cleanStr(item.cargoType) || (language === 'AM' ? 'አጠቃላይ ጭነት' : language === 'OM' ? 'Fe\'isa Waliigalaa' : 'General Freight')}
+                    </Text>
+                  </View>
                 </View>
 
                 {/* Price / Budget */}
-                <View style={{ alignItems: 'flex-end' }}>
+                <View style={{ alignItems: 'flex-end', flexShrink: 0 }}>
                   <Text style={styles.budgetText}>
-                    {item.budget || (existingBid ? existingBid.price : 'Open Bidding')}
+                    {item.budget || (existingBid ? existingBid.price : (language === 'AM' ? 'ክፍት ጨረታ' : language === 'OM' ? 'Caalbaasii Banaa' : 'Open for Bids'))}
                   </Text>
                   <Text style={styles.budgetLabel}>
-                    {item.budget ? 'Target Budget' : existingBid ? 'Your Bid' : 'Est. Rate'}
+                    {item.budget
+                      ? (language === 'AM' ? 'የታለመ በጀት' : language === 'OM' ? 'Baajata Karoorfame' : 'Target Budget')
+                      : existingBid
+                      ? (language === 'AM' ? 'የእርስዎ ዋጋ' : language === 'OM' ? 'Gatii Keessan' : 'Your Bid')
+                      : (language === 'AM' ? 'የጨረታ ሁኔታ' : language === 'OM' ? 'Haala Caalbaasii' : 'Bid Status')}
                   </Text>
                 </View>
               </View>
@@ -290,7 +365,9 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
               {/* Key Tags & Details Toggle Row */}
               <View style={styles.tagsRow}>
                 <View style={styles.miniTag}>
-                  <Text style={styles.miniTagText}>{item.shipperName || (language === 'AM' ? 'የተረጋገጠ ላኪ' : 'Direct Shipper')}</Text>
+                  <Text style={styles.miniTagText}>
+                    {item.shipperName || (language === 'AM' ? 'የተረጋገጠ ላኪ' : language === 'OM' ? 'Ergaa Qulqullaa\'e' : 'Direct Shipper')}
+                  </Text>
                 </View>
                 <View style={styles.miniTag}>
                   <Text style={styles.miniTagText}>40ft High-Cube</Text>
@@ -322,15 +399,17 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
 
               {/* Collapsible Details Drawer (Origin, Destination & Info - ONLY shown when Details is clicked) */}
               {isExpanded && (() => {
-                const originAddr =
+                const originAddr = cleanStr(
                   item.origin && item.origin.trim().length > 0
                     ? item.origin
-                    : item.route?.split(/[➔→\->]+/)[0]?.trim() || 'Addis Ababa Kaliti Hub';
+                    : item.route?.split(/[➔→\->]+/)[0]?.trim() || 'Addis Ababa Kaliti Hub'
+                );
 
-                const destAddr =
+                const destAddr = cleanStr(
                   item.destination && item.destination.trim().length > 0
                     ? item.destination
-                    : item.route?.split(/[➔→\->]+/)[1]?.trim() || 'Djibouti Doraleh Port';
+                    : item.route?.split(/[➔→\->]+/)[1]?.trim() || 'Djibouti Doraleh Port'
+                );
 
                 return (
                   <View style={styles.expandedDetailsBox}>
@@ -373,13 +452,13 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
                       <View style={styles.secondaryDetailItem}>
                         <Ionicons name="business" size={12} color="#0284C7" />
                         <Text style={styles.secondaryDetailText} numberOfLines={1}>
-                          {item.shipperName || 'Direct Shipper'}{item.shipperPhone ? ` • ${item.shipperPhone}` : ''}
+                          {item.shipperName || (language === 'AM' ? 'ቀጥተኛ ላኪ' : language === 'OM' ? 'Ergaa Kallattii' : 'Direct Shipper')}{item.shipperPhone ? ` • ${item.shipperPhone}` : ''}
                         </Text>
                       </View>
                       <View style={styles.secondaryDetailItem}>
                         <Ionicons name="shield-checkmark" size={12} color="#059669" />
                         <Text style={styles.secondaryDetailText} numberOfLines={1}>
-                          {language === 'AM' ? 'የተሟላ የዕቃ ዋስትና' : 'GIT Insured'}
+                          {language === 'AM' ? 'የተሟላ የዕቃ ዋስትና' : language === 'OM' ? 'Wabiin GIT Mirkanaa\'e' : 'GIT Insured'}
                         </Text>
                       </View>
                     </View>
@@ -395,7 +474,7 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
                     <View style={styles.statusPillDispatched}>
                       <Ionicons name="checkmark-circle" size={14} color="#15803D" />
                       <Text style={styles.statusPillDispatchedText} numberOfLines={1}>
-                        Dispatched: {existingBid.dispatchedTruck} • {existingBid.dispatchedDriver}
+                        {language === 'AM' ? 'ተልኳል:' : language === 'OM' ? 'Ergameera:' : 'Dispatched:'} {existingBid.dispatchedTruck} • {existingBid.dispatchedDriver}
                       </Text>
                     </View>
                   ) : isAccepted ? (
@@ -403,7 +482,7 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
                       <View style={[styles.statusPillPending, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
                         <Ionicons name="lock-closed" size={13} color="#D97706" />
                         <Text style={[styles.statusPillPendingText, { color: '#92400E' }]}>
-                          Won • Awaiting Shipper Escrow Deposit
+                          {language === 'AM' ? 'አሸንፈዋል • የላኪው የኤስክሮው ተቀማጭ በመጠባበቅ ላይ' : language === 'OM' ? 'Injifattaniittu • Qabsiisa kaffaltii eegaa jira' : 'Won • Awaiting Shipper Escrow Deposit'}
                         </Text>
                       </View>
                     ) : (
@@ -416,7 +495,9 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
                         activeOpacity={0.85}
                       >
                         <Ionicons name="trophy" size={13} color="#FFFFFF" />
-                        <Text style={styles.assignFleetBtnText}>Won! Assign Truck & Driver ➔</Text>
+                        <Text style={styles.assignFleetBtnText}>
+                          {language === 'AM' ? 'አሸንፈዋል! መኪና እና አሽከርካሪ ይመድቡ ➔' : language === 'OM' ? 'Injifattaniittu! Konkolaataa fi Ofeessaa Ramadaa ➔' : 'Won! Assign Truck & Driver ➔'}
+                        </Text>
                       </TouchableOpacity>
                     )
                   ) : (
@@ -424,14 +505,16 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
                     <View style={styles.statusPillPending}>
                       <Ionicons name="time" size={13} color="#B45309" />
                       <Text style={styles.statusPillPendingText}>
-                        Quote Placed: {existingBid.price} (Pending)
+                        {language === 'AM' ? 'የቀረበ ዋጋ:' : language === 'OM' ? 'Gatiin Dhiyaate:' : 'Quote Placed:'} {existingBid.price} ({language === 'AM' ? 'በሂደት ላይ' : language === 'OM' ? 'Adeemsarra' : 'Pending'})
                       </Text>
                       {onDeleteBid && (
                         <TouchableOpacity
                           onPress={() => onDeleteBid(existingBid)}
                           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         >
-                          <Text style={styles.withdrawLink}>Withdraw</Text>
+                          <Text style={styles.withdrawLink}>
+                            {language === 'AM' ? 'ሰርዝ' : language === 'OM' ? 'Haqi' : 'Withdraw'}
+                          </Text>
                         </TouchableOpacity>
                       )}
                     </View>
@@ -439,7 +522,9 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
                 ) : isLoadBooked ? (
                   <View style={styles.statusPillLocked}>
                     <Ionicons name="lock-closed" size={12} color="#64748B" />
-                    <Text style={styles.statusPillLockedText}>Assigned to Fleet</Text>
+                    <Text style={styles.statusPillLockedText}>
+                      {language === 'AM' ? 'ለመኪና ተመድቧል' : language === 'OM' ? 'Konkolaataaf Ramadameera' : 'Assigned to Fleet'}
+                    </Text>
                   </View>
                 ) : (
                   /* Available to Quote: Sleek Primary Button */
@@ -448,7 +533,9 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
                     onPress={() => onSelectLoadForQuote(item)}
                     activeOpacity={0.85}
                   >
-                    <Text style={styles.quoteBtnText}>Quote Freight Rate ➔</Text>
+                    <Text style={styles.quoteBtnText}>
+                      {language === 'AM' ? 'የጭነት ዋጋ አቅርብ ➔' : language === 'OM' ? 'Gatii Fe\'isaa Dhiyeessi ➔' : 'Quote Freight Rate ➔'}
+                    </Text>
                   </TouchableOpacity>
                 )}
               </View>

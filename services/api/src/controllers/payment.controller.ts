@@ -13,6 +13,7 @@ import {
   CustomsClearanceStatus,
 } from '@prisma/client';
 import { auditTrailStore } from './portal.controller';
+import { NotificationService } from '../services/notification.service';
 
 const prisma = new PrismaClient();
 
@@ -327,6 +328,26 @@ export const initiatePayment = async (req: Request, res: Response): Promise<void
         where: { id: bid.loadId },
         data: { status: LoadStatus.BOOKED },
       });
+
+      // Dispatch notification to Transporter
+      try {
+        NotificationService.dispatchNotification({
+          role: 'TRANSPORTER',
+          userId: bid.transporterId,
+          title: 'Quote Accepted by Shipper!',
+          message: `Your quote for "${bid.load?.title || 'Consignment'}" was accepted! Digital Escrow deposit is funded. Tap to assign driver and truck.`,
+          type: 'BID',
+          priority: 'HIGH',
+          actionTab: 'bidding',
+          metadata: {
+            bidId: bid.id,
+            loadId: bid.loadId,
+            rateEtb: resolvedGross,
+          },
+        });
+      } catch (notifErr) {
+        console.warn('Escrow transporter notification error:', notifErr);
+      }
     }
     // Case B: Initiated from Instant AI Match (Load ID)
     else if (loadId) {
@@ -631,8 +652,9 @@ export const settlePayment = async (req: Request, res: Response): Promise<void> 
     }
 
     // D. Locate by paymentId
+    let linkedPayment: any = null;
     if (!targetShipment && paymentId && isValidUUID(paymentId)) {
-      const linkedPayment = await prisma.payment.findUnique({
+      linkedPayment = await prisma.payment.findUnique({
         where: { id: String(paymentId).trim() },
         include: { shipment: { include: { load: true } } },
       });
@@ -641,8 +663,16 @@ export const settlePayment = async (req: Request, res: Response): Promise<void> 
       }
     }
 
-    // E. Fallback: Locate latest active shipment, or latest overall shipment
-    if (!targetShipment) {
+    // Determine whether caller is a Driver submitting e-POD or a Shipper releasing escrow
+    const isDriverDelivery = Boolean(
+      (driverId && isValidUUID(String(driverId))) ||
+      (driverEmail && typeof driverEmail === 'string' && driverEmail.trim().length > 0) ||
+      signatureData ||
+      (signatureUrl && !signatureUrl.includes('Consignee Agent'))
+    );
+
+    // E. Fallback: ONLY for Driver Delivery if shipmentId wasn't passed directly
+    if (!targetShipment && isDriverDelivery) {
       targetShipment = await prisma.shipment.findFirst({
         where: {
           status: {
@@ -653,6 +683,7 @@ export const settlePayment = async (req: Request, res: Response): Promise<void> 
               ShipmentStatus.AT_ORIGIN,
             ],
           },
+          ...(driverId ? { OR: [{ driverId: String(driverId).trim() }, { driver: { userId: String(driverId).trim() } }] } : {}),
         },
         include: { load: true },
         orderBy: { updatedAt: 'desc' },
@@ -660,17 +691,62 @@ export const settlePayment = async (req: Request, res: Response): Promise<void> 
     }
 
     if (!targetShipment) {
-      targetShipment = await prisma.shipment.findFirst({
-        include: { load: true },
-        orderBy: { updatedAt: 'desc' },
-      });
-    }
-
-    if (!targetShipment) {
-      res.status(404).json({ error: 'No shipment found in database to confirm e-POD delivery.' });
+      res.status(404).json({ error: 'No associated shipment found in database to process escrow settlement.' });
       return;
     }
 
+    // === CASE 1: SHIPPER / EXTERNAL CALLER ATTEMPTING TO SETTLE ===
+    if (!isDriverDelivery) {
+      // STRICT LOGISTICS GUARD: Escrow funds CANNOT be released before cargo is delivered by driver!
+      if (targetShipment.status !== ShipmentStatus.DELIVERED) {
+        res.status(400).json({
+          error:
+            'Cannot settle escrow payout: Cargo has not yet been delivered by the driver. Escrow funds remain securely held in the TradeFlow vault until the driver completes corridor transit and submits verified Proof of Delivery (e-POD).',
+          shipmentStatus: targetShipment.status,
+          loadStatus: targetShipment.load?.status,
+        });
+        return;
+      }
+
+      // If already DELIVERED, settle the payment record without fabricating fake signatures
+      let paymentToSettle = linkedPayment;
+      if (!paymentToSettle) {
+        paymentToSettle = await prisma.payment.findUnique({
+          where: { shipmentId: targetShipment.id },
+        });
+      }
+
+      if (paymentToSettle) {
+        const settledPayment = await prisma.payment.update({
+          where: { id: paymentToSettle.id },
+          data: {
+            status: PaymentStatus.SETTLED,
+            settledAt: new Date(),
+          },
+        });
+
+        try {
+          NotificationService.dispatchNotification({
+            role: 'TRANSPORTER',
+            userId: paymentToSettle.transporterId,
+            title: 'Escrow Payout Settled!',
+            message: `Escrow funds for consignment "${targetShipment.load?.title || 'Shipment'}" have been released by the shipper upon verified delivery.`,
+            type: 'PAYMENT',
+            priority: 'HIGH',
+            actionTab: 'earnings',
+          });
+        } catch (e) {}
+
+        res.json({
+          message: 'Escrow payment settled successfully! Funds disbursed to carrier.',
+          payment: settledPayment,
+          shipment: targetShipment,
+        });
+        return;
+      }
+    }
+
+    // === CASE 2: DRIVER e-POD SUBMISSION (Driver completing actual delivery) ===
     // 1. PRIMARY: Persist e-POD into PostgreSQL database FIRST (Recipient, Cryptographic Signature, Timestamp)
     const rawLat = targetShipment.load?.destLat ?? targetShipment.currentLat ?? 11.588;
     const rawLng = targetShipment.load?.destLng ?? targetShipment.currentLng ?? 43.145;
@@ -886,6 +962,45 @@ export const getPaymentLedger = async (req: Request, res: Response): Promise<voi
       whereClause.transporterId = transporterId.trim();
     }
 
+    // Auto-heal any shipment mistakenly settled prematurely by old web button
+    try {
+      const corruptedShipments = await prisma.shipment.findMany({
+        where: {
+          podRecipientName: 'Authorized Consignee Agent',
+        },
+        include: { load: true },
+      });
+
+      for (const s of corruptedShipments) {
+        await prisma.shipment.update({
+          where: { id: s.id },
+          data: {
+            status: ShipmentStatus.DISPATCHED,
+            progressPercentage: 15,
+            podRecipientName: null,
+            podSignatureUrl: null,
+            podDeliveredAt: null,
+            arrivedDestinationAt: null,
+          },
+        });
+        if (s.loadId) {
+          await prisma.load.update({
+            where: { id: s.loadId },
+            data: { status: LoadStatus.BOOKED },
+          });
+        }
+        await prisma.payment.updateMany({
+          where: { shipmentId: s.id },
+          data: {
+            status: PaymentStatus.HELD_IN_ESCROW,
+            settledAt: null,
+          },
+        });
+      }
+    } catch (healErr) {
+      console.warn('Auto-heal premature settlement error:', healErr);
+    }
+
     const payments = await prisma.payment.findMany({
       where: whereClause,
       include: {
@@ -991,13 +1106,13 @@ export const getDisputeTickets = async (req: Request, res: Response): Promise<vo
         disputeReason: reason,
         disputeNotes: p.disputeNotes,
         shipperName: p.shipper?.fullName || 'Consignor Shipper',
-        shipperCompany: p.shipper?.companyName || 'Export Trading PLC',
-        shipperPhone: p.shipper?.phone || '+251911445566',
-        shipperTin: p.shipper?.tin || '0012938475',
-        transporterName: p.transporter?.fullName || p.transporter?.companyName || 'Registered Carrier',
-        transporterPhone: p.transporter?.phone || '+251911223344',
-        driverName: p.shipment?.driver?.user?.fullName || 'Carrier Driver',
-        truckPlate: p.shipment?.vehicle?.plateNumber || 'ET-3-88219',
+        shipperCompany: p.shipper?.companyName || p.shipper?.fullName || 'N/A',
+        shipperPhone: p.shipper?.phone || 'N/A',
+        shipperTin: p.shipper?.tin || 'N/A',
+        transporterName: p.transporter?.companyName || p.transporter?.fullName || 'Registered Carrier',
+        transporterPhone: p.transporter?.phone || 'N/A',
+        driverName: p.shipment?.driver?.user?.fullName || 'Unassigned Driver',
+        truckPlate: p.shipment?.vehicle?.plateNumber || 'N/A',
         filedAt: p.createdAt.toISOString(),
         settledAt: p.settledAt?.toISOString() || null,
       };

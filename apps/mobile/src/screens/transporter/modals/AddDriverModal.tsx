@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Modal,
   View,
@@ -8,6 +8,8 @@ import {
   ScrollView,
   Image,
   Platform,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
@@ -23,6 +25,8 @@ interface AddDriverModalProps {
   setDriverFullName: (val: string) => void;
   driverPhone: string;
   setDriverPhone: (val: string) => void;
+  driverEmail: string;
+  setDriverEmail: (val: string) => void;
   driverLicense: string;
   setDriverLicense: (val: string) => void;
   driverCategory: string;
@@ -43,6 +47,7 @@ interface AddDriverModalProps {
   driverTemporaryPassword: string;
   setDriverTemporaryPassword: (val: string) => void;
   onGenerateNewPassword: () => void;
+  isEditing?: boolean;
   onSubmit: () => void;
 }
 
@@ -53,6 +58,8 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({
   setDriverFullName,
   driverPhone,
   setDriverPhone,
+  driverEmail,
+  setDriverEmail,
   driverLicense,
   setDriverLicense,
   driverCategory,
@@ -73,42 +80,11 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({
   driverTemporaryPassword,
   setDriverTemporaryPassword,
   onGenerateNewPassword,
+  isEditing = false,
   onSubmit,
 }) => {
   const { language } = useLanguage();
-  // Real Native & Web Device Photo Picker for Driver Face/ID
-  const pickDriverPhoto = async () => {
-    try {
-      if (Platform.OS === 'web' && typeof document !== 'undefined') {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'image/*';
-        input.onchange = (e: any) => {
-          const file = e.target?.files?.[0];
-          if (file) {
-            const reader = new FileReader();
-            reader.onload = () => {
-              setDriverPhoto(reader.result as string);
-            };
-            reader.readAsDataURL(file);
-          }
-        };
-        input.click();
-      } else {
-        const res = await DocumentPicker.getDocumentAsync({
-          type: ['image/*'],
-          copyToCacheDirectory: true,
-        });
-        if (!res.canceled && res.assets && res.assets.length > 0) {
-          const asset = res.assets[0];
-          const dataUrl = await uriToDataUrl(asset.uri);
-          setDriverPhoto(dataUrl);
-        }
-      }
-    } catch (err) {
-      console.warn('Driver photo picker error:', err);
-    }
-  };
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
 
   // Real Native & Web Device License Document / Card Picker
   const pickLicenseDoc = async () => {
@@ -138,13 +114,32 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({
           const asset = res.assets[0];
           setLicenseDocName(asset.name);
           try {
-            const resp = await fetch(asset.uri);
-            const blob = await resp.blob();
-            const reader = new FileReader();
-            reader.onload = () => {
-              setDriverLicenseDoc(reader.result as string);
-            };
-            reader.readAsDataURL(blob);
+            const dataUrl = await new Promise<string>((resolve, reject) => {
+              const xhr = new XMLHttpRequest();
+              xhr.onload = () => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                  if (typeof reader.result === 'string') resolve(reader.result);
+                  else resolve(asset.uri);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(xhr.response);
+              };
+              xhr.onerror = () => {
+                fetch(asset.uri)
+                  .then((r) => r.blob())
+                  .then((blob) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result as string);
+                    reader.readAsDataURL(blob);
+                  })
+                  .catch(() => resolve(asset.uri));
+              };
+              xhr.responseType = 'blob';
+              xhr.open('GET', asset.uri, true);
+              xhr.send(null);
+            });
+            setDriverLicenseDoc(dataUrl);
           } catch {
             setDriverLicenseDoc(asset.uri);
           }
@@ -155,91 +150,61 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({
     }
   };
 
-  const handleSetSampleData = () => {
-    setDriverPhoto('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80');
-    setDriverLicenseDoc('Attached: Commercial_Driver_License_Grade5.jpg');
-    setLicenseDocName('Commercial_Driver_License_Grade5.jpg');
-  };
-
   return (
     <Modal
       visible={visible}
-      transparent={true}
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={styles.modalBackdrop}>
-        <View style={[styles.profileModalCard, { maxHeight: '92%' }]}>
-          <View style={styles.modalHeaderRow}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Ionicons name="person-add" size={18} color="#0284C7" />
-              <Text style={styles.modalTitle}>Register Authorized Driver</Text>
-            </View>
-            <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-              <Text style={styles.closeBtnText}>✕</Text>
-            </TouchableOpacity>
+      <SafeAreaView style={styles.fullScreenModal}>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
+        {/* Dedicated Full Screen Page Header */}
+        <View style={styles.modalPageHeader}>
+          <TouchableOpacity
+            style={styles.modalPageBackBtn}
+            onPress={onClose}
+            activeOpacity={0.7}
+            accessibilityLabel="Back"
+          >
+            <Ionicons name="arrow-back" size={20} color="#0F172A" />
+          </TouchableOpacity>
+
+          <View style={styles.modalPageTitleRow}>
+            <Ionicons name={isEditing ? "person" : "person-add"} size={18} color="#0284C7" />
+            <Text style={styles.modalPageTitle}>
+              {isEditing ? 'Edit Driver Profile' : 'Register Authorized Driver'}
+            </Text>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingVertical: 12 }}>
-            {/* 1. Driver Photo Upload Section */}
-            <View style={styles.photoUploadContainer}>
-              <TouchableOpacity
-                style={styles.driverPhotoFrame}
-                onPress={pickDriverPhoto}
-                activeOpacity={0.8}
-              >
-                {isValidImageUri(driverPhoto) ? (
-                  <Image source={{ uri: driverPhoto }} style={styles.driverPhotoPreview} />
-                ) : (
-                  <View style={styles.driverPhotoPlaceholder}>
-                    <Ionicons name="camera" size={24} color="#0284C7" />
-                    <Text style={styles.driverPhotoPlaceholderText}>Add Photo</Text>
-                  </View>
-                )}
-                <View style={styles.photoBadgeEdit}>
-                  <Ionicons name="camera-outline" size={11} color="#FFFFFF" />
-                </View>
-              </TouchableOpacity>
-              <View style={{ flex: 1, gap: 2 }}>
-                <Text style={styles.photoTitle}>Driver Portrait / Face Photo</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  {driverPhoto && <Ionicons name="checkmark-circle" size={13} color="#059669" />}
-                  <Text style={[styles.photoSubtitle, driverPhoto && { color: '#059669', fontWeight: '700' }]}>
-                    {driverPhoto ? 'Photo attached for FTA & Checkpoint ID' : 'Required for Galafi / Djibouti Checkpoint ID and Platform Verification'}
-                  </Text>
-                </View>
-                <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
-                  <TouchableOpacity style={styles.pickPhotoBtn} onPress={pickDriverPhoto}>
-                    <Ionicons name="image-outline" size={13} color="#0284C7" />
-                    <Text style={styles.pickPhotoBtnText}>{driverPhoto ? 'Change Photo' : 'Upload Photo'}</Text>
-                  </TouchableOpacity>
-                  {!driverPhoto && (
-                    <TouchableOpacity style={styles.presetPhotoBtn} onPress={handleSetSampleData}>
-                      <Text style={styles.presetPhotoBtnText}>Sample Photo</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-            </View>
+          <View style={{ width: 38 }} />
+        </View>
 
-            {/* 2. Driver Full Legal Name */}
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: 40 }}
+        >
+          <View style={styles.modalFormCard}>
+
+            {/* 1. Driver Full Legal Name */}
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Driver Full Legal Name:</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Enter driver's full name"
+                placeholder="Driver Full Legal Name"
                 placeholderTextColor="#94A3B8"
                 value={driverFullName}
                 onChangeText={setDriverFullName}
               />
             </View>
 
-            {/* 3. Mobile Phone Number */}
+            {/* 2. Mobile Phone Number */}
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Mobile Phone Number (Ethiopian / Djibouti):</Text>
               <TextInput
                 style={styles.input}
-                placeholder="e.g. +251 91 123 4567"
+                placeholder="Mobile Phone Number"
                 placeholderTextColor="#94A3B8"
                 value={driverPhone}
                 onChangeText={setDriverPhone}
@@ -247,15 +212,32 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({
               />
             </View>
 
-            {/* 4. One-Time Temporary Password for Driver */}
+            {/* 3. Driver Email Address */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Driver Email Address (Account Login):</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Driver Email Address"
+                placeholderTextColor="#94A3B8"
+                value={driverEmail}
+                onChangeText={setDriverEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+
+            {/* 3. One-Time Temporary Password for Driver */}
             <View style={styles.inputGroup}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text style={styles.inputLabel}>
-                  {language === 'AM'
-                    ? 'ጊዜያዊ የይለፍ ቃል:'
-                    : language === 'OM'
-                    ? 'Jecha Darbii Yeroo:'
-                    : 'One-Time Temporary Password:'}
+                  {isEditing
+                    ? (language === 'AM' ? 'የይለፍ ቃል አድስ (አማራጭ):' : 'Reset Password (Optional):')
+                    : (language === 'AM'
+                      ? 'ጊዜያዊ የይለፍ ቃል:'
+                      : language === 'OM'
+                      ? 'Jecha Darbii Yeroo:'
+                      : 'One-Time Temporary Password:')}
                 </Text>
                 <TouchableOpacity
                   onPress={onGenerateNewPassword}
@@ -267,7 +249,7 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({
               </View>
               <TextInput
                 style={[styles.input, { fontWeight: '800', color: '#0284C7', letterSpacing: 1.5, fontSize: 13.5 }]}
-                placeholder="e.g. TF-7482"
+                placeholder="Temporary Password"
                 placeholderTextColor="#94A3B8"
                 value={driverTemporaryPassword}
                 onChangeText={setDriverTemporaryPassword}
@@ -285,7 +267,7 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({
               <Text style={styles.inputLabel}>Commercial Driving License No:</Text>
               <TextInput
                 style={styles.input}
-                placeholder="e.g. ETH-DL-984218"
+                placeholder="Commercial Driving License Number"
                 placeholderTextColor="#94A3B8"
                 value={driverLicense}
                 onChangeText={setDriverLicense}
@@ -332,20 +314,48 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({
               </TouchableOpacity>
             </View>
 
-            {/* 6. License Grade Category */}
-            <Text style={styles.fieldLabel}>License Grade Category</Text>
-            <View style={styles.typeSelectorRow}>
-              {['Grade 5 Heavy', 'Grade 4 Medium', 'Special Cross-Border', 'Grade 3 Commercial'].map((cat) => (
-                <TouchableOpacity
-                  key={cat}
-                  style={[styles.typeChip, driverCategory === cat && styles.typeChipActive]}
-                  onPress={() => setDriverCategory(cat)}
-                >
-                  <Text style={[styles.typeChipText, driverCategory === cat && styles.typeChipTextActive]}>
-                    {cat}
+            {/* 6. License Grade Category Dropdown */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>License Grade Category:</Text>
+              <TouchableOpacity
+                style={styles.dropdownBtn}
+                onPress={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                activeOpacity={0.7}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Ionicons name="ribbon-outline" size={15} color="#0284C7" />
+                  <Text style={styles.dropdownBtnText}>
+                    {driverCategory || 'Select License Grade'}
                   </Text>
-                </TouchableOpacity>
-              ))}
+                </View>
+                <Text style={{ fontSize: 12, color: '#64748B' }}>{showCategoryDropdown ? '▲' : '▼'}</Text>
+              </TouchableOpacity>
+
+              {showCategoryDropdown && (
+                <View style={styles.dropdownMenu}>
+                  {['Grade 5 Heavy', 'Grade 4 Medium', 'Special Cross-Border', 'Grade 3 Commercial'].map((cat) => (
+                    <TouchableOpacity
+                      key={cat}
+                      style={[styles.dropdownItem, driverCategory === cat && styles.dropdownItemActive]}
+                      onPress={() => {
+                        setDriverCategory(cat);
+                        setShowCategoryDropdown(false);
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Ionicons
+                          name={driverCategory === cat ? 'radio-button-on' : 'radio-button-off'}
+                          size={14}
+                          color={driverCategory === cat ? '#0284C7' : '#94A3B8'}
+                        />
+                        <Text style={[styles.dropdownItemText, driverCategory === cat && styles.dropdownItemTextActive]}>
+                          {cat}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
             </View>
 
             {/* 7. Corridor Driving Experience */}
@@ -353,7 +363,7 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({
               <Text style={styles.inputLabel}>Corridor Driving Experience (Years):</Text>
               <TextInput
                 style={styles.input}
-                placeholder="e.g. 8"
+                placeholder="Driving Experience (Years)"
                 placeholderTextColor="#94A3B8"
                 value={driverExperience}
                 onChangeText={setDriverExperience}
@@ -412,12 +422,14 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({
             </View>
 
             {/* Submit Button */}
-            <TouchableOpacity style={styles.submitBidBtn} onPress={onSubmit}>
-              <Text style={styles.submitBidBtnText}>Register Authorized Fleet Driver</Text>
+            <TouchableOpacity style={styles.submitBidBtn} onPress={onSubmit} activeOpacity={0.85}>
+              <Text style={styles.submitBidBtnText}>
+                {isEditing ? 'Save Driver Changes' : 'Register Authorized Fleet Driver'}
+              </Text>
             </TouchableOpacity>
-          </ScrollView>
-        </View>
-      </View>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
     </Modal>
   );
 };

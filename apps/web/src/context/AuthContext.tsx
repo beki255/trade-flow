@@ -7,6 +7,9 @@ interface AuthContextType {
   token: string | null;
   loginUser: (identifier: string, password: string, role?: string) => Promise<any>;
   registerUser: (userData: any) => Promise<any>;
+  sendRegistrationOtp: (userData: any) => Promise<any>;
+  verifyRegistrationOtp: (email: string, code: string) => Promise<any>;
+  resendRegistrationOtp: (email: string) => Promise<any>;
   googleAuthUser: (email: string, fullName: string, role: string, mode?: 'login' | 'register') => Promise<any>;
   loginWithGoogle: (data: { email: string; fullName: string; role?: string; mode?: 'login' | 'register'; credential?: string }) => Promise<any>;
   logout: () => void;
@@ -164,6 +167,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return data;
       }
 
+      if (res.ok && data?.requireOtp) {
+        return data;
+      }
+
       if (data?.error) {
         throw new Error(data.error);
       }
@@ -171,6 +178,64 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       throw new Error('Registration failed.');
     } catch (err: any) {
       throw new Error(err.message || 'Registration failed.');
+    }
+  };
+
+  const sendRegistrationOtp = async (userData: any) => {
+    try {
+      const res = await fetch('/api/auth/register/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || 'Failed to dispatch verification code.');
+      }
+      return data;
+    } catch (err: any) {
+      throw new Error(err.message || 'Failed to dispatch verification code.');
+    }
+  };
+
+  const verifyRegistrationOtp = async (email: string, code: string) => {
+    try {
+      const res = await fetch('/api/auth/register/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase(), code: code.trim() }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || 'Incorrect or expired verification code.');
+      }
+
+      if (data?.user && data?.token) {
+        saveAuthSession(data.user, data.token);
+      }
+      return data;
+    } catch (err: any) {
+      throw new Error(err.message || 'Verification failed.');
+    }
+  };
+
+  const resendRegistrationOtp = async (email: string) => {
+    try {
+      const res = await fetch('/api/auth/register/resend-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || 'Failed to resend verification code.');
+      }
+      return data;
+    } catch (err: any) {
+      throw new Error(err.message || 'Failed to resend verification code.');
     }
   };
 
@@ -220,6 +285,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         token,
         loginUser,
         registerUser,
+        sendRegistrationOtp,
+        verifyRegistrationOtp,
+        resendRegistrationOtp,
         googleAuthUser,
         loginWithGoogle: (data) => googleAuthUser(data.email, data.fullName, data.role || 'SHIPPER', data.mode || 'login'),
         logout,

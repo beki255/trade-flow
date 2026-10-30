@@ -10,9 +10,11 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
+import { useLanguage } from '../context/LanguageContext';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
 
 export const LandingScreen: React.FC = () => {
+  const { language } = useLanguage();
   const [selectedRole, setSelectedRole] = useState<string>('DRIVER');
 
   return (
@@ -25,45 +27,82 @@ export const LandingScreen: React.FC = () => {
           <View style={styles.logoBadge}>
             <Ionicons name="flash" size={22} color="#38BDF8" />
           </View>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={styles.brandTitle}>TradeFlow Mobile</Text>
-            <Text style={styles.brandSubtitle}>Ethiopia Logistics & Freight Corridor</Text>
+            <Text style={styles.brandSubtitle}>
+              {language === 'AM'
+                ? 'የኢትዮጵያ ሎጂስቲክስና የጭነት ኮሪደር'
+                : language === 'OM'
+                ? 'Koriidarii Geejjibaa fi Loojistiksii Itoophiyaa'
+                : 'Ethiopia Logistics & Freight Corridor'}
+            </Text>
           </View>
+          <LanguageSwitcher dark={true} />
         </View>
 
         {/* Hero Banner */}
         <View style={styles.heroCard}>
           <View style={styles.liveTag}>
             <View style={styles.liveDot} />
-            <Text style={styles.liveText}>CORRIDOR TELEMATICS ACTIVE</Text>
+            <Text style={styles.liveText}>
+              {language === 'AM'
+                ? 'የኮሪደር ቴሌማቲክስ ንቁ ነው'
+                : language === 'OM'
+                ? 'TEELIMAATIKSIIN KORIIDARII BANAMEERA'
+                : 'CORRIDOR TELEMATICS ACTIVE'}
+            </Text>
           </View>
           <Text style={styles.heroHeading}>
-            Digitize Your Freight.{'\n'}
-            <Text style={styles.heroHighlight}>Real-Time Tracking.</Text>
+            {language === 'AM'
+              ? 'ጭነትዎን ዲጂታላይዝ ያድርጉ።\n'
+              : language === 'OM'
+              ? 'Fe\'iisa Keessan Dijitaaleessi.\n'
+              : 'Digitize Your Freight.\n'}
+            <Text style={styles.heroHighlight}>
+              {language === 'AM'
+                ? 'የቀጥታ ስርጭት ክትትል።'
+                : language === 'OM'
+                ? 'Hordoffii Kallattii.'
+                : 'Real-Time Tracking.'}
+            </Text>
           </Text>
           <Text style={styles.heroDescription}>
-            Djibouti Port ➔ Modjo Dry Port ➔ Addis Ababa. Offline-ready GPS navigation, waypoint check-ins & digital proof-of-delivery.
+            {language === 'AM'
+              ? 'የጅቡቲ ወደብ ➔ ሞጆ ደረቅ ወደብ ➔ አዲስ አበባ። ከመስመር ውጭ የሚሰራ የጂፒኤስ ዳሰሳ፣ የፍተሻ ጣቢያ ፍተሻ እና ዲጂታል ርክክብ።'
+              : language === 'OM'
+              ? 'Buufata Jibuutii ➔ Buufata Gogaa Moojoo ➔ Finfinnee. Tooftaa GPS toora irraa ala, sakatta\'iinsa bakkaa fi mirkaneessa fe\'iisa dijitaalaa.'
+              : 'Djibouti Port ➔ Modjo Dry Port ➔ Addis Ababa. Offline-ready GPS navigation, waypoint check-ins & digital proof-of-delivery.'}
           </Text>
         </View>
 
         {/* Live Metrics Row */}
         <View style={styles.metricsRow}>
           <View style={styles.metricBox}>
-            <Text style={styles.metricLabel}>Speed</Text>
+            <Text style={styles.metricLabel}>
+              {language === 'AM' ? 'ፍጥነት' : language === 'OM' ? 'Saffisa' : 'Speed'}
+            </Text>
             <Text style={styles.metricValue}>68 km/h</Text>
           </View>
           <View style={styles.metricBox}>
-            <Text style={styles.metricLabel}>Next Waypoint</Text>
-            <Text style={styles.metricValue}>Modjo Dry Port</Text>
+            <Text style={styles.metricLabel}>
+              {language === 'AM' ? 'ቀጣይ ጣቢያ' : language === 'OM' ? 'Buufata Itti Aanu' : 'Next Waypoint'}
+            </Text>
+            <Text style={styles.metricValue}>
+              {language === 'AM' ? 'ሞጆ ደረቅ ወደብ' : language === 'OM' ? 'Buufata Moojoo' : 'Modjo Dry Port'}
+            </Text>
           </View>
           <View style={styles.metricBox}>
-            <Text style={styles.metricLabel}>ETA</Text>
+            <Text style={styles.metricLabel}>
+              {language === 'AM' ? 'የሚደርስበት ሰዓት' : language === 'OM' ? 'Yeroo Gahuu' : 'ETA'}
+            </Text>
             <Text style={[styles.metricValue, { color: '#10B981' }]}>1h 45m</Text>
           </View>
         </View>
 
         {/* Dedicated Mobile Role Switcher (Transporter & Driver) */}
-        <Text style={styles.sectionTitle}>Select Mobile Portal</Text>
+        <Text style={styles.sectionTitle}>
+          {language === 'AM' ? 'የሞባይል ፖርታል ይምረጡ' : language === 'OM' ? 'Poortaalii Moobaayilaa Filadhaa' : 'Select Mobile Portal'}
+        </Text>
 
         {/* Driver Option */}
         <TouchableOpacity
@@ -76,19 +115,33 @@ export const LandingScreen: React.FC = () => {
           <View style={styles.roleHeader}>
             <Ionicons name="navigate-outline" size={26} color="#38BDF8" />
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.roleName}>Driver Portal</Text>
-              <Text style={styles.roleAmharic}>Offline-First Mobile Dispatch</Text>
+              <Text style={styles.roleName}>
+                {language === 'AM' ? 'የአሽከርካሪ ፖርታል' : language === 'OM' ? 'Poortaalii Konkolaachisaa' : 'Driver Portal'}
+              </Text>
+              <Text style={styles.roleAmharic}>
+                {language === 'AM' ? 'ከመስመር ውጭ የሚሰራ የጉዞ መከታተያ' : language === 'OM' ? 'Ergama Moobaayilaa Toora-Ala' : 'Offline-First Mobile Dispatch'}
+              </Text>
             </View>
             <View style={styles.roleBadge}>
-              <Text style={styles.roleBadgeText}>Active Trip</Text>
+              <Text style={styles.roleBadgeText}>
+                {language === 'AM' ? 'ንቁ ጉዞ' : language === 'OM' ? 'Imala Hojiirra Jiru' : 'Active Trip'}
+              </Text>
             </View>
           </View>
           <Text style={styles.roleDesc}>
-            Turn-by-turn corridor navigation, GPS waypoint check-ins, geotagged incident reports & digital signature POD.
+            {language === 'AM'
+              ? 'የደረጃ በደረጃ የኮሪደር አቅጣጫ፣ የጂፒኤስ ኬላ ቼክ-ኢን፣ በፎቶ የተደገፈ የአደጋ ሪፖርት እና የዲጂታል ፊርማ ርክክብ።'
+              : language === 'OM'
+              ? 'Qajeelfama daandii koriidarii, sakatta\'iinsa waypointer GPS, gabaasa balaa suuraa qabu & mallattoo dijitaalaa POD.'
+              : 'Turn-by-turn corridor navigation, GPS waypoint check-ins, geotagged incident reports & digital signature POD.'}
           </Text>
           <View style={styles.userRow}>
-            <Text style={styles.userEmail}>Driver Mode</Text>
-            <Text style={styles.userStatus}>● Ready</Text>
+            <Text style={styles.userEmail}>
+              {language === 'AM' ? 'የአሽከርካሪ ሁነታ' : language === 'OM' ? 'Haala Konkolaachisaa' : 'Driver Mode'}
+            </Text>
+            <Text style={styles.userStatus}>
+              {language === 'AM' ? '● ዝግጁ' : language === 'OM' ? '● Qophii' : '● Ready'}
+            </Text>
           </View>
         </TouchableOpacity>
 
@@ -103,26 +156,42 @@ export const LandingScreen: React.FC = () => {
           <View style={styles.roleHeader}>
             <Ionicons name="bus-outline" size={26} color="#10B981" />
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.roleName}>Transporter Portal</Text>
-              <Text style={styles.roleAmharic}>Fleet & Bidding Manager</Text>
+              <Text style={styles.roleName}>
+                {language === 'AM' ? 'የትራንስፖርተር ፖርታል' : language === 'OM' ? 'Poortaalii Geejjobaa' : 'Transporter Portal'}
+              </Text>
+              <Text style={styles.roleAmharic}>
+                {language === 'AM' ? 'የተሽከርካሪ እና ጨረታ አስተዳዳሪ' : language === 'OM' ? 'Bulchiinsa Konkolaataa & Caalbaasii' : 'Fleet & Bidding Manager'}
+              </Text>
             </View>
             <View style={[styles.roleBadge, { backgroundColor: '#10B98120' }]}>
-              <Text style={[styles.roleBadgeText, { color: '#10B981' }]}>Load Board</Text>
+              <Text style={[styles.roleBadgeText, { color: '#10B981' }]}>
+                {language === 'AM' ? 'የጭነት ሰሌዳ' : language === 'OM' ? 'Gabatee Fe\'iisaa' : 'Load Board'}
+              </Text>
             </View>
           </View>
           <Text style={styles.roleDesc}>
-            Browse corridor loads, submit competitive bids, monitor fleet positions, and review fuel consumption analytics.
+            {language === 'AM'
+              ? 'የኮሪደር ጭነቶችን ያስሱ፣ ተወዳዳሪ ዋጋ ያቅርቡ፣ የተሽከርካሪዎችን ሁኔታ ይከታተሉ እና የነዳጅ ፍጆታ ትንታኔን ይገምግሙ።'
+              : language === 'OM'
+              ? 'Fe\'iisa koriidarii sakatta\'aa, gatii dorgomaa dhiyeessaa, bakka konkolaataa hordofaa, fi xiinxala boba\'aa gamaaggamaa.'
+              : 'Browse corridor loads, submit competitive bids, monitor fleet positions, and review fuel consumption analytics.'}
           </Text>
           <View style={styles.userRow}>
-            <Text style={styles.userEmail}>Transporter Mode</Text>
-            <Text style={styles.userStatus}>● Fleet Ready</Text>
+            <Text style={styles.userEmail}>
+              {language === 'AM' ? 'የትራንስፖርተር ሁነታ' : language === 'OM' ? 'Haala Geejjobaa' : 'Transporter Mode'}
+            </Text>
+            <Text style={styles.userStatus}>
+              {language === 'AM' ? '● ዝግጁ' : language === 'OM' ? '● Qophii' : '● Fleet Ready'}
+            </Text>
           </View>
         </TouchableOpacity>
 
         {/* Launch Button */}
         <TouchableOpacity style={styles.ctaButton}>
           <Text style={styles.ctaButtonText}>
-            Enter {selectedRole === 'DRIVER' ? 'Driver Trip Mode' : 'Transporter Load Board'} ➔
+            {selectedRole === 'DRIVER'
+              ? (language === 'AM' ? 'ወደ አሽከርካሪ ጉዞ ሁነታ ግባ ➔' : language === 'OM' ? 'Gara Haala Imala Konkolaachisaatti Gali ➔' : 'Enter Driver Trip Mode ➔')
+              : (language === 'AM' ? 'ወደ ጭነት ሰሌዳ ግባ ➔' : language === 'OM' ? 'Gara Gabatee Fe\'iisaatti Gali ➔' : 'Enter Transporter Load Board ➔')}
           </Text>
         </TouchableOpacity>
 

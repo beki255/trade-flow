@@ -15,9 +15,12 @@ import {
   Search,
   Hourglass,
   CreditCard,
+  Route,
 } from 'lucide-react';
 import { BidItem } from '../types';
 import { useLanguage } from '../../../context/LanguageContext';
+
+const cleanText = (str?: string) => (str ? String(str).replace(/^`+|`+$/g, '').trim() : '');
 
 interface BidsTabProps {
   bids: BidItem[];
@@ -32,7 +35,7 @@ export const BidsTab: React.FC<BidsTabProps> = ({
   onRejectBid,
   acceptedBidNotification,
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
@@ -154,7 +157,7 @@ export const BidsTab: React.FC<BidsTabProps> = ({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Expired ({totalExpired})
+            {language === 'AM' ? 'ጊዜው ያለፈበት' : language === 'OM' ? 'Yeroon Darbe' : 'Expired'} ({totalExpired})
           </button>
           <button
             onClick={() => setStatusFilter('ACCEPTED')}
@@ -164,7 +167,7 @@ export const BidsTab: React.FC<BidsTabProps> = ({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Accepted ({totalAccepted})
+            {language === 'AM' ? 'ተቀባይነት ያገኘ' : language === 'OM' ? 'Fudhatame' : 'Accepted'} ({totalAccepted})
           </button>
         </div>
       </div>
@@ -183,16 +186,22 @@ export const BidsTab: React.FC<BidsTabProps> = ({
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search by carrier name, cargo title, or corridor route..."
+            placeholder={
+              language === 'AM'
+                ? 'በአጓጓዥ ስም፣ በጭነት ርዕስ ወይም በመስመር ይፈልጉ...'
+                : language === 'OM'
+                ? 'Maqaa fe\'aadhaan, mata duree fe\'isaan barbaadi...'
+                : 'Search by carrier name, cargo title, or corridor route...'
+            }
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 rounded-2xl bg-white border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-sky-500 shadow-xs"
+            className="w-full pl-9 pr-4 py-2.5 rounded-2xl bg-white border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-sky-500 shadow-xs font-medium"
           />
         </div>
 
         <div className="flex items-center gap-2 text-xs text-slate-500 font-bold self-end sm:self-auto shrink-0">
           <span className="w-2 h-2 rounded-full bg-emerald-500" />
-          <span>Default Validity: 24 Hours</span>
+          <span>{language === 'AM' ? 'መደበኛ ተፈጻሚነት፡ 24 ሰዓታት' : language === 'OM' ? 'Tureetii Idilee: Sa\'aatii 24' : 'Default Validity: 24 Hours'}</span>
         </div>
       </div>
 
@@ -203,12 +212,14 @@ export const BidsTab: React.FC<BidsTabProps> = ({
             <Gavel className="w-6 h-6" />
           </div>
           <div className="text-sm font-black text-slate-800">
-            {searchQuery ? 'No matching quotations found' : 'No transporter quotations received yet'}
+            {searchQuery
+              ? (language === 'AM' ? 'ምንም የሚዛመድ ዋጋ አልተገኘም' : language === 'OM' ? 'Gatiin walsimu hin argamne' : 'No matching quotations found')
+              : (language === 'AM' ? 'እስካሁን ምንም የአጓጓዥ ዋጋ አልቀረበም' : language === 'OM' ? 'Hanga ammaatti gatiin dhihaate hin jiru' : 'No transporter quotations received yet')}
           </div>
           <p className="text-xs text-slate-500 max-w-md mx-auto">
             {searchQuery
-              ? 'Try refining your search keywords or clear filters.'
-              : 'When verified transporters submit bids for your published freight consignments, they will appear here with live validity timers.'}
+              ? (language === 'AM' ? 'እባክዎ የፍለጋ ቃላትን ያስተካክሉ ወይም ማጣሪያዎችን ያጽዱ።' : language === 'OM' ? 'Maaloo jechoota barbaacha sirreessaa ykn calaltuu qulqulleessaa.' : 'Try refining your search keywords or clear filters.')
+              : (language === 'AM' ? 'የተረጋገጡ አጓጓዦች ለለጠፏቸው ጭነቶች ዋጋ ሲያቀርቡ፣ እዚህ በቀጥታ የቆይታ ጊዜ ቆጣሪ ጋር ይታያሉ።' : language === 'OM' ? 'Yeroo fe\'aa mirkanaa\'an gatii dhiheessan, sa\'aatii tureetii waliin asirratti mul\'atu.' : 'When verified transporters submit bids for your published freight consignments, they will appear here with live validity timers.')}
           </p>
         </div>
       ) : (
@@ -216,25 +227,31 @@ export const BidsTab: React.FC<BidsTabProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredBids.map((b) => {
             const isVerified = b.transporterVerificationStatus === 'VERIFIED';
+            const isBoilerplateNotes =
+              !b.notes ||
+              b.notes.includes('DIRECT AI INSTANT MATCH') ||
+              b.notes.includes('DIRECT AI OFFER');
 
             return (
               <div
                 key={b.id}
-                className={`p-5 rounded-3xl bg-white border shadow-xs space-y-3.5 transition-all flex flex-col justify-between ${
+                className={`p-4 sm:p-5 rounded-2xl bg-white border transition-all flex flex-col justify-between gap-3.5 ${
                   b.isAccepted
-                    ? 'border-emerald-500 bg-emerald-50/15 ring-1 ring-emerald-500/20'
+                    ? 'border-emerald-500 bg-emerald-50/10 shadow-xs'
                     : b.isExpired
                     ? 'border-slate-200 bg-slate-50/60 opacity-80'
                     : b.isRejected
                     ? 'border-rose-200 bg-rose-50/10 opacity-75'
+                    : b.isDirectAiOffer
+                    ? 'border-amber-200 bg-white shadow-xs hover:border-amber-300'
                     : 'border-slate-200 hover:border-slate-300 hover:shadow-md'
                 }`}
               >
-                <div className="space-y-3">
-                  {/* Card Header: Transporter & Amount */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-1.5">
+                {/* Header & Carrier Info */}
+                <div className="space-y-2.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="text-xs font-black text-slate-900 tracking-tight">
                           {b.transporterName}
                         </span>
@@ -243,17 +260,22 @@ export const BidsTab: React.FC<BidsTabProps> = ({
                             <ShieldCheck className="w-3.5 h-3.5" />
                           </span>
                         )}
+                        <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md flex items-center gap-0.5 border border-amber-200/60">
+                          <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                          {b.rating}/5.0
+                        </span>
                       </div>
-                      <div className="text-[11px] text-slate-500 font-medium">
-                        {b.loadTitle}
+                      <div className="text-[11px] text-slate-500 font-medium truncate mt-0.5">
+                        {cleanText(b.loadTitle)}
                       </div>
-                      <div className="text-[10px] text-sky-700 font-bold mt-0.5">
-                        {b.route}
+                      <div className="text-[10px] text-sky-700 font-semibold truncate flex items-center gap-1 mt-0.5">
+                        <Route className="w-3 h-3 text-sky-500 shrink-0" />
+                        <span className="truncate">{cleanText(b.route)}</span>
                       </div>
                     </div>
 
                     <div className="text-right shrink-0">
-                      <div className="text-base font-black text-slate-900">
+                      <div className="text-base font-black text-slate-900 tracking-tight">
                         {b.bidAmount.toLocaleString()} <span className="text-[11px] text-slate-500 font-bold">ETB</span>
                       </div>
                       <span
@@ -265,97 +287,70 @@ export const BidsTab: React.FC<BidsTabProps> = ({
                             : b.isRejected
                             ? 'bg-slate-200 text-slate-700'
                             : b.isDirectAiOffer
-                            ? 'bg-amber-100 text-amber-900 border border-amber-200'
+                            ? 'bg-amber-100 text-amber-900'
                             : 'bg-sky-100 text-sky-800'
                         }`}
                       >
                         {b.isAccepted
-                          ? 'ACCEPTED'
+                          ? (language === 'AM' ? 'ተቀባይነት አግኝቷል' : language === 'OM' ? 'Fudhatameera' : 'ACCEPTED')
                           : b.isExpired
-                          ? 'EXPIRED'
+                          ? (language === 'AM' ? 'ጊዜው አልፏል' : language === 'OM' ? 'Yeroon Darbeera' : 'EXPIRED')
                           : b.isRejected
-                          ? 'DECLINED'
+                          ? (language === 'AM' ? 'ውድቅ ተደርጓል' : language === 'OM' ? 'Kufaa Ta\'eera' : 'DECLINED')
                           : b.isDirectAiOffer
-                          ? 'AWAITING CARRIER ACCEPTANCE'
-                          : 'PENDING QUOTE'}
+                          ? (language === 'AM' ? 'ቅናሽ ተልኳል' : language === 'OM' ? 'Ergameera' : 'OFFER SENT')
+                          : (language === 'AM' ? 'ዋጋ በመጠባበቅ ላይ' : language === 'OM' ? 'Eegamaa Jira' : 'PENDING QUOTE')}
                       </span>
                     </div>
                   </div>
 
-                  {/* Rating & Contact Bar */}
-                  <div className="text-[11px] text-slate-500 flex items-center justify-between border-t border-slate-100 pt-2.5">
+                  {/* Contact info & Custom Notes (only if real custom notes) */}
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-100">
                     <span className="flex items-center gap-1 text-slate-600">
                       <Phone className="w-3 h-3 text-slate-400" />
                       <span>{b.transporterPhone}</span>
                     </span>
-                    <span className="text-amber-600 font-bold flex items-center gap-1">
-                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                      <span>{b.rating}/5.0</span>
-                    </span>
-                  </div>
-
-                  {/* Validity Window Countdown Indicator */}
-                  <div className="p-2.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-slate-500 font-bold flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-slate-400" />
-                        <span>Quotation Validity:</span>
+                    {!b.isDirectAiOffer && !b.isAccepted && !b.isExpired && (
+                      <span className="text-[10px] text-slate-400 font-medium">
+                        {b.remainingHours > 0
+                          ? `${b.remainingHours}h ${b.remainingMins}m ${language === 'AM' ? 'ተፈጻሚነት' : language === 'OM' ? 'turtii' : 'validity'}`
+                          : `${b.remainingMins}m ${language === 'AM' ? 'ተፈጻሚነት' : language === 'OM' ? 'turtii' : 'validity'}`}
                       </span>
-                      {b.isAccepted ? (
-                        <span className="text-emerald-700 font-black text-[10px]">
-                          Locked & Accepted
-                        </span>
-                      ) : b.isExpired ? (
-                        <span className="text-rose-600 font-black text-[10px] flex items-center gap-1">
-                          <Hourglass className="w-3 h-3" />
-                          <span>Validity Window Elapsed</span>
-                        </span>
-                      ) : (
-                        <span className="text-sky-700 font-black text-[10px] flex items-center gap-1">
-                          <Hourglass className="w-3 h-3 text-sky-600 animate-spin" />
-                          <span>
-                            {b.remainingHours > 0
-                              ? `${b.remainingHours}h ${b.remainingMins}m remaining`
-                              : `${b.remainingMins}m remaining`}
-                          </span>
-                        </span>
-                      )}
-                    </div>
-                    {b.expiresAt && (
-                      <div className="text-[9.5px] text-slate-400">
-                        Valid Until: {new Date(b.expiresAt).toLocaleString()}
-                      </div>
                     )}
                   </div>
 
-                  {/* Transporter Notes */}
-                  {b.notes && (
-                    <p className="text-[11px] text-slate-600 italic bg-white p-2.5 rounded-xl border border-slate-100">
+                  {!isBoilerplateNotes && b.notes && (
+                    <p className="text-[11px] text-slate-600 italic bg-slate-50 p-2 rounded-xl border border-slate-100">
                       "{b.notes}"
                     </p>
                   )}
                 </div>
 
                 {/* Actions & Status Footers */}
-                <div className="pt-2">
+                <div className="pt-1">
                   {b.isPending && !b.isExpired && b.isDirectAiOffer && (
-                    <div className="p-3 rounded-2xl bg-amber-50/90 border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-amber-600 animate-pulse shrink-0" />
-                        <div>
-                          <div className="text-xs font-black text-amber-950">
-                            Direct AI Offer Sent to {b.transporterName}
+                    <div className="p-2.5 rounded-xl bg-amber-50/80 border border-amber-200 flex items-center justify-between gap-2.5">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                        <div className="min-w-0">
+                          <div className="text-[11px] font-bold text-amber-950 flex items-center gap-1.5">
+                            <span>{language === 'AM' ? 'የአጓጓዥ ይሁንታ በመጠባበቅ ላይ' : language === 'OM' ? 'Fudhannaa Fe\'aa Eegaa Jira' : 'Awaiting Transporter Acceptance'}</span>
+                            <span className="text-[9.5px] font-semibold text-amber-800 bg-amber-200/70 px-1.5 py-0.5 rounded">
+                              {b.remainingHours > 0
+                                ? `${b.remainingHours}h ${b.remainingMins}m ${language === 'AM' ? 'ቀሪ' : language === 'OM' ? 'hafe' : 'left'}`
+                                : `${b.remainingMins}m ${language === 'AM' ? 'ቀሪ' : language === 'OM' ? 'hafe' : 'left'}`}
+                            </span>
                           </div>
-                          <div className="text-[10px] text-amber-800">
-                            Waiting for carrier to review, accept, and assign fleet in their portal.
+                          <div className="text-[9.5px] text-amber-800 truncate">
+                            {language === 'AM' ? 'ቀጥተኛ ጥያቄ ተልኳል • አጓጓዡ እየተመለከተው ነው' : language === 'OM' ? 'Dhiheessi kallattii ergame • Fe\'aan ilaalaa jira' : 'Direct offer sent • Transporter reviewing dispatch'}
                           </div>
                         </div>
                       </div>
                       <button
                         onClick={() => onRejectBid(b.id)}
-                        className="px-3 py-1.5 rounded-xl bg-white border border-rose-200 text-rose-700 hover:bg-rose-50 text-[11px] font-bold transition shadow-2xs self-start sm:self-auto cursor-pointer"
+                        className="px-2.5 py-1 rounded-lg bg-white hover:bg-rose-50 text-rose-700 hover:text-rose-800 border border-rose-200 text-[11px] font-bold transition shadow-2xs shrink-0 cursor-pointer"
                       >
-                        Cancel Offer
+                        {language === 'AM' ? 'ይቅር' : language === 'OM' ? 'Haqi' : 'Cancel'}
                       </button>
                     </div>
                   )}
@@ -364,14 +359,14 @@ export const BidsTab: React.FC<BidsTabProps> = ({
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => onAcceptBid(b)}
-                        className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                        className="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
                       >
                         <Check className="w-3.5 h-3.5" />
                         <span>{t('shipper.acceptBid')}</span>
                       </button>
                       <button
                         onClick={() => onRejectBid(b.id)}
-                        className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-600 text-xs font-bold transition-all border border-slate-200 cursor-pointer"
+                        className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-600 text-xs font-bold transition-all border border-slate-200 cursor-pointer"
                       >
                         {t('shipper.declineBid')}
                       </button>
@@ -379,48 +374,45 @@ export const BidsTab: React.FC<BidsTabProps> = ({
                   )}
 
                   {b.isPending && b.isExpired && (
-                    <div className="space-y-1.5">
-                      <button
-                        disabled
-                        title="Quotation has expired. Shippers must accept or decline bids within the active validity window."
-                        className="w-full py-2.5 rounded-xl bg-slate-100 text-slate-400 text-xs font-bold flex items-center justify-center gap-1.5 cursor-not-allowed border border-slate-200"
-                      >
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>Expired • Cannot Accept</span>
-                      </button>
-                      <div className="text-[10px] text-rose-600 font-bold text-center">
-                        Quotation validity window has elapsed. Transporter must refresh quote.
-                      </div>
+                    <div className="w-full py-2 rounded-xl bg-slate-100 text-slate-400 text-xs font-bold flex items-center justify-center gap-1.5 border border-slate-200">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>{language === 'AM' ? 'ጊዜው አልፏል • የቆይታ ገደቡ አልቋል' : language === 'OM' ? 'Yeroon Darbe • Turtii Xumurame' : 'Expired • Validity Window Elapsed'}</span>
                     </div>
                   )}
 
                   {b.isAccepted && (
-                    <div className="space-y-2">
-                      <div className="w-full py-2 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-black text-center flex items-center justify-center gap-1.5">
+                    <div className="space-y-1.5">
+                      <div className="w-full py-1.5 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-black text-center flex items-center justify-center gap-1.5">
                         <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Carrier Accepted • Route Confirmed</span>
+                        <span>{language === 'AM' ? 'አጓጓዥ ተቀብሏል • መስመር ተረጋግጧል' : language === 'OM' ? 'Fe\'aan Fudhate • Daandiin Mirkanaa\'e' : 'Carrier Accepted • Route Confirmed'}</span>
                       </div>
 
                       {b.isEscrowSecured ? (
-                        <div className="w-full py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-black flex items-center justify-center gap-2 shadow-2xs">
+                        <div className="w-full py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-black flex items-center justify-center gap-2 shadow-2xs">
                           <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                          <span>Escrow Secured in Vault • {b.paymentMethod || 'Telebirr'}</span>
+                          <span>
+                            {language === 'AM'
+                              ? `ክፍያው በኤስክሮው ተቆልፏል • ${b.paymentMethod || 'ቴሌብር'}`
+                              : language === 'OM'
+                              ? `Iskroow Keessatti Hidhame • ${b.paymentMethod || 'Telebirr'}`
+                              : `Escrow Secured in Vault • ${b.paymentMethod || 'Telebirr'}`}
+                          </span>
                         </div>
                       ) : (
                         <button
                           onClick={() => onAcceptBid(b)}
-                          className="w-full py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                          className="w-full py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
                         >
                           <CreditCard className="w-3.5 h-3.5" />
-                          <span>Deposit & Lock Escrow (Telebirr / CBE) ➔</span>
+                          <span>{language === 'AM' ? 'ክፍያ በኤስክሮው አስይዝ (ቴሌብር / ሲቢኢ) ➔' : language === 'OM' ? 'Iskroow Kaffali (Telebirr / CBE) ➔' : 'Deposit Escrow (Telebirr / CBE) ➔'}</span>
                         </button>
                       )}
                     </div>
                   )}
 
                   {b.isRejected && (
-                    <div className="w-full py-2 rounded-xl bg-rose-50 text-rose-700 text-xs font-bold text-center border border-rose-200">
-                      Quotation Declined
+                    <div className="w-full py-1.5 rounded-xl bg-rose-50 text-rose-700 text-xs font-bold text-center border border-rose-200">
+                      {language === 'AM' ? 'የቀረበው ዋጋ ተቀባይነት አላገኘም' : language === 'OM' ? 'Dhiheessi Gatii Kufaa Ta\'e' : 'Quotation Declined'}
                     </div>
                   )}
                 </div>

@@ -43,6 +43,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { getDynamicCorridorWaypoints, calculateCorridorRoadDistanceKm, getCorridorRoadPolyline } from '@tradeflow/shared';
+import { useLanguage } from '../../../context/LanguageContext';
 
 export interface Waypoint {
   id: string;
@@ -446,6 +447,9 @@ const formatCleanCity = (raw?: string): { city: string; detail: string } => {
 };
 
 export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, allLoads = [] }) => {
+  const { language: rawLanguage } = useLanguage();
+  const isAm = (rawLanguage || '').toUpperCase() === 'AM';
+  const isOm = (rawLanguage || '').toUpperCase() === 'OM';
   const [activeTileLayer, setActiveTileLayer] = useState<'STREETS' | 'DARK' | 'SATELLITE'>('STREETS');
   const [activeWeather, setActiveWeather] = useState<'CLEAR' | 'RAIN' | 'DUST'>('CLEAR');
   const [isSimulating, setIsSimulating] = useState<boolean>(true);
@@ -473,6 +477,10 @@ export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, 
     status: string;
     lastUpdated?: string;
     telematicsCompliance?: any;
+    isRerouted?: boolean;
+    pendingReroute?: any;
+    activeRouteName?: string;
+    bypassPolyline?: Array<{ lat: number; lng: number }>;
   }>({
     speedKmh: 0,
     isMoving: false,
@@ -481,7 +489,10 @@ export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, 
     driverName: '',
     truckPlate: '',
     status: 'OPEN',
+    isRerouted: false,
   });
+
+  const [reroutingLoading, setReroutingLoading] = useState(false);
 
   // Active verified corridor incident reports (SRS 4.5.2)
   const [activeIncidents, setActiveIncidents] = useState<any[]>([]);
@@ -533,6 +544,110 @@ export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, 
   // Dynamic Corridor Waypoints Definition based on actual load origin & destination
   const waypoints: Waypoint[] = useMemo(() => {
     if (!activeLoad) return [];
+
+    // If rerouted via Dewele, use Southern Bypass Dewele Waypoints
+    if (serverTelemetry.isRerouted) {
+      const deweleWps: Waypoint[] = [
+        {
+          id: 'WP-ADDIS-KALITI',
+          name: 'Addis Ababa (Kaliti Export Depot)',
+          nameAmharic: 'ቃሊቲ የብስ ኮንቴይነር ተርሚናል',
+          lat: activeLoad.originLat ?? 8.895,
+          lng: activeLoad.originLng ?? 38.765,
+          sequenceOrder: 1,
+          isCustomsCheckpoint: false,
+          isDryPort: true,
+          isFuelStation: true,
+          fuelAvailable: true,
+          dieselPricePerLiter: 60.5,
+          congestionDelayMinutes: 0,
+          status: 'COMPLETED',
+          description: 'Consignment loading and origin departure terminal',
+        },
+        {
+          id: 'WP-ADAMA-EXPRESSWAY',
+          name: 'Adama Expressway Toll Gate',
+          nameAmharic: 'አዳማ የፍጥነት መንገድ የክፍያ ኬላ',
+          lat: 8.541,
+          lng: 39.271,
+          sequenceOrder: 2,
+          isCustomsCheckpoint: true,
+          isDryPort: false,
+          isFuelStation: false,
+          fuelAvailable: true,
+          dieselPricePerLiter: 60.5,
+          congestionDelayMinutes: 5,
+          status: simProgress >= 20 ? 'COMPLETED' : 'ACTIVE_NOW',
+          description: 'FastPass electronic toll plaza & weigh verification',
+        },
+        {
+          id: 'WP-AWASH-ARBA',
+          name: 'Awash Arba Weigh Station & Fuel Depot',
+          nameAmharic: 'አዋሽ አርባ የክብደት መመዘኛ እና የነዳጅ ማደያ',
+          lat: 8.986,
+          lng: 40.165,
+          sequenceOrder: 3,
+          isCustomsCheckpoint: true,
+          isDryPort: false,
+          isFuelStation: true,
+          fuelAvailable: true,
+          dieselPricePerLiter: 61.2,
+          congestionDelayMinutes: 10,
+          status: simProgress >= 45 ? 'COMPLETED' : (simProgress >= 20 ? 'ACTIVE_NOW' : 'UPCOMING'),
+          description: 'Axle load weighbridge compliance and driver rest stop',
+        },
+        {
+          id: 'WP-DIRE-DAWA',
+          name: 'Dire Dawa Dry Port & Regional Logistics Hub',
+          nameAmharic: 'ድሬዳዋ ደረቅ ወደብ እና የሎጅስቲክስ ተርሚናል',
+          lat: 9.593,
+          lng: 41.866,
+          sequenceOrder: 4,
+          isCustomsCheckpoint: true,
+          isDryPort: true,
+          isFuelStation: true,
+          fuelAvailable: true,
+          dieselPricePerLiter: 62.0,
+          congestionDelayMinutes: 15,
+          status: simProgress >= 70 ? 'COMPLETED' : (simProgress >= 45 ? 'ACTIVE_NOW' : 'UPCOMING'),
+          description: 'Southern corridor customs transit checkpoint and fuel depot',
+        },
+        {
+          id: 'WP-DEWELE-BORDER',
+          name: 'Dewele Border Customs Checkpoint',
+          nameAmharic: 'ደወሌ የድንበር ጉምሩክ ኬላ',
+          lat: 11.033,
+          lng: 42.633,
+          sequenceOrder: 5,
+          isCustomsCheckpoint: true,
+          isDryPort: false,
+          isFuelStation: false,
+          fuelAvailable: true,
+          dieselPricePerLiter: 63.5,
+          congestionDelayMinutes: 20,
+          status: simProgress >= 90 ? 'COMPLETED' : (simProgress >= 70 ? 'ACTIVE_NOW' : 'UPCOMING'),
+          description: 'Cross-border electronic single-window release gate',
+        },
+        {
+          id: 'WP-DJI-DORALEH',
+          name: 'Djibouti Doraleh Port Container Terminal',
+          nameAmharic: 'ዶራሌህ ወደብ (ጅቡቲ)',
+          lat: activeLoad.destLat ?? 11.595,
+          lng: activeLoad.destLng ?? 43.148,
+          sequenceOrder: 6,
+          isCustomsCheckpoint: true,
+          isDryPort: true,
+          isFuelStation: true,
+          fuelAvailable: true,
+          dieselPricePerLiter: 60.0,
+          congestionDelayMinutes: 15,
+          status: simProgress >= 100 ? 'COMPLETED' : 'UPCOMING',
+          description: 'Final container terminal delivery and e-POD signature offloading',
+        },
+      ];
+      return deweleWps;
+    }
+
     const dynamicWps = getDynamicCorridorWaypoints(
       activeLoad.origin,
       activeLoad.destination,
@@ -561,7 +676,7 @@ export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, 
       time: w.time,
       description: w.description,
     }));
-  }, [activeLoad, simProgress]);
+  }, [activeLoad, simProgress, serverTelemetry.isRerouted]);
 
   // Live genuine OpenStreetMap / Google Maps road coordinates fetched via OSRM
   const [liveOsmRoad, setLiveOsmRoad] = useState<[number, number][] | null>(null);
@@ -602,6 +717,21 @@ export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, 
 
   // Dynamic Corridor Route — strictly follows authentic curving highway road geometry matching Google Maps
   const dynamicCorridorRoute: [number, number][] = useMemo(() => {
+    // If rerouted via Dewele, render the Dewele Southern Bypass polyline
+    if (serverTelemetry.isRerouted) {
+      if (serverTelemetry.bypassPolyline && serverTelemetry.bypassPolyline.length >= 2) {
+        return serverTelemetry.bypassPolyline.map((p) => [p.lat, p.lng] as [number, number]);
+      }
+      return [
+        [8.895, 38.765],
+        [8.541, 39.271],
+        [8.986, 40.165],
+        [9.593, 41.866],
+        [11.033, 42.633],
+        [11.595, 43.148],
+      ];
+    }
+
     // 1. If genuine live OpenStreetMap highway road points are fetched, use them directly
     if (liveOsmRoad && liveOsmRoad.length >= 10) {
       return liveOsmRoad;
@@ -620,55 +750,10 @@ export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, 
       return road.map((p) => [p.lat, p.lng] as [number, number]);
     }
     return waypoints.map((w) => [w.lat, w.lng] as [number, number]);
-  }, [liveOsmRoad, activeLoad, waypoints]);
+  }, [liveOsmRoad, activeLoad, waypoints, serverTelemetry.isRerouted, serverTelemetry.bypassPolyline]);
 
-  // Risk Zones (Sourced dynamically from Corridor Security Database)
-  const [riskZones, setRiskZones] = useState<RiskZone[]>([
-    {
-      id: 'RZ-AFAR-NORTH-01',
-      name: 'Northern Corridor Escarpment Security Hotspot',
-      severity: 'CRITICAL',
-      centerLat: 11.75,
-      centerLng: 41.05,
-      radiusKm: 30.0,
-      speedLimitKmh: 30,
-      advisory: 'Armed skirmishes reported. Military escort required.',
-      active: true,
-    },
-    {
-      id: 'RZ-AFAR-SOMALI-02',
-      name: 'Afar–Somali Border Corridor Buffer Zone',
-      severity: 'HIGH',
-      centerLat: 10.45,
-      centerLng: 41.25,
-      radiusKm: 25.0,
-      speedLimitKmh: 45,
-      advisory: 'Nighttime transit curfews enforced. Maintain convoy speed.',
-      active: true,
-    },
-    {
-      id: 'RZ-GALAFI-CHOKE-03',
-      name: 'Galafi Customs Border Approach Freight Chokepoint',
-      severity: 'MEDIUM',
-      centerLat: 11.71,
-      centerLng: 41.83,
-      radiusKm: 20.0,
-      speedLimitKmh: 40,
-      advisory: 'High customs congestion and localized demonstrations.',
-      active: true,
-    },
-    {
-      id: 'RZ-AWASH-GORGE-04',
-      name: 'Awash Gorge Heavy Gradient & High Winds',
-      severity: 'LOW',
-      centerLat: 8.95,
-      centerLng: 40.2,
-      radiusKm: 15.0,
-      speedLimitKmh: 35,
-      advisory: 'Steep descents and crosswinds. Mandatory brake check.',
-      active: true,
-    },
-  ]);
+  // Risk Zones (Strictly empty, zero mock risk zones)
+  const [riskZones, setRiskZones] = useState<RiskZone[]>([]);
 
   useEffect(() => {
     fetch('/api/security/risk-zones')
@@ -728,6 +813,10 @@ export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, 
           status: isDelivered ? 'DELIVERED' : (data.status || activeLoad.status),
           lastUpdated: tele?.lastUpdated,
           telematicsCompliance: data.shipment?.telematicsCompliance || null,
+          isRerouted: Boolean(data.isRerouted),
+          pendingReroute: data.pendingReroute || null,
+          activeRouteName: data.activeRouteName,
+          bypassPolyline: data.bypassPolyline,
         });
 
         if (isDelivered) {
@@ -926,6 +1015,41 @@ export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, 
     STREETS: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     DARK: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
     SATELLITE: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  };
+
+  const handleConfirmRerouteFromMap = async () => {
+    try {
+      setReroutingLoading(true);
+      const res = await fetch('/api/optimization/reroute/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shipmentId: shipmentData?.id || activeLoad?.id,
+          proposalId: serverTelemetry.pendingReroute?.proposalId || 'REROUTE-EFEA',
+          action: 'ACCEPT',
+          confirmedByRole: 'SHIPPER',
+          reason: 'Shipper authorized Southern Bypass via Dewele Border due to corridor incident alert',
+        }),
+      });
+      if (res.ok) {
+        setServerTelemetry((prev) => ({
+          ...prev,
+          isRerouted: true,
+          bypassPolyline: [
+            { lat: 8.895, lng: 38.765 },
+            { lat: 8.541, lng: 39.271 },
+            { lat: 8.986, lng: 40.165 },
+            { lat: 9.593, lng: 41.866 },
+            { lat: 11.033, lng: 42.633 },
+            { lat: 11.595, lng: 43.148 },
+          ],
+        }));
+      }
+    } catch (e) {
+      console.warn('Confirm reroute from map error:', e);
+    } finally {
+      setReroutingLoading(false);
+    }
   };
 
   if (!activeLoad) {
@@ -1201,6 +1325,65 @@ export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, 
         </div>
       </div>
 
+      {/* Real-Time Geotagged Corridor Incident Alert Banner (SRS 4.5.2) */}
+      {activeIncidents.length > 0 && (
+        <div className="bg-gradient-to-r from-amber-500/10 via-rose-500/10 to-amber-500/10 border-2 border-amber-500/40 rounded-3xl p-4 shadow-md animate-fadeIn">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-md">
+                <AlertTriangle className="w-5 h-5 animate-bounce" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-600 text-white shadow-xs">
+                    {activeIncidents[0].category?.replace(/_/g, ' ')}
+                  </span>
+                  <span className="text-xs font-black text-slate-900">
+                    {activeIncidents[0].locationName}
+                  </span>
+                  <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md border border-amber-300">
+                    Severity: {activeIncidents[0].severity}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                  {activeIncidents[0].description}
+                  {activeIncidents[0].reporter?.fullName ? ` — Reported by Driver ${activeIncidents[0].reporter.fullName} (${activeIncidents[0].reporter.companyName || 'Verified Carrier'})` : ''}
+                </p>
+                <div className="text-[10px] text-slate-500 font-mono flex items-center gap-2">
+                  <span>GPS: {Number(activeIncidents[0].latitude)?.toFixed(4)}°N, {Number(activeIncidents[0].longitude)?.toFixed(4)}°E</span>
+                  <span>•</span>
+                  <span>Incident ID: {String(activeIncidents[0].id).slice(0, 8)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="shrink-0 flex items-center gap-2.5 sm:self-center flex-wrap">
+              {serverTelemetry.isRerouted ? (
+                <span className="text-xs font-black text-emerald-800 bg-emerald-100 px-3.5 py-2 rounded-xl border border-emerald-300 flex items-center gap-2 shadow-xs">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>✓ {isAm ? 'መስመሩ በደወሌ በኩል ተቀይሯል' : 'Rerouted to Dewele Southern Bypass'}</span>
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  disabled={reroutingLoading}
+                  onClick={handleConfirmRerouteFromMap}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black transition shadow-md hover:shadow-lg flex items-center gap-2 cursor-pointer disabled:opacity-50 animate-pulse"
+                  title="Authorize bypass route via Dewele to avoid corridor delay"
+                >
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-white" />
+                  <span>{isAm ? 'በደወሌ በኩል ቀይር (-110 ደቂቃ)' : 'Confirm Reroute to Dewele (-110 min)'}</span>
+                </button>
+              )}
+              <span className="text-[10px] font-black tracking-widest uppercase bg-rose-100 text-rose-700 px-3 py-1.5 rounded-xl border border-rose-200 flex items-center gap-1.5 shadow-xs">
+                <span className="w-2 h-2 rounded-full bg-rose-600 animate-ping"></span>
+                ACTIVE CORRIDOR ALERT
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Real Leaflet Map & Telematics Sidebar Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
@@ -1216,7 +1399,16 @@ export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, 
               </span>
               <div>
                 <h3 className="text-sm font-black text-slate-900 tracking-tight flex items-center gap-2">
-                  Live Real-World Corridor Map ({activeLoad.origin.split(',')[0]} ➔ {activeLoad.destination.split(',')[0]})
+                  <span>Live Real-World Corridor Map</span>
+                  {serverTelemetry.isRerouted ? (
+                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                      ({activeLoad.origin.split(',')[0]} ➔ {activeLoad.destination.split(',')[0]} • Southern Bypass via Dewele)
+                    </span>
+                  ) : (
+                    <span className="text-slate-600 font-semibold text-xs">
+                      ({activeLoad.origin.split(',')[0]} ➔ {activeLoad.destination.split(',')[0]})
+                    </span>
+                  )}
                 </h3>
                 <p className="text-[11px] text-slate-500">
                   Tracking between posted origin and destination coordinates along the highway

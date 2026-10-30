@@ -7,6 +7,7 @@ import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { AuthCallbackPage } from './pages/AuthCallbackPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { ShipperPortalPage } from './pages/ShipperPortalPage';
 import { ForwarderPortalPage } from './pages/ForwarderPortalPage';
 import { CustomsPortalPage } from './pages/CustomsPortalPage';
@@ -28,6 +29,7 @@ export const App: React.FC = () => {
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/auth" element={<Navigate to="/login" replace />} />
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
 

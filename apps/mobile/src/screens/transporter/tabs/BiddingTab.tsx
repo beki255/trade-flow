@@ -12,6 +12,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { LoadItem, BidItem } from '../types';
 import { useLanguage } from '../../../context/LanguageContext';
 
+const cleanStr = (str?: string) => (str ? String(str).replace(/^`+|`+$/g, '').trim() : '');
+
 interface BiddingTabProps {
   loadsList: LoadItem[];
   selectedLoadId: string;
@@ -54,7 +56,7 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
   onDeleteBid,
   onNavigateToLoads,
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'ACCEPTED' | 'REJECTED'>('ALL');
 
   const selectedLoadObj = loadsList.find((l) => l.id === selectedLoadId);
@@ -76,9 +78,11 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
   });
 
   const formatTransitTime = (hoursStr?: string) => {
-    if (!hoursStr) return '18h transit';
+    if (!hoursStr) return language === 'AM' ? '18 ሰዓት ጉዞ' : language === 'OM' ? 'Imala Sa\'aatii 18' : '18h transit';
     const num = hoursStr.match(/\d+/);
-    return num ? `${num[0]}h transit` : '18h transit';
+    return num
+      ? (language === 'AM' ? `${num[0]} ሰዓት ጉዞ` : language === 'OM' ? `Imala Sa'aatii ${num[0]}` : `${num[0]}h transit`)
+      : (language === 'AM' ? '18 ሰዓት ጉዞ' : language === 'OM' ? 'Imala Sa\'aatii 18' : '18h transit');
   };
 
   const formatSubmittedTime = (timeStr?: string) => {
@@ -106,41 +110,65 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
             activeOpacity={0.7}
           >
             <Ionicons name="arrow-back" size={16} color="#0F172A" />
-            <Text style={styles.backBtnText}>Back to My Quotes</Text>
+            <Text style={styles.backBtnText}>
+              {language === 'AM' ? 'ወደ ዋጋ ማቅረቢያዎቼ ተመለስ' : language === 'OM' ? 'Gara Caalbaasii Koo Deebi’i' : 'Back to My Quotes'}
+            </Text>
           </TouchableOpacity>
 
           <View style={{ marginBottom: 4 }}>
-            <Text style={styles.pageTitle}>Submit Freight Quote</Text>
+            <Text style={styles.pageTitle}>
+              {language === 'AM' ? 'የጭነት ዋጋ ያቅርቡ' : language === 'OM' ? 'Gatii Fe’iinsaa Dhiyeessi' : 'Submit Freight Quote'}
+            </Text>
             <Text style={styles.pageSubtitle}>
-              Propose rate & transit timeline for this corridor load
+              {language === 'AM'
+                ? 'ለዚህ የኮሪደር ጭነት ዋጋ እና የመጓጓዣ ጊዜ ያቅርቡ'
+                : language === 'OM'
+                ? 'Fe’iinsa kanaaf gatii fi yeroo geejjibaa dhiyeessi'
+                : 'Propose rate & transit timeline for this corridor load'}
             </Text>
           </View>
 
           {/* Selected Load Summary Card */}
           <View style={styles.loadSummaryCard}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={styles.loadTitle}>{selectedLoadObj.title}</Text>
-              <View style={styles.cargoBadge}>
-                <Text style={styles.cargoBadgeText}>{selectedLoadObj.cargoType || 'Consignment'}</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+              <Text style={[styles.loadTitle, { flex: 1 }]} numberOfLines={2}>
+                {cleanStr(selectedLoadObj.title)}
+              </Text>
+              <View style={[styles.cargoBadge, { flexShrink: 0 }]}>
+                <Text style={styles.cargoBadgeText}>
+                  {cleanStr(selectedLoadObj.cargoType) || (language === 'AM' ? 'ጭነት' : 'Consignment')}
+                </Text>
               </View>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 4 }}>
               <Ionicons name="location-outline" size={14} color="#0284C7" style={{ marginTop: 2 }} />
-              <Text style={styles.routeText}>{selectedLoadObj.route}</Text>
+              <Text style={styles.routeText}>{cleanStr(selectedLoadObj.route)}</Text>
             </View>
             <View style={styles.metaRow}>
-              <Text style={styles.metaText}>Weight: {selectedLoadObj.weight}</Text>
-              <Text style={styles.metaText}>Budget: {selectedLoadObj.budget}</Text>
+              <Text style={styles.metaText}>
+                {language === 'AM' ? 'ክብደት:' : language === 'OM' ? 'Ulfaatina:' : 'Weight:'}{' '}
+                <Text style={{ fontWeight: '800', color: '#0F172A' }}>
+                  {cleanStr(selectedLoadObj.weight) || '—'}
+                </Text>
+              </Text>
+              <Text style={styles.metaText}>
+                {language === 'AM' ? 'በጀት:' : language === 'OM' ? 'Baajata:' : 'Budget:'}{' '}
+                <Text style={{ fontWeight: '800', color: selectedLoadObj.budget ? '#0F172A' : '#0284C7' }}>
+                  {selectedLoadObj.budget || (language === 'AM' ? 'ክፍት ጨረታ' : language === 'OM' ? 'Caalbaasii Banaa' : 'Open for Bids')}
+                </Text>
+              </Text>
             </View>
           </View>
 
           {/* Input Fields */}
           <View style={styles.inputCard}>
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>{t('bidPriceLabel') || 'Your Bid Price (ETB) *'}</Text>
+              <Text style={styles.inputLabel}>
+                {t('bidPriceLabel') || (language === 'AM' ? 'የእርስዎ የቀረበ ዋጋ (ብር) *' : language === 'OM' ? 'Gatii Dhiyeessitan (ETB) *' : 'Your Bid Price (ETB) *')}
+              </Text>
               <TextInput
                 style={styles.inputField}
-                placeholder="e.g. 1,000,000 ETB"
+                placeholder={language === 'AM' ? 'የቀረበ ዋጋ (ብር)' : language === 'OM' ? 'Gatii Dhiyaate (ETB)' : 'Proposed Rate (ETB)'}
                 placeholderTextColor="#94A3B8"
                 value={bidPrice}
                 onChangeText={setBidPrice}
@@ -150,10 +178,12 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>{t('transitHoursLabel') || 'Estimated Transit Time (Hours) *'}</Text>
+              <Text style={styles.inputLabel}>
+                {t('transitHoursLabel') || (language === 'AM' ? 'የሚፈጀው ጊዜ (በሰዓታት) *' : language === 'OM' ? 'Yeroo Geejjibaa (Sa’aatii) *' : 'Estimated Transit Time (Hours) *')}
+              </Text>
               <TextInput
                 style={styles.inputField}
-                placeholder="e.g. 18 Hours"
+                placeholder={language === 'AM' ? 'የጉዞ ቆይታ (ሰዓታት)' : language === 'OM' ? 'Turtii Geejjibaa (Sa’aatii)' : 'Transit Duration (Hours)'}
                 placeholderTextColor="#94A3B8"
                 value={transitHours}
                 onChangeText={setTransitHours}
@@ -163,10 +193,12 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>{t('bidNotesLabel') || 'Notes / Assigned Fleet'}</Text>
+              <Text style={styles.inputLabel}>
+                {t('bidNotesLabel') || (language === 'AM' ? 'ማስታወሻ / የተመደበ ተሽከርካሪ' : language === 'OM' ? 'Yaada / Konkolaataa Ramadame' : 'Notes / Assigned Fleet')}
+              </Text>
               <TextInput
                 style={[styles.inputField, { height: 70, textAlignVertical: 'top', paddingTop: 8 }]}
-                placeholder="Specify truck plate, driver availability, or special terms..."
+                placeholder={language === 'AM' ? 'የሰሌዳ ቁጥር፣ የአሽከርካሪ ዝግጁነት ወይም ልዩ ሁኔታዎችን ይጥቀሱ...' : language === 'OM' ? 'Gabatee konkolaataa, qophii ofeessaa ykn haala addaa ibsaa...' : 'Specify truck plate, driver availability, or special terms...'}
                 placeholderTextColor="#94A3B8"
                 value={bidNotes}
                 onChangeText={setBidNotes}
@@ -188,8 +220,8 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
             >
               <Text style={styles.primaryActionBtnText}>
                 {existingBidForSelectedLoad
-                  ? `✓ Bid Placed (${existingBidForSelectedLoad.status})`
-                  : t('sendBidButton') || 'Submit Quote ➔'}
+                  ? (language === 'AM' ? `✓ ዋጋ ቀርቧል (${existingBidForSelectedLoad.status})` : language === 'OM' ? `✓ Gatiin Dhiyaateera (${existingBidForSelectedLoad.status})` : `✓ Bid Placed (${existingBidForSelectedLoad.status})`)
+                  : t('sendBidButton') || (language === 'AM' ? 'ዋጋ አቅርብ ➔' : language === 'OM' ? 'Caalbaasii Ergi ➔' : 'Submit Quote ➔')}
               </Text>
             </TouchableOpacity>
 
@@ -197,7 +229,9 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
               style={styles.cancelLink}
               onPress={() => setSelectedLoadId('')}
             >
-              <Text style={styles.cancelLinkText}>Cancel & Return</Text>
+              <Text style={styles.cancelLinkText}>
+                {language === 'AM' ? 'ሰርዝ እና ተመለስ' : language === 'OM' ? 'Dhiisi & Deebi\'i' : 'Cancel & Return'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -207,9 +241,13 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
           {/* Header Row: Title & Find Loads */}
           <View style={styles.headerRow}>
             <View>
-              <Text style={styles.pageTitle}>{t('myQuotesTitle') || 'My Quotes & Bids'}</Text>
+              <Text style={styles.pageTitle}>{t('myQuotesTitle') || (language === 'AM' ? 'የእኔ ዋጋ ማቅረቢያዎች እና ጨረታዎች' : language === 'OM' ? 'Caalbaasiiwwan Koo' : 'My Quotes & Bids')}</Text>
               <Text style={styles.pageSubtitle}>
-                {submittedBids.length} total quotation{submittedBids.length === 1 ? '' : 's'} placed
+                {language === 'AM'
+                  ? `በአጠቃላይ ${submittedBids.length} የቀረቡ ዋጋዎች`
+                  : language === 'OM'
+                  ? `Waliigala caalbaasii ${submittedBids.length} dhiyaatan`
+                  : `${submittedBids.length} total quotation${submittedBids.length === 1 ? '' : 's'} placed`}
               </Text>
             </View>
 
@@ -220,7 +258,9 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
                 activeOpacity={0.85}
               >
                 <Ionicons name="search" size={13} color="#FFFFFF" />
-                <Text style={styles.findLoadsBtnText}>Find Loads</Text>
+                <Text style={styles.findLoadsBtnText}>
+                  {language === 'AM' ? 'ጭነቶች ፈልግ' : language === 'OM' ? 'Fe’iinsa Barbaadi' : 'Find Loads'}
+                </Text>
               </TouchableOpacity>
             )}
           </View>
@@ -234,10 +274,10 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
           >
             {(
               [
-                { key: 'ALL', label: `All (${submittedBids.length})` },
-                { key: 'PENDING', label: `Pending (${pendingBids.length})` },
-                { key: 'ACCEPTED', label: `Won (${acceptedBids.length})` },
-                { key: 'REJECTED', label: `Declined (${rejectedBids.length})` },
+                { key: 'ALL', label: `${language === 'AM' ? 'ሁሉም' : language === 'OM' ? 'Hunda' : 'All'} (${submittedBids.length})` },
+                { key: 'PENDING', label: `${language === 'AM' ? 'በመጠባበቅ ላይ' : language === 'OM' ? 'Eeggannoo' : 'Pending'} (${pendingBids.length})` },
+                { key: 'ACCEPTED', label: `${language === 'AM' ? 'ያሸነፉ' : language === 'OM' ? 'Injifatame' : 'Won'} (${acceptedBids.length})` },
+                { key: 'REJECTED', label: `${language === 'AM' ? 'ውድቅ የተደረጉ' : language === 'OM' ? 'Kufaa Ta\'an' : 'Declined'} (${rejectedBids.length})` },
               ] as const
             ).map((item) => {
               const active = statusFilter === item.key;
@@ -270,11 +310,15 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
               <Ionicons name="pricetag-outline" size={38} color="#94A3B8" />
               <Text style={styles.emptyTitle}>
                 {statusFilter === 'ALL'
-                  ? 'No Quotes Submitted Yet'
-                  : `No ${statusFilter.toLowerCase()} quotes`}
+                  ? (language === 'AM' ? 'እስካሁን የቀረበ ዋጋ የለም' : language === 'OM' ? 'Hamma ammaatti caalbaasiin hin jiru' : 'No Quotes Submitted Yet')
+                  : (language === 'AM' ? `ምንም ${statusFilter === 'PENDING' ? 'በመጠባበቅ ላይ ያለ' : statusFilter === 'ACCEPTED' ? 'ያሸነፈ' : 'ውድቅ የተደረገ'} ዋጋ የለም` : language === 'OM' ? `Caalbaasiin hin jiru` : `No ${statusFilter.toLowerCase()} quotes`)}
               </Text>
               <Text style={styles.emptySubtitle}>
-                Browse corridor freight on the Load Board to place quotes.
+                {language === 'AM'
+                  ? 'ዋጋ ለማቅረብ በኮሪደር ጭነቶች ቦርድ ላይ ያሉትን ጭነቶች ይመልከቱ።'
+                  : language === 'OM'
+                  ? 'Gatii dhiyeessuuf gabatee fe\'iinsa koriidarii ilaalaa.'
+                  : 'Browse corridor freight on the Load Board to place quotes.'}
               </Text>
               {onNavigateToLoads && (
                 <TouchableOpacity
@@ -282,7 +326,9 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
                   onPress={onNavigateToLoads}
                   activeOpacity={0.85}
                 >
-                  <Text style={styles.browseBtnText}>Browse Load Board ➔</Text>
+                  <Text style={styles.browseBtnText}>
+                    {language === 'AM' ? 'የጭነቶች ቦርድን ይመልከቱ ➔' : language === 'OM' ? 'Gabatee Fe\'iinsaa Ilaalaa ➔' : 'Browse Load Board ➔'}
+                  </Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -305,10 +351,10 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
                   <View style={styles.quoteCardTop}>
                     <View style={{ flex: 1, marginRight: 10 }}>
                       <Text style={styles.quoteTitle} numberOfLines={1}>
-                        {b.loadTitle || b.loadId}
+                        {cleanStr(b.loadTitle || b.loadId)}
                       </Text>
                       <Text style={styles.shipperSubText} numberOfLines={1}>
-                        Shipper: {b.shipperName || 'Verified Shipper'}
+                        {language === 'AM' ? 'ላኪ:' : language === 'OM' ? 'Ergaa:' : 'Shipper:'} {b.shipperName || (language === 'AM' ? 'የተረጋገጠ ላኪ' : language === 'OM' ? 'Ergaa Mirkanaa\'e' : 'Verified Shipper')}
                         {b.shipperPhone ? ` • ${b.shipperPhone}` : ''}
                       </Text>
                     </View>
@@ -357,12 +403,12 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
                           ]}
                         >
                           {isDispatched
-                            ? 'Dispatched'
+                            ? (language === 'AM' ? 'ተልኳል' : language === 'OM' ? 'Ergameera' : 'Dispatched')
                             : isAccepted
-                            ? 'Won'
+                            ? (language === 'AM' ? 'አሸንፏል' : language === 'OM' ? 'Injifatame' : 'Won')
                             : isRejected
-                            ? 'Declined'
-                            : 'Pending'}
+                            ? (language === 'AM' ? 'ውድቅ ተደርጓል' : language === 'OM' ? 'Kufaa Ta\'e' : 'Declined')
+                            : (language === 'AM' ? 'በመጠባበቅ ላይ' : language === 'OM' ? 'Eeggannoo' : 'Pending')}
                         </Text>
                       </View>
                     </View>
@@ -380,7 +426,7 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
                   <View style={styles.metaDetailsRow}>
                     <Ionicons name="time-outline" size={12} color="#94A3B8" />
                     <Text style={styles.metaDetailsText}>
-                      {formatTransitTime(b.hours)} • Submitted {formatSubmittedTime(b.submittedAt)}
+                      {formatTransitTime(b.hours)} • {language === 'AM' ? 'የቀረበበት' : language === 'OM' ? 'Kan Dhiyaate' : 'Submitted'} {formatSubmittedTime(b.submittedAt)}
                     </Text>
                   </View>
 
@@ -394,10 +440,10 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={[styles.fleetPlateText, { color: '#166534' }]} numberOfLines={1}>
-                            Delivered • Handed Over via e-POD
+                            {language === 'AM' ? 'ደርሷል • በዲጂታል ርክክብ (e-POD) ተጠናቋል' : language === 'OM' ? 'Ga’eera • e-POD dhaan walharkaa fuudhame' : 'Delivered • Handed Over via e-POD'}
                           </Text>
                           <Text style={[styles.fleetStatusSubText, { color: '#15803D' }]}>
-                            {b.dispatchedTruck ? `Fleet: ${b.dispatchedTruck} • ` : ''}Escrow Payout Settled
+                            {b.dispatchedTruck ? `${language === 'AM' ? 'መኪና:' : language === 'OM' ? 'Konkolaataa:' : 'Fleet:'} ${b.dispatchedTruck} • ` : ''}{language === 'AM' ? 'የኤስክሮው ክፍያ ተፈጽሟል' : language === 'OM' ? 'Kaffaltiin Mirkanaa\'e' : 'Escrow Payout Settled'}
                           </Text>
                         </View>
                         {onOpenRatingModal && (
@@ -412,7 +458,7 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
                             >
                               <Ionicons name="checkmark-circle" size={12} color="#059669" />
                               <Text style={[styles.dispatchActionBtnText, { fontSize: 11, color: '#047857', fontWeight: '700' }]}>
-                                Rated ★ {b.shipperRatingScore || '5.0'}
+                                {language === 'AM' ? 'ደረጃ ተሰጥቷል' : language === 'OM' ? 'Sadarkaan Kenname' : 'Rated'} ★ {b.shipperRatingScore || '5.0'}
                               </Text>
                             </TouchableOpacity>
                           ) : b.hasRatedShipper && !b.hasRatedDriver ? (
@@ -426,7 +472,7 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
                             >
                               <Ionicons name="star" size={12} color="#FFFFFF" />
                               <Text style={[styles.dispatchActionBtnText, { fontSize: 11 }]}>
-                                Rate Driver ★
+                                {language === 'AM' ? 'ለአሽከርካሪ ደረጃ ይስጡ ★' : language === 'OM' ? 'Ofeessaaf Sadarkaa Kennaa ★' : 'Rate Driver ★'}
                               </Text>
                             </TouchableOpacity>
                           ) : (
@@ -440,7 +486,7 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
                             >
                               <Ionicons name="star" size={12} color="#FFFFFF" />
                               <Text style={[styles.dispatchActionBtnText, { fontSize: 11 }]}>
-                                Rate Delivery ★
+                                {language === 'AM' ? 'ለአቅርቦቱ ደረጃ ይስጡ ★' : language === 'OM' ? 'Fe\'isaaf Sadarkaa Kennaa ★' : 'Rate Delivery ★'}
                               </Text>
                             </TouchableOpacity>
                           )
@@ -456,10 +502,10 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={styles.fleetPlateText} numberOfLines={1}>
-                            Fleet: {b.dispatchedTruck} • {b.dispatchedDriver}
+                            {language === 'AM' ? 'መኪና:' : language === 'OM' ? 'Konkolaataa:' : 'Fleet:'} {b.dispatchedTruck} • {b.dispatchedDriver}
                           </Text>
                           <Text style={styles.fleetStatusSubText}>
-                            Consignment Dispatched • Live GPS Active • Escrow Locked
+                            {language === 'AM' ? 'ጭነቱ ተልኳል • ቀጥታ ጂፒኤስ ንቁ ነው • ኤስክሮው ተቆልፏል' : language === 'OM' ? 'Fe\'insi Ergameera • GPS Hojjirra Jira • Kaffaltiin Qabameera' : 'Consignment Dispatched • Live GPS Active • Escrow Locked'}
                           </Text>
                         </View>
                       </View>
@@ -470,11 +516,15 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                           <Ionicons name="lock-closed" size={13} color="#D97706" />
                           <Text style={{ fontSize: 12, fontWeight: '800', color: '#92400E' }}>
-                            Won • Awaiting Shipper Escrow Deposit
+                            {language === 'AM' ? 'አሸንፈዋል • የላኪው የኤስክሮው ተቀማጭ በመጠባበቅ ላይ' : language === 'OM' ? 'Injifattaniittu • Qabsiisa kaffaltii eegaa jira' : 'Won • Awaiting Shipper Escrow Deposit'}
                           </Text>
                         </View>
                         <Text style={{ fontSize: 11, color: '#B45309' }}>
-                          Fleet assignment is locked until the shipper deposits funds into TradeFlow Escrow. You will be notified once funded!
+                          {language === 'AM'
+                            ? 'ላኪው ክፍያውን በTradeFlow ኤስክሮው እስኪያሲዝ ድረስ ተሽከርካሪ መመደብ አይቻልም። ክፍያው ሲገባ ማሳወቂያ ይደርስዎታል!'
+                            : language === 'OM'
+                            ? 'Hamma ergaan kaffaltii TradeFlow Escrow keessa kaa\'utti konkolaataa ramaduun cufaadha. Kaffaltiin yeroo galu beeksisa argattu!'
+                            : 'Fleet assignment is locked until the shipper deposits funds into TradeFlow Escrow. You will be notified once funded!'}
                         </Text>
                       </View>
                     ) : (
@@ -486,7 +536,7 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
                       >
                         <Ionicons name="paper-plane" size={13} color="#FFFFFF" />
                         <Text style={styles.dispatchActionBtnText}>
-                          Assign Truck & Driver to Dispatch ➔
+                          {language === 'AM' ? 'ጭነቱን ለመላክ መኪና እና አሽከርካሪ ይመድቡ ➔' : language === 'OM' ? 'Fe\'isa Erguuf Konkolaataa fi Ofeessaa Ramadaa ➔' : 'Assign Truck & Driver to Dispatch ➔'}
                         </Text>
                       </TouchableOpacity>
                     )
@@ -495,7 +545,7 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
                     <View style={styles.cardFooterActions}>
                       {b.notes ? (
                         <Text style={styles.notesText} numberOfLines={1}>
-                          Note: "{b.notes}"
+                          {language === 'AM' ? 'ማስታወሻ:' : language === 'OM' ? 'Yaada:' : 'Note:'} "{b.notes}"
                         </Text>
                       ) : (
                         <View />
@@ -508,7 +558,9 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
                         >
                           <Ionicons name="trash-outline" size={12} color="#DC2626" />
                           <Text style={styles.withdrawBtnText}>
-                            {b.status === 'PENDING' ? 'Withdraw Quote' : 'Remove'}
+                            {b.status === 'PENDING'
+                              ? (language === 'AM' ? 'ዋጋ ማቅረቢያውን ሰርዝ' : language === 'OM' ? 'Caalbaasii Haqi' : 'Withdraw Quote')
+                              : (language === 'AM' ? 'አስወግድ' : language === 'OM' ? 'Balleessi' : 'Remove')}
                           </Text>
                         </TouchableOpacity>
                       )}
