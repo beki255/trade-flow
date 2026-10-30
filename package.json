@@ -16,7 +16,7 @@
     "dev:mobile": "npm run start --workspace=apps/mobile",
     "dev:mobile:tunnel": "npm run start --workspace=apps/mobile -- --tunnel",
     "build": "npm run build --workspaces",
-    "build:api": "npm run prisma:generate && npm run build --workspace=@tradeflow/api",
+    "build:api": "npm run prisma:generate && npm run build --workspace=@tradeflow/shared && npm run build --workspace=@tradeflow/api",
     "start:api": "npm run start --workspace=@tradeflow/api",
     "prisma:generate": "npm run prisma:generate --workspace=services/api",
     "prisma:push": "npm run prisma:push --workspace=services/api",
