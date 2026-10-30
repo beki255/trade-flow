@@ -12,7 +12,12 @@ import Constants from 'expo-constants';
  * 6. Localhost fallback (127.0.0.1:5000)
  */
 export const getApiBaseUrl = (): string => {
-  // 1. Web browser: Always match the browser's hostname (localhost or LAN IP)
+  // 1. Production Cloud Backend if configured
+  if (process.env.EXPO_PUBLIC_API_URL && process.env.EXPO_PUBLIC_API_URL.startsWith('http')) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+
+  // 2. Web browser: Always match the browser's hostname (localhost or LAN IP)
   if (Platform.OS === 'web') {
     if (typeof window !== 'undefined' && window.location && window.location.hostname) {
       return `http://${window.location.hostname}:5000`;
