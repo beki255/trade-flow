@@ -54,7 +54,6 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
   // Step 3 OTP Fields
   const [otpCode, setOtpCode] = useState('');
   const [maskedEmail, setMaskedEmail] = useState('');
-  const [previewOtp, setPreviewOtp] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [resendLoading, setResendLoading] = useState(false);
 
@@ -173,10 +172,6 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
 
       if (res.ok) {
         setMaskedEmail(data.maskedEmail || cleanEmail);
-        if (data.previewOtp) {
-          setPreviewOtp(data.previewOtp);
-          setOtpCode(data.previewOtp);
-        }
         setStep(3);
         startCooldown();
       } else {
@@ -271,10 +266,6 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
       setResendLoading(false);
 
       if (res.ok) {
-        if (data.previewOtp) {
-          setPreviewOtp(data.previewOtp);
-          setOtpCode(data.previewOtp);
-        }
         startCooldown();
       } else {
         setErrorMsg(data.error || 'Failed to resend verification code.');
@@ -701,15 +692,6 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
                   </Text>
                 </TouchableOpacity>
               </View>
-
-              {previewOtp ? (
-                <View style={[styles.errorBox, { backgroundColor: isDark ? '#312E81' : '#FEF3C7', borderColor: isDark ? '#4338CA' : '#FDE68A' }]}>
-                  <Ionicons name="information-circle" size={16} color={isDark ? '#A5B4FC' : '#D97706'} style={{ marginRight: 6 }} />
-                  <Text style={[styles.errorText, { color: isDark ? '#E0E7FF' : '#92400E' }]}>
-                    Local Dev Code: <Text style={{ fontWeight: '900', letterSpacing: 2 }}>{previewOtp}</Text>
-                  </Text>
-                </View>
-              ) : null}
 
               {/* OTP Input */}
               <View style={styles.inputGroup}>

@@ -49,7 +49,6 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onAuthSuccess }) => 
   // Email OTP Step State
   const [otpCode, setOtpCode] = useState<string>('');
   const [maskedEmail, setMaskedEmail] = useState<string>('');
-  const [previewOtp, setPreviewOtp] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState<number>(0);
   const [resendLoading, setResendLoading] = useState<boolean>(false);
 
@@ -167,10 +166,6 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onAuthSuccess }) => 
       const res = await sendRegistrationOtp(payload);
       setLoading(false);
       setMaskedEmail(res?.maskedEmail || email);
-      if (res?.previewOtp) {
-        setPreviewOtp(res.previewOtp);
-        setOtpCode(res.previewOtp);
-      }
       setStep(2);
       startCooldown();
     } catch (err: any) {
@@ -204,12 +199,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onAuthSuccess }) => 
     setResendLoading(true);
     setErrorMsg('');
     try {
-      const res = await resendRegistrationOtp(email);
+      await resendRegistrationOtp(email);
       setResendLoading(false);
-      if (res?.previewOtp) {
-        setPreviewOtp(res.previewOtp);
-        setOtpCode(res.previewOtp);
-      }
       startCooldown();
     } catch (err: any) {
       setResendLoading(false);
@@ -248,14 +239,6 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onAuthSuccess }) => 
               <span className="font-semibold text-slate-800">{maskedEmail || email}</span>. Enter the code below to complete your registration.
             </p>
           </div>
-
-          {/* Dev fallback notice */}
-          {previewOtp && (
-            <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold text-center flex items-center justify-center gap-1.5">
-              <span>Local Dev Code:</span>
-              <span className="font-mono font-bold tracking-widest">{previewOtp}</span>
-            </div>
-          )}
 
           {/* Error message */}
           {errorMsg && (

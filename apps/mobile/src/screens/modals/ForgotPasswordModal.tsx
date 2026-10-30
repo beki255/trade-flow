@@ -100,10 +100,6 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
             : 'Verification code dispatched to your email.')
       );
 
-      if (data.previewOtp) {
-        setCode(data.previewOtp);
-      }
-
       setResendCooldown(60);
       const interval = setInterval(() => {
         setResendCooldown((prev) => {

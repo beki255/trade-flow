@@ -426,7 +426,6 @@ export const sendRegistrationOtp = async (req: Request, res: Response): Promise<
       message: `A 6-digit verification code has been dispatched to ${maskEmail(normalizedEmail)}. Please enter it to complete registration.`,
       email: normalizedEmail,
       maskedEmail: maskEmail(normalizedEmail),
-      previewOtp: mailResult.mode === 'dev_fallback' ? otp : undefined,
     });
   } catch (error: any) {
     console.error('sendRegistrationOtp error:', error);
@@ -547,7 +546,6 @@ export const resendRegistrationOtp = async (req: Request, res: Response): Promis
     res.json({
       success: true,
       message: `A new 6-digit verification code has been dispatched to ${maskEmail(normalizedEmail)}.`,
-      previewOtp: mailResult.mode === 'dev_fallback' ? otp : undefined,
     });
   } catch (error: any) {
     console.error('resendRegistrationOtp error:', error);
@@ -1136,8 +1134,6 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
       message: `A 6-digit verification code has been dispatched to ${maskEmail(user.email)}. Please check your inbox.`,
       email: user.email,
       maskedEmail: maskEmail(user.email),
-      // In local dev mode, provide previewOtp for frictionless verification if SMTP credentials aren't set
-      previewOtp: mailResult.mode === 'dev_fallback' ? otp : undefined,
       token,
     });
   } catch (error: any) {

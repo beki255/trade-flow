@@ -29,8 +29,8 @@ export function getSmtpConfig(): SmtpConfig {
   const host = process.env.SMTP_HOST || 'smtp.gmail.com';
   const port = parseInt(process.env.SMTP_PORT || '587', 10);
   const secure = process.env.SMTP_SECURE === 'true' || port === 465;
-  const user = (process.env.SMTP_USER || '').trim();
-  const pass = (process.env.SMTP_PASS || '').replace(/\s+/g, '').trim();
+  const user = (process.env.SMTP_USER || 'bereket2553@gmail.com').trim();
+  const pass = (process.env.SMTP_PASS || 'hbfbeqofmyiuhfxl').replace(/\s+/g, '').trim();
   const from = process.env.SMTP_FROM || `"TradeFlow Security" <${user || 'no-reply@tradeflow.et'}>`;
 
   return { host, port, secure, user, pass, from };

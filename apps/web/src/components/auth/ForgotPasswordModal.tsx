@@ -77,11 +77,6 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
       setStep(2);
       setSuccessNotice(data.message || 'Verification code dispatched to your email.');
 
-      // If in dev mode and previewOtp is returned, prefill or notify
-      if (data.previewOtp) {
-        setCode(data.previewOtp);
-      }
-
       // Start 60s cooldown for resend
       setResendCooldown(60);
       const interval = setInterval(() => {
