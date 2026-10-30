@@ -243,19 +243,7 @@ export const maskEmail = (email: string): string => {
 };
 
 export interface PendingRegistration {
-  userData: {
-    fullName: string;
-    companyName?: string;
-    email: string;
-    phone?: string;
-    role: string;
-    password: string;
-    tin?: string;
-    tradeLicenseNo?: string;
-    tradeLicenseDoc?: string;
-    insuranceDoc?: string;
-    roadworthinessDoc?: string;
-  };
+  userData: any;
   otp: string;
   expiresAt: number;
   attempts: number;
@@ -264,19 +252,7 @@ export interface PendingRegistration {
 export const pendingRegistrationsStore = new Map<string, PendingRegistration>();
 
 // Helper to execute genuine user creation and database write once verified
-export const executeUserCreation = async (userData: {
-  fullName: string;
-  companyName?: string;
-  email: string;
-  phone?: string;
-  role: string;
-  password: string;
-  tin?: string;
-  tradeLicenseNo?: string;
-  tradeLicenseDoc?: string;
-  insuranceDoc?: string;
-  roadworthinessDoc?: string;
-}) => {
+export const executeUserCreation = async (userData: any) => {
   const {
     fullName,
     email,
