@@ -6,16 +6,21 @@
   "build": {
     "preview": {
       "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://tradeflow-api-7abs.onrender.com"
+      },
       "android": {
         "buildType": "apk"
       }
     },
     "production": {
       "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://tradeflow-api-7abs.onrender.com"
+      },
       "android": {
         "buildType": "apk"
       }
     }
   }
 }
-
