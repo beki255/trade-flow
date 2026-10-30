@@ -659,7 +659,7 @@ export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, 
       activeLoad.status
     );
 
-    return dynamicWps.map((w, idx) => ({
+    return dynamicWps.map((w: any, idx: number) => ({
       id: w.id,
       name: w.name,
       nameAmharic: w.nameAm || w.name,
@@ -747,7 +747,7 @@ export const CorridorLiveMap: React.FC<CorridorLiveMapProps> = ({ shipmentData, 
       activeLoad.destLng
     );
     if (road && road.length >= 2) {
-      return road.map((p) => [p.lat, p.lng] as [number, number]);
+      return road.map((p: any) => [p.lat, p.lng] as [number, number]);
     }
     return waypoints.map((w) => [w.lat, w.lng] as [number, number]);
   }, [liveOsmRoad, activeLoad, waypoints, serverTelemetry.isRerouted, serverTelemetry.bypassPolyline]);
