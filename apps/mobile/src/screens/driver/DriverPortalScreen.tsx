@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { TabIcon } from '../../components/TabIcon';
-import { getDynamicCorridorWaypoints } from '@tradeflow/shared';
+import { getDynamicCorridorWaypoints } from '../../shared';
 import { driverStyles as styles } from './driverStyles';
 import { WaypointItem, CheckinRecord, IncidentRecord, DynamicRerouteProposal, ActiveTripDetails, DriverTabType } from './types';
 import { getApiBaseUrl, apiFetch } from '../../utils/api';

@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { ActiveTripDetails } from '../types';
 import { DriverRealCorridorMap } from '../../../components/DriverRealCorridorMap';
-import { calculateCorridorRoadDistanceKm } from '@tradeflow/shared';
+import { calculateCorridorRoadDistanceKm } from '../../../shared';
 import { useLanguage } from '../../../context/LanguageContext';
 import {
   TruckIcon,
