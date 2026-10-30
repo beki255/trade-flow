@@ -2,6 +2,7 @@
   "expo": {
     "name": "TradeFlow Mobile",
     "slug": "tradeflow-mobile",
+    "owner": "bereket2553",
     "version": "1.0.0",
     "sdkVersion": "58.0.0",
     "orientation": "portrait",

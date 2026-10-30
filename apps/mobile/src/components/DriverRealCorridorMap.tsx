@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import Svg, { Circle, Polyline, Rect, Text as SvgText, G, Path } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
-import { getDynamicCorridorWaypoints, calculateCorridorRoadDistanceKm, resolveCorridorCoordinates } from '@tradeflow/shared';
+import { getDynamicCorridorWaypoints, calculateCorridorRoadDistanceKm, resolveCorridorCoordinates } from '../shared';
 import { getCorridorRoadPolylineLocal, fetchOsmHighwayRoute, RoadCoordinate } from '../utils/corridorRoads';
 import { ActiveTripDetails } from '../screens/driver/types';
 
