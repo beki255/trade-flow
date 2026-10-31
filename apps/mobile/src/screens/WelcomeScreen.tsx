@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingTop: 14,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ? StatusBar.currentHeight + 8 : 34) : 16,
     paddingBottom: 4,
     paddingHorizontal: 22,
     width: '100%',
@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
   },
   carouselContainer: {
     width: '100%',
-    height: 280,
+    height: 235,
     marginTop: 4,
     overflow: 'hidden',
   },
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   slideCard: {
-    height: 280,
+    height: 235,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
   textContainer: {
     alignItems: 'center',
     paddingHorizontal: 24,
-    minHeight: 78,
+    minHeight: 66,
     justifyContent: 'center',
     width: '100%',
   },
@@ -310,8 +310,9 @@ const styles = StyleSheet.create({
   buttonsWrapper: {
     width: '100%',
     paddingHorizontal: 22,
-    gap: 10,
-    paddingBottom: 4,
+    gap: 11,
+    paddingBottom: Platform.OS === 'android' ? 24 : 10,
+    marginBottom: Platform.OS === 'android' ? 12 : 4,
   },
   loginButton: {
     backgroundColor: '#0284C7',
