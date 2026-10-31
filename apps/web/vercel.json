@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/send-email",
+      "destination": "/api/send-email"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://tradeflow-api-7abs.onrender.com/api/:path*"
     },
@@ -10,4 +14,3 @@
     }
   ]
 }
-

@@ -10,10 +10,12 @@
   },
   "dependencies": {
     "@tradeflow/shared": "*",
+    "@types/nodemailer": "^8.0.2",
     "clsx": "^2.1.1",
     "framer-motion": "^11.2.10",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.379.0",
+    "nodemailer": "^10.3.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-leaflet": "^4.2.1",

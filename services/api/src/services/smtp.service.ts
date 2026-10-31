@@ -65,7 +65,37 @@ export async function sendMail(options: SendMailOptions): Promise<SendMailResult
   const pureFrom = extractEmail(fromHeader);
   const pureTo = extractEmail(toHeader);
 
-  // 1. Try Brevo HTTPS API (Port 443 - Standard Cloud REST API, 100% Unblocked on Render)
+  // 1. Try Vercel Serverless HTTPS Relay (Port 443 -> Gmail Port 465, 100% Unblocked on Render)
+  const vercelRelayUrl = process.env.VERCEL_RELAY_URL || 'https://trade-flow-ukgu.vercel.app/api/send-email';
+  try {
+    debugLogs.push('Dispatching via Vercel HTTPS Relay (' + vercelRelayUrl + ')...');
+    const res = await fetch(vercelRelayUrl, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-tradeflow-secret': 'tradeflow_super_secret_relay_2026',
+      },
+      body: JSON.stringify({
+        to: pureTo,
+        subject: subjectHeader,
+        html: options.html,
+        text: options.text || options.html.replace(/<[^>]+>/g, ' '),
+      }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      debugLogs.push('Vercel Relay Delivered: ' + JSON.stringify(data));
+      return { success: true, messageId: data.messageId || messageId, mode: 'smtp', debug: debugLogs };
+    } else {
+      const errText = await res.text();
+      debugLogs.push('Vercel Relay HTTP Error (' + res.status + '): ' + errText);
+    }
+  } catch (err) {
+    debugLogs.push('Vercel Relay Exception: ' + err.message);
+  }
+
+  // 2. Try Brevo HTTPS API (Port 443 - Standard Cloud REST API, 100% Unblocked on Render)
   const brevoApiKey = process.env.BREVO_API_KEY;
   if (brevoApiKey) {
     try {
