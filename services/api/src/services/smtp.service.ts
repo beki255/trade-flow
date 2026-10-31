@@ -65,6 +65,73 @@ export async function sendMail(options: SendMailOptions): Promise<SendMailResult
   const pureFrom = extractEmail(fromHeader);
   const pureTo = extractEmail(toHeader);
 
+  // 1. Try Brevo HTTPS API (Port 443 - Standard Cloud REST API, 100% Unblocked on Render)
+  const brevoApiKey = process.env.BREVO_API_KEY;
+  if (brevoApiKey) {
+    try {
+      debugLogs.push('Dispatching via Brevo HTTPS API (Port 443)...');
+      const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'api-key': brevoApiKey.trim(),
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          sender: { name: 'TradeFlow Security', email: 'bereket2553@gmail.com' },
+          to: [{ email: pureTo }],
+          subject: subjectHeader,
+          htmlContent: options.html,
+          textContent: options.text || options.html.replace(/<[^>]+>/g, ' '),
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        debugLogs.push(`Brevo HTTP Delivered: ${JSON.stringify(data)}`);
+        return { success: true, messageId: data.messageId || messageId, mode: 'smtp', debug: debugLogs };
+      } else {
+        const errText = await res.text();
+        debugLogs.push(`Brevo HTTP Error (${res.status}): ${errText}`);
+      }
+    } catch (err: any) {
+      debugLogs.push(`Brevo Exception: ${err.message}`);
+    }
+  }
+
+  // 2. Try Resend HTTPS API (Port 443 - Standard Cloud REST API, 100% Unblocked on Render)
+  const resendApiKey = process.env.RESEND_API_KEY;
+  if (resendApiKey) {
+    try {
+      debugLogs.push('Dispatching via Resend HTTPS API (Port 443)...');
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${resendApiKey.trim()}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: 'TradeFlow Security <onboarding@resend.dev>',
+          to: [pureTo],
+          subject: subjectHeader,
+          html: options.html,
+          text: options.text || options.html.replace(/<[^>]+>/g, ' '),
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        debugLogs.push(`Resend HTTP Delivered: ${JSON.stringify(data)}`);
+        return { success: true, messageId: data.id || messageId, mode: 'smtp', debug: debugLogs };
+      } else {
+        const errText = await res.text();
+        debugLogs.push(`Resend HTTP Error (${res.status}): ${errText}`);
+      }
+    } catch (err: any) {
+      debugLogs.push(`Resend Exception: ${err.message}`);
+    }
+  }
+
   // If no SMTP credentials provided, log full details for local dev and return successfully
   if (!config.user || !config.pass) {
     debugLogs.push('No SMTP user or pass configured in environment');
