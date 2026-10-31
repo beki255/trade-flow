@@ -916,42 +916,6 @@ export const transporterStyles = StyleSheet.create({
     fontWeight: '900',
     color: '#0F172A',
   },
-  bottomNavContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 72,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E2EAF2',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingBottom: 10,
-    elevation: 8,
-  },
-  navTab: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-    flex: 1,
-  },
-  navIcon: {
-    fontSize: 20,
-    opacity: 0.5,
-  },
-  navIconActive: {
-    opacity: 1,
-  },
-  navLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#94A3B8',
-  },
-  navLabelActive: {
-    color: '#0284C7',
-  },
   searchBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -1581,11 +1581,23 @@ export const getDrivers = async (req: Request, res: Response): Promise<void> => 
         include: { vehicles: true },
       });
     }
+
+    if (!targetTransporter && ((transporterId && typeof transporterId === 'string' && transporterId.trim().length > 0) || emailStr.length > 0)) {
+      // Transporter queried does not exist in the database
+      res.json({ drivers: [] });
+      return;
+    }
+
     if (!targetTransporter) {
       targetTransporter = await prisma.user.findFirst({
         where: { role: UserRole.TRANSPORTER },
         include: { vehicles: true },
       });
+    }
+
+    if (!targetTransporter) {
+      res.json({ drivers: [] });
+      return;
     }
 
     // Auto-heal: Ensure any User registered with role: DRIVER has a corresponding DriverProfile
@@ -1610,28 +1622,25 @@ export const getDrivers = async (req: Request, res: Response): Promise<void> => 
       }
     } catch (e) {}
 
-    let whereClause: any = {};
-    if (targetTransporter) {
-      const vehicleIds = targetTransporter.vehicles?.map((v) => v.id) || [];
-      const transporterTag = targetTransporter.id.slice(-6);
+    const vehicleIds = targetTransporter.vehicles?.map((v) => v.id) || [];
+    const transporterTag = targetTransporter.id.slice(-6);
 
-      const orConditions: any[] = [
-        ...(vehicleIds.length > 0 ? [{ assignedVehicleId: { in: vehicleIds } }] : []),
-        { assignedVehicle: { transporterId: targetTransporter.id } },
-        { user: { verificationNotes: { contains: targetTransporter.id } } },
-        { user: { username: { contains: transporterTag } } },
-      ];
+    const orConditions: any[] = [
+      ...(vehicleIds.length > 0 ? [{ assignedVehicleId: { in: vehicleIds } }] : []),
+      { assignedVehicle: { transporterId: targetTransporter.id } },
+      { user: { verificationNotes: { contains: targetTransporter.id } } },
+      { user: { username: { contains: transporterTag } } },
+    ];
 
-      if (targetTransporter.companyName) {
-        orConditions.push({
-          user: { companyName: { contains: targetTransporter.companyName, mode: 'insensitive' } },
-        });
-      }
-
-      whereClause = { OR: orConditions };
+    if (targetTransporter.companyName) {
+      orConditions.push({
+        user: { companyName: { contains: targetTransporter.companyName, mode: 'insensitive' } },
+      });
     }
 
-    let drivers = await prisma.driverProfile.findMany({
+    const whereClause: any = { OR: orConditions };
+
+    const drivers = await prisma.driverProfile.findMany({
       where: whereClause,
       include: {
         user: {
@@ -1658,36 +1667,6 @@ export const getDrivers = async (req: Request, res: Response): Promise<void> => 
       },
       orderBy: { createdAt: 'desc' },
     });
-
-    // Resilient fallback: If no scoped drivers found, fetch all drivers so newly registered drivers are never hidden
-    if (drivers.length === 0) {
-      drivers = await prisma.driverProfile.findMany({
-        include: {
-          user: {
-            select: {
-              id: true,
-              fullName: true,
-              phone: true,
-              email: true,
-              companyName: true,
-              verificationStatus: true,
-              verificationNotes: true,
-              tradeLicenseDoc: true,
-              roadworthinessDoc: true,
-              insuranceDoc: true,
-            },
-          },
-          assignedVehicle: {
-            select: {
-              id: true,
-              plateNumber: true,
-              vehicleType: true,
-            },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-      });
-    }
 
     // Map into normalized format containing both root and nested properties
     const mappedDrivers = drivers.map((d) => {
@@ -1818,7 +1797,7 @@ export const createDriver = async (req: Request, res: Response): Promise<void> =
           phone: phone.trim(),
           role: UserRole.DRIVER,
           companyName: company,
-          verificationNotes: null,
+          verificationNotes: transporterNote,
           passwordHash: finalPassword,
           verificationStatus: VerificationStatus.PENDING,
           tradeLicenseDoc: licenseDoc || null,
@@ -1833,7 +1812,7 @@ export const createDriver = async (req: Request, res: Response): Promise<void> =
           phone: phone.trim(),
           ...(email && email.trim() ? { email: email.toLowerCase().trim() } : {}),
           companyName: company,
-          verificationNotes: null,
+          verificationNotes: transporterNote,
           passwordHash: (password && password.trim().length > 0) ? password.trim() : existingDriver.passwordHash,
           role: UserRole.DRIVER,
           verificationStatus: VerificationStatus.PENDING,
@@ -2805,26 +2784,7 @@ export const dispatchShipment = async (req: Request, res: Response): Promise<voi
     }
 
     if (!vehicle) {
-      vehicle = await prisma.vehicle.findFirst();
-    }
-
-    if (!vehicle && transporter) {
-      vehicle = await prisma.vehicle.create({
-        data: {
-          transporterId: transporter.id,
-          plateNumber: '3-AA-78901',
-          vehicleType: VehicleType.CONTAINER_CARRIER,
-          capacityTons: 32.0,
-          capacityVolumeCbm: 65.0,
-          fuelType: FuelType.DIESEL,
-          fuelEfficiencyBenchmarkKmL: 3.5,
-          isAvailable: false,
-        },
-      });
-    }
-
-    if (!vehicle) {
-      res.status(500).json({ error: 'No vehicle available in database to assign to this shipment.' });
+      res.status(400).json({ error: 'Please select an authorized registered vehicle from your fleet to dispatch this shipment.' });
       return;
     }
 
@@ -2860,11 +2820,7 @@ export const dispatchShipment = async (req: Request, res: Response): Promise<voi
     }
 
     if (!driverProfile) {
-      driverProfile = await prisma.driverProfile.findFirst({ include: { user: true } });
-    }
-
-    if (!driverProfile) {
-      res.status(400).json({ error: 'Please select an active registered driver to dispatch this shipment' });
+      res.status(400).json({ error: 'Please select an authorized registered driver from your fleet to dispatch this shipment.' });
       return;
     }
 

@@ -257,10 +257,10 @@ model Shipment {
   loadId                  String                 @unique
   load                    Load                   @relation(fields: [loadId], references: [id])
   transporterId           String
-  driverId                String
-  driver                  DriverProfile          @relation(fields: [driverId], references: [id])
-  vehicleId               String
-  vehicle                 Vehicle                @relation(fields: [vehicleId], references: [id])
+  driverId                String?
+  driver                  DriverProfile?         @relation(fields: [driverId], references: [id])
+  vehicleId               String?
+  vehicle                 Vehicle?               @relation(fields: [vehicleId], references: [id])
   agreedRateEtb           Float
   status                  ShipmentStatus         @default(ASSIGNED)
   customsStatus           CustomsClearanceStatus @default(NOT_SUBMITTED)

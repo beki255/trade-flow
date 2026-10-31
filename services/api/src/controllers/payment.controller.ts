@@ -75,110 +75,40 @@ async function resolveOrCreateShipment(params: {
     resolvedTransporterId = transporter?.id || null;
   }
 
-  if (!resolvedTransporterId) {
-    let transporterUser = await prisma.user.findFirst({
-      where: { role: UserRole.TRANSPORTER },
+  // 4. Resolve Transporter's Vehicle (Strict: live DB record only, NO mock creation)
+  let vehicle = null;
+  if (resolvedTransporterId) {
+    vehicle = await prisma.vehicle.findFirst({
+      where: { transporterId: resolvedTransporterId, isAvailable: true },
     });
-    if (!transporterUser) {
-      transporterUser = await prisma.user.create({
-        data: {
-          email: 'ethio.carrier@tradeflow.et',
-          username: 'ethio_carrier',
-          passwordHash: '$2b$10$ep5w.E58jL8e7qA9z3zFDeQ9s/3O89R3yU5V7xZ3w4h',
-          fullName: 'Ethio-Djibouti Corridor Logistics',
-          companyName: 'Ethio-Djibouti Express Transport S.C.',
-          phone: '+251911445566',
-          role: UserRole.TRANSPORTER,
-          verificationStatus: VerificationStatus.VERIFIED,
-        },
+    if (!vehicle) {
+      vehicle = await prisma.vehicle.findFirst({
+        where: { transporterId: resolvedTransporterId },
       });
     }
-    resolvedTransporterId = transporterUser.id;
   }
 
-  // 4. Resolve or Auto-Provision Vehicle
-  let vehicle = await prisma.vehicle.findFirst({
-    where: { transporterId: resolvedTransporterId, isAvailable: true },
-  });
-  if (!vehicle) {
-    vehicle = await prisma.vehicle.findFirst({
-      where: { transporterId: resolvedTransporterId },
-    });
-  }
-  if (!vehicle) {
-    vehicle = await prisma.vehicle.findFirst({
-      where: { isAvailable: true },
-    });
-  }
-  if (!vehicle) {
-    vehicle = await prisma.vehicle.findFirst();
-  }
-  if (!vehicle) {
-    const randomPlate = `3-ET-${Math.floor(10000 + Math.random() * 90000)}`;
-    vehicle = await prisma.vehicle.create({
-      data: {
-        transporterId: resolvedTransporterId,
-        plateNumber: randomPlate,
-        vehicleType: VehicleType.CONTAINER_CARRIER,
-        capacityTons: 32.0,
-        capacityVolumeCbm: 65.0,
-        fuelType: FuelType.DIESEL,
-        fuelEfficiencyBenchmarkKmL: 3.5,
-        isAvailable: false,
-      },
-    });
-  }
-
-  // 5. Resolve or Auto-Provision Driver Profile
-  let driverProfile = await prisma.driverProfile.findFirst({
-    where: { assignedVehicleId: vehicle.id },
-    include: { user: true },
-  });
-  if (!driverProfile) {
+  // 5. Resolve Transporter's Driver Profile (Strict: live DB record only, NO mock creation)
+  let driverProfile = null;
+  if (vehicle) {
     driverProfile = await prisma.driverProfile.findFirst({
-      where: { isOnline: true },
+      where: { assignedVehicleId: vehicle.id },
       include: { user: true },
     });
   }
-  if (!driverProfile) {
+  if (!driverProfile && resolvedTransporterId) {
     driverProfile = await prisma.driverProfile.findFirst({
-      include: { user: true },
-    });
-  }
-  if (!driverProfile) {
-    let driverUser = await prisma.user.findFirst({
-      where: { role: UserRole.DRIVER },
-    });
-    if (!driverUser) {
-      const suffix = Date.now().toString().slice(-4);
-      driverUser = await prisma.user.create({
-        data: {
-          email: `driver.${suffix}@tradeflow.et`,
-          username: `driver_${suffix}`,
-          passwordHash: '$2b$10$ep5w.E58jL8e7qA9z3zFDeQ9s/3O89R3yU5V7xZ3w4h',
-          fullName: 'Abebe Kebede',
-          phone: '+251911223344',
-          role: UserRole.DRIVER,
-          verificationStatus: VerificationStatus.VERIFIED,
-        },
-      });
-    }
-
-    driverProfile = await prisma.driverProfile.create({
-      data: {
-        userId: driverUser.id,
-        assignedVehicleId: vehicle.id,
-        driverLicenseNo: `DL-ET-${Date.now().toString().slice(-6)}`,
-        licenseClass: 'Grade 5 Heavy Transport',
-        experienceYears: 6,
-        safetyScore: 98.0,
-        isOnline: true,
+      where: {
+        OR: [
+          { assignedVehicle: { transporterId: resolvedTransporterId } },
+          { user: { verificationNotes: { contains: resolvedTransporterId } } },
+        ],
       },
       include: { user: true },
     });
   }
 
-  // 6. Create the active corridor Shipment record
+  // 6. Create the active corridor Shipment record (driver and vehicle can be null until carrier dispatches)
   const finalRate =
     params.agreedRateEtb ||
     Number(targetLoad.targetBudgetEtb) ||
@@ -188,9 +118,9 @@ async function resolveOrCreateShipment(params: {
   targetShipment = await prisma.shipment.create({
     data: {
       loadId,
-      transporterId: resolvedTransporterId,
-      driverId: driverProfile.id,
-      vehicleId: vehicle.id,
+      transporterId: resolvedTransporterId || '00000000-0000-0000-0000-000000000000',
+      driverId: driverProfile ? driverProfile.id : null,
+      vehicleId: vehicle ? vehicle.id : null,
       agreedRateEtb: finalRate,
       status: ShipmentStatus.ASSIGNED,
       customsStatus: CustomsClearanceStatus.NOT_SUBMITTED,
