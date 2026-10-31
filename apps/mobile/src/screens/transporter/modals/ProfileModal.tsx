@@ -28,7 +28,7 @@ interface ProfileModalProps {
   onClose: () => void;
   user?: UserProfile;
   carrierStatus: 'PENDING' | 'VERIFIED' | 'SUSPENDED';
-  language: 'en' | 'am';
+  language: 'en' | 'am' | 'om' | string;
   toggleLanguage: () => void;
   onLogout: () => void;
 }

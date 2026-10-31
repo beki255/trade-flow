@@ -1,3 +1,4 @@
+import { storage } from '../utils/storage';
 import React, { createContext, useContext, useState } from 'react';
 import en from '../locales/en.json';
 import am from '../locales/am.json';
@@ -54,27 +55,19 @@ const LanguageContext = createContext<LanguageContextType>({
 });
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [language, setLanguageState] = useState<Language>(() => {
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const saved = window.localStorage.getItem('tradeflow_lang');
-        if (saved === 'AM' || saved === 'OM' || saved === 'EN') return saved;
+  const [language, setLanguageState] = useState<Language>('EN');
+
+  useEffect(() => {
+    storage.getItem('tradeflow_lang').then((saved) => {
+      if (saved === 'AM' || saved === 'OM' || saved === 'EN') {
+        setLanguageState(saved as Language);
       }
-    } catch {
-      // ignore
-    }
-    return 'EN';
-  });
+    });
+  }, []);
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        window.localStorage.setItem('tradeflow_lang', lang);
-      }
-    } catch {
-      // ignore
-    }
+    storage.setItem('tradeflow_lang', lang).catch(() => {});
   };
 
   const toggleLanguage = () => {

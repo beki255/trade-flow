@@ -18,48 +18,53 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LanguageProvider } from './src/context/LanguageContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { getApiBaseUrl } from './src/utils/api';
+import { storage } from './src/utils/storage';
 
 function MainApp() {
   const [fontsLoaded] = useFonts({
     ...Ionicons.font,
     ...MaterialCommunityIcons.font,
   });
-  const [currentScreen, setCurrentScreen] = useState<'welcome' | 'login' | 'register' | 'active_home'>(() => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
-      const savedUser = window.localStorage.getItem('tradeflow_mobile_user');
-      const savedScreen = window.localStorage.getItem('tradeflow_mobile_screen');
-      if (savedUser && savedScreen === 'active_home') {
-        return 'active_home';
-      }
-    }
-    return 'welcome';
-  });
+  const [authLoading, setAuthLoading] = useState(true);
+  const [currentScreen, setCurrentScreen] = useState<'welcome' | 'login' | 'register' | 'active_home'>('welcome');
+  const [currentRole, setCurrentRole] = useState<'DRIVER' | 'TRANSPORTER'>('DRIVER');
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
-  const [currentRole, setCurrentRole] = useState<'DRIVER' | 'TRANSPORTER'>(() => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
-      const savedRole = window.localStorage.getItem('tradeflow_mobile_role');
-      if (savedRole === 'DRIVER' || savedRole === 'TRANSPORTER') {
-        return savedRole;
-      }
-    }
-    return 'DRIVER';
-  });
-
-  const [currentUser, setCurrentUser] = useState<any>(() => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+  // Restore authenticated session from persistent storage on startup & app resume
+  useEffect(() => {
+    let isMounted = true;
+    async function restoreSession() {
       try {
-        const savedUser = window.localStorage.getItem('tradeflow_mobile_user');
-        if (savedUser) {
-          return JSON.parse(savedUser);
+        const savedUserStr = await storage.getItem('tradeflow_mobile_user');
+        const savedRole = await storage.getItem('tradeflow_mobile_role');
+        const savedScreen = await storage.getItem('tradeflow_mobile_screen');
+
+        if (savedUserStr && isMounted) {
+          const parsedUser = JSON.parse(savedUserStr);
+          setCurrentUser(parsedUser);
+          if (savedRole === 'DRIVER' || savedRole === 'TRANSPORTER') {
+            setCurrentRole(savedRole as 'DRIVER' | 'TRANSPORTER');
+          }
+          if (savedScreen === 'active_home') {
+            setCurrentScreen('active_home');
+          }
         }
       } catch (e) {
-        console.warn('Error reading saved user:', e);
+        console.warn('Error restoring mobile session:', e);
+      } finally {
+        if (isMounted) {
+          setAuthLoading(false);
+        }
       }
     }
-    return null;
-  });
 
-  if (!fontsLoaded) {
+    restoreSession();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  if (!fontsLoaded || authLoading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#0284C7" />
@@ -68,36 +73,34 @@ function MainApp() {
     );
   }
 
-  const handleLoginSuccess = (role: string, user?: any) => {
+  const handleLoginSuccess = async (role: string, user?: any) => {
     const normRole = (role ? role.toUpperCase() : 'DRIVER') as 'DRIVER' | 'TRANSPORTER';
     setCurrentRole(normRole);
     if (user) setCurrentUser(user);
     setCurrentScreen('active_home');
 
-    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
-      try {
-        if (user) {
-          window.localStorage.setItem('tradeflow_mobile_user', JSON.stringify(user));
-        }
-        window.localStorage.setItem('tradeflow_mobile_role', normRole);
-        window.localStorage.setItem('tradeflow_mobile_screen', 'active_home');
-      } catch (e) {
-        console.warn('Could not save session to localStorage:', e);
+    try {
+      if (user) {
+        await storage.setItem('tradeflow_mobile_user', JSON.stringify(user));
       }
+      await storage.setItem('tradeflow_mobile_role', normRole);
+      await storage.setItem('tradeflow_mobile_screen', 'active_home');
+    } catch (e) {
+      console.warn('Could not save session to storage:', e);
     }
   };
 
-  const handleLogout = () => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
-      try {
-        window.localStorage.removeItem('tradeflow_mobile_user');
-        window.localStorage.removeItem('tradeflow_mobile_role');
-        window.localStorage.removeItem('tradeflow_mobile_screen');
-        window.localStorage.removeItem('tradeflow_transporter_tab');
-        window.localStorage.removeItem('tradeflow_driver_tab');
-      } catch (e) {
-        console.warn('Could not clear session from localStorage:', e);
-      }
+  const handleLogout = async () => {
+    try {
+      await storage.multiRemove([
+        'tradeflow_mobile_user',
+        'tradeflow_mobile_role',
+        'tradeflow_mobile_screen',
+        'tradeflow_transporter_tab',
+        'tradeflow_driver_tab',
+      ]);
+    } catch (e) {
+      console.warn('Could not clear session from storage:', e);
     }
     setCurrentUser(null);
     setCurrentScreen('welcome');

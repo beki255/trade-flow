@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../context/LanguageContext';
 import { lightColors } from '../context/ThemeContext';
 import { apiFetch } from '../utils/api';
+import { storage } from '../utils/storage';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { validateEthiopianPhone, validateEmail } from '../utils/validation';
 import { ForgotPasswordModal } from './modals/ForgotPasswordModal';
@@ -34,29 +35,22 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   const { t } = useLanguage();
   const isDark = false;
   const colors = lightColors;
-  const [identifier, setIdentifier] = useState<string>(() => {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      try {
-        return window.localStorage.getItem('tradeflow_mobile_remembered_identifier') || '';
-      } catch (e) {
-        return '';
-      }
-    }
-    return '';
-  });
+  const [identifier, setIdentifier] = useState<string>('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState<boolean>(() => {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      try {
-        const saved = window.localStorage.getItem('tradeflow_mobile_remember_me');
-        return saved !== null ? saved === 'true' : true;
-      } catch (e) {
-        return true;
+  const [rememberMe, setRememberMe] = useState<boolean>(true);
+
+  // Restore remembered login identifier from persistent storage
+  React.useEffect(() => {
+    storage.getItem('tradeflow_mobile_remembered_identifier').then((savedId) => {
+      if (savedId) setIdentifier(savedId);
+    });
+    storage.getItem('tradeflow_mobile_remember_me').then((savedRemember) => {
+      if (savedRemember !== null) {
+        setRememberMe(savedRemember === 'true');
       }
-    }
-    return true;
-  });
+    });
+  }, []);
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
   const [focusedInput, setFocusedInput] = useState<'identifier' | 'password' | null>(null);
@@ -108,17 +102,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       setLoading(false);
 
       if (res.ok && data.user) {
-        if (typeof window !== 'undefined' && window.localStorage) {
-          try {
-            if (rememberMe) {
-              window.localStorage.setItem('tradeflow_mobile_remembered_identifier', finalIdentifier);
-              window.localStorage.setItem('tradeflow_mobile_remember_me', 'true');
-            } else {
-              window.localStorage.removeItem('tradeflow_mobile_remembered_identifier');
-              window.localStorage.setItem('tradeflow_mobile_remember_me', 'false');
-            }
-          } catch (e) {}
-        }
+        try {
+          if (rememberMe) {
+            await storage.setItem('tradeflow_mobile_remembered_identifier', finalIdentifier);
+            await storage.setItem('tradeflow_mobile_remember_me', 'true');
+          } else {
+            await storage.removeItem('tradeflow_mobile_remembered_identifier');
+            await storage.setItem('tradeflow_mobile_remember_me', 'false');
+          }
+        } catch (e) {}
+
         onLoginSuccess(data.user.role, data.user);
         return;
       }

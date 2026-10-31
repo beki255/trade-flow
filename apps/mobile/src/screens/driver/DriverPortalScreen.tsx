@@ -39,6 +39,7 @@ import { DriverBottomNavBar } from './components/DriverBottomNavBar';
 import { DriverProfileModal } from './modals/DriverProfileModal';
 import { CustomsQrPassModal } from './modals/CustomsQrPassModal';
 import { useTheme } from '../../context/ThemeContext';
+import { storage } from '../../utils/storage';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface DriverPortalScreenProps {
@@ -50,20 +51,18 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
   const { colors } = useTheme();
   const { language } = useLanguage();
   const [currentUser, setCurrentUser] = useState<any>(user);
-  const [activeTab, setActiveTab] = useState<DriverTabType>(() => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
-      const saved = window.localStorage.getItem('tradeflow_driver_tab') as DriverTabType;
-      if (saved && ['trip', 'nav', 'checkin', 'incident', 'pod'].includes(saved)) {
-        return saved;
-      }
-    }
-    return 'trip';
-  });
+  const [activeTab, setActiveTab] = useState<DriverTabType>('trip');
 
   useEffect(() => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
-      window.localStorage.setItem('tradeflow_driver_tab', activeTab);
-    }
+    storage.getItem('tradeflow_driver_tab').then((saved) => {
+      if (saved && ['trip', 'nav', 'checkin', 'incident', 'pod'].includes(saved)) {
+        setActiveTab(saved as DriverTabType);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    storage.setItem('tradeflow_driver_tab', activeTab).catch(() => {});
   }, [activeTab]);
   const [refreshing, setRefreshing] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);

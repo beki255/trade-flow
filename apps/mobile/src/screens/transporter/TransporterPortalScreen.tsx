@@ -38,6 +38,7 @@ import { TransporterHeader } from './components/TransporterHeader';
 import { TransporterBottomNavBar } from './components/TransporterBottomNavBar';
 import { CompleteProfileGate } from './components/CompleteProfileGate';
 import { useTheme } from '../../context/ThemeContext';
+import { storage } from '../../utils/storage';
 
 interface TransporterPortalScreenProps {
   onLogout: () => void;
@@ -56,20 +57,18 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
     if (user) setCurrentUser(user);
   }, [user]);
 
-  const [activeTab, setActiveTab] = useState<TransporterTabType>(() => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
-      const saved = window.localStorage.getItem('tradeflow_transporter_tab') as TransporterTabType;
-      if (saved && ['overview', 'fleet', 'loads', 'bidding', 'earnings'].includes(saved)) {
-        return saved;
-      }
-    }
-    return 'overview';
-  });
+  const [activeTab, setActiveTab] = useState<TransporterTabType>('overview');
 
   useEffect(() => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
-      window.localStorage.setItem('tradeflow_transporter_tab', activeTab);
-    }
+    storage.getItem('tradeflow_transporter_tab').then((saved) => {
+      if (saved && ['overview', 'fleet', 'loads', 'bidding', 'earnings'].includes(saved)) {
+        setActiveTab(saved as TransporterTabType);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    storage.setItem('tradeflow_transporter_tab', activeTab).catch(() => {});
   }, [activeTab]);
   const [fleetSubTab, setFleetSubTab] = useState<'vehicles' | 'drivers'>('vehicles');
   const [refreshing, setRefreshing] = useState(false);
