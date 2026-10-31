@@ -11,7 +11,7 @@
     "splash": {
       "image": "./src/assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0F172A"
+      "backgroundColor": "#FFFFFF"
     },
     "ios": {
       "supportsTablet": false,
@@ -21,7 +21,7 @@
       "package": "com.tradeflow.mobile",
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/adaptive-icon.png",
-        "backgroundColor": "#0F172A"
+        "backgroundColor": "#FFFFFF"
       },
       "permissions": [
         "ACCESS_FINE_LOCATION",

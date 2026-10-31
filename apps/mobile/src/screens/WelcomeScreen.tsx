@@ -3,6 +3,7 @@ import {
   StyleSheet,
   Text,
   View,
+  Image,
   TouchableOpacity,
   SafeAreaView,
   StatusBar,
@@ -80,7 +81,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
         {/* Top Header: TradeFlow Branding & Language Indicator */}
         <View style={styles.header}>
           <View style={styles.brandTitleContainer} pointerEvents="none">
-            <Text style={[styles.brandTitle, { color: colors.text }]}>TradeFlow</Text>
+            <Image source={require('../assets/tradeflow-logo.png')} style={styles.brandLogo} resizeMode="contain" />
           </View>
 
           <LanguageSwitcher dark={false} />
@@ -219,6 +220,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: -1,
+  },
+  brandLogo: {
+    width: 140,
+    height: 38,
   },
   brandTitle: {
     fontSize: 24,
