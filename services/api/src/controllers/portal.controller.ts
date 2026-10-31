@@ -1772,9 +1772,29 @@ export const createDriver = async (req: Request, res: Response): Promise<void> =
       : 'transporter:direct';
     const company = transporter?.companyName || 'Freight Logistics & Fleet';
 
-    // Upsert or Create Driver User by phone - Phone number alone is the primary identifier
+    // Guard against accidentally overwriting an existing Shipper, Transporter, or Admin account
+    const existingOtherRole = await prisma.user.findFirst({
+      where: {
+        NOT: { role: UserRole.DRIVER },
+        OR: [
+          { phone: phone.trim() },
+          ...(cleanPhoneDigits.length >= 8 ? [{ phone: { contains: cleanPhoneDigits.slice(-8) } }] : []),
+          ...(email && email.trim() ? [{ email: email.toLowerCase().trim() }] : []),
+        ],
+      },
+    });
+
+    if (existingOtherRole) {
+      res.status(400).json({
+        error: `This ${existingOtherRole.email === email?.toLowerCase()?.trim() ? 'email' : 'phone number'} is already registered to a ${existingOtherRole.role} account (${existingOtherRole.fullName}). Please use a unique driver phone number or email.`,
+      });
+      return;
+    }
+
+    // Upsert or Create Driver User by phone - strictly only match existing users with role: DRIVER
     const existingDriver = await prisma.user.findFirst({
       where: {
+        role: UserRole.DRIVER,
         OR: [
           { phone: phone.trim() },
           ...(cleanPhoneDigits.length >= 8 ? [{ phone: { contains: cleanPhoneDigits.slice(-8) } }] : []),
