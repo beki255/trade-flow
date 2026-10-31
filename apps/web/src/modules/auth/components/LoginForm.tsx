@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { useLanguage } from '../../../context/LanguageContext';
-import { GoogleAuthButton } from '../../../components/auth/GoogleAuthButton';
 import { Eye, EyeOff, CheckCircle2, Globe } from 'lucide-react';
 import { Logo } from '../../../components/Logo';
 import { LanguageDropdown } from '../../../components/LanguageDropdown';
@@ -14,7 +13,7 @@ interface LoginFormProps {
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onAuthSuccess }) => {
-  const { loginUser, googleAuthUser } = useAuth();
+  const { loginUser } = useAuth();
   const { language, setLanguage, t } = useLanguage();
 
   const [email, setEmail] = useState<string>(() => {
@@ -83,25 +82,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onAuthSuccess }) => {
     } catch (err: any) {
       setLoading(false);
       setErrorMsg(err.message || 'Authentication failed. Please check your credentials.');
-    }
-  };
-
-  const handleGoogleSuccess = async (googleData: { email: string; fullName: string; credential?: string }) => {
-    setLoading(true);
-    setErrorMsg('');
-    try {
-      const res = await googleAuthUser(
-        googleData.email,
-        googleData.fullName,
-        'SHIPPER',
-        'login'
-      );
-      setLoading(false);
-      const role = res?.user?.role || 'SHIPPER';
-      onAuthSuccess(role);
-    } catch (err: any) {
-      setLoading(false);
-      setErrorMsg(err.message || 'Google Authentication failed.');
     }
   };
 
@@ -227,20 +207,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onAuthSuccess }) => {
             {loading ? t('auth.authenticating') : t('auth.signIn')}
           </button>
         </form>
-
-        {/* Divider */}
-        <div className="flex items-center gap-3">
-          <div className="flex-1 h-[1px] bg-slate-200" />
-          <span className="text-[11px] font-bold text-slate-400 uppercase">{t('auth.orContinueWith')}</span>
-          <div className="flex-1 h-[1px] bg-slate-200" />
-        </div>
-
-        {/* Google Authentication */}
-        <GoogleAuthButton
-          mode="login"
-          selectedRole="SHIPPER"
-          onSuccess={handleGoogleSuccess}
-        />
 
         {/* Footer Link to Register */}
         <div className="text-center text-xs text-slate-500">

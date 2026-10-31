@@ -616,75 +616,11 @@ export const register = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-// 4. Google OAuth 2.0 Integration & Token Verification
+// 4. Google OAuth 2.0 (Disabled in favor of authentic TradeFlow credentials)
 export const googleAuth = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { credential, email, fullName, role, mode } = req.body;
-
-    let verifiedEmail = email;
-    let verifiedName = fullName || 'Google User';
-
-    // If a Google ID Token credential was supplied by Google Identity Services
-    if (credential) {
-      try {
-        const decoded: any = jwt.decode(credential);
-        if (decoded && decoded.email) {
-          verifiedEmail = decoded.email;
-          verifiedName = decoded.name || verifiedName;
-        }
-      } catch (err) {
-        console.warn('Could not parse Google ID token, falling back to payload values');
-      }
-    }
-
-    if (!verifiedEmail) {
-      res.status(400).json({ error: 'Google authentication did not provide a valid email.' });
-      return;
-    }
-
-    const normalizedEmail = verifiedEmail.toLowerCase().trim();
-    const mappedPrismaRole = mapToPrismaRole(role || 'SHIPPER');
-
-    // Check if user already exists in PostgreSQL Database
-    let user = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
-    });
-
-    // STRICT CHECK: Google self-registration is disabled. All organizations must register via the official form.
-    if (!user) {
-      res.status(404).json({
-        error: 'No registered enterprise account found for this Google email. Please register first using the official registration form with your business details, TIN, and trade license.',
-      });
-      return;
-    }
-
-    const token = jwt.sign(
-      {
-        userId: user.id,
-        email: user.email,
-        role: user.role,
-        fullName: user.fullName,
-      },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-
-    res.json({
-      message: 'Google Authentication successful and session created.',
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-        fullName: user.fullName,
-        companyName: user.companyName,
-        role: user.role,
-        verificationStatus: user.verificationStatus,
-      },
-    });
-  } catch (error: any) {
-    console.error('Google Auth error:', error);
-    res.status(500).json({ error: 'Internal server error during Google OAuth authentication' });
-  }
+  res.status(400).json({
+    error: 'Google Authentication is disabled. All commercial shippers, forwarders, transporters, and drivers must authenticate with their official TradeFlow account.',
+  });
 };
 
 // 5. GET /api/auth/users -> Returns all database registered users for Admin Verification

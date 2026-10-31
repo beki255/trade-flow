@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-
-import { GoogleAuthButton } from './GoogleAuthButton';
 import { ForgotPasswordModal } from './ForgotPasswordModal';
 import {
   Package,
@@ -22,7 +20,7 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
   initialMode = 'login',
   onAuthSuccess,
 }) => {
-  const { loginUser, registerUser, googleAuthUser } = useAuth();
+  const { loginUser, registerUser } = useAuth();
 
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
   const [selectedRole, setSelectedRole] = useState<string>('SHIPPER');
@@ -140,25 +138,6 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
     } catch (err: any) {
       setLoading(false);
       setErrorMsg(err.message || 'Authentication failed. Please check your credentials.');
-    }
-  };
-
-  const handleGoogleSuccess = async (googleData: { email: string; fullName: string; credential?: string }) => {
-    setLoading(true);
-    setErrorMsg('');
-    try {
-      const res = await googleAuthUser(
-        googleData.email,
-        googleData.fullName,
-        selectedRole,
-        mode
-      );
-      setLoading(false);
-      const role = res?.user?.role || selectedRole;
-      onAuthSuccess(role);
-    } catch (err: any) {
-      setLoading(false);
-      setErrorMsg(err.message || 'Google Authentication failed.');
     }
   };
 
@@ -487,22 +466,6 @@ export const AuthCardRightPanel: React.FC<AuthCardRightPanelProps> = ({
               </span>
             )}
           </div>
-
-          {/* Google Authentication (Login Only) */}
-          {mode === 'login' && (
-            <>
-              {/* Divider */}
-              <div className="relative flex py-1 items-center">
-                <div className="flex-grow border-t border-slate-200"></div>
-                <span className="flex-shrink mx-3 text-[11px] text-slate-400 uppercase font-bold">
-                  or
-                </span>
-                <div className="flex-grow border-t border-slate-200"></div>
-              </div>
-
-              <GoogleAuthButton mode="login" selectedRole={selectedRole} onSuccess={handleGoogleSuccess} />
-            </>
-          )}
 
         </form>
 

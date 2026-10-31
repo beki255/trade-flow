@@ -10,8 +10,6 @@ interface AuthContextType {
   sendRegistrationOtp: (userData: any) => Promise<any>;
   verifyRegistrationOtp: (email: string, code: string) => Promise<any>;
   resendRegistrationOtp: (email: string) => Promise<any>;
-  googleAuthUser: (email: string, fullName: string, role: string, mode?: 'login' | 'register') => Promise<any>;
-  loginWithGoogle: (data: { email: string; fullName: string; role?: string; mode?: 'login' | 'register'; credential?: string }) => Promise<any>;
   logout: () => void;
   updateUser: (updatedFields: Partial<User>) => void;
   refreshUser: () => Promise<void>;
@@ -239,44 +237,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  // 100% Real Database Google OAuth Integration with Strict Mode Check
-  const googleAuthUser = async (
-    email: string,
-    fullName: string,
-    role: string,
-    mode: 'login' | 'register' = 'login'
-  ) => {
-    try {
-      const res = await fetch('/api/auth/google', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, fullName, role, mode }),
-      });
-
-      let data: any = null;
-      const contentType = res.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        data = await res.json();
-      }
-
-      if (res.ok && data?.user && data?.token) {
-        saveAuthSession(data.user, data.token);
-        return data;
-      }
-
-      if (data?.error) {
-        throw new Error(data.error);
-      }
-    } catch (err: any) {
-      if (err.message && err.message.includes('No account found')) {
-        throw err;
-      }
-      throw new Error(err.message || 'Google Authentication failed.');
-    }
-
-    throw new Error('No account found with this Google email. Please register first.');
-  };
-
   return (
     <AuthContext.Provider
       value={{
@@ -288,8 +248,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         sendRegistrationOtp,
         verifyRegistrationOtp,
         resendRegistrationOtp,
-        googleAuthUser,
-        loginWithGoogle: (data) => googleAuthUser(data.email, data.fullName, data.role || 'SHIPPER', data.mode || 'login'),
         logout,
         updateUser,
         refreshUser,

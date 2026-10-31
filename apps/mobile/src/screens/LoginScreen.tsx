@@ -134,35 +134,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     onBack();
   };
 
-  const handleGoogleLogin = async () => {
-    const clientId =
-      process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ||
-      '134488171607-3numfgilpa83d4p2d87gb9s7cjlgml4i.apps.googleusercontent.com';
-    const redirectUri =
-      typeof window !== 'undefined' && window?.location?.origin
-        ? window.location.origin
-        : 'http://localhost:8081';
-    const scope = encodeURIComponent('openid email profile');
-    const state = encodeURIComponent(JSON.stringify({ mode: 'login', role: 'DRIVER' }));
-    const nonce = Math.random().toString(36).substring(2);
-
-    const googleOAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(
-      clientId
-    )}&redirect_uri=${encodeURIComponent(
-      redirectUri
-    )}&response_type=token%20id_token&scope=${scope}&prompt=select_account&state=${state}&nonce=${nonce}`;
-
-    if (Platform.OS === 'web' && typeof window !== 'undefined' && window?.location) {
-      window.location.href = googleOAuthUrl;
-    } else {
-      try {
-        await Linking.openURL(googleOAuthUrl);
-      } catch (e) {
-        console.warn('Could not open Google OAuth URL:', e);
-      }
-    }
-  };
-
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.background} />
@@ -354,23 +325,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               )}
             </TouchableOpacity>
 
-            {/* Divider */}
-            <View style={styles.dividerRow}>
-              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-              <Text style={styles.dividerText}>{t('or')}</Text>
-              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-            </View>
-
-            {/* Google Button */}
-            <TouchableOpacity
-              style={[styles.googleBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={handleGoogleLogin}
-              activeOpacity={0.85}
-            >
-              <Ionicons name="logo-google" size={17} color="#EA4335" />
-              <Text style={[styles.googleBtnText, { color: colors.text }]}>{t('continueWithGoogle')}</Text>
-            </TouchableOpacity>
-
             {/* Switch to Register as Transporter */}
             <View style={styles.promptRow}>
               <Text style={[styles.promptText, { color: colors.textMuted }]}>{t('noAccount')} </Text>
@@ -558,43 +512,6 @@ const styles = StyleSheet.create({
     fontSize: 14.5,
     fontWeight: '800',
     letterSpacing: 0.2,
-  },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 4,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E2E8F0',
-  },
-  dividerText: {
-    paddingHorizontal: 12,
-    fontSize: 10,
-    color: '#94A3B8',
-    fontWeight: '800',
-    letterSpacing: 0.8,
-  },
-  googleBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    height: 46,
-    gap: 8,
-    ...Platform.select({
-      web: { boxShadow: '0 1px 2px rgba(0,0,0,0.03)' } as any,
-      default: { elevation: 1 },
-    }),
-  },
-  googleBtnText: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: '#334155',
   },
   promptRow: {
     flexDirection: 'row',
