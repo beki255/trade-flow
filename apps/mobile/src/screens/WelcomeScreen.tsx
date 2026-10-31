@@ -80,11 +80,15 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
         
         {/* Top Header: TradeFlow Branding & Language Indicator */}
         <View style={styles.header}>
-          <View style={styles.brandTitleContainer} pointerEvents="none">
+          <View style={styles.headerLeftSpacer} />
+
+          <View style={styles.brandTitleContainer}>
             <Image source={require('../assets/tradeflow-logo.png')} style={styles.brandLogo} resizeMode="contain" />
           </View>
 
-          <LanguageSwitcher dark={false} />
+          <View style={styles.headerRight}>
+            <LanguageSwitcher dark={false} />
+          </View>
         </View>
 
         {/* Center Illustration Area: Full Edge-to-Edge Cross-Platform Carousel */}
@@ -203,23 +207,24 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ? StatusBar.currentHeight + 18 : 46) : 22,
+    justifyContent: 'space-between',
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ? StatusBar.currentHeight + 12 : 38) : 18,
     paddingBottom: 4,
-    paddingHorizontal: 22,
+    paddingHorizontal: 16,
     width: '100%',
-    position: 'relative',
     zIndex: 100,
   },
+  headerLeftSpacer: {
+    width: 64,
+  },
   brandTitleContainer: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: -1,
+  },
+  headerRight: {
+    width: 64,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
   },
   brandLogo: {
     width: 140,
@@ -249,7 +254,7 @@ const styles = StyleSheet.create({
   },
   carouselContainer: {
     width: '100%',
-    height: 220,
+    height: 210,
     marginTop: 4,
     overflow: 'hidden',
   },
@@ -257,7 +262,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   slideCard: {
-    height: 220,
+    height: 210,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -311,8 +316,8 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingHorizontal: 22,
     gap: 11,
-    paddingBottom: Platform.OS === 'android' ? 48 : 10,
-    marginBottom: Platform.OS === 'android' ? 28 : 4,
+    paddingBottom: Platform.OS === 'android' ? 64 : 14,
+    marginBottom: Platform.OS === 'android' ? 44 : 8,
   },
   loginButton: {
     backgroundColor: '#0284C7',
