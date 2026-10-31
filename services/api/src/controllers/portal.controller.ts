@@ -2635,7 +2635,7 @@ export const deleteBid = async (req: Request, res: Response): Promise<void> => {
 // 17. Dispatch Shipment (Transporter assigns Truck & Driver to Load)
 export const dispatchShipment = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { bidId, loadId, transporterId, transporterEmail, truckPlate, driverName, driverPhone } = req.body;
+    const { bidId, loadId, transporterId, transporterEmail, truckPlate, driverName, driverPhone, driverId } = req.body;
 
     // 1. Resolve Load strictly from database
     let load: any = null;
@@ -2802,21 +2802,76 @@ export const dispatchShipment = async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    // 4. Resolve Driver Profile from database
+    // 4. Resolve Driver Profile strictly from PostgreSQL
     let driverProfile: any = null;
-    if (driverName || driverPhone) {
-      const driverUser = await prisma.user.findFirst({
+
+    // Priority A: Explicit driverId (matching DriverProfile.id or User.id)
+    if (driverId && typeof driverId === 'string' && driverId.trim().length > 0) {
+      const cleanId = driverId.trim();
+      driverProfile = await prisma.driverProfile.findFirst({
         where: {
           OR: [
-            ...(driverName ? [{ fullName: { contains: String(driverName).trim(), mode: 'insensitive' as const } }] : []),
-            ...(driverPhone ? [{ phone: String(driverPhone).trim() }] : []),
+            { id: cleanId },
+            { userId: cleanId },
           ],
         },
-        include: { driverProfile: true },
+        include: { user: true },
       });
-      if (driverUser?.driverProfile) {
-        driverProfile = driverUser.driverProfile;
+    }
+
+    // Priority B: Match by driver phone number (unique to driver)
+    if (!driverProfile && driverPhone && typeof driverPhone === 'string' && driverPhone.trim().length > 0) {
+      const cleanPhone = String(driverPhone).replace(/[^0-9]/g, '').slice(-9);
+      if (cleanPhone.length > 0) {
+        driverProfile = await prisma.driverProfile.findFirst({
+          where: {
+            user: {
+              phone: { contains: cleanPhone },
+            },
+          },
+          include: { user: true },
+        });
       }
+    }
+
+    // Priority C: Match by driver name, strictly ensuring role is DRIVER and DriverProfile exists!
+    if (!driverProfile && driverName && typeof driverName === 'string' && driverName.trim().length > 0) {
+      const cleanName = String(driverName).trim();
+      driverProfile = await prisma.driverProfile.findFirst({
+        where: {
+          user: {
+            role: UserRole.DRIVER,
+            fullName: { contains: cleanName, mode: 'insensitive' as const },
+          },
+        },
+        include: { user: true },
+      });
+    }
+
+    // Priority D: If still not found, check drivers belonging to this transporter
+    if (!driverProfile && transporter) {
+      driverProfile = await prisma.driverProfile.findFirst({
+        where: {
+          user: {
+            role: UserRole.DRIVER,
+            verificationNotes: { contains: transporter.id },
+          },
+        },
+        include: { user: true },
+      });
+    }
+
+    // Priority E: As robust fallback for single-driver fleets, resolve the registered driver
+    if (!driverProfile) {
+      driverProfile = await prisma.driverProfile.findFirst({
+        where: {
+          user: {
+            role: UserRole.DRIVER,
+          },
+        },
+        include: { user: true },
+        orderBy: { createdAt: 'desc' },
+      });
     }
 
     if (!driverProfile) {

@@ -1129,6 +1129,8 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
           transporterEmail: user?.email,
           truckPlate: dispatchTruck,
           driverName: dispatchDriver,
+          driverPhone: driverObj?.phone,
+          driverId: driverObj?.rawId || driverObj?.id,
         }),
       });
 
