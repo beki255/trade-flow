@@ -328,7 +328,7 @@ export const transporterStyles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 90,
+    paddingBottom: Platform.OS === 'android' ? 124 : 80,
     gap: 14,
   },
   verificationBanner: {
@@ -932,70 +932,6 @@ export const transporterStyles = StyleSheet.create({
     fontSize: 13,
     color: '#0F172A',
     padding: 0,
-  },
-  loadPreviewBox: {
-    backgroundColor: '#F0F9FF',
-    borderWidth: 1,
-    borderColor: '#BAE6FD',
-    borderRadius: 14,
-    padding: 12,
-    marginVertical: 4,
-    gap: 4,
-  },
-  loadPreviewTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#0369A1',
-  },
-  loadPreviewRoute: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  loadPreviewFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 2,
-  },
-  loadPreviewWeight: {
-    fontSize: 11,
-    color: '#64748B',
-    fontWeight: '600',
-  },
-  loadPreviewBudget: {
-    fontSize: 11.5,
-    fontWeight: '800',
-    color: '#0284C7',
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: Platform.OS === 'android' ? 124 : 80,
-  },
-  verificationBanner: {
-    flexDirection: 'row',
-    backgroundColor: '#FEF3C7',
-    borderWidth: 1.5,
-    borderColor: '#F59E0B',
-    borderRadius: 16,
-    padding: 14,
-    gap: 12,
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  verificationIcon: {
-    fontSize: 22,
-  },
-  verificationTitle: {
-    fontSize: 13,
-    fontWeight: '900',
-    color: '#92400E',
-  },
-  verificationSub: {
-    fontSize: 11,
-    color: '#B45309',
-    marginTop: 2,
-    fontWeight: '600',
-    lineHeight: 16,
   },
   bottomNavContainer: {
     minHeight: Platform.OS === 'android' ? 96 : (Platform.OS === 'ios' ? 76 : 64),

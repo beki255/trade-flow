@@ -13,6 +13,8 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
+  Image,
+  StatusBar,
 } from 'react-native';
 import { UserProfile } from '../types';
 import { Ionicons } from '@expo/vector-icons';
@@ -200,9 +202,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           {/* Drawer Top Header */}
           <View style={drawerStyles.headerRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <View style={drawerStyles.logoBadge}>
-                <Ionicons name="swap-horizontal" size={16} color="#38BDF8" />
-              </View>
+              <Image
+                source={require('../../../assets/tradeflow-mark.png')}
+                style={drawerStyles.brandLogoMark}
+                resizeMode="contain"
+              />
               <View>
                 <Text style={drawerStyles.brandName}>TradeFlow</Text>
                 <Text style={drawerStyles.drawerSubTitle}>Transporter Settings</Text>
@@ -239,13 +243,13 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={drawerStyles.companyName} numberOfLines={1}>
-                  {user?.companyName || 'Mulugeta Cross-Border Freight'}
+                  {user?.companyName || user?.fullName || 'Transporter'}
                 </Text>
                 <Text style={drawerStyles.ownerName} numberOfLines={1}>
-                  {user?.fullName || 'Mulugeta Assefa'}
+                  {user?.fullName || user?.companyName || ''}
                 </Text>
                 <Text style={drawerStyles.emailText} numberOfLines={1}>
-                  {user?.email || 'transporter@tradeflow.et'}
+                  {user?.email || user?.phone || ''}
                 </Text>
                 <View style={drawerStyles.badgeRow}>
                   <View
@@ -299,20 +303,20 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
               <View style={drawerStyles.infoRow}>
                 <Text style={drawerStyles.infoLabel}>Contact Phone:</Text>
-                <Text style={drawerStyles.infoValue}>{user?.phone || '+251 91 123 4567'}</Text>
+                <Text style={drawerStyles.infoValue}>{user?.phone || 'Not Provided'}</Text>
               </View>
 
               <View style={drawerStyles.infoRow}>
                 <Text style={drawerStyles.infoLabel}>TIN (Tax ID):</Text>
                 <Text style={[drawerStyles.infoValue, { fontFamily: 'monospace' }]}>
-                  {user?.tin || '0049281729'}
+                  {user?.tin || 'Not Provided'}
                 </Text>
               </View>
 
               <View style={drawerStyles.infoRow}>
                 <Text style={drawerStyles.infoLabel}>Trade License:</Text>
                 <Text style={[drawerStyles.infoValue, { fontFamily: 'monospace' }]}>
-                  {user?.tradeLicenseNo || 'ET-MOTI-2024-8841'}
+                  {user?.tradeLicenseNo || 'Not Provided'}
                 </Text>
               </View>
 
@@ -569,13 +573,14 @@ const drawerStyles = StyleSheet.create({
     backgroundColor: '#0F172A',
     borderRightWidth: 1,
     borderRightColor: '#1E293B',
-    paddingTop: Platform.OS === 'ios' ? 44 : 20,
+    paddingTop: Platform.OS === 'android' ? Math.max((StatusBar.currentHeight || 0) + 16, 52) : (Platform.OS === 'ios' ? 52 : 24),
     shadowColor: '#000',
     shadowOffset: { width: 4, height: 0 },
     shadowOpacity: 0.35,
     shadowRadius: 16,
     elevation: 16,
     zIndex: 10,
+    paddingBottom: Platform.OS === 'android' ? 24 : 14,
   },
   headerRow: {
     flexDirection: 'row',
@@ -615,8 +620,13 @@ const drawerStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  brandLogoMark: {
+    width: 32,
+    height: 32,
+  },
   scrollContent: {
     padding: 14,
+    paddingBottom: Platform.OS === 'android' ? 120 : 60,
     gap: 12,
   },
   profileSummaryCard: {

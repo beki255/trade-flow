@@ -14,6 +14,7 @@ import {
   Animated,
   Dimensions,
   Pressable,
+  StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { apiFetch } from '../../../utils/api';
@@ -275,9 +276,11 @@ export const DriverProfileModal: React.FC<DriverProfileModalProps> = ({
           {/* Drawer Top Header */}
           <View style={drawerStyles.headerRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <View style={drawerStyles.logoBadge}>
-                <Ionicons name="swap-horizontal" size={16} color="#38BDF8" />
-              </View>
+              <Image
+                source={require('../../../assets/tradeflow-mark.png')}
+                style={drawerStyles.brandLogoMark}
+                resizeMode="contain"
+              />
               <View>
                 <Text style={drawerStyles.brandName}>TradeFlow</Text>
                 <Text style={drawerStyles.drawerSubTitle}>Driver Settings</Text>
@@ -298,10 +301,10 @@ export const DriverProfileModal: React.FC<DriverProfileModalProps> = ({
             <View style={drawerStyles.profileSummaryCard}>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={drawerStyles.userName} numberOfLines={1}>
-                  {user?.fullName || 'Bereket Sahlemariam'}
+                  {user?.fullName || user?.companyName || 'Driver'}
                 </Text>
                 <Text style={drawerStyles.userPhone} numberOfLines={1}>
-                  {user?.phone || '+251 91 123 4567'}
+                  {user?.phone || user?.email || ''}
                 </Text>
                 <View style={drawerStyles.roleBadgeRow}>
                   <View style={drawerStyles.roleBadge}>
@@ -328,7 +331,7 @@ export const DriverProfileModal: React.FC<DriverProfileModalProps> = ({
               <View style={drawerStyles.infoRow}>
                 <Text style={drawerStyles.infoLabel}>License Category:</Text>
                 <Text style={drawerStyles.infoValue}>
-                  {user?.driverProfile?.licenseClass || 'Grade 5 Heavy'}
+                  {user?.driverProfile?.licenseClass || 'Unspecified'}
                 </Text>
               </View>
 
@@ -342,7 +345,7 @@ export const DriverProfileModal: React.FC<DriverProfileModalProps> = ({
               <View style={drawerStyles.infoRow}>
                 <Text style={drawerStyles.infoLabel}>Email Account:</Text>
                 <Text style={drawerStyles.infoValue} numberOfLines={1}>
-                  {user?.email || 'driver@tradeflow.et'}
+                  {user?.email || user?.phone || 'N/A'}
                 </Text>
               </View>
 
@@ -596,13 +599,14 @@ const drawerStyles = StyleSheet.create({
     backgroundColor: '#0F172A',
     borderRightWidth: 1,
     borderRightColor: '#1E293B',
-    paddingTop: Platform.OS === 'ios' ? 44 : 20,
+    paddingTop: Platform.OS === 'android' ? Math.max((StatusBar.currentHeight || 0) + 16, 52) : (Platform.OS === 'ios' ? 52 : 24),
     shadowColor: '#000',
     shadowOffset: { width: 4, height: 0 },
     shadowOpacity: 0.35,
     shadowRadius: 16,
     elevation: 16,
     zIndex: 10,
+    paddingBottom: Platform.OS === 'android' ? 24 : 14,
   },
   headerRow: {
     flexDirection: 'row',
@@ -642,8 +646,13 @@ const drawerStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  brandLogoMark: {
+    width: 32,
+    height: 32,
+  },
   scrollContent: {
     padding: 14,
+    paddingBottom: Platform.OS === 'android' ? 120 : 60,
     gap: 12,
   },
   profileSummaryCard: {
