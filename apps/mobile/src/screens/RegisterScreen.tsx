@@ -21,6 +21,8 @@ import {
   validatePassword,
   validatePasswordMatch,
   validateEmail,
+  validateEthiopianTin,
+  validateEthiopianTradeLicense,
 } from '../utils/validation';
 
 interface RegisterScreenProps {
@@ -48,6 +50,8 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [companyName, setCompanyName] = useState('');
+  const [tin, setTin] = useState('');
+  const [tradeLicenseNo, setTradeLicenseNo] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -144,6 +148,24 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
       return;
     }
 
+    // Optional / Business TIN Validation
+    if (tin.trim().length > 0) {
+      const tinRes = validateEthiopianTin(tin, true, language as any);
+      if (!tinRes.isValid) {
+        setErrorMsg(tinRes.error || 'Invalid 10-digit Ethiopian TIN number.');
+        return;
+      }
+    }
+
+    // Optional / Business Trade License Validation
+    if (tradeLicenseNo.trim().length > 0) {
+      const licRes = validateEthiopianTradeLicense(tradeLicenseNo, true, false, language as any);
+      if (!licRes.isValid) {
+        setErrorMsg(licRes.error || 'Invalid Trade License Number.');
+        return;
+      }
+    }
+
     setLoading(true);
     setErrorMsg('');
 
@@ -158,6 +180,8 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
       role: 'TRANSPORTER',
       companyName: finalCompanyName,
       password: password.trim(),
+      tin: tin.trim() || undefined,
+      tradeLicenseNo: tradeLicenseNo.trim() || undefined,
     };
 
     try {
@@ -629,6 +653,59 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
                     onChangeText={setCompanyName}
                     placeholder={t('companyName') || (language === 'AM' ? 'የድርጅት ስም' : language === 'OM' ? 'Maqaa Dhaabbataa' : 'Company Name')}
                     placeholderTextColor={isDark ? '#64748B' : '#94A3B8'}
+                    returnKeyType="next"
+                  />
+                </View>
+              </View>
+
+              {/* TIN (Tax ID) Number */}
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>
+                  {language === 'AM' ? 'TIN (የግብር ከፋይ መለያ)' : language === 'OM' ? 'Lakkoofsa TIN (Gibiraa)' : 'TIN (Tax ID)'} {language === 'AM' ? '(አማራጭ)' : language === 'OM' ? '(Filannoo)' : '(Optional)'}
+                </Text>
+                <View style={getInputWrapperStyle('tin')}>
+                  <Ionicons
+                    name="card-outline"
+                    size={18}
+                    color={getIconColor('tin')}
+                    style={{ marginLeft: 14, marginRight: 8 }}
+                  />
+                  <TextInput
+                    style={[styles.cleanInput, { color: colors.text }]}
+                    value={tin}
+                    onFocus={() => setFocusedField('tin')}
+                    onBlur={() => setFocusedField(null)}
+                    onChangeText={setTin}
+                    placeholder="0098473621"
+                    placeholderTextColor={isDark ? '#64748B' : '#94A3B8'}
+                    keyboardType="numeric"
+                    maxLength={10}
+                    returnKeyType="next"
+                  />
+                </View>
+              </View>
+
+              {/* Trade License / Registration No */}
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>
+                  {language === 'AM' ? 'የንግድ ፈቃድ / ምዝገባ ቁጥር' : language === 'OM' ? 'Heyyama Daldalaa / Lakk. Galmee' : 'Trade License / Reg No'} {language === 'AM' ? '(አማራጭ)' : language === 'OM' ? '(Filannoo)' : '(Optional)'}
+                </Text>
+                <View style={getInputWrapperStyle('tradeLicense')}>
+                  <Ionicons
+                    name="document-text-outline"
+                    size={18}
+                    color={getIconColor('tradeLicense')}
+                    style={{ marginLeft: 14, marginRight: 8 }}
+                  />
+                  <TextInput
+                    style={[styles.cleanInput, { color: colors.text }]}
+                    value={tradeLicenseNo}
+                    onFocus={() => setFocusedField('tradeLicense')}
+                    onBlur={() => setFocusedField(null)}
+                    onChangeText={setTradeLicenseNo}
+                    placeholder="ETH-MOTI-2024-99"
+                    placeholderTextColor={isDark ? '#64748B' : '#94A3B8'}
+                    autoCapitalize="characters"
                     returnKeyType="done"
                     onSubmitEditing={handleSendOtp}
                   />

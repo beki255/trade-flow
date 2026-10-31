@@ -32,8 +32,24 @@ const RegisterSchema = z.object({
     })
     .optional(),
   companyName: z.string().optional(),
-  tin: z.string().optional(),
-  tradeLicenseNo: z.string().optional(),
+  tin: z.string()
+    .refine((val) => {
+      if (!val || !val.trim()) return true;
+      const cleaned = val.trim().replace(/[\s\-]/g, '');
+      return /^\d{10}$/.test(cleaned);
+    }, {
+      message: 'Invalid Ethiopian TIN number. Must be exactly 10 numeric digits (e.g., 0098473621).',
+    })
+    .optional(),
+  tradeLicenseNo: z.string()
+    .refine((val) => {
+      if (!val || !val.trim()) return true;
+      const cleaned = val.trim();
+      return /^[A-Za-z0-9\/\-]{6,30}$/.test(cleaned);
+    }, {
+      message: 'Invalid Trade License / Registration number. Must be between 6 and 30 characters (letters, numbers, / and -; e.g. MT/AA/14/673/2016 or ETH-MOTI-2024-99).',
+    })
+    .optional(),
   tradeLicenseDoc: z.string().optional(),
   insuranceDoc: z.string().optional(),
   roadworthinessDoc: z.string().optional(),

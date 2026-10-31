@@ -154,3 +154,89 @@ export function getPasswordStrength(password: string): { score: number; label: s
   if (score === 3) return { score: 3, label: 'Good', color: '#3B82F6' };
   return { score: 4, label: 'Strong', color: '#10B981' };
 }
+
+/**
+ * Validates Ethiopian Taxpayer Identification Number (TIN).
+ * Ethiopian MoR standard: Exactly 10 numeric digits.
+ */
+export function validateEthiopianTin(tinStr: string, required: boolean = true, lang: 'EN' | 'AM' | 'OM' = 'EN'): ValidationResult {
+  const cleaned = (tinStr || '').trim().replace(/[\s\-]/g, '');
+
+  if (!cleaned) {
+    if (!required) return { isValid: true };
+    return {
+      isValid: false,
+      error:
+        lang === 'AM'
+          ? 'እባክዎ የTIN (የግብር ከፋይ መለያ) ቁጥር ያስገቡ።'
+          : lang === 'OM'
+          ? 'Maaloo lakkoofsa TIN galchaa.'
+          : 'TIN (Tax Identification Number) is required.',
+    };
+  }
+
+  // Exactly 10 numeric digits
+  const tinRegex = /^\d{10}$/;
+  if (!tinRegex.test(cleaned)) {
+    return {
+      isValid: false,
+      error:
+        lang === 'AM'
+          ? 'ትክክለኛ የኢትዮጵያ TIN ቁጥር ያስገቡ (በትክክል 10 አሃዝ ቁጥር ብቻ፤ ምሳሌ: 0098473621)።'
+          : lang === 'OM'
+          ? 'Lakkoofsa TIN Itoophiyaa sirrii galchaa (lakkoofsota 10 qofa; fkn: 0098473621).'
+          : 'Invalid Ethiopian TIN. Must be exactly 10 numeric digits (e.g., 0098473621).',
+    };
+  }
+
+  return { isValid: true, normalized: cleaned };
+}
+
+/**
+ * Validates Ethiopian Trade License / Business Registration Number.
+ * MoTRI / Regional Trade Bureaus / EMA standard:
+ * - 6 to 30 alphanumeric characters with optional slashes and hyphens.
+ * - Examples: MT/AA/14/673/2016, AA/B/001234/2015, ETH-MOTI-2024-99, EMA-FF-2026-08
+ */
+export function validateEthiopianTradeLicense(
+  licenseStr: string,
+  required: boolean = true,
+  isForwarder: boolean = false,
+  lang: 'EN' | 'AM' | 'OM' = 'EN'
+): ValidationResult {
+  const cleaned = (licenseStr || '').trim();
+
+  if (!cleaned) {
+    if (!required) return { isValid: true };
+    return {
+      isValid: false,
+      error: isForwarder
+        ? (lang === 'AM'
+            ? 'እባክዎ የባህር ጉዳይ (EMA) የጭነት አስተላላፊነት ፍቃድ ቁጥር ያስገቡ።'
+            : lang === 'OM'
+            ? 'Maaloo lakkoofsa heyyama geejjibaa EMA galchaa.'
+            : 'EMA Freight Forwarding License No is required.')
+        : (lang === 'AM'
+            ? 'እባክዎ የንግድ ፈቃድ / ምዝገባ ቁጥር ያስገቡ።'
+            : lang === 'OM'
+            ? 'Maaloo lakkoofsa heyyama daldalaa galchaa.'
+            : 'Trade License / Registration Number is required.'),
+    };
+  }
+
+  // Length 6 to 30, only alphanumeric and / -
+  const licenseRegex = /^[A-Za-z0-9\/\-]{6,30}$/;
+  if (!licenseRegex.test(cleaned)) {
+    return {
+      isValid: false,
+      error:
+        lang === 'AM'
+          ? 'ትክክለኛ የንግድ ፈቃድ ቁጥር ያስገቡ (ከ6 እስከ 30 ፊደላት፣ ቁጥሮች ወይም /፤ ምሳሌ: MT/AA/14/673/2016 ወይም ETH-MOTI-2024-99)።'
+          : lang === 'OM'
+          ? 'Lakkoofsa heyyama daldalaa sirrii galchaa (arfiilee 6 hanga 30; fkn: MT/AA/14/673/2016 ykn ETH-MOTI-2024-99).'
+          : 'Invalid Trade License format. Allowed 6-30 characters (letters, numbers, / and -; e.g. MT/AA/14/673/2016 or ETH-MOTI-2024-99).',
+    };
+  }
+
+  return { isValid: true, normalized: cleaned.toUpperCase() };
+}

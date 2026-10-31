@@ -19,6 +19,8 @@ import {
   validatePassword,
   validatePasswordMatch,
   getPasswordStrength,
+  validateEthiopianTin,
+  validateEthiopianTradeLicense,
 } from '../../../utils/validation';
 
 interface RegisterFormProps {
@@ -144,6 +146,21 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onAuthSuccess }) => 
       return;
     }
 
+    // Ethiopian TIN Number Validation (10 digits)
+    const isBusinessRole = selectedRole === 'SHIPPER' || selectedRole === 'TRANSPORTER' || selectedRole === 'FORWARDER';
+    const tinRes = validateEthiopianTin(tin, isBusinessRole);
+    if (!tinRes.isValid) {
+      setErrorMsg(tinRes.error || 'Please enter a valid 10-digit Ethiopian TIN number.');
+      return;
+    }
+
+    // Ethiopian Trade License / Registration Number Validation (6-30 alphanumeric + / -)
+    const licenseRes = validateEthiopianTradeLicense(licenseNo, isBusinessRole, selectedRole === 'FORWARDER');
+    if (!licenseRes.isValid) {
+      setErrorMsg(licenseRes.error || 'Please enter a valid Trade License / Registration Number.');
+      return;
+    }
+
     setLoading(true);
     setErrorMsg('');
 
@@ -154,8 +171,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onAuthSuccess }) => 
         email: email.trim().toLowerCase(),
         phone: phoneRes.normalized || phone.trim(),
         physicalAddress: physicalAddress || 'Addis Ababa, Ethiopia',
-        tin: tin || undefined,
-        tradeLicenseNo: licenseNo || undefined,
+        tin: tinRes.normalized || undefined,
+        tradeLicenseNo: licenseRes.normalized || undefined,
         tradeLicenseDoc: tradeLicenseDocData
           ? JSON.stringify({ name: tradeLicenseDocName, data: tradeLicenseDocData })
           : (tradeLicenseDocName || undefined),
