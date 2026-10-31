@@ -74,6 +74,30 @@ app.get('/api/docs', swaggerDocsHandler);
 app.get('/docs', swaggerDocsHandler);
 app.get('/api/docs/json', swaggerJsonHandler);
 
+// Diagnostic SMTP Direct Delivery Test Route
+app.get('/api/smtp/test', async (req, res) => {
+  const targetEmail = (req.query.to as string) || 'bereket2553@gmail.com';
+  try {
+    const { sendMail, getSmtpConfig } = await import('./services/smtp.service');
+    const cfg = getSmtpConfig();
+    const result = await sendMail({
+      to: targetEmail,
+      subject: `[TradeFlow Verification Test] Code: ${Math.floor(100000 + Math.random() * 900000)}`,
+      html: `<h2>TradeFlow Live Delivery Test</h2><p>This email confirms that TradeFlow SMTP directly reached ${targetEmail} from Render.</p>`,
+    });
+    res.json({
+      success: result.mode === 'smtp',
+      targetEmail,
+      mode: result.mode,
+      config: { host: cfg.host, port: cfg.port, secure: cfg.secure, user: cfg.user },
+      error: result.error,
+      debugLogs: result.debug,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message, stack: err.stack });
+  }
+});
+
 // Mount Application Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/portal', portalRoutes);

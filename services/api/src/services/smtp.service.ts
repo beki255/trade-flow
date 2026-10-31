@@ -36,16 +36,25 @@ export function getSmtpConfig(): SmtpConfig {
   return { host, port, secure, user, pass, from };
 }
 
+export interface SendMailResult {
+  success: boolean;
+  messageId: string;
+  mode: 'smtp' | 'dev_fallback';
+  error?: string;
+  debug?: string[];
+}
+
 /**
  * Enterprise Native SMTP Client using Node.js net/tls
  * Fully supports STARTTLS (port 587), SSL/TLS (port 465), and local SMTP
  */
-export async function sendMail(options: SendMailOptions): Promise<{ success: boolean; messageId: string; mode: 'smtp' | 'dev_fallback' }> {
+export async function sendMail(options: SendMailOptions): Promise<SendMailResult> {
   const config = getSmtpConfig();
   const messageId = `<${Date.now()}.${crypto.randomBytes(8).toString('hex')}@tradeflow.et>`;
   const fromHeader = options.from || config.from;
   const toHeader = options.to;
   const subjectHeader = options.subject;
+  const debugLogs: string[] = [];
 
   // Extract pure email address from "Name <email@domain.com>" or "email@domain.com"
   const extractEmail = (str: string): string => {
@@ -58,17 +67,8 @@ export async function sendMail(options: SendMailOptions): Promise<{ success: boo
 
   // If no SMTP credentials provided, log full details for local dev and return successfully
   if (!config.user || !config.pass) {
-    console.log('\n============================================================');
-    console.log('📧 [TRADEFLOW SMTP - DEV LOG / SIMULATED DELIVERY]');
-    console.log(`To: ${toHeader}`);
-    console.log(`From: ${fromHeader}`);
-    console.log(`Subject: ${subjectHeader}`);
-    console.log(`Message-ID: ${messageId}`);
-    console.log('------------------------------------------------------------');
-    console.log(options.text || options.html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
-    console.log('============================================================\n');
-
-    return { success: true, messageId, mode: 'dev_fallback' };
+    debugLogs.push('No SMTP user or pass configured in environment');
+    return { success: true, messageId, mode: 'dev_fallback', debug: debugLogs };
   }
 
   return new Promise((resolve) => {
@@ -85,6 +85,7 @@ export async function sendMail(options: SendMailOptions): Promise<{ success: boo
     };
 
     const sendCmd = (cmd: string) => {
+      debugLogs.push(`CLIENT -> ${cmd.startsWith('AUTH') || step === 4 || step === 5 ? '***' : cmd}`);
       socket.write(cmd + '\r\n');
     };
 
@@ -113,15 +114,14 @@ export async function sendMail(options: SendMailOptions): Promise<{ success: boo
       for (const line of lines) {
         if (!line.trim()) continue;
         const code = parseInt(line.substring(0, 3), 10);
+        debugLogs.push(`SERVER -> ${line}`);
         const isMultiLine = line.charAt(3) === '-';
         if (isMultiLine) continue;
 
         if (step === 0 && code === 220) {
-          // Connected, send EHLO
           step = 1;
           sendCmd(`EHLO tradeflow.et`);
         } else if (step === 1 && code === 250) {
-          // If port 587 and not yet upgraded to TLS
           if (!config.secure && (socket as any).encrypted !== true) {
             step = 2;
             sendCmd(`STARTTLS`);
@@ -130,7 +130,6 @@ export async function sendMail(options: SendMailOptions): Promise<{ success: boo
             sendCmd(`AUTH LOGIN`);
           }
         } else if (step === 2 && code === 220) {
-          // STARTTLS accepted, upgrade socket to TLS
           const tlsSocket = tls.connect({
             socket: socket,
             host: config.host,
@@ -140,80 +139,73 @@ export async function sendMail(options: SendMailOptions): Promise<{ success: boo
           socket = tlsSocket;
           socket.on('data', handleCommunication);
           socket.on('error', (err) => {
-            console.warn('[SMTP TLS Error]:', err.message);
+            debugLogs.push(`TLS Socket Error: ${err.message}`);
             cleanup();
-            resolve({ success: true, messageId, mode: 'dev_fallback' });
+            resolve({ success: false, messageId, mode: 'dev_fallback', error: err.message, debug: debugLogs });
           });
 
-          step = 1; // Send EHLO again over secure TLS tunnel
+          step = 1;
           sendCmd(`EHLO tradeflow.et`);
         } else if (step === 3 && code === 334) {
-          // Send base64 username
           step = 4;
           sendCmd(Buffer.from(config.user).toString('base64'));
         } else if (step === 4 && code === 334) {
-          // Send base64 password
           step = 5;
           sendCmd(Buffer.from(config.pass).toString('base64'));
         } else if (step === 5 && code === 235) {
-          // Auth successful, specify sender
           step = 6;
           sendCmd(`MAIL FROM:<${pureFrom}>`);
         } else if (step === 6 && code === 250) {
-          // Sender accepted, specify recipient
           step = 7;
           sendCmd(`RCPT TO:<${pureTo}>`);
         } else if (step === 7 && code === 250) {
-          // Recipient accepted, request data
           step = 8;
           sendCmd(`DATA`);
         } else if (step === 8 && code === 354) {
-          // Server ready for data
           step = 9;
           socket.write(rawMessage + '\r\n');
         } else if (step === 9 && code === 250) {
-          // Message accepted!
           sendCmd(`QUIT`);
           cleanup();
-          console.log(`✅ [SMTP Delivered]: Password reset email sent to ${pureTo} (Message-ID: ${messageId})`);
-          resolve({ success: true, messageId, mode: 'smtp' });
+          debugLogs.push(`Delivered successfully to ${pureTo}`);
+          resolve({ success: true, messageId, mode: 'smtp', debug: debugLogs });
           return;
         } else if (code >= 400) {
-          console.warn(`[SMTP Server Refused Code ${code}]: ${line}`);
+          debugLogs.push(`SMTP Refused: ${line}`);
           cleanup();
-          // Fall back gracefully to development delivery mode
-          resolve({ success: true, messageId, mode: 'dev_fallback' });
+          resolve({ success: false, messageId, mode: 'dev_fallback', error: line, debug: debugLogs });
           return;
         }
       }
     };
 
     try {
+      debugLogs.push(`Connecting to ${config.host}:${config.port} (secure: ${config.secure})...`);
       if (config.secure) {
         socket = tls.connect(config.port, config.host, { rejectUnauthorized: false }, () => {
-          // Wait for greeting
+          debugLogs.push(`Connected securely to ${config.host}:${config.port}`);
         });
       } else {
         socket = net.connect(config.port, config.host, () => {
-          // Wait for greeting
+          debugLogs.push(`Connected plain TCP to ${config.host}:${config.port}`);
         });
       }
 
       socket.setTimeout(12000, () => {
-        console.warn('[SMTP Timeout]: Connection timed out after 12s, falling back to simulated delivery.');
+        debugLogs.push('Socket timeout after 12s');
         cleanup();
-        resolve({ success: true, messageId, mode: 'dev_fallback' });
+        resolve({ success: false, messageId, mode: 'dev_fallback', error: 'Timeout 12s', debug: debugLogs });
       });
 
       socket.on('data', handleCommunication);
       socket.on('error', (err) => {
-        console.warn('[SMTP Socket Error]:', err.message);
+        debugLogs.push(`Socket error: ${err.message}`);
         cleanup();
-        resolve({ success: true, messageId, mode: 'dev_fallback' });
+        resolve({ success: false, messageId, mode: 'dev_fallback', error: err.message, debug: debugLogs });
       });
     } catch (e: any) {
-      console.warn('[SMTP Init Error]:', e.message);
-      resolve({ success: true, messageId, mode: 'dev_fallback' });
+      debugLogs.push(`Init exception: ${e.message}`);
+      resolve({ success: false, messageId, mode: 'dev_fallback', error: e.message, debug: debugLogs });
     }
   });
 }
