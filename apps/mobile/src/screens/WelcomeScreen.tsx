@@ -316,8 +316,8 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingHorizontal: 22,
     gap: 11,
-    paddingBottom: Platform.OS === 'android' ? 64 : 14,
-    marginBottom: Platform.OS === 'android' ? 44 : 8,
+    paddingBottom: Platform.OS === 'android' ? 16 : 14,
+    marginBottom: Platform.OS === 'android' ? 8 : 8,
   },
   loginButton: {
     backgroundColor: '#0284C7',

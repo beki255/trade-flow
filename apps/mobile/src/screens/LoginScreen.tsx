@@ -357,7 +357,8 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 16,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: Platform.OS === 'android' ? 24 : 20,
     paddingBottom: 40,
   },
   topBar: {
