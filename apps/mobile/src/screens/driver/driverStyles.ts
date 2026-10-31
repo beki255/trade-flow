@@ -74,7 +74,7 @@ export const driverStyles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 24,
+    paddingBottom: Platform.OS === 'android' ? 124 : 32,
   },
   sectionContainer: {
     gap: 14,
@@ -380,15 +380,16 @@ export const driverStyles = StyleSheet.create({
     fontWeight: '800',
   },
   bottomNavContainer: {
-    height: 58,
+    minHeight: Platform.OS === 'android' ? 96 : (Platform.OS === 'ios' ? 76 : 58),
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#E2EAF2',
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-around',
     paddingHorizontal: 2,
-    paddingBottom: Platform.OS === 'ios' ? 8 : 4,
+    paddingTop: 8,
+    paddingBottom: Platform.OS === 'android' ? 46 : (Platform.OS === 'ios' ? 24 : 8),
     ...Platform.select({
       web: { boxShadow: '0 -2px 10px rgba(0, 0, 0, 0.04)' } as any,
       default: { elevation: 6 },

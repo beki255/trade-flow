@@ -1005,7 +1005,7 @@ export const transporterStyles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 80,
+    paddingBottom: Platform.OS === 'android' ? 124 : 80,
   },
   verificationBanner: {
     flexDirection: 'row',
@@ -1034,14 +1034,15 @@ export const transporterStyles = StyleSheet.create({
     lineHeight: 16,
   },
   bottomNavContainer: {
-    height: 64,
+    minHeight: Platform.OS === 'android' ? 96 : (Platform.OS === 'ios' ? 76 : 64),
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#E2EAF2',
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-around',
-    paddingBottom: Platform.OS === 'ios' ? 8 : 4,
+    paddingTop: 8,
+    paddingBottom: Platform.OS === 'android' ? 46 : (Platform.OS === 'ios' ? 24 : 8),
     elevation: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
