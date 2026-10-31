@@ -3,11 +3,10 @@
     "name": "TradeFlow Mobile",
     "slug": "tradeflow-mobile",
     "owner": "bereket2553",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "orientation": "portrait",
     "icon": "./src/assets/icon.png",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": false,
     "splash": {
       "image": "./src/assets/splash.png",
       "resizeMode": "contain",
@@ -19,7 +18,7 @@
     },
     "android": {
       "package": "com.tradeflow.mobile",
-      "versionCode": 7,
+      "versionCode": 8,
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
@@ -33,7 +32,6 @@
     "plugins": [
       "expo-asset",
       "expo-font",
-      "expo-sqlite",
       "expo-status-bar"
     ],
     "extra": {

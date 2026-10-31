@@ -1,5 +1,5 @@
 import { storage } from '../utils/storage';
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import en from '../locales/en.json';
 import am from '../locales/am.json';
 import om from '../locales/om.json';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Component, ReactNode, ErrorInfo } from 'react';
 import {
   StyleSheet,
   View,
@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Text,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 import { WelcomeScreen } from './src/screens/WelcomeScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
@@ -216,6 +217,62 @@ function ThemedAppContainer({ isDesktopWeb }: { isDesktopWeb: boolean }) {
   );
 }
 
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class RootErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('[RootErrorBoundary] Unhandled error:', error, errorInfo);
+  }
+
+  handleReset = async () => {
+    try {
+      await storage.multiRemove([
+        'tradeflow_mobile_user',
+        'tradeflow_mobile_role',
+        'tradeflow_mobile_screen',
+        'tradeflow_transporter_tab',
+        'tradeflow_driver_tab',
+      ]);
+    } catch (e) {
+      // ignore
+    }
+    this.setState({ hasError: false, error: null });
+  };
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={styles.errorFallbackContainer}>
+          <Text style={styles.errorTitle}>TradeFlow Restart Required</Text>
+          <Text style={styles.errorSubText}>
+            {this.state.error?.message || 'An unexpected error occurred while loading the app.'}
+          </Text>
+          <TouchableOpacity style={styles.errorButton} onPress={this.handleReset}>
+            <Text style={styles.errorButtonText}>Tap to Recover & Restart</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function App() {
   const { width } = useWindowDimensions();
   const isDesktopWeb = Platform.OS === 'web' && width > 480;
@@ -250,11 +307,13 @@ export default function App() {
   }, []);
 
   return (
-    <ThemeProvider>
-      <LanguageProvider>
-        <ThemedAppContainer isDesktopWeb={isDesktopWeb} />
-      </LanguageProvider>
-    </ThemeProvider>
+    <RootErrorBoundary>
+      <ThemeProvider>
+        <LanguageProvider>
+          <ThemedAppContainer isDesktopWeb={isDesktopWeb} />
+        </LanguageProvider>
+      </ThemeProvider>
+    </RootErrorBoundary>
   );
 }
 
@@ -296,5 +355,38 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#0F172A',
+  },
+  errorFallbackContainer: {
+    flex: 1,
+    backgroundColor: '#090E17',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+    gap: 12,
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#EF4444',
+    textAlign: 'center',
+  },
+  errorSubText: {
+    fontSize: 13,
+    color: '#94A3B8',
+    textAlign: 'center',
+    lineHeight: 18,
+    maxWidth: 320,
+  },
+  errorButton: {
+    backgroundColor: '#0284C7',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    marginTop: 8,
+  },
+  errorButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 14,
   },
 });
