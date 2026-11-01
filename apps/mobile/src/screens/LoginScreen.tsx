@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     justifyContent: 'flex-start',
     paddingTop: Platform.OS === 'android' ? 24 : 20,
-    paddingBottom: 40,
+    paddingBottom: Platform.OS === 'android' ? 64 : 36,
   },
   topBar: {
     flexDirection: 'row',

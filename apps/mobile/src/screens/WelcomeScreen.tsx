@@ -33,11 +33,12 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   const [activeDot, setActiveDot] = useState(0);
   const { t, language } = useLanguage();
   const { colors, isDark } = useTheme();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
 
-  // Responsive slide width for identical rendering on both native mobile and web device frame
+  // Responsive slide width & height for identical rendering on both native mobile and web device frame
   const slideWidth = Math.min(width, 412);
+  const slideHeight = Math.min(275, Math.max(220, Math.round(height * 0.35)));
 
   const slideData = [
     {
@@ -111,17 +112,17 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
             contentContainerStyle={styles.scrollTrack}
           >
             {/* SLIDE 0 [● ○ ○]: Full Bleed Reference Image Illustration */}
-            <View style={[styles.slideCard, { width: slideWidth }]}>
+            <View style={[styles.slideCard, { width: slideWidth, height: slideHeight }]}>
               <CorridorIsometricIllustration />
             </View>
 
             {/* SLIDE 1 [○ ● ○]: Full Bleed 2D Corridor Route Map Illustration */}
-            <View style={[styles.slideCard, { width: slideWidth }]}>
+            <View style={[styles.slideCard, { width: slideWidth, height: slideHeight }]}>
               <CorridorRouteMapIllustration />
             </View>
 
             {/* SLIDE 2 [○ ○ ●]: Full Bleed Cross-Border Highway Illustration */}
-            <View style={[styles.slideCard, { width: slideWidth }]}>
+            <View style={[styles.slideCard, { width: slideWidth, height: slideHeight }]}>
               <CorridorHighwayIllustration />
             </View>
           </ScrollView>
@@ -188,14 +189,16 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
               activeOpacity={0.7}
               onPress={() => Linking.openURL('https://tradeflow.et').catch(() => {})}
             >
-              <Text style={styles.footerLinkText}>TradeFlow</Text>
+              <Text style={[styles.footerLinkText, { color: isDark ? '#38BDF8' : '#0284C7' }]}>
+                TradeFlow
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => Linking.openURL('tel:9924').catch(() => {})}
             >
-              <Text style={styles.footerLinkText}>
+              <Text style={[styles.footerLinkText, { color: isDark ? '#38BDF8' : '#0284C7' }]}>
                 {language === 'AM' ? 'እርዳታ' : language === 'OM' ? 'Gargaarsa' : 'Help'}
               </Text>
             </TouchableOpacity>
@@ -217,7 +220,8 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: Platform.OS === 'android' ? 8 : 10,
+    paddingTop: Platform.OS === 'android' ? 6 : 8,
+    paddingBottom: Platform.OS === 'android' ? 84 : 28,
     width: '100%',
   },
 
@@ -313,17 +317,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#CBD5E1',
   },
 
-  // Action Buttons & Telebirr Bottom Links
+  // Action Buttons & Telebirr Bottom Links (Elevated & 100% Android System Bar Clearance)
   buttonsWrapper: {
     width: '100%',
     paddingHorizontal: 24,
-    gap: 12,
-    paddingBottom: Platform.OS === 'android' ? 20 : 16,
-    marginTop: 6,
+    gap: 14,
+    paddingBottom: Platform.OS === 'android' ? 14 : 8,
+    marginTop: 4,
   },
   loginButton: {
     backgroundColor: '#0284C7',
-    paddingVertical: 14,
+    paddingVertical: 15,
     borderRadius: 16,
     alignItems: 'center',
     ...Platform.select({
@@ -343,31 +347,32 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '800',
+    letterSpacing: 0.2,
   },
   registerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 2,
+    paddingTop: 4,
   },
   registerPrompt: {
-    fontSize: 12.5,
+    fontSize: 13,
     fontWeight: '500',
   },
   registerLink: {
-    fontSize: 12.5,
+    fontSize: 13,
     fontWeight: '800',
     color: '#0284C7',
   },
   footerLinksRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingTop: 4,
-    paddingHorizontal: 20,
+    justifyContent: 'center',
+    gap: 52,
+    paddingTop: 6,
   },
   footerLinkText: {
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: '700',
     color: '#0284C7',
   },
