@@ -329,14 +329,11 @@ Engineered for extreme durability and offline resilience:
 
 ---
 
-## 15. Conclusion & Capstone Team Contributions
+## 15. Conclusion & Future Outlook
 
-### 👥 Capstone Project Group Members
-| Student Full Name | Student ID | Academic Role | Specialized Contributions |
-| :--- | :--- | :--- | :--- |
-| **BEREKET SAHLEMARIAM** | `CTC-1041-26` | Capstone Group Member | Full-Stack Engineering, Mobile Telematics, Escrow Smart Contract Logic & Cloud Deployment |
-| **DAGNAW MEKASHA** | `CTC-1339-26` | Capstone Group Member | System Architecture, Database Schema Design, REST API Engineering & Automated Testing |
-| **HAMELMAL BELAYNEH** | `CTC-1116-26` | Capstone Group Member | UI/UX Design System, Multi-Language Localization (Amharic & Afaan Oromoo), Documentation & QA |
+The **TradeFlow** platform establishes an authentic, production-grade foundation for cross-border freight logistics across the Ethio-Djibouti Trade Corridor. By replacing manual brokerages with an automated freight exchange, securing carrier freight payments via milestone-locked digital escrow, delivering continuous GPS telematics, and accelerating customs clearance through single-window QR passes, TradeFlow bridges critical operational gaps on Ethiopia’s foremost trade lifeline.
+
+All software deliverables have been constructed, tested, and verified against the academic requirements of the Software Development Training Capstone. Future iterations will incorporate direct OBD-II hardware telematics dongles for fuel monitoring and automated plate recognition (ANPR) cameras at Galafi border checkpoints.
 
 ---
 *TradeFlow — Empowering the Ethio-Djibouti Trade Corridor with Smart Logistics & Escrow.*
