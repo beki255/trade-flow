@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { Truck } from 'lucide-react';
+import { Truck, ShieldCheck, Radio, QrCode, ArrowRight } from 'lucide-react';
 import { Logo } from './Logo';
 
 export const HeroMap: React.FC = () => {
@@ -20,34 +20,78 @@ export const HeroMap: React.FC = () => {
     <section id="home" className="w-full max-w-[1340px] mx-auto px-4 sm:px-8 lg:px-12 pt-4 pb-6 md:pt-6 md:pb-8">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center">
         
-        {/* Left Column: Clean Typography & Quick Actions */}
+        {/* Left Column: Modern High-Impact Logistics SaaS Design */}
         <div className="lg:col-span-5 flex flex-col items-start gap-3.5 sm:gap-4">
-          <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-black tracking-tight text-slate-900 dark:text-white leading-[1.14]">
-            {t('hero.titlePart1')} <br className="hidden sm:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-blue-700 dark:from-sky-400 dark:to-blue-400">
+          
+          {/* Live Status Pill */}
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-sky-50 dark:bg-sky-950/70 border border-sky-200/90 dark:border-sky-800/60 shadow-2xs">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-sky-900 dark:text-sky-300">
+              Ethio–Djibouti Corridor • 910 km Live
+            </span>
+          </div>
+
+          {/* Bold Punchy Headline */}
+          <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-black tracking-tight text-slate-900 dark:text-white leading-[1.12]">
+            {t('hero.titlePart1')}{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 dark:from-sky-400 dark:via-cyan-300 dark:to-blue-400">
               {t('hero.titlePart2')}
             </span>
           </h1>
 
-          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-md">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-md font-medium">
             {t('hero.subtitle')}
           </p>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-3 pt-1">
+          <div className="flex flex-wrap items-center gap-3 pt-1">
             <a
-              href="#pricing"
-              className="px-5 py-2.5 rounded-full text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-sky-600 dark:hover:bg-sky-500 transition-all shadow-sm cursor-pointer"
+              href="/login"
+              className="group px-5 py-2.5 rounded-xl text-xs font-black text-white bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-500 hover:to-blue-600 dark:from-sky-500 dark:to-blue-600 shadow-md hover:shadow-sky-500/25 transition-all flex items-center gap-2 cursor-pointer"
             >
-              {t('hero.viewPricing')}
+              <span>{t('hero.signInPortals')}</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
             </a>
 
             <a
-              href="/login"
-              className="px-5 py-2.5 rounded-full text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 shadow-2xs transition-all cursor-pointer"
+              href="#pricing"
+              className="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700 shadow-2xs transition-all cursor-pointer"
             >
-              {t('hero.signInPortals')}
+              {t('hero.viewPricing')}
             </a>
+          </div>
+
+          {/* Corridor Capabilities Strip */}
+          <div className="pt-3.5 w-full grid grid-cols-3 gap-2 border-t border-slate-200/80 dark:border-slate-800/80">
+            <div className="flex items-center gap-2 py-1">
+              <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+              <div className="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-tight">
+                Smart Escrow <br/><span className="text-[10px] font-normal text-slate-500 dark:text-slate-400">100% Locked</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 py-1">
+              <div className="w-7 h-7 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
+                <Radio className="w-4 h-4" />
+              </div>
+              <div className="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-tight">
+                Live GPS <br/><span className="text-[10px] font-normal text-slate-500 dark:text-slate-400">Telematics</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 py-1">
+              <div className="w-7 h-7 rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                <QrCode className="w-4 h-4" />
+              </div>
+              <div className="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-tight">
+                ECC Customs <br/><span className="text-[10px] font-normal text-slate-500 dark:text-slate-400">QR Clearance</span>
+              </div>
+            </div>
           </div>
 
         </div>
