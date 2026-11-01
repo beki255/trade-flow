@@ -17,6 +17,7 @@
 
 ---
 
+<a id="deliverables"></a>
 ## Project Deliverables & Verified Access Links
 
 | Deliverable | Platform / Type | URL / Access Link |
@@ -44,29 +45,31 @@ Scan this QR code with any smartphone camera to instantly download and install t
 
 ---
 
+<a id="toc"></a>
 ## Table of Contents
 
-- [Project Deliverables & Verified Access Links](#project-deliverables--verified-access-links) (Page 2)
-- [Table of Contents](#table-of-contents) (Page 3)
-- [Executive Summary](#executive-summary) (Page 4)
-- [1. Project Background, Problem Formulation & Scope](#1-project-background-problem-formulation--scope) (Page 5)
-- [2. Requirements Specification & User Personas](#2-requirements-specification--user-personas) (Page 7)
-- [3. System Architecture & Monorepo Topology](#3-system-architecture--monorepo-topology) (Page 9)
-- [4. Database Design & Prisma Relational Schema](#4-database-design--prisma-relational-schema) (Page 10)
-- [5. Digital Smart Escrow Protocol & Settlements](#5-digital-smart-escrow-protocol--settlements) (Page 11)
-- [6. Corridor Telematics, GPS Geofencing & Offline Sync](#6-corridor-telematics-gps-geofencing--offline-sync) (Page 12)
-- [7. Single-Window Customs Clearance & QR Pass](#7-single-window-customs-clearance--qr-pass) (Page 14)
-- [8. Driver Mobile Application (React Native Expo SDK 52)](#8-driver-mobile-application-react-native-expo-sdk-52) (Page 15)
-- [9. Transporter Fleet Management Portal](#9-transporter-fleet-management-portal) (Page 16)
-- [10. Shipper & Customs Commission Web Portals](#10-shipper--customs-commission-web-portals) (Page 17)
-- [11. Trilingual Localization & Ergonomic Theming](#11-trilingual-localization--ergonomic-theming) (Page 18)
-- [12. Backend REST API Architecture](#12-backend-rest-api-architecture) (Page 19)
-- [13. Testing, Verification & Quality Assurance](#13-testing-verification--quality-assurance) (Page 20)
-- [14. Technical Challenges Encountered & Applied Solutions](#14-technical-challenges-encountered--applied-solutions) (Page 21)
-- [15. Conclusion & Future Outlook](#15-conclusion--future-outlook) (Page 22)
+- [Project Deliverables & Verified Access Links](#deliverables) (Page 2)
+- [Table of Contents](#toc) (Page 3)
+- [Executive Summary](#exec-summary) (Page 4)
+- [1. Project Background, Problem Formulation & Scope](#ch1) (Page 5)
+- [2. Requirements Specification & User Personas](#ch2) (Page 7)
+- [3. System Architecture & Monorepo Topology](#ch3) (Page 9)
+- [4. Database Design & Prisma Relational Schema](#ch4) (Page 10)
+- [5. Digital Smart Escrow Protocol & Settlements](#ch5) (Page 11)
+- [6. Corridor Telematics, GPS Geofencing & Offline Sync](#ch6) (Page 12)
+- [7. Single-Window Customs Clearance & QR Pass](#ch7) (Page 14)
+- [8. Driver Mobile Application (React Native Expo SDK 52)](#ch8) (Page 15)
+- [9. Transporter Fleet Management Portal](#ch9) (Page 16)
+- [10. Shipper & Customs Commission Web Portals](#ch10) (Page 17)
+- [11. Trilingual Localization & Ergonomic Theming](#ch11) (Page 18)
+- [12. Backend REST API Architecture](#ch12) (Page 19)
+- [13. Testing, Verification & Quality Assurance](#ch13) (Page 20)
+- [14. Technical Challenges Encountered & Applied Solutions](#ch14) (Page 21)
+- [15. Conclusion & Future Outlook](#ch15) (Page 22)
 
 ---
 
+<a id="exec-summary"></a>
 ## Executive Summary
 
 **TradeFlow** is a modern, cross-platform logistics orchestration, real-time corridor telematics, and digital smart escrow platform purpose-built for the critical **Ethio-Djibouti Trade Corridor**—a 900+ km lifeline carrying over 95% of Ethiopia’s import-export freight.
@@ -82,6 +85,7 @@ TradeFlow addresses these structural bottlenecks through an integrated digital e
 
 ---
 
+<a id="ch1"></a>
 ## 1. Project Background, Problem Formulation & Scope
 
 ### 1.1 The Ethio-Djibouti Strategic Economic Corridor
@@ -105,6 +109,7 @@ The primary engineering objectives achieved by the TradeFlow platform include:
 
 ---
 
+<a id="ch2"></a>
 ## 2. Requirements Specification & User Personas
 
 ### 2.1 Five Core Actor Personas
@@ -130,6 +135,7 @@ The primary engineering objectives achieved by the TradeFlow platform include:
 
 ---
 
+<a id="ch3"></a>
 ## 3. System Architecture & Monorepo Topology
 
 The TradeFlow platform is architected as a modular TypeScript monorepo managed with **pnpm workspaces**:
@@ -147,6 +153,7 @@ tradeflow-v2/
 
 ---
 
+<a id="ch4"></a>
 ## 4. Database Design & Prisma Relational Schema
 
 ```prisma
@@ -198,6 +205,7 @@ model Payment {
 
 ---
 
+<a id="ch5"></a>
 ## 5. Digital Smart Escrow Protocol & Settlements
 
 TradeFlow introduces a programmable digital escrow protocol that locks 100% of agreed freight payments prior to vehicle dispatch and automatically disburses funds upon cryptographically verified proof of delivery:
@@ -238,6 +246,7 @@ export async function releaseEscrowPayout(shipmentId: string, paymentId: string)
 
 ---
 
+<a id="ch6"></a>
 ## 6. Corridor Telematics, GPS Geofencing & Offline Sync
 
 ### 11 Strategic Transit Waypoints
@@ -274,12 +283,14 @@ export function calculateHaversineDistance(
 
 ---
 
+<a id="ch7"></a>
 ## 7. Single-Window Customs Clearance & QR Pass
 
 The Galafi border post separating Ethiopia and Djibouti is the primary bottleneck on the corridor. TradeFlow integrates a Single-Window Electronic Customs Dossier (Declaration, Invoice, Packing List, Insurance) and generates a dynamic cryptographic QR pass on the driver mobile screen for instant ECC border clearance.
 
 ---
 
+<a id="ch8"></a>
 ## 8. Driver Mobile Application (React Native Expo SDK 52)
 
 Engineered for extreme durability and offline resilience:
@@ -290,6 +301,7 @@ Engineered for extreme durability and offline resilience:
 
 ---
 
+<a id="ch9"></a>
 ## 9. Transporter Fleet Management Portal
 
 - Heavy truck and trailer registry (Flatbed, Lowbed, Box, Tanker).
@@ -299,6 +311,7 @@ Engineered for extreme durability and offline resilience:
 
 ---
 
+<a id="ch10"></a>
 ## 10. Shipper & Customs Web Portals
 
 - Next.js 14 tender creation wizard with automated distance calculation.
@@ -308,6 +321,7 @@ Engineered for extreme durability and offline resilience:
 
 ---
 
+<a id="ch11"></a>
 ## 11. Trilingual Localization & Adaptive Theming
 
 - Trilingual dictionaries in English, Amharic (አማርኛ), and Afaan Oromoo.
@@ -316,6 +330,7 @@ Engineered for extreme durability and offline resilience:
 
 ---
 
+<a id="ch12"></a>
 ## 12. Backend REST API Architecture
 
 - Express.js controller-service architecture.
@@ -325,6 +340,7 @@ Engineered for extreme durability and offline resilience:
 
 ---
 
+<a id="ch13"></a>
 ## 13. Testing, Verification & Quality Assurance
 
 | Test ID | Module | Scenario Tested | Expected Result | Status |
@@ -342,6 +358,7 @@ Engineered for extreme durability and offline resilience:
 
 ---
 
+<a id="ch14"></a>
 ## 14. Technical Challenges & Applied Solutions
 
 1. **Afar Desert Cellular Dropouts:** Solved via local AsyncStorage FIFO queue and exponential backoff sync.
@@ -352,6 +369,7 @@ Engineered for extreme durability and offline resilience:
 
 ---
 
+<a id="ch15"></a>
 ## 15. Conclusion & Future Outlook
 
 The **TradeFlow** platform establishes an authentic, production-grade foundation for cross-border freight logistics across the Ethio-Djibouti Trade Corridor. By replacing manual brokerages with an automated freight exchange, securing carrier freight payments via milestone-locked digital escrow, delivering continuous GPS telematics, and accelerating customs clearance through single-window QR passes, TradeFlow bridges critical operational gaps on Ethiopia’s foremost trade lifeline.
