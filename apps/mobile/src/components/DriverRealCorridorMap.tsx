@@ -1478,7 +1478,7 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
                 uri: tileUrl(layer, t.col, t.row, t.z),
                 headers: {
                   'User-Agent': 'Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36 TradeFlow-Corridor/2.0',
-                  'Referer': 'https://tradeflow.et/',
+                  'Referer': 'https://trade-flow-ukgu.vercel.app/',
                 },
               }}
               style={{
@@ -1823,7 +1823,7 @@ export const DriverRealCorridorMap: React.FC<Props> = ({
                     uri: tileUrl(layer, t.col, t.row, t.z),
                     headers: {
                       'User-Agent': 'Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36 TradeFlow-Corridor/2.0',
-                      'Referer': 'https://tradeflow.et/',
+                      'Referer': 'https://trade-flow-ukgu.vercel.app/',
                     },
                   }}
                   style={{

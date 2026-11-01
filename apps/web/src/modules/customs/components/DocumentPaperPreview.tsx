@@ -106,7 +106,7 @@ export const DocumentPaperPreview: React.FC<DocumentPaperPreviewProps> = ({
           </div>
 
           {/* Real Uploaded Image Display */}
-          {isImageFile && selectedDocPreview.fileUrl && !selectedDocPreview.fileUrl.startsWith('https://tradeflow.et') ? (
+          {isImageFile && selectedDocPreview.fileUrl && !selectedDocPreview.fileUrl.startsWith('https://trade-flow-ukgu.vercel.app') ? (
             <div className="flex flex-col items-center justify-center p-3 bg-slate-900/5 rounded-xl border border-slate-200 overflow-hidden">
               <img
                 src={selectedDocPreview.fileUrl}
@@ -114,7 +114,7 @@ export const DocumentPaperPreview: React.FC<DocumentPaperPreviewProps> = ({
                 className="max-h-[500px] max-w-full rounded-lg shadow-md object-contain bg-white"
               />
             </div>
-          ) : isPdfFile && selectedDocPreview.fileUrl && !selectedDocPreview.fileUrl.startsWith('https://tradeflow.et') ? (
+          ) : isPdfFile && selectedDocPreview.fileUrl && !selectedDocPreview.fileUrl.startsWith('https://trade-flow-ukgu.vercel.app') ? (
             <iframe
               src={selectedDocPreview.fileUrl}
               title={selectedDocPreview.fileName}

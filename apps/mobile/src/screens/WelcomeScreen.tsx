@@ -187,7 +187,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           <View style={styles.footerLinksRow}>
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={() => Linking.openURL('https://tradeflow.et').catch(() => {})}
+              onPress={() => Linking.openURL('https://trade-flow-ukgu.vercel.app').catch(() => {})}
             >
               <Text style={styles.footerLinkText}>
                 teleHub
