@@ -58,7 +58,6 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
   // Step 3 OTP Fields
   const [otpCode, setOtpCode] = useState('');
   const [maskedEmail, setMaskedEmail] = useState('');
-  const [previewOtp, setPreviewOtp] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [resendLoading, setResendLoading] = useState(false);
 
@@ -197,10 +196,6 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
 
       if (res.ok) {
         setMaskedEmail(data.maskedEmail || cleanEmail);
-        if (data.previewOtp) {
-          setPreviewOtp(data.previewOtp);
-          setOtpCode(data.previewOtp);
-        }
         setStep(3);
         startCooldown();
       } else {
@@ -295,10 +290,6 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
       setResendLoading(false);
 
       if (res.ok) {
-        if (data.previewOtp) {
-          setPreviewOtp(data.previewOtp);
-          setOtpCode(data.previewOtp);
-        }
         startCooldown();
       } else {
         setErrorMsg(data.error || 'Failed to resend verification code.');
@@ -779,14 +770,16 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
                 </TouchableOpacity>
               </View>
 
-              {previewOtp ? (
-                <View style={[styles.errorBox, { backgroundColor: isDark ? '#082F49' : '#E0F2FE', borderColor: isDark ? '#0284C7' : '#BAE6FD', marginBottom: 12 }]}>
-                  <Ionicons name="key-outline" size={16} color="#0284C7" style={{ marginRight: 6 }} />
-                  <Text style={[styles.errorText, { color: isDark ? '#BAE6FD' : '#0369A1' }]}>
-                    Verification Code: <Text style={{ fontWeight: '900', letterSpacing: 2 }}>{previewOtp}</Text>
-                  </Text>
-                </View>
-              ) : null}
+              <View style={[styles.errorBox, { backgroundColor: isDark ? '#082F49' : '#F0F9FF', borderColor: isDark ? '#0284C7' : '#BAE6FD', marginBottom: 12 }]}>
+                <Ionicons name="mail-unread-outline" size={16} color="#0284C7" style={{ marginRight: 6 }} />
+                <Text style={[styles.errorText, { color: isDark ? '#BAE6FD' : '#0369A1' }]}>
+                  {language === 'AM'
+                    ? 'እባክዎ የኢሜይል መልእክት ሳጥንዎን (Inbox/Spam) በመመልከት የተላከውን ባለ 6-አሃዝ የማረጋገጫ ኮድ እዚህ ያስገቡ።'
+                    : language === 'OM'
+                    ? 'Imeelii keessan (Inbox/Spam) ilaaluun koodii mirkaneessaa dijitii 6 ergame asitti galchaa.'
+                    : 'Please check your email (Inbox or Spam) and enter the 6-digit verification code below.'}
+                </Text>
+              </View>
 
               {/* OTP Input */}
               <View style={styles.inputGroup}>
