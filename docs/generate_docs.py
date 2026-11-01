@@ -1130,3 +1130,4 @@ def generate_documentation():
 
 if __name__ == "__main__":
     generate_documentation()
+
