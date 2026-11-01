@@ -12,12 +12,11 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent,
   Platform,
+  Linking,
 } from 'react-native';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
-import { ThemeToggle } from '../components/ThemeToggle';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
-import { Ionicons } from '@expo/vector-icons';
 import { CorridorIsometricIllustration } from '../components/CorridorIsometricIllustration';
 import { CorridorRouteMapIllustration } from '../components/CorridorRouteMapIllustration';
 import { CorridorHighwayIllustration } from '../components/CorridorHighwayIllustration';
@@ -32,7 +31,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   onNavigateRegister,
 }) => {
   const [activeDot, setActiveDot] = useState(0);
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { colors, isDark } = useTheme();
   const { width } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
@@ -58,14 +57,19 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offsetX = event.nativeEvent.contentOffset.x;
     const pageIndex = Math.round(offsetX / slideWidth);
-    if (pageIndex !== activeDot && pageIndex >= 0 && pageIndex < 3) {
+    if (pageIndex !== activeDot && pageIndex >= 0 && pageIndex <= 2) {
       setActiveDot(pageIndex);
     }
   };
 
   const handleDotPress = (index: number) => {
     setActiveDot(index);
-    scrollRef.current?.scrollTo({ x: index * slideWidth, animated: true });
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({
+        x: index * slideWidth,
+        animated: true,
+      });
+    }
   };
 
   return (
@@ -86,8 +90,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
             <Image source={require('../assets/tradeflow-logo.png')} style={styles.brandLogo} resizeMode="contain" />
           </View>
 
+          {/* Only Language Switcher on Welcome Page (No Theme Toggle) */}
           <View style={styles.headerRight}>
-            <ThemeToggle compact />
             <LanguageSwitcher dark={isDark} />
           </View>
         </View>
@@ -154,7 +158,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           ))}
         </View>
 
-        {/* Bottom Action Buttons */}
+        {/* Bottom Action Area (Telebirr Style) - Elevated & Clean */}
         <View style={styles.buttonsWrapper}>
           
           {/* Primary Solid Blue Button: Login */}
@@ -166,27 +170,36 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
             <Text style={styles.loginButtonText}>{t('loginButton')}</Text>
           </TouchableOpacity>
 
-          {/* Secondary Outlined Button: Create Account */}
-          <TouchableOpacity
-            style={[
-              styles.registerButton,
-              {
-                borderColor: isDark ? '#38BDF8' : '#0284C7',
-                backgroundColor: isDark ? 'rgba(56, 189, 248, 0.08)' : 'transparent',
-              },
-            ]}
-            onPress={onNavigateRegister}
-            activeOpacity={0.85}
-          >
-            <Text
-              style={[
-                styles.registerButtonText,
-                { color: isDark ? '#38BDF8' : '#0284C7' },
-              ]}
-            >
-              {t('createAccount')}
+          {/* Sub Row: Don't have an account? Create New Account */}
+          <View style={styles.registerRow}>
+            <Text style={[styles.registerPrompt, { color: colors.textMuted }]}>
+              {language === 'AM' ? 'አካውንት የለዎትም?' : language === 'OM' ? 'Herrega hin qabdan?' : "Don't have an account?"}{' '}
             </Text>
-          </TouchableOpacity>
+            <TouchableOpacity onPress={onNavigateRegister} activeOpacity={0.7}>
+              <Text style={styles.registerLink}>
+                {language === 'AM' ? 'አካውንት ይክፈቱ' : language === 'OM' ? 'Herrega Haaraa Bani' : 'Create New Account'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Bottom Telebirr-style Hub & Help Links */}
+          <View style={styles.footerLinksRow}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => Linking.openURL('https://tradeflow.et').catch(() => {})}
+            >
+              <Text style={styles.footerLinkText}>TradeFlow</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => Linking.openURL('tel:9924').catch(() => {})}
+            >
+              <Text style={styles.footerLinkText}>
+                {language === 'AM' ? 'እርዳታ' : language === 'OM' ? 'Gargaarsa' : 'Help'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
       </View>
@@ -201,78 +214,66 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    flexDirection: 'column',
     justifyContent: 'space-between',
-    paddingVertical: 12,
     alignItems: 'center',
+    paddingVertical: Platform.OS === 'android' ? 8 : 10,
+    width: '100%',
   },
+
+  // Header Bar
   header: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ? StatusBar.currentHeight + 12 : 38) : 18,
-    paddingBottom: 4,
     paddingHorizontal: 16,
-    width: '100%',
-    zIndex: 100,
+    paddingTop: Platform.OS === 'android' ? Math.max((StatusBar.currentHeight || 0) + 8, 36) : 8,
+    position: 'relative',
+    minHeight: 52,
   },
   headerLeftSpacer: {
-    width: 64,
+    width: 60,
   },
   brandTitleContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  headerRight: {
-    width: 64,
-    alignItems: 'flex-end',
-    justifyContent: 'center',
+    zIndex: -1,
   },
   brandLogo: {
-    width: 140,
+    width: 135,
     height: 38,
   },
-  brandTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#0F172A',
-    letterSpacing: -0.4,
-    textAlign: 'center',
-  },
-  langBtn: {
-    backgroundColor: '#E2EAF2',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
+  headerRight: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  langBtnText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#0284C7',
-  },
+
+  // Carousel Area
   carouselContainer: {
     width: '100%',
-    height: 210,
-    marginTop: 4,
-    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 4,
   },
   scrollTrack: {
     alignItems: 'center',
   },
   slideCard: {
-    height: 210,
+    height: 290,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 6,
   },
 
   // Dynamic Titles & Descriptions
   textContainer: {
     alignItems: 'center',
     paddingHorizontal: 24,
-    minHeight: 66,
+    minHeight: 62,
     justifyContent: 'center',
     width: '100%',
   },
@@ -281,7 +282,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#0F172A',
     textAlign: 'center',
-    marginBottom: 6,
+    marginBottom: 5,
     letterSpacing: -0.2,
   },
   slideDescription: {
@@ -297,7 +298,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginVertical: 4,
+    marginVertical: 2,
   },
   paginationDot: {
     height: 7,
@@ -312,13 +313,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#CBD5E1',
   },
 
-  // Action Buttons
+  // Action Buttons & Telebirr Bottom Links
   buttonsWrapper: {
     width: '100%',
-    paddingHorizontal: 22,
-    gap: 11,
-    paddingBottom: Platform.OS === 'android' ? 16 : 14,
-    marginBottom: Platform.OS === 'android' ? 8 : 8,
+    paddingHorizontal: 24,
+    gap: 12,
+    paddingBottom: Platform.OS === 'android' ? 20 : 16,
+    marginTop: 6,
   },
   loginButton: {
     backgroundColor: '#0284C7',
@@ -327,12 +328,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...Platform.select({
       web: {
-        boxShadow: '0 4px 8px rgba(2, 132, 199, 0.25)',
+        boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)',
       } as any,
       default: {
         shadowColor: '#0284C7',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.25,
+        shadowOpacity: 0.3,
         shadowRadius: 8,
         elevation: 4,
       },
@@ -340,20 +341,34 @@ const styles = StyleSheet.create({
   },
   loginButtonText: {
     color: '#FFFFFF',
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '800',
   },
-  registerButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1.5,
-    borderColor: '#0284C7',
-    paddingVertical: 13,
-    borderRadius: 16,
+  registerRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 2,
   },
-  registerButtonText: {
-    color: '#0284C7',
-    fontSize: 15,
+  registerPrompt: {
+    fontSize: 12.5,
+    fontWeight: '500',
+  },
+  registerLink: {
+    fontSize: 12.5,
     fontWeight: '800',
+    color: '#0284C7',
+  },
+  footerLinksRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    paddingTop: 4,
+    paddingHorizontal: 20,
+  },
+  footerLinkText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0284C7',
   },
 });

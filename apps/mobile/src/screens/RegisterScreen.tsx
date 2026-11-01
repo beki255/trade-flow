@@ -357,7 +357,6 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
         </View>
 
         <View style={styles.rightActions}>
-          <ThemeToggle compact />
           <LanguageSwitcher dark={isDark} />
         </View>
       </View>

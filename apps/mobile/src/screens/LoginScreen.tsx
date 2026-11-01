@@ -148,7 +148,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         </View>
 
         <View style={styles.rightActions}>
-          <ThemeToggle compact />
           <LanguageSwitcher dark={isDark} />
         </View>
       </View>
