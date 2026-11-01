@@ -1,266 +1,334 @@
-# 🚛 TradeFlow v2 — Intelligent Logistics & Freight Matching Platform
+# 🚚 TradeFlow v2 — Intelligent Logistics, Telematics & Digital Escrow Platform
 
-> **Accelerating Cross-Border Commerce along the Ethiopia-Djibouti Trade Corridor**  
-> *(Djibouti Port ➔ Galafi / Dewele ➔ Mille ➔ Awash ➔ Modjo Dry Port ➔ Addis Ababa)*
+> **Accelerating Cross-Border Commerce along the Ethio-Djibouti Trade Corridor**  
+> *(Port of Doraleh ➔ Galafi Border ➔ Semera ➔ Awash ➔ Modjo Dry Port ➔ Addis Ababa)*
 
 [![License](https://img.shields.io/badge/License-Proprietary-blue.svg)](#)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue?logo=typescript)](#)
+[![Next.js](https://img.shields.io/badge/Next.js-14.2-black?logo=nextdotjs)](#)
 [![React](https://img.shields.io/badge/React-18.3-61dafb?logo=react)](#)
-[![Expo](https://img.shields.io/badge/Expo-SDK_52-000020?logo=expo)](#)
-[![NodeJS](https://img.shields.io/badge/Node.js-Express-green?logo=nodedotjs)](#)
-[![Prisma](https://img.shields.io/badge/Prisma-PostgreSQL-2D3748?logo=prisma)](#)
+[![Expo](https://img.shields.io/badge/Expo-SDK_58-000020?logo=expo)](#)
+[![React Native](https://img.shields.io/badge/React_Native-0.84-61dafb?logo=react)](#)
+[![NodeJS](https://img.shields.io/badge/Node.js-20_LTS-green?logo=nodedotjs)](#)
+[![Prisma](https://img.shields.io/badge/Prisma-PostgreSQL_16-2D3748?logo=prisma)](#)
 [![Socket.io](https://img.shields.io/badge/Socket.IO-Real--Time-black?logo=socketdotio)](#)
+[![Languages](https://img.shields.io/badge/Languages-EN%20%7C%20AM%20%7C%20OM-orange)](#)
+[![Theme](https://img.shields.io/badge/Theme-Dark%20%7C%20Light-purple)](#)
+[![Mobile APK](https://img.shields.io/badge/Android_APK-v1.1.5_Ready-success?logo=android)](#)
+
+---
+
+## 📢 Software Development Training — Project Submission & Live Links
+
+| Deliverable Name | Platform / Type | Direct Access Link / URL |
+| :--- | :--- | :--- |
+| **GitHub Repository** | Source Code (Monorepo) | [https://github.com/beki255/trade-flow](https://github.com/beki255/trade-flow) |
+| **Live Web Application** | Production Web Portal | [https://trade-flow-mu.vercel.app](https://trade-flow-mu.vercel.app) *(or https://tradeflow.et)* |
+| **Backend REST API** | Cloud Microservice | [https://tradeflow-api-7abs.onrender.com](https://tradeflow-api-7abs.onrender.com) |
+| **API Health & Metrics** | System Status Check | [https://tradeflow-api-7abs.onrender.com/health](https://tradeflow-api-7abs.onrender.com/health) |
+| **Mobile Android APK** | Standalone APK (v1.1.5) | [Download TradeFlow v1.1.5 APK](https://expo.dev/artifacts/eas/T1ZfHOLf-u_evYzO0aEfLD4MJtnN7FSQecclu_UrVAk.apk) |
+| **EAS Cloud Build Logs** | Expo CI/CD Build #858790e9 | [View Expo EAS Cloud Logs](https://expo.dev/accounts/bereket2553/projects/tradeflow-mobile/builds/858790e9-fae7-4531-b448-1df457864a6e) |
+| **Project Documentation (PDF)** | Complete Technical Report | [Download Documentation PDF](docs/TradeFlow_Project_Documentation.pdf) |
+| **Interactive Swagger API** | OpenAPI 3.0 Console | [https://tradeflow-api-7abs.onrender.com/api/docs](https://tradeflow-api-7abs.onrender.com/api/docs) |
 
 ---
 
 ## 📌 Executive Summary
 
-**TradeFlow** is an enterprise-grade digital logistics, telematics, and freight-matching ecosystem designed specifically for the landlocked Ethiopian supply chain. It connects **Shippers**, **Freight Forwarders**, **Customs Officers**, **Transporters**, and **Authorized Commercial Drivers** into a unified, real-time corridor network with national digital payments (Telebirr / CBE Birr), ASYCUDA-compatible single-window compliance, and live GPS corridor tracking.
+**TradeFlow** is an enterprise-grade digital freight marketplace, real-time corridor telematics engine, and milestone-secured digital escrow platform engineered specifically for the **Ethio-Djibouti Trade Corridor**—a vital 900+ km lifeline carrying more than 95% of Ethiopia’s international import and export freight.
+
+Historically, this critical supply chain artery has been constrained by fragmented manual freight brokerage, unvetted intermediaries charging 15–25% markups, zero in-transit cargo visibility, lengthy paper-based customs queues at Galafi border post, recurring payment defaults, and an alarming 42% empty backhaul rate.
+
+TradeFlow unifies **Shippers**, **Freight Forwarders**, **Fleet Transporters**, **Commercial Truck Drivers**, and the **Ethiopian Customs Commission (ECC)** into an automated, transparent, and resilient digital network. Key innovations include:
+1. **Dynamic Freight Matching & Spot Bidding:** Eliminates predatory middlemen through transparent pricing and direct shipper-carrier contracting.
+2. **Digital Smart Escrow Vault:** Secures 100% of freight capital prior to vehicle dispatch and automatically releases carrier earnings upon verified electronic Proof-of-Delivery (e-POD).
+3. **Driver Mobile App with Real-Time Telematics:** Native GPS tracking, Haversine geofenced waypoint check-ins (15 km radius), offline telemetry buffering, and crowdsourced hazard reporting.
+4. **Single-Window Customs Clearance:** Digital trade dossiers, risk-tier routing (Green/Yellow/Red Line), and offline-capable cryptographic QR transit passes.
+5. **Universal Inclusivity:** Full trilingual localization (**English, Amharic [አማርኛ], and Afaan Oromoo**) with synchronized adaptive **Dark Mode** and **Light Mode**.
 
 ---
 
-## 🏛️ System Architecture
+## 1. 🎯 Project Objectives & Scope
 
+### 1.1 Problem Statement
+The Ethio-Djibouti corridor handles over 12 million tons of cargo annually between the Port of Doraleh and inland dry port terminals (Modjo, Kaliti, Semera). Despite its strategic importance, the corridor suffers from:
+- **Brokerage Friction:** Informal spot brokers in Addis Ababa and Djibouti extract massive markups while offering zero legal accountability for cargo security.
+- **Payment Insecurity:** Carriers endure 30–60 day payment delays, creating cash-flow crises. Conversely, shippers risk cargo abandonment when upfront deposits are remitted.
+- **Border Bottlenecks:** Paper-based declarations cause multi-day queues at Galafi and Semera, triggering exorbitant demurrage penalties.
+- **Blind Transit:** Cargo owners have no real-time telematics or reliable ETA forecasts once trucks navigate remote Afar desert stretches.
+
+### 1.2 Project Objectives
+- **Primary:**
+  1. Build an open, transparent digital freight exchange connecting shippers and carriers directly.
+  2. Implement a milestone-based digital escrow vault guaranteeing zero-risk payment settlements.
+  3. Provide end-to-end corridor telematics with automated geofenced check-ins across 11 corridor waypoints.
+  4. Streamline customs inspections via single-window document verification and dynamic QR passes.
+- **Secondary:**
+  - Ensure universal accessibility through native trilingual translations (English, Amharic, Afaan Oromoo).
+  - Guarantee seamless operation on low-tier smartphones (e.g. Samsung Galaxy A13) with high-contrast UI and offline resilience.
+
+### 1.3 Scope Boundaries
+- **In Scope:** Multi-tenant Web Portal (Next.js), Native Android Mobile App (React Native/Expo), Backend REST API (Node/Express/TypeScript), PostgreSQL Relational Database (Prisma), WebSocket Telematics, and Smart Escrow simulations.
+- **Out of Scope (Future):** Physical OBD-II hardware manufacturing and automated central bank multi-currency foreign exchange clearing.
+
+---
+
+## 2. 📋 Requirements Specification
+
+### 2.1 User Roles & Stakeholder Boundaries
+The platform enforces strict Role-Based Access Control (RBAC):
+
+| Role | Target Persona | Primary Responsibilities |
+| :--- | :--- | :--- |
+| **`SHIPPER`** | Importers, Exporters, Manufacturers | Post cargo consignments, review quotes, fund digital escrow, track shipments live, approve e-POD. |
+| **`TRANSPORTER`** | Fleet Owners, Logistics Companies | Register trucks and drivers, browse open loads, place competitive bids, dispatch fleet vehicles, manage earnings. |
+| **`DRIVER`** | Commercial Heavy Truck Drivers | View assigned trips, perform GPS waypoint check-ins, broadcast route delays, capture recipient e-POD signature. |
+| **`CUSTOMS_OFFICER`**| Ethiopian Customs Commission (ECC) | Review digital dossiers, issue Green Line passes, scan driver QR passes at checkpoints. |
+| **`ADMIN`** | TradeFlow System Operator | Verify carrier TIN, trade licenses, GIT insurance, and roadworthiness documents; resolve disputes. |
+
+### 2.2 Functional Requirements (FR Summary)
+- **FR-01 (Authentication & Onboarding):** Multi-role registration with email OTP verification and document KYC uploads.
+- **FR-02 (Corridor Load Management):** Consignment posting with cargo classification, tonnage, volume, and budget in ETB.
+- **FR-03 (Dynamic Bidding Engine):** Transporter spot quote submission, price evaluation, and acceptance mechanics.
+- **FR-04 (Smart Escrow Protocol):** Funds locked upon contract award; 95% released to carrier upon approved e-POD (5% platform fee).
+- **FR-05 (Fleet Management & Dispatch):** Capacity-checked vehicle and driver assignment blocking overweight loads.
+- **FR-06 (Driver Mobile Telematics):** Continuous GPS tracking, 15 km Haversine geofence proximity detection, and offline queue buffer.
+- **FR-07 (Single-Window Customs):** Digital dossier verification, risk classification, and dynamic cryptographic QR transit pass.
+- **FR-08 (Localization & Theming):** Instant switching across EN, AM, and OM; synchronized Dark/Light mode.
+
+---
+
+## 3. 💻 Technologies Used & Architecture Justification
+
+```
++-----------------------------------------------------------------------------------+
+|                              CLIENT TIER (APPLICATIONS)                           |
+|                                                                                   |
+|   Next.js 14 (React 18) Web Portal           Expo SDK 58 (React Native) Mobile    |
+|   - Tailwind CSS / Lucide Icons              - Standalone Android APK (v1.1.5)    |
+|   - Leaflet Geospatial Maps                  - Native Device GPS & Camera         |
+|   - Trilingual i18n Engine                   - Offline Telemetry SQLite Buffer    |
++-----------------------------------------+-----------------------------------------+
+                                          | HTTPS / WSS
+                                          v
++-----------------------------------------------------------------------------------+
+|                           APPLICATION SERVER & LOGIC TIER                         |
+|                                                                                   |
+|   Node.js & Express.js REST Microservices (TypeScript)                            |
+|   - JWT Auth & Role-Based Access Control     - Smart Escrow State Machine         |
+|   - Haversine Geofencing Engine              - Socket.IO Real-Time Gateway        |
++-----------------------------------------+-----------------------------------------+
+                                          | Prisma ORM
+                                          v
++-----------------------------------------------------------------------------------+
+|                              DATA PERSISTENCE TIER                                |
+|                                                                                   |
+|   PostgreSQL 16 Relational Database                                               |
+|   - 10 Relational Models with Cascading Foreign Keys, UUIDs & Indexes             |
++-----------------------------------------------------------------------------------+
+```
+
+### Monorepo Directory Layout:
 ```text
 tradeflow-v2/ (Turborepo / npm Workspaces Monorepo)
+├── docs/                     # Project Documentation, Technical Report & PDF
+│   ├── TradeFlow_Project_Documentation.md
+│   ├── TradeFlow_Project_Documentation.html
+│   └── TradeFlow_Project_Documentation.pdf
+│
 ├── services/
 │   └── api/                  # Node.js Express REST & Real-Time Socket.IO Server
-│       ├── prisma/           # PostgreSQL Schema & Seed Scripts (Prisma ORM)
-│       ├── src/controllers/  # Auth, Portal, KYC Verification, Drivers, Telematics
-│       ├── src/docs/         # OpenAPI 3.0 Specification & Swagger UI
+│       ├── prisma/           # PostgreSQL Schema (10 Models) & Seed Scripts
+│       ├── src/controllers/  # Auth, Portal, Escrow, Drivers, Telematics
 │       └── src/routes/       # Express Route Modules
 │
 ├── apps/
-│   ├── web/                  # Enterprise Web Portal (Vite + React + Tailwind CSS)
-│   │   ├── src/pages/        # Landing Page, Shipper, Forwarder, Customs, Admin
-│   │   ├── src/modules/admin # User Verification Queue, Audit Trail, Disputes
-│   │   ├── src/components/   # Animated Feature Cards, Interactive Topo Map, Nav
-│   │   └── src/context/      # Database AuthContext & Bilingual Localization
+│   ├── web/                  # Enterprise Web Portal (Next.js 14 + Tailwind CSS)
+│   │   ├── src/pages/        # Landing Page, Shipper, Transporter, Customs, Admin
+│   │   └── src/context/      # Database AuthContext & Trilingual Localization
 │   │
-│   └── mobile/               # Cross-Platform Driver & Transporter App (Expo SDK 52)
-│       ├── src/screens/      # Onboarding Carousel, Login, Transporter Portal
-│       ├── src/tabs/         # Overview, Fleet Vehicles, Drivers, Loads, Bids
-│       ├── src/modals/       # Add Truck, Register Driver, Dispatch Modal
-│       └── src/context/      # LanguageContext (Amharic & English Localization)
+│   └── mobile/               # Cross-Platform Driver & Transporter App (Expo SDK 58)
+│       ├── src/screens/      # Welcome, Login, Register, Driver & Transporter Portals
+│       ├── src/tabs/         # Trip, Check-in, Incident, e-POD, Fleet, Loads, Bids
+│       ├── src/modals/       # Dispatch Modal, Customs QR Pass, Profile, Ratings
+│       └── src/context/      # ThemeContext (Dark/Light) & LanguageContext (EN/AM/OM)
 │
 └── packages/
-    └── shared/               # Shared TypeScript Types, Enums, Corridor Checkpoints
+    └── shared/               # Shared TypeScript Types, Enums, Corridor Waypoints
 ```
 
 ---
 
-## 🌟 Key Features & Capabilities
+## 4. 🏛️ System Design & Database Schema
 
-### 1. 🌐 Modernized Landing Page & Interactive Corridor Map
-- **Interactive Topographic Corridor Route Map**: Live SVG visualization depicting the 900km primary multimodal freight corridor from Djibouti Container Terminals to Modjo Dry Port and Addis Ababa.
-- **Animated Glassmorphic Feature Cards**: High-performance Framer Motion cards with smooth hover lift (`-translate-y-2`), glowing ambient shadows, customized theme accents, and rich typography without clutter.
-- **Compliance Trust Cards**: Direct alignment with the **Ethiopian Customs Commission (ECC)** Single Window, **ESLSE Multi-Modal Hub**, and **5-second Satellite GPS Telematics**.
-- **100% Bilingual Localization**: Instant toggle between Amharic and English.
+### 4.1 Relational Data Models (Prisma ORM)
+The persistence layer comprises 10 tightly coupled models:
+- **`User`**: Account credentials, RBAC role, company details, TIN, Trade License, and verification status.
+- **`Vehicle`**: Commercial truck registration, tonnage/volume capacity, fuel type, and insurance certificates.
+- **`DriverProfile`**: Commercial driver's license (CDL), assigned vehicle, experience, and safety rating.
+- **`Load`**: Cargo consignment specifications, origin/destination coordinates, cargo type, and budget in ETB.
+- **`Bid`**: Transporter quotes, pricing, and estimated transit times.
+- **`Shipment`**: Active corridor transit mission linking load, vehicle, driver, and live GPS coordinates.
+- **`CustomsClearance`**: Single-window trade dossier, Green Line risk assessment, and cryptographic QR seal.
+- **`Payment`**: Digital smart escrow ledger tracking locked amounts, payment methods, and settlement payouts.
+- **`IncidentReport`**: Real-time corridor delay reports with geotagged coordinates and evidence photos.
+- **`Rating`**: Bidirectional review and scoring system between shippers and carriers.
 
-### 2. 🚚 Transporter Fleet & Driver Management (Mobile App)
-- **Fleet Vehicles**: Register heavy commercial trucks with plate numbers, tonnage capacity, fuel type, **Goods in Transit (GIT) Cargo Insurance**, and **Federal Transport Authority (FTA) Roadworthiness** certification.
-- **Authorized Driver Registration**: Transporters can add licensed heavy vehicle drivers (Full Name, Phone, License No, Grade 5/4, Corridor Experience, and Assigned Truck).
-- **Direct Admin Verification Gate**: Drivers newly registered by transporters enter the Admin Verification Queue as `PENDING`. Drivers cannot be dispatched on active corridor shipments until officially verified by Platform Administrators.
-- **Live Status Badges**: Drivers show distinct `⏳ PENDING` or `ACTIVE` indicators with instant real-time synchronization.
-
-### 3. 🛡️ Admin Verification & Compliance Queue (Web Portal)
-- **User KYC Inspection**: Review legal identities, TIN numbers, Commercial Trade Licenses, GIT Insurance policies, and FTA Roadworthiness certificates.
-- **Dedicated Driver Inspection Modal**: Inspect commercial driver qualifications, years of experience, assigned fleet truck, and employing transporter.
-- **Interactive Document Inspection & Download**: Clickable inspection of digital certificates with standard-compliant PDF generation and downloading.
-- **Real-Time WebSocket Sync**: Changes in verification status broadcast instantly via Socket.IO, updating mobile badges and web dashboards without manual refresh.
-- **Live Search & Role Filtering**: Filter users and drivers by status (`ALL`, `PENDING`, `VERIFIED`, `SUSPENDED`), role (`SHIPPER`, `TRANSPORTER`, `DRIVER`, etc.), or search by name, TIN, phone, or Driver License number.
-
-### 4. 📦 Corridor Load Board & Instant Matching
-- **Load Postings**: Shippers post import/export consignments with cargo weight, packaging type, budget in ETB, and required pickup timeline.
-- **AI Instant Match & Spot Bidding**: Transporters receive direct algorithmic match requests or place competitive spot bids.
-- **Telebirr & CBE Escrow Protection**: Milestone payment locks upon dispatch confirmation, with automated release upon verified delivery at destination dry ports.
-
----
-
-## 📱 TradeFlow Mobile App (Driver & Transporter App — Expo SDK 52)
-
-The TradeFlow Mobile Application (`apps/mobile`) is built on **React Native & Expo SDK 52**, designed specifically for heavy freight fleet operators and commercial truck drivers traversing the Ethiopia-Djibouti corridor.
-
-### 🌟 Key Mobile Features & Workflows:
-
-#### 1. 🚚 Transporter Fleet Portal:
-- **Corridor Fleet Registration**: Onboard commercial heavy trucks with license plate, payload tonnage (15T-40T), fuel type, **Goods in Transit (GIT) Cargo Insurance**, and **Federal Transport Authority (FTA) Roadworthiness** certification.
-- **Commercial Driver Management**: Register qualified drivers with Commercial Driver's License (CDL Grade 5/4), mobile contact, and assigned truck.
-- **Mandatory Admin Verification Gate**: Newly added drivers immediately display an informative `⏳ PENDING` badge and are locked from dispatch until verified by the System Administrator in the Web Console.
-- **Freight Exchange & Spot Bidding**: Inspect available cargo consignments from Addis Ababa, Modjo, and Djibouti, and submit competitive bids.
-- **Corridor Dispatch Engine**: Assign verified vehicles and verified drivers to awarded consignments, instantly triggering live telematics tracking.
-
-#### 2. 🚛 Commercial Driver Portal:
-- **Active Journey Tracking**: Real-time corridor milestone tracking across key waypoints (*Addis Ababa ➔ Modjo Dry Port ➔ Awash Arba ➔ Semera Logistics Hub ➔ Galafi Border ➔ Port of Doraleh*).
-- **Driver Duty Cycle Controller**: Drivers toggle between **"Start Trip"**, **"Driving / Resting"** (for mandatory rest periods, border queues, and weighbridge delays), and **"Arrive Destination"**.
-- **Digital Proof of Delivery (POD)**: Capture recipient name and digital signature upon cargo delivery, triggering instant escrow settlement via Telebirr.
-- **Offline-First Telematics Buffer**: Automatically queues GPS telemetry pings when traversing remote low-connectivity desert sections of the Afar corridor, synchronizing immediately when cellular connection is restored.
-
-#### 3. 🌐 100% Bilingual Localization (Amharic & English):
-- Instant in-app toggle between **Amharic** and **English** across all screens, modals, badges, and validation alerts.
-
----
-
-### 📲 How to Run and Test the Mobile App:
-
-#### Method A: Web Browser Preview (Zero Setup / Instant)
-You do not need a physical phone or emulator to test the mobile app:
-```powershell
-npm run dev:mobile
+### 4.2 End-to-End Consignment Lifecycle
 ```
-*Once Metro Bundler starts, press **`w`** in the terminal to launch the mobile app in your web browser at [http://localhost:8081](http://localhost:8081).*
-
-#### Method B: Physical Android / iOS Phone (Expo Go)
-1. Download and install **Expo Go** from the **Google Play Store** or **Apple App Store**.
-2. Connect your phone to the same local Wi-Fi network as your computer.
-3. Start the bundler: `npm run dev:mobile`.
-4. Scan the terminal's **QR Code** using your phone camera (iOS) or the Expo Go app (Android).
-
-#### Method C: Remote Mobile Testing via Tunnel (Ethio Telecom / Safaricom)
-If your phone is on cellular data or a different Wi-Fi network:
-```powershell
-npm run dev:mobile:tunnel
+Shipper              Platform API               Transporter              Driver
+   |                       |                         |                      |
+   |--- 1. Post Load ----->|                         |                      |
+   |                       |--- 2. Broadcast Load -->|                      |
+   |                       |                         |                      |
+   |                       |<-- 3. Submit Bid -------|                      |
+   |<-- 4. Review Bids ----|                         |                      |
+   |                       |                         |                      |
+   |--- 5. Accept Bid ---->|                         |                      |
+   |--- 6. Fund Escrow --->| [Escrow Locked]         |                      |
+   |                       |--- 7. Dispatch Notice ->|                      |
+   |                       |                         |--- 8. Assign Truck ->|
+   |                       |                         |                      |
+   |                       |<-- 9. Start Trip ------------------------------|
+   |                       |                                                |
+   |                       |<-- 10. Waypoint GPS Check-ins (Semera, Galafi)-|
+   |<-- 11. Live Tracking -|                                                |
+   |                       |                                                |
+   |                       |<-- 12. Submit Digital e-POD (Sign + Photo) ----|
+   |<-- 13. Verify POD ----|                                                |
+   |                       |                                                |
+   |--- 14. Approve e-POD->| [Escrow Settled]                               |
+   |                       |--- 15. Payout Released ----------------------->|
 ```
-*Tunneling creates a secure cloud URL via ngrok/expo, allowing testing on physical phones anywhere across Ethiopia.*
 
 ---
 
-## 🎭 User Personas & Dedicated Portals
+## 5. ⚙️ Implementation Highlights
 
-| Role | Portal Path | Platform | Primary Capabilities |
-| :--- | :--- | :--- | :--- |
-| **Shipper** | `/shipper` | Web | Post cargo loads, evaluate forwarder/transporter quotes, lock escrow |
-| **Freight Forwarder** | `/forwarder` | Web | Multi-modal container bookings, customs declaration pre-filing |
-| **Customs Officer** | `/customs` | Web | ASYCUDA risk assessment, inspection clearances, green lane approval |
-| **Administrator** | `/admin` | Web | KYC Verification Queue, driver credential inspection, dispute mediation |
-| **Transporter** | Mobile Portal | Mobile (Expo) | Fleet trucks, driver management, spot bidding, dispatch tracking |
-| **Truck Driver** | Mobile Portal | Mobile App | Corridor checkpoint check-ins, trip status, electronic logs |
+### 5.1 Geofenced Checkpoint Verification Algorithm
+Drivers cannot falsely report arrival at checkpoints. Proximity is evaluated using the Haversine formula against verified corridor coordinates:
+```typescript
+// Haversine Proximity Check (apps/mobile/src/screens/driver/tabs/CheckinTab.tsx)
+const R = 6371; // Earth's radius in km
+const dLat = (wpLat - liveLat) * (Math.PI / 180);
+const dLon = (wpLng - liveLng) * (Math.PI / 180);
+const a =
+  Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+  Math.cos(liveLat * (Math.PI / 180)) * Math.cos(wpLat * (Math.PI / 180)) *
+  Math.sin(dLon / 2) * Math.sin(dLon / 2);
+const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+const distanceKm = Math.round(R * c);
+
+// Unlocks checkpoint check-in only when within 15 km
+const isWithinGeofence = distanceKm <= 15;
+```
+
+### 5.2 Milestone Smart Escrow State Machine
+- **`PENDING`**: Consignment awarded; awaiting shipper escrow deposit.
+- **`HELD_IN_ESCROW`**: Funds locked in platform vault. Vehicle dispatch is unlocked.
+- **`CONFIRMED`**: Cargo delivered; recipient signs digital e-POD.
+- **`SETTLED`**: 95% of gross freight fee paid out to carrier; 5% platform fee retained.
 
 ---
 
-## ⚡ Quick Start & Development Setup (Docker-Powered)
+## 6. 🌟 Features & Portal Walkthrough
 
-Follow these quick steps to get TradeFlow up and running in minutes using **Docker Desktop**:
+### 6.1 Shipper Web Portal
+- Structured freight posting wizard with commodity classification and budget specifications.
+- Transparent bidding comparison displaying carrier fleet safety scores and fleet specifications.
+- Live corridor telematics view with breadcrumb route tracking and automated delay notifications.
 
-### 1. Prerequisites
-- **Node.js**: `v18.0+` or `v20.0+`
+### 6.2 Carrier / Transporter Portal (Web & Mobile)
+- **Fleet Management**: Register heavy commercial trucks with tonnage capacity, fuel type, GIT cargo insurance, and roadworthiness certification.
+- **Commercial Driver Management**: Register qualified drivers with Commercial Driver's License (Grade 5/4) and vehicle pairing.
+- **Capacity-Aware Dispatch**: Automated validation blocking trucks with insufficient payload capacity.
+- **Smart Escrow Earnings Ledger**: Real-time tracking of locked escrow balances and completed payouts.
+
+### 6.3 Driver Mobile Portal (Android APK v1.1.5)
+- **Trip Dashboard**: Essential telemetry displaying origin, destination, dynamic ETA, and current speed.
+- **Location Check-In**: Geofence-verified check-in at Kaliti, Modjo, Awash, Semera, Galafi, and Doraleh.
+- **Crowdsourced Incident Reporter**: Instant broadcast of road hazards (Accidents, Customs Delays, Roadblocks) with geotagging and photos.
+- **Digital Customs QR Pass**: Offline-capable single-window clearance pass with ECC inspection seal.
+- **Electronic Proof of Delivery (e-POD)**: Touchscreen customer signature capture and delivery verification camera snapshot.
+
+### 6.4 Customs & Corridor Inspection Portal
+- Manifest verification interface for border clearance officers.
+- Instant QR scanning validating digital seal authenticity and consignment contents.
+
+---
+
+## 7. 🧪 Testing & Quality Assurance
+
+### 7.1 Comprehensive Test Execution Matrix
+
+| Test ID | Subsystem | Test Condition | Expected Result | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **TC-AUTH-01** | Authentication | Register user with email OTP | 6-digit OTP validated; user created with hashed password. | **PASS** |
+| **TC-RBAC-02** | Security | Shipper invokes carrier fleet API | Server returns 403 Forbidden. Access blocked. | **PASS** |
+| **TC-LOAD-03** | Freight Marketplace | Post consignment with cargo specs | Consignment saved and broadcasted to load board. | **PASS** |
+| **TC-BID-04** | Freight Marketplace | Transporter submits quote on load | Bid logged; shipper notified in real time via WebSockets. | **PASS** |
+| **TC-ESCROW-05**| Smart Escrow | Shipper deposits freight payment | Payment locked; status transitions to `HELD_IN_ESCROW`. | **PASS** |
+| **TC-DISP-06** | Fleet Dispatch | Assign truck with capacity < weight| Dispatch blocked with capacity mismatch warning. | **PASS** |
+| **TC-GEO-07** | Telematics | Proximity check at 12 km from Semera | Haversine detects distance <= 15 km; check-in unlocks. | **PASS** |
+| **TC-CUST-08** | Customs Gateway | ECC Green Line pass generation | Cryptographic QR pass renders on driver mobile screen. | **PASS** |
+| **TC-EPOD-09** | Delivery Payout | Recipient signs digital e-POD | e-POD saved; escrow releases 95% payout to carrier. | **PASS** |
+| **TC-I18N-10** | Localization | Toggle language to AM and OM | 100% of UI strings translate instantly without reload. | **PASS** |
+| **TC-THEME-11**| Theme Engine | Dark mode test on Samsung A13 | Zero unreadable text or inverted white cards observed. | **PASS** |
+| **TC-BUILD-12**| Mobile CI/CD | Expo EAS Android preview build | Build succeeded; production APK v1.1.5 generated. | **PASS** |
+
+---
+
+## 8. ⚡ Quick Start & Local Development
+
+### 8.1 Prerequisites
+- **Node.js**: `v18.0+` or `v20.0+ LTS`
 - **npm**: `v9.0+`
-- **Docker Desktop**: Installed and running locally
+- **Docker Desktop**: Running locally
 
----
-
-### 2. Install Dependencies & Launch Docker Infrastructure
-
+### 8.2 Installation & Database Initialization
 ```powershell
-# 1. Install all monorepo dependencies
+# 1. Clone repository & install dependencies
+git clone https://github.com/beki255/trade-flow.git
+cd trade-flow
 npm install
 
-# 2. Spin up PostgreSQL 16 (PostGIS), Redis 7.2, MinIO S3, and Adminer
+# 2. Launch PostgreSQL 16 & Redis via Docker
 npm run docker:up
-```
-> 💡 *This starts the dedicated `tradeflow_postgres` database on port 5432 with pre-configured PostGIS corridor geospatial support. To stop containers later, simply run `npm run docker:down`.*
 
----
-
-### 3. Initialize Database & Seed Demo Accounts
-
-Once Docker is up, push the Prisma schema and seed the baseline accounts:
-```powershell
-# Push Prisma schema to PostgreSQL
+# 3. Push Prisma schema & seed baseline accounts
 npm run prisma:push
-
-# Seed official System Admin and Customs Officer accounts
 npm run prisma:seed
 ```
----
 
-### 4. Launch the Applications
-
-#### Option A: Launch All Services Simultaneously (Recommended)
+### 8.3 Launching the Applications
 ```powershell
+# Option A: Launch all services simultaneously (API, Web, Mobile)
 npm run dev:all
+
+# Option B: Launch services in separate terminals
+npm run dev:api     # Backend API  ➔ http://localhost:5000
+npm run dev:web     # Web Portal   ➔ http://localhost:3000
+npm run dev:mobile  # Mobile App   ➔ http://localhost:8081 (Press 'w' for web preview)
 ```
-*Spins up Backend API, Web Portal, and Mobile Bundler in a single unified terminal.*
 
-#### Option B: Launch in Separate Terminal Windows
-* **Terminal 1 (Backend API)**: `npm run dev:api` ➔ [http://localhost:5000](http://localhost:5000)
-* **Terminal 2 (Web Portal)**: `npm run dev:web` ➔ [http://localhost:3000](http://localhost:3000)
-* **Terminal 3 (Mobile App)**: `npm run dev:mobile` ➔ [http://localhost:8081](http://localhost:8081)
-
----
-
-### 5. Access Points & Portals
-
-| Platform | Local URL | Primary Features |
-| :--- | :--- | :--- |
-| 🌐 **Enterprise Web Portal** | [http://localhost:3000](http://localhost:3000) | Landing page, Corridor Topo Map, Shipper, Forwarder, Customs, Admin |
-| 📑 **Interactive Swagger API** | [http://localhost:5000/api/docs](http://localhost:5000/api/docs) | Complete 11-module OpenAPI 3.0 specification with live *Try-It-Out* |
-| 📱 **Driver & Transporter App** | [http://localhost:8081](http://localhost:8081) | Expo Metro Bundler (Press `w` for web preview or scan QR in Expo Go) |
-| 🖥️ **Adminer Database Console** | [http://localhost:8080](http://localhost:8080) | Visual PostgreSQL database table explorer (System: `PostgreSQL`, DB: `tradeflow_db`) |
-| 🗄️ **Prisma Studio Explorer** | [http://localhost:5555](http://localhost:5555) | Run `npm run prisma:studio` for visual Prisma schema & record browsing |
+### 8.4 Seeded Administrative Credentials
+| Role | Email | Password | Description |
+| :--- | :--- | :--- | :--- |
+| **System Administrator** | `admin@miaoda.com` | `Admin2024!` | TradeFlow Platform & KYC Verification Console |
+| **Customs Officer** | `kebede@miaoda.com` | `Demo1234!` | Inspector Kebede Worku (Ethiopian Customs Commission) |
 
 ---
 
-## 📑 Interactive Swagger API Documentation
+## 9. 🏁 Conclusion & Future Roadmap
 
-TradeFlow comes equipped with a comprehensive **OpenAPI 3.0** specification and interactive **Swagger UI** with live *Try-It-Out* capabilities:
+**TradeFlow v2** demonstrates a transformative application of full-stack engineering to eliminate physical logistics bottlenecks along the Ethio-Djibouti Trade Corridor. By replacing fragmented manual brokerage with an automated freight exchange, securing carrier-shipper transactions via milestone-locked smart escrow, streaming low-latency device telematics, and expediting customs inspection through digital QR passes, the system dramatically reduces transit times, freight costs, and payment delays.
 
-- 🔗 **Interactive Swagger UI Console**: [http://localhost:5000/api/docs](http://localhost:5000/api/docs)
-- 🔗 **Raw OpenAPI Specification (JSON)**: [http://localhost:5000/api/docs/json](http://localhost:5000/api/docs/json)
-
-### Complete 11-Module API Coverage (48 Endpoints):
-
-| Module Tag | Path Prefix | Key Endpoints & Capabilities |
-| :--- | :--- | :--- |
-| **System** | `/api/health` | Service health, PostgreSQL connectivity, corridor status |
-| **Authentication** | `/api/auth` | Multi-persona registration, JWT login, Google OAuth 2.0, user directory |
-| **Portal & Marketplace** | `/api/portal` | Loads, competitive RFQ bids, fleet trucks, drivers, verifications, audit logs, ratings |
-| **AI Freight Matching** | `/api/matching` | Multi-attribute weighted utility ranking (Cost 35%, Rel 30%, Prox 20%, Fuel 15%) |
-| **Telematics & Live Tracking** | `/api/tracking` | GPS telemetry ingestion, corridor waypoint geofencing, route polylines, dynamic ETA |
-| **Dynamic Pricing** | `/api/pricing` | Itemized spot rates, fuel index surcharges, contract rate divergence monitor (>20%) |
-| **Corridor Optimization** | `/api/optimization` | Multi-criteria route planning (Highway A-1 vs Southern Bypass), road hazard alerts |
-| **Customs Clearance** | `/api/customs` | Automated pre-submission document validator, officer review queue, clearance ledger |
-| **Payments & Escrow** | `/api/payments` | TeleBirr / CBE Birr escrow deposit, 5% platform fee, driver settlement, dispute arbitration |
-| **Freight Forwarder** | `/api/forwarder` | Multi-shipper client portfolio, LTL cargo consolidation into 40ft containers, multimodal tracking |
-| **Analytics & KPIs** | `/api/analytics` | Fleet fuel efficiency benchmarking (km/L), corridor driver eco-scores, transporter rankings |
+### Future Roadmap:
+1. **IoT Hardware Telematics:** Direct integration with truck CAN-bus OBD-II dongles for automated fuel monitoring.
+2. **Automated Number Plate Recognition (ANPR):** Edge AI camera deployment at Galafi border checkpoints for zero-stop verification.
+3. **Multi-Currency Escrow:** Support for Ethiopian Birr (ETB), Djibouti Franc (DJF), and US Dollars (USD).
+4. **Predictive AI Backhaul Matching:** Machine learning algorithms reducing empty return trips below 15%.
 
 ---
 
-## 🛠️ Database Management (Prisma ORM)
-
-```powershell
-# Push Prisma schema migrations to PostgreSQL
-npm run prisma:push
-
-# Launch Prisma Studio Web UI database explorer
-npm run prisma:studio
-
-# Seed demo users and initial corridor consignments
-npm run prisma:seed
-```
----
-
-## 🔒 Seeded System Credentials (from `prisma/seed.ts`)
-
-The database seeding script (`npm run prisma:seed`) initializes the official administrative and regulatory oversight authorities:
-
-| Persona | Email / Identifier | Password | Role | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| **System Administrator** | `admin@miaoda.com` | `Admin2024!` | `ADMIN` | TradeFlow Platform Management & User KYC Verification Console |
-| **Customs Officer** | `kebede@miaoda.com` | `Demo1234!` | `CUSTOMS_OFFICER` | Inspector Kebede Worku (Ethiopian Customs Commission ECC) |
-
-> 💡 **Commercial Roles (Shipper, Transporter, Forwarder, Driver):**  
-> Per system specification, commercial actors register directly via the **Registration Page** or **Mobile App**. Newly registered organizations and drivers enter the **Admin Verification Queue** (`/admin`) as `PENDING` and are verified in real time by the System Administrator upon reviewing their TIN, Trade License, GIT Insurance, Roadworthiness, or Commercial Driver's License (CDL).
-
----
-
-## 📄 Compliance & Corridor Standards
-
-- **Ethiopian Customs Commission (ECC)**: Single-Window ASYCUDA declaration pre-filing.
-- **Federal Transport Authority (FTA)**: Commercial driver licensing & heavy vehicle roadworthiness certification.
-- **National Bank of Ethiopia (NBE)**: Milestone escrow regulations via Telebirr & CBE digital financial services.
-- **ESLSE Multi-Modal Hub**: Seamless coordination between Djibouti Sea Port, Galafi border post, and Modjo Dry Port.
-
----
-
-*TradeFlow v2 Platform — Built for the Ethiopian Logistics Modernization Initiative. All rights reserved © 2026.*
+*TradeFlow v2 — Built for the Ethiopian Logistics Modernization Initiative. All rights reserved © 2026.*
