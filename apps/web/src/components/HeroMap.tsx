@@ -23,17 +23,6 @@ export const HeroMap: React.FC = () => {
         {/* Left Column: Modern High-Impact Logistics SaaS Design */}
         <div className="lg:col-span-5 flex flex-col items-start gap-3.5 sm:gap-4">
           
-          {/* Live Status Pill */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-sky-50 dark:bg-sky-950/70 border border-sky-200/90 dark:border-sky-800/60 shadow-2xs">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-sky-900 dark:text-sky-300">
-              Ethio–Djibouti Corridor • 910 km Live
-            </span>
-          </div>
-
           {/* Bold Punchy Headline */}
           <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-black tracking-tight text-slate-900 dark:text-white leading-[1.12]">
             {t('hero.titlePart1')}{' '}
