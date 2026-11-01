@@ -17,7 +17,7 @@
 
 ---
 
-## 🔗 Project Links & Live Deliverables
+## Project Deliverables & Verified Access Links
 
 | Deliverable | Platform / Type | URL / Access Link |
 | :--- | :--- | :--- |
@@ -28,7 +28,7 @@
 | **Mobile Android APK** | Standalone Installable APK (v1.1.6) | [Download TradeFlow v1.1.6 APK](https://expo.dev/artifacts/eas/s_fuNuQqeCoh1iD_uAtLD8ATz7XDYnuO9WwikUil4JI.apk) |
 | **EAS Cloud Build Logs** | Expo CI/CD Build #5dbf3408 | [Expo EAS Build Logs](https://expo.dev/accounts/bereket2553/projects/tradeflow-mobile/builds/5dbf3408-9ce5-4517-b42d-85e8580555b2) |
 
-### 📱 Instant Mobile APK Camera QR Scan & Download
+### Instant Mobile APK Camera QR Scan & Download
 
 Scan this QR code with any smartphone camera to instantly download and install the standalone **TradeFlow Android App (v1.1.6)**:
 
@@ -44,7 +44,30 @@ Scan this QR code with any smartphone camera to instantly download and install t
 
 ---
 
-## 📑 Executive Summary
+## Table of Contents
+
+- [Project Deliverables & Verified Access Links](#project-deliverables--verified-access-links) (Page 2)
+- [Table of Contents](#table-of-contents) (Page 3)
+- [Executive Summary](#executive-summary) (Page 4)
+- [1. Project Background, Problem Formulation & Scope](#1-project-background-problem-formulation--scope) (Page 5)
+- [2. Requirements Specification & User Personas](#2-requirements-specification--user-personas) (Page 7)
+- [3. System Architecture & Monorepo Topology](#3-system-architecture--monorepo-topology) (Page 9)
+- [4. Database Design & Prisma Relational Schema](#4-database-design--prisma-relational-schema) (Page 10)
+- [5. Digital Smart Escrow Protocol & Settlements](#5-digital-smart-escrow-protocol--settlements) (Page 11)
+- [6. Corridor Telematics, GPS Geofencing & Offline Sync](#6-corridor-telematics-gps-geofencing--offline-sync) (Page 12)
+- [7. Single-Window Customs Clearance & QR Pass](#7-single-window-customs-clearance--qr-pass) (Page 14)
+- [8. Driver Mobile Application (React Native Expo SDK 52)](#8-driver-mobile-application-react-native-expo-sdk-52) (Page 15)
+- [9. Transporter Fleet Management Portal](#9-transporter-fleet-management-portal) (Page 16)
+- [10. Shipper & Customs Commission Web Portals](#10-shipper--customs-commission-web-portals) (Page 17)
+- [11. Trilingual Localization & Ergonomic Theming](#11-trilingual-localization--ergonomic-theming) (Page 18)
+- [12. Backend REST API Architecture](#12-backend-rest-api-architecture) (Page 19)
+- [13. Testing, Verification & Quality Assurance](#13-testing-verification--quality-assurance) (Page 20)
+- [14. Technical Challenges Encountered & Applied Solutions](#14-technical-challenges-encountered--applied-solutions) (Page 21)
+- [15. Conclusion & Future Outlook](#15-conclusion--future-outlook) (Page 22)
+
+---
+
+## Executive Summary
 
 **TradeFlow** is a modern, cross-platform logistics orchestration, real-time corridor telematics, and digital smart escrow platform purpose-built for the critical **Ethio-Djibouti Trade Corridor**—a 900+ km lifeline carrying over 95% of Ethiopia’s import-export freight.
 
