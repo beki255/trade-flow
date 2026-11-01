@@ -23,7 +23,7 @@
 | Deliverable Name | Platform / Type | Direct Access Link / URL |
 | :--- | :--- | :--- |
 | **GitHub Repository** | Source Code (Monorepo) | [https://github.com/beki255/trade-flow](https://github.com/beki255/trade-flow) |
-| **Live Web Application** | Production Web Portal | [https://trade-flow-mu.vercel.app](https://trade-flow-mu.vercel.app) *(or https://tradeflow.et)* |
+| **Live Web Application** | Production Web Portal | [https://trade-flow-ukgu.vercel.app](https://trade-flow-ukgu.vercel.app) *(or https://tradeflow.et)* |
 | **Backend REST API** | Cloud Microservice | [https://tradeflow-api-7abs.onrender.com](https://tradeflow-api-7abs.onrender.com) |
 | **API Health & Metrics** | System Status Check | [https://tradeflow-api-7abs.onrender.com/health](https://tradeflow-api-7abs.onrender.com/health) |
 | **Mobile Android APK** | Standalone APK (v1.1.5) | [Download TradeFlow v1.1.5 APK](https://expo.dev/artifacts/eas/T1ZfHOLf-u_evYzO0aEfLD4MJtnN7FSQecclu_UrVAk.apk) |
