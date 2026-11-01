@@ -30,6 +30,14 @@
 | **EAS Cloud Build Logs** | Expo CI/CD Build #5dbf3408 | [View Expo EAS Cloud Logs](https://expo.dev/accounts/bereket2553/projects/tradeflow-mobile/builds/5dbf3408-9ce5-4517-b42d-85e8580555b2) |
 | **Project Documentation (PDF)** | Complete Technical Report | [Download Documentation PDF](docs/TradeFlow_Project_Documentation.pdf) |
 
+### 👥 Project Group Members & Credentials
+
+| Student Full Name | Student ID | Academic Role / Contribution |
+| :--- | :--- | :--- |
+| **BEREKET SAHLEMARIAM** | `CTC-1041-26` | Capstone Group Member — Full-Stack & Mobile Engineering |
+| **DAGNAW MEKASHA** | `CTC-1339-26` | Capstone Group Member — System Architecture & Testing |
+| **HAMELMAL BELAYNEH** | `CTC-1116-26` | Capstone Group Member — UI/UX Design & Documentation |
+
 ### 📱 Mobile Android APK — Instant Camera QR Code & Download
 
 Scan this QR code with any smartphone camera to instantly download and install the standalone **TradeFlow Android App (v1.1.6)**:
