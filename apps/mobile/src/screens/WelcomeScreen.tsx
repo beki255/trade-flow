@@ -12,7 +12,6 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent,
   Platform,
-  Linking,
 } from 'react-native';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
@@ -182,27 +181,6 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
               </Text>
             </TouchableOpacity>
           </View>
-
-          {/* Bottom Telebirr-style Hub & Help Links */}
-          <View style={styles.footerLinksRow}>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => Linking.openURL('https://trade-flow-ukgu.vercel.app').catch(() => {})}
-            >
-              <Text style={styles.footerLinkText}>
-                teleHub
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => Linking.openURL('tel:9924').catch(() => {})}
-            >
-              <Text style={styles.footerLinkText}>
-                {language === 'AM' ? 'እርዳታ' : language === 'OM' ? 'Gargaarsa' : 'Help'}
-              </Text>
-            </TouchableOpacity>
-          </View>
         </View>
 
       </View>
@@ -313,17 +291,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#CBD5E1',
   },
 
-  // Action Buttons & Telebirr Bottom Links (Elevated & 100% Android System Bar Clearance)
+  // Action Buttons (Elevated & 100% Android System Bar Clearance)
   buttonsWrapper: {
     width: '100%',
     paddingHorizontal: 24,
-    gap: 12,
-    paddingBottom: Platform.OS === 'android' ? 12 : 8,
+    gap: 14,
+    paddingBottom: Platform.OS === 'android' ? 36 : 24,
     marginTop: 8,
   },
   loginButton: {
     backgroundColor: '#0284C7',
-    paddingVertical: 14,
+    paddingVertical: 15,
     borderRadius: 16,
     alignItems: 'center',
     ...Platform.select({
@@ -349,27 +327,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 2,
+    paddingTop: 4,
   },
   registerPrompt: {
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: '500',
   },
   registerLink: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#7CB342', // Telebirr brand green
-  },
-  footerLinksRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 60,
-    paddingTop: 4,
-  },
-  footerLinkText: {
     fontSize: 13.5,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#7CB342', // Telebirr brand green
   },
 });
