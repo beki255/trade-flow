@@ -131,26 +131,8 @@ export const CorridorMapLeftPanel: React.FC = () => {
         </svg>
       </div>
 
-      {/* Floating Telematics HUD Card (Bottom Left) */}
+      {/* Bottom Area */}
       <div className="z-10 flex flex-col gap-6">
-        <div className="w-fit min-w-[210px] rounded-xl bg-[#0F172A]/90 backdrop-blur-md border border-slate-700/70 p-3.5 shadow-2xl space-y-2">
-          <div className="flex items-center justify-between text-xs text-slate-300 gap-6">
-            <span className="text-slate-400">Active Trucks:</span>
-            <span className="font-bold text-white text-sm">16</span>
-          </div>
-          <div className="flex items-center justify-between text-xs text-slate-300 gap-6">
-            <span className="text-slate-400">Avg. Speed:</span>
-            <span className="font-bold text-white text-sm">68 km/h</span>
-          </div>
-          <div className="flex items-center justify-between text-xs text-slate-300 gap-6 pt-1 border-t border-slate-800">
-            <span className="text-slate-400">Galafi Clearance:</span>
-            <span className="font-bold text-[#10B981] flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse"></span>
-              Normal
-            </span>
-          </div>
-        </div>
-
         <p className="text-xl md:text-2xl font-bold text-white tracking-tight leading-snug max-w-sm">
           Digitizing Cross-Border<br />Trade & Telematics.
         </p>
