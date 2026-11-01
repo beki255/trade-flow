@@ -12,7 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
-import { transporterStyles as styles } from '../transporterStyles';
+import { useTransporterStyles } from '../transporterStyles';
 import { DriverItem } from '../types';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -63,6 +63,7 @@ export const AddTruckModal: React.FC<AddTruckModalProps> = ({
   isEditing = false,
   onSubmit,
 }) => {
+  const styles = useTransporterStyles();
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [showFuelTypeDropdown, setShowFuelTypeDropdown] = useState(false);
   const [insuranceDocName, setInsuranceDocName] = useState('');

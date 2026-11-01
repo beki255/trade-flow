@@ -1,17 +1,19 @@
 import { StyleSheet, Platform, StatusBar } from 'react-native';
+import { useMemo } from 'react';
+import { useTheme, ThemeColors, darkColors } from '../../context/ThemeContext';
 
-export const driverStyles = StyleSheet.create({
+export const getDriverStyles = (colors: ThemeColors, isDark: boolean) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.headerBg,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   container: {
     flex: 1,
-    backgroundColor: '#F4F9FD',
+    backgroundColor: colors.background,
   },
   topHeader: {
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.headerBg,
     paddingHorizontal: 16,
     paddingTop: Platform.OS === 'android' ? Math.max((StatusBar.currentHeight || 0) + 14, 52) : 14,
     paddingBottom: 14,
@@ -19,25 +21,25 @@ export const driverStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderBottomWidth: 1,
-    borderBottomColor: '#1E293B',
+    borderBottomColor: colors.border,
     zIndex: 100,
   },
   brandTitle: {
     fontSize: 13.5,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: colors.text,
     letterSpacing: -0.2,
   },
   truckSub: {
     fontSize: 10,
-    color: '#38BDF8',
+    color: colors.accent,
     fontWeight: '600',
     marginTop: 1,
   },
   logoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EF4444',
+    backgroundColor: colors.danger,
     paddingHorizontal: 6,
     paddingVertical: 5,
     borderRadius: 7,
@@ -49,21 +51,21 @@ export const driverStyles = StyleSheet.create({
     fontWeight: '800',
   },
   sosBanner: {
-    backgroundColor: '#1E293B',
+    backgroundColor: isDark ? '#1E293B' : '#FEF2F2',
     paddingVertical: 6,
     paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#334155',
+    borderBottomColor: isDark ? '#334155' : '#FCA5A5',
   },
   sosBannerActive: {
     backgroundColor: '#DC2626',
     borderBottomColor: '#991B1B',
   },
   sosText: {
-    color: '#F87171',
+    color: isDark ? '#F87171' : '#DC2626',
     fontWeight: '800',
     fontSize: 11,
     letterSpacing: 0.5,
@@ -82,7 +84,7 @@ export const driverStyles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
   },
   kpiGrid: {
     flexDirection: 'row',
@@ -91,29 +93,29 @@ export const driverStyles = StyleSheet.create({
   kpiCard: {
     flex: 1,
     minWidth: 0,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 10,
     borderWidth: 1,
-    borderColor: '#E2EAF2',
+    borderColor: colors.border,
     gap: 3,
   },
   kpiLabel: {
     fontSize: 10,
-    color: '#64748B',
+    color: colors.textMuted,
     fontWeight: '700',
   },
   kpiValue: {
     fontSize: 15,
     fontWeight: '900',
-    color: '#0F172A',
+    color: colors.text,
   },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 20,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#E2EAF2',
+    borderColor: colors.border,
     gap: 10,
   },
   cardHeader: {
@@ -124,10 +126,10 @@ export const driverStyles = StyleSheet.create({
   cardTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
   },
   statusBadge: {
-    backgroundColor: '#E0F2FE',
+    backgroundColor: isDark ? '#082F49' : '#E0F2FE',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 20,
@@ -135,10 +137,10 @@ export const driverStyles = StyleSheet.create({
   statusBadgeText: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#0284C7',
+    color: colors.accent,
   },
   routeBox: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
     borderRadius: 14,
     padding: 12,
     gap: 6,
@@ -146,16 +148,16 @@ export const driverStyles = StyleSheet.create({
   routeCity: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
   },
   routeArrow: {
     fontSize: 11,
-    color: '#64748B',
+    color: colors.textMuted,
     paddingLeft: 18,
   },
   cardDivider: {
     height: 1,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.border,
     marginVertical: 4,
   },
   infoRow: {
@@ -165,21 +167,21 @@ export const driverStyles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 12,
-    color: '#64748B',
+    color: colors.textMuted,
   },
   infoValue: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#0F172A',
+    color: colors.text,
   },
   emptyCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 20,
     padding: 30,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#E2EAF2',
+    borderColor: colors.border,
     borderStyle: 'dashed',
     gap: 8,
   },
@@ -190,20 +192,20 @@ export const driverStyles = StyleSheet.create({
   emptyTitle: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
   },
   emptySub: {
     fontSize: 11,
-    color: '#64748B',
+    color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 16,
   },
   timeline: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 20,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#E2EAF2',
+    borderColor: colors.border,
   },
   timelineItem: {
     flexDirection: 'row',
@@ -218,21 +220,21 @@ export const driverStyles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#CBD5E1',
+    backgroundColor: isDark ? '#475569' : '#CBD5E1',
     marginTop: 4,
   },
   dotCompleted: {
     backgroundColor: '#10B981',
   },
   dotActive: {
-    backgroundColor: '#0284C7',
+    backgroundColor: colors.primary,
     borderWidth: 2,
-    borderColor: '#BAE6FD',
+    borderColor: colors.accent,
   },
   line: {
     flex: 1,
     width: 2,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: colors.border,
     marginVertical: 4,
   },
   timelineRight: {
@@ -247,33 +249,33 @@ export const driverStyles = StyleSheet.create({
   wpName: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
     flex: 1,
   },
   wpStatus: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#64748B',
+    color: colors.textMuted,
   },
   statusCompletedText: {
     color: '#10B981',
   },
   statusActiveText: {
-    color: '#0284C7',
+    color: colors.primary,
   },
   wpTime: {
     fontSize: 11,
-    color: '#64748B',
+    color: colors.textMuted,
     marginTop: 2,
   },
   coordsText: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
     marginVertical: 4,
   },
   checkinBtn: {
-    backgroundColor: '#0284C7',
+    backgroundColor: colors.primary,
     borderRadius: 14,
     paddingVertical: 12,
     alignItems: 'center',
@@ -285,34 +287,34 @@ export const driverStyles = StyleSheet.create({
     fontWeight: '800',
   },
   successBox: {
-    backgroundColor: '#DCFCE7',
+    backgroundColor: isDark ? '#064E3B' : '#DCFCE7',
     borderWidth: 1,
-    borderColor: '#86EFAC',
+    borderColor: isDark ? '#059669' : '#86EFAC',
     borderRadius: 12,
     padding: 12,
     alignItems: 'center',
   },
   successText: {
-    color: '#166534',
+    color: isDark ? '#A7F3D0' : '#166534',
     fontSize: 12,
     fontWeight: '700',
   },
   historyCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 14,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#E2EAF2',
+    borderColor: colors.border,
     gap: 2,
   },
   historyId: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
   },
   historyCoords: {
     fontSize: 11,
-    color: '#64748B',
+    color: colors.textMuted,
   },
   inputGroup: {
     gap: 4,
@@ -320,20 +322,20 @@ export const driverStyles = StyleSheet.create({
   inputLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#475569',
+    color: colors.textMuted,
   },
   input: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.inputBg,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: colors.inputBorder,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 12,
-    color: '#0F172A',
+    color: colors.text,
   },
   reportBtn: {
-    backgroundColor: '#EF4444',
+    backgroundColor: colors.danger,
     borderRadius: 14,
     paddingVertical: 12,
     alignItems: 'center',
@@ -345,9 +347,9 @@ export const driverStyles = StyleSheet.create({
     fontWeight: '800',
   },
   signatureBox: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.inputBg,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: colors.inputBorder,
     borderStyle: 'dashed',
     borderRadius: 14,
     height: 70,
@@ -356,23 +358,23 @@ export const driverStyles = StyleSheet.create({
   },
   signatureBoxSigned: {
     borderColor: '#10B981',
-    backgroundColor: '#F0FDF4',
+    backgroundColor: isDark ? '#064E3B' : '#F0FDF4',
     borderStyle: 'solid',
   },
   signatureText: {
     fontSize: 12,
-    color: '#64748B',
+    color: colors.textMuted,
     fontWeight: '600',
   },
   podBtn: {
-    backgroundColor: '#10B981',
+    backgroundColor: colors.success,
     borderRadius: 14,
     paddingVertical: 12,
     alignItems: 'center',
     marginTop: 4,
   },
   podBtnDisabled: {
-    backgroundColor: '#CBD5E1',
+    backgroundColor: isDark ? '#334155' : '#CBD5E1',
   },
   podBtnText: {
     color: '#FFFFFF',
@@ -381,9 +383,9 @@ export const driverStyles = StyleSheet.create({
   },
   bottomNavContainer: {
     minHeight: Platform.OS === 'android' ? 96 : (Platform.OS === 'ios' ? 76 : 58),
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.tabBarBg,
     borderTopWidth: 1,
-    borderTopColor: '#E2EAF2',
+    borderTopColor: colors.tabBarBorder,
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-around',
@@ -391,7 +393,7 @@ export const driverStyles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: Platform.OS === 'android' ? 46 : (Platform.OS === 'ios' ? 24 : 8),
     ...Platform.select({
-      web: { boxShadow: '0 -2px 10px rgba(0, 0, 0, 0.04)' } as any,
+      web: { boxShadow: '0 -2px 10px rgba(0, 0, 0, 0.08)' } as any,
       default: { elevation: 6 },
     }),
   },
@@ -412,12 +414,20 @@ export const driverStyles = StyleSheet.create({
   navLabel: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#94A3B8',
+    color: colors.textMuted,
     textAlign: 'center',
     marginTop: 1,
   },
   navLabelActive: {
-    color: '#0284C7',
+    color: colors.primary,
     fontWeight: '800',
   },
 });
+
+export const useDriverStyles = () => {
+  const { colors, isDark } = useTheme();
+  return useMemo(() => getDriverStyles(colors, isDark), [colors, isDark]);
+};
+
+// Backwards-compatible default instance
+export const driverStyles = getDriverStyles(darkColors, true);

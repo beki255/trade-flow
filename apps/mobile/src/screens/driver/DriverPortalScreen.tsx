@@ -13,7 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { TabIcon } from '../../components/TabIcon';
 import { getDynamicCorridorWaypoints } from '../../shared';
-import { driverStyles as styles } from './driverStyles';
+import { useDriverStyles } from './driverStyles';
 import { WaypointItem, CheckinRecord, IncidentRecord, DynamicRerouteProposal, ActiveTripDetails, DriverTabType } from './types';
 import { getApiBaseUrl, apiFetch } from '../../utils/api';
 import {
@@ -48,8 +48,9 @@ interface DriverPortalScreenProps {
 }
 
 export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout, user }) => {
-  const { colors } = useTheme();
-  const { language } = useLanguage();
+  const { colors, isDark } = useTheme();
+  const styles = useDriverStyles();
+  const { language, t } = useLanguage();
   const [currentUser, setCurrentUser] = useState<any>(user);
   const [activeTab, setActiveTab] = useState<DriverTabType>('trip');
 

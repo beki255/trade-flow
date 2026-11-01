@@ -5,7 +5,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { transporterStyles as styles } from '../transporterStyles';
+import { useTransporterStyles } from '../transporterStyles';
 import { UserProfile, BidItem } from '../types';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../../../context/LanguageContext';
@@ -17,6 +17,7 @@ interface EarningsTabProps {
 }
 
 export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = [] }) => {
+  const styles = useTransporterStyles();
   const { t, language } = useLanguage();
   const [payments, setPayments] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);

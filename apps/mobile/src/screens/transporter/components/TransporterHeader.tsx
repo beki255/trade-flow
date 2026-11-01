@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { transporterStyles as styles } from '../transporterStyles';
 import { UserProfile } from '../types';
 import { LanguageSwitcher } from '../../../components/LanguageSwitcher';
+import { ThemeToggle } from '../../../components/ThemeToggle';
 import { useLanguage } from '../../../context/LanguageContext';
 
 interface TransporterHeaderProps {
@@ -112,6 +113,7 @@ export const TransporterHeader: React.FC<TransporterHeaderProps> = ({
             )}
           </TouchableOpacity>
         )}
+        <ThemeToggle compact />
         <LanguageSwitcher dark={true} />
       </View>
     </View>

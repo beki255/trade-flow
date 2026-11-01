@@ -14,7 +14,8 @@ import {
   Platform,
 } from 'react-native';
 import { useLanguage } from '../context/LanguageContext';
-import { lightColors } from '../context/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { Ionicons } from '@expo/vector-icons';
 import { CorridorIsometricIllustration } from '../components/CorridorIsometricIllustration';
@@ -32,8 +33,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
 }) => {
   const [activeDot, setActiveDot] = useState(0);
   const { t } = useLanguage();
-  const isDark = false;
-  const colors = lightColors;
+  const { colors, isDark } = useTheme();
   const { width } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
 
@@ -87,7 +87,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           </View>
 
           <View style={styles.headerRight}>
-            <LanguageSwitcher dark={false} />
+            <ThemeToggle compact />
+            <LanguageSwitcher dark={isDark} />
           </View>
         </View>
 

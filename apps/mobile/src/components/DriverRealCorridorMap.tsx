@@ -2681,7 +2681,7 @@ const s = StyleSheet.create({
   },
   navSpeedometerBadge: {
     position: 'absolute',
-    bottom: Platform.OS === 'android' ? 172 : (Platform.OS === 'ios' ? 136 : 105),
+    bottom: Platform.OS === 'android' ? 198 : (Platform.OS === 'ios' ? 148 : 115),
     left: 16,
     width: 66,
     height: 66,
@@ -2712,7 +2712,7 @@ const s = StyleSheet.create({
   },
   navRightControls: {
     position: 'absolute',
-    bottom: Platform.OS === 'android' ? 172 : (Platform.OS === 'ios' ? 136 : 105),
+    bottom: Platform.OS === 'android' ? 198 : (Platform.OS === 'ios' ? 148 : 115),
     right: 16,
     alignItems: 'center',
     gap: 10,
@@ -2735,7 +2735,7 @@ const s = StyleSheet.create({
   },
   navBottomCardContainer: {
     position: 'absolute',
-    bottom: Platform.OS === 'android' ? 68 : (Platform.OS === 'ios' ? 36 : 14),
+    bottom: Platform.OS === 'android' ? 88 : (Platform.OS === 'ios' ? 44 : 20),
     left: 14,
     right: 14,
     zIndex: 100,

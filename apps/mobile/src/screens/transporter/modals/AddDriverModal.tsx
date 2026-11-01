@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
-import { transporterStyles as styles } from '../transporterStyles';
+import { useTransporterStyles } from '../transporterStyles';
 import { TruckItem } from '../types';
 import { isValidImageUri, uriToDataUrl } from '../../../utils/imageUtils';
 import { useLanguage } from '../../../context/LanguageContext';
@@ -83,6 +83,7 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({
   isEditing = false,
   onSubmit,
 }) => {
+  const styles = useTransporterStyles();
   const { language } = useLanguage();
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
 

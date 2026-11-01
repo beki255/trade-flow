@@ -5,7 +5,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { driverStyles as styles } from '../driverStyles';
+import { useDriverStyles } from '../driverStyles';
 import { CheckinRecord, ActiveTripDetails } from '../types';
 import { useLanguage } from '../../../context/LanguageContext';
 import { formatCleanLocation } from './TripTab';
@@ -29,6 +29,7 @@ export const CheckinTab: React.FC<CheckinTabProps> = ({
   realGpsLocation,
   onOpenCustomsPass,
 }) => {
+  const styles = useDriverStyles();
   const { t, language } = useLanguage();
   const hasTrip = !!activeTrip;
 

@@ -9,7 +9,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { driverStyles as styles } from '../driverStyles';
+import { useDriverStyles } from '../driverStyles';
 import { ActiveTripDetails } from '../types';
 import { useLanguage } from '../../../context/LanguageContext';
 import { formatCleanLocation } from './TripTab';
@@ -38,6 +38,7 @@ export const PodTab: React.FC<PodTabProps> = ({
   onSignPOD,
   actionLoading = false,
 }) => {
+  const styles = useDriverStyles();
   const { t, language } = useLanguage();
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [selectedOrderIndex, setSelectedOrderIndex] = useState(0);

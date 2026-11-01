@@ -13,8 +13,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../context/LanguageContext';
-import { lightColors } from '../context/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { apiFetch } from '../utils/api';
 import {
   validateEthiopianPhone,
@@ -37,8 +38,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
   onRegisterSuccess,
 }) => {
   const { t, language } = useLanguage();
-  const isDark = false;
-  const colors = lightColors;
+  const { colors, isDark } = useTheme();
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
   // Step 1 Fields
@@ -357,7 +357,8 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
         </View>
 
         <View style={styles.rightActions}>
-          <LanguageSwitcher dark={false} />
+          <ThemeToggle compact />
+          <LanguageSwitcher dark={isDark} />
         </View>
       </View>
 

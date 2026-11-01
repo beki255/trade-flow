@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { TruckItem, DriverItem, BidItem } from '../types';
+import { useTheme } from '../../../context/ThemeContext';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface DispatchModalProps {
   visible: boolean;
@@ -39,6 +41,8 @@ export const DispatchModal: React.FC<DispatchModalProps> = ({
   onConfirmDispatch,
 }) => {
   const isWeb = Platform.OS === 'web';
+  const { colors, isDark } = useTheme();
+  const { t, language } = useLanguage();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.92)).current;
 

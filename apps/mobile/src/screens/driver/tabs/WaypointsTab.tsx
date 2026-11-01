@@ -3,7 +3,7 @@ import {
   View,
   Text,
 } from 'react-native';
-import { driverStyles as styles } from '../driverStyles';
+import { useDriverStyles } from '../driverStyles';
 import { WaypointItem } from '../types';
 import { useLanguage } from '../../../context/LanguageContext';
 
@@ -12,6 +12,7 @@ interface WaypointsTabProps {
 }
 
 export const WaypointsTab: React.FC<WaypointsTabProps> = ({ waypoints }) => {
+  const styles = useDriverStyles();
   const { t } = useLanguage();
 
   return (

@@ -10,6 +10,7 @@ import { ActiveTripDetails } from '../types';
 import { DriverRealCorridorMap } from '../../../components/DriverRealCorridorMap';
 import { calculateCorridorRoadDistanceKm } from '../../../shared';
 import { useLanguage } from '../../../context/LanguageContext';
+import { useTheme } from '../../../context/ThemeContext';
 import {
   TruckIcon,
   PlayIcon,
@@ -104,6 +105,7 @@ export const TripTab: React.FC<TripTabProps> = ({
   onMapInteractionChange,
 }) => {
   const { t, language } = useLanguage();
+  const { colors, isDark } = useTheme();
   const isInTransit = activeTrip?.status?.toUpperCase() === 'IN_TRANSIT';
   const isDelivered = activeTrip?.status?.toUpperCase() === 'DELIVERED';
   const isDispatched = !!activeTrip && !isInTransit && !isDelivered;
@@ -516,7 +518,7 @@ const tabStyles = StyleSheet.create({
     color: '#64748B',
   },
   missionCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#0F172A',
     borderRadius: 18,
     padding: 14,
     borderWidth: 1,
@@ -699,7 +701,7 @@ const tabStyles = StyleSheet.create({
   },
   kpiCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#0F172A',
     borderRadius: 14,
     padding: 10,
     borderWidth: 1,
@@ -727,7 +729,7 @@ const tabStyles = StyleSheet.create({
     fontWeight: '600',
   },
   mapCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#0F172A',
     borderRadius: 18,
     padding: 12,
     borderWidth: 1,

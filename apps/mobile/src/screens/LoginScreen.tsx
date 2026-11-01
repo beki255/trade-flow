@@ -14,10 +14,11 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../context/LanguageContext';
-import { lightColors } from '../context/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
 import { apiFetch } from '../utils/api';
 import { storage } from '../utils/storage';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { validateEthiopianPhone, validateEmail } from '../utils/validation';
 import { ForgotPasswordModal } from './modals/ForgotPasswordModal';
 
@@ -33,8 +34,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   onLoginSuccess,
 }) => {
   const { t } = useLanguage();
-  const isDark = false;
-  const colors = lightColors;
+  const { colors, isDark } = useTheme();
   const [identifier, setIdentifier] = useState<string>('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -148,7 +148,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         </View>
 
         <View style={styles.rightActions}>
-          <LanguageSwitcher dark={false} />
+          <ThemeToggle compact />
+          <LanguageSwitcher dark={isDark} />
         </View>
       </View>
 

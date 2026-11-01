@@ -7,7 +7,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { transporterStyles as styles } from '../transporterStyles';
+import { useTransporterStyles } from '../transporterStyles';
 import { TruckItem, DriverItem } from '../types';
 import { useLanguage } from '../../../context/LanguageContext';
 import { isValidImageUri } from '../../../utils/imageUtils';
@@ -37,6 +37,7 @@ export const FleetTab: React.FC<FleetTabProps> = ({
   onEditDriver,
   onDeleteDriver,
 }) => {
+  const styles = useTransporterStyles();
   const { t, language } = useLanguage();
   const [internalSubTab, setInternalSubTab] = useState<'vehicles' | 'drivers'>('vehicles');
   const activeSubTab = fleetSubTab !== undefined ? fleetSubTab : internalSubTab;

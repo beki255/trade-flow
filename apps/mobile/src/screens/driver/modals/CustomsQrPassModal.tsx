@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../../../context/LanguageContext';
+import { useTheme } from '../../../context/ThemeContext';
 import { ActiveTripDetails, DriverCustomsPass } from '../types';
 
 interface CustomsQrPassModalProps {
@@ -28,7 +29,8 @@ export const CustomsQrPassModal: React.FC<CustomsQrPassModalProps> = ({
   activeTrip,
   customsPass,
 }) => {
-  const { language } = useLanguage();
+  const { t, language } = useLanguage();
+  const { colors, isDark } = useTheme();
 
   const isCleared = Boolean(customsPass?.isCleared);
   const certNo = customsPass?.certificateNo || (isCleared ? 'ECC-CLR-2026-ACTIVE' : 'ECC-HOLD-PENDING');
@@ -50,11 +52,11 @@ export const CustomsQrPassModal: React.FC<CustomsQrPassModalProps> = ({
       onRequestClose={onClose}
     >
       <View style={modalStyles.overlay}>
-        <View style={modalStyles.card}>
+        <View style={[modalStyles.card, { backgroundColor: colors.card }]}>
           {/* Top Bar Header */}
-          <View style={modalStyles.header}>
+          <View style={[modalStyles.header, { backgroundColor: colors.headerBg, borderBottomColor: colors.border }]}>
             <View style={modalStyles.headerTitleRow}>
-              <View style={[modalStyles.shieldIconBox, !isCleared && { backgroundColor: '#FEE2E2' }]}>
+              <View style={[modalStyles.shieldIconBox, !isCleared && { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2' }]}>
                 <Ionicons
                   name={isCleared ? 'shield-checkmark' : 'alert-circle'}
                   size={20}
@@ -72,26 +74,36 @@ export const CustomsQrPassModal: React.FC<CustomsQrPassModalProps> = ({
             </View>
             <TouchableOpacity
               onPress={onClose}
-              style={modalStyles.closeBtn}
+              style={[modalStyles.closeBtn, { backgroundColor: colors.surface }]}
               activeOpacity={0.7}
             >
-              <Ionicons name="close" size={20} color="#94A3B8" />
+              <Ionicons name="close" size={20} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
 
           <ScrollView style={modalStyles.body} contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
             {/* Certificate Title Badge */}
-            <View style={[modalStyles.certPill, !isCleared && { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
-              <Text style={[modalStyles.certPillText, !isCleared && { color: '#DC2626' }]}>
+            <View style={[
+              modalStyles.certPill,
+              isCleared
+                ? (isDark ? { backgroundColor: '#064E3B', borderColor: '#059669' } : { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' })
+                : (isDark ? { backgroundColor: '#450A0A', borderColor: '#991B1B' } : { backgroundColor: '#FEF2F2', borderColor: '#FECACA' })
+            ]}>
+              <Text style={[
+                modalStyles.certPillText,
+                isCleared
+                  ? (isDark ? { color: '#6EE7B7' } : { color: '#065F46' })
+                  : { color: '#EF4444' }
+              ]}>
                 {isCleared
-                  ? (language === 'AM' ? 'የአረንጓዴ መስመር ዲጂታል ማለፊያ' : 'SINGLE-WINDOW GREEN LINE TRANSIT PASS')
-                  : (language === 'AM' ? 'የጉምሩክ አረንጓዴ ፈቃድ አልተሰጠም (ቀይ መስመር)' : 'CUSTOMS PASS NOT ISSUED (RED LINE HOLD)')}
+                  ? (language === 'AM' ? 'የአረንጓዴ መስመር ዲጂታል ማለፊያ' : language === 'OM' ? 'Eeyyama Sarara Magariisa' : 'SINGLE-WINDOW GREEN LINE TRANSIT PASS')
+                  : (language === 'AM' ? 'የጉምሩክ አረንጓዴ ፈቃድ አልተሰጠም (ቀይ መስመር)' : language === 'OM' ? 'Eeyyama Gumruukaa Hin Heyyamamne (Sarara Diimaa)' : 'CUSTOMS PASS NOT ISSUED (RED LINE HOLD)')}
               </Text>
             </View>
 
             <View style={modalStyles.certRefBox}>
-              <Text style={modalStyles.certRefLabel}>OFFICIAL STATUS / REF:</Text>
-              <Text style={[modalStyles.certRefValue, !isCleared && { color: '#DC2626' }]}>
+              <Text style={[modalStyles.certRefLabel, { color: colors.textMuted }]}>OFFICIAL STATUS / REF:</Text>
+              <Text style={[modalStyles.certRefValue, isCleared ? { color: colors.success } : { color: colors.danger }]}>
                 {isCleared ? certNo : `HOLD - ${customsStatus} (${docsCount}/4 Docs)`}
               </Text>
             </View>
@@ -100,40 +112,42 @@ export const CustomsQrPassModal: React.FC<CustomsQrPassModalProps> = ({
             {isCleared ? (
               <>
                 <View style={modalStyles.qrWrapper}>
-                  <View style={modalStyles.qrBorder}>
+                  <View style={[modalStyles.qrBorder, { backgroundColor: isDark ? '#1E293B' : '#F8FAFC', borderColor: colors.border }]}>
                     <View style={modalStyles.qrMatrixBox}>
                       <Ionicons name="qr-code" size={170} color="#0F172A" />
                       <View style={modalStyles.qrBadgeOverlay}>
                         <Ionicons name="checkmark-circle" size={26} color="#059669" />
                       </View>
                     </View>
-                    <Text style={modalStyles.qrInstruction}>
+                    <Text style={[modalStyles.qrInstruction, { color: colors.textMuted }]}>
                       {language === 'AM'
                         ? 'በገላፊ፣ ሞጆ ወይም አዋሽ ኬላዎች ሲደርሱ ይህንን QR Code ለመኮንኑ ያሳዩ'
+                        : language === 'OM'
+                        ? 'Koodii QR kana kellaawwan Galaafii, Mojo ykn Awaashitti agarsiisaa'
                         : 'Present this QR pass to customs checkpoint officers at Galafi, Modjo & Awash terminals'}
                     </Text>
                   </View>
                 </View>
 
                 {/* Cryptographic Seal Verification */}
-                <View style={modalStyles.sealCard}>
+                <View style={[modalStyles.sealCard, isDark && { backgroundColor: '#064E3B', borderColor: '#059669' }]}>
                   <View style={modalStyles.sealRow}>
-                    <Ionicons name="finger-print" size={18} color="#059669" />
-                    <Text style={modalStyles.sealTitle}>CRYPTOGRAPHIC DIGITAL SEAL</Text>
+                    <Ionicons name="finger-print" size={18} color="#10B981" />
+                    <Text style={[modalStyles.sealTitle, isDark && { color: '#6EE7B7' }]}>CRYPTOGRAPHIC DIGITAL SEAL</Text>
                   </View>
-                  <Text style={modalStyles.sealValue}>{seal}</Text>
-                  <Text style={modalStyles.sealStation}>
+                  <Text style={[modalStyles.sealValue, isDark && { color: '#A7F3D0' }]}>{seal}</Text>
+                  <Text style={[modalStyles.sealStation, isDark && { color: '#D1FAE5' }]}>
                     <Text style={{ fontWeight: '700' }}>Station:</Text> {station}
                   </Text>
                 </View>
               </>
             ) : (
-              /* If Not Cleared: Warning & Inspection Notice (NO Fake QR Code!) */
+              /* If Not Cleared: Warning & Inspection Notice */
               <View
                 style={{
-                  backgroundColor: '#FEF2F2',
+                  backgroundColor: isDark ? '#450A0A' : '#FEF2F2',
                   borderWidth: 1.5,
-                  borderColor: '#F87171',
+                  borderColor: isDark ? '#991B1B' : '#F87171',
                   borderRadius: 16,
                   padding: 16,
                   marginVertical: 12,
@@ -141,91 +155,95 @@ export const CustomsQrPassModal: React.FC<CustomsQrPassModalProps> = ({
                   alignItems: 'center',
                 }}
               >
-                <Ionicons name="warning" size={44} color="#DC2626" />
-                <Text style={{ fontSize: 14, fontWeight: '900', color: '#991B1B', textAlign: 'center' }}>
-                  {language === 'AM' ? 'የጉምሩክ ዲጂታል ፈቃድ አልተሰጠም' : 'GREEN LINE TRANSIT PASS NOT GRANTED'}
+                <Ionicons name="warning" size={44} color="#EF4444" />
+                <Text style={{ fontSize: 14, fontWeight: '900', color: isDark ? '#FCA5A5' : '#991B1B', textAlign: 'center' }}>
+                  {language === 'AM' ? 'የጉምሩክ ዲጂታል ፈቃድ አልተሰጠም' : language === 'OM' ? 'Eeyyamni Gumruukaa Hin Kennamne' : 'GREEN LINE TRANSIT PASS NOT GRANTED'}
                 </Text>
-                <Text style={{ fontSize: 11.5, color: '#7F1D1D', textAlign: 'center', lineHeight: 17 }}>
+                <Text style={{ fontSize: 11.5, color: isDark ? '#FECACA' : '#7F1D1D', textAlign: 'center', lineHeight: 17 }}>
                   {language === 'AM'
                     ? (customsStatus === 'NOT_SUBMITTED'
-                        ? 'የጭነቱ ላኪ (Shipper) አስፈላጊ የጉምሩክ ሰነዶችን (Commercial Invoice, Packing List, B/L, Certificate of Origin) ገና አላስገባም። የጉምሩክ ባለስልጣን ሳያረጋግጥ አረንጓዴ ማለፊያ አይሰጥም።'
-                        : 'ሰነዶቹ በኢትዮጵያ ጉምሩክ ኮሚሽን (ECC) ምርመራ ላይ ናቸው። ፍቃዱ በጉምሩክ ኦፊሰር እስኪጸድቅ ድረስ በኬላዎች ላይ መደበኛ ፍተሻ (Physical Inspection) ይደረጋል።')
+                        ? 'አስፈላጊዎቹ 4 የጉምሩክ ሰነዶች (ዲክላራሲዮን፣ የመጫኛ ዝርዝር፣ የንግድ መጠየቂያ እና ቦሎ) በአጓጓዡ ወይም በላኪው አልተጫኑም። ስለዚህ ፈቃድ አልተሰጠም።'
+                        : 'ጭነቱ በጉምሩክ ባለስልጣናት አካላዊ ፍተሻ (Physical Inspection / Red Line) ላይ ስለሚገኝ የአረንጓዴ መስመር ፈቃድ አልተሰጠም። እባክዎ ወደ ጉምሩክ ኬላ ሄደው ያስፈትሹ።')
+                    : language === 'OM'
+                    ? (customsStatus === 'NOT_SUBMITTED'
+                        ? 'Sanadoonni barbaachisoo 4 (Dekilaraasiyoonii, Sanada Fe\'umsaa, Invooyisii fi Bolo) hin galfamne. Kanaaf eeyyamni hin kennamne.'
+                        : 'Fe\'umsi sakatta\'iinsa qaamaa (Red Line) irratti waan jiruuf eeyyamni sarara magariisaa hin kennamne. Maaloo buufata gumruukaatti sakatta\'iinsa gaggeessaa.')
                     : (customsStatus === 'NOT_SUBMITTED'
-                        ? 'The Shipper has not uploaded the mandatory 4 customs documents. Single-window green line pass cannot be issued without Customs Authority verification.'
-                        : 'Customs documents are currently under official review by the Ethiopian Customs Commission. Physical inspection lane applies at checkpoints.')}
+                        ? 'Required clearance documents (Declaration, Packing List, Invoice, Roadworthiness) have NOT been submitted by the shipper/carrier. A green pass cannot be issued.'
+                        : 'Cargo requires mandatory physical customs inspection (Red Line hold). Driver must complete manual clearance at Galafi or Modjo customs before departure.')}
                 </Text>
                 <View
                   style={{
-                    backgroundColor: '#FFFFFF',
-                    paddingVertical: 6,
+                    backgroundColor: isDark ? '#2D0606' : '#FEE2E2',
                     paddingHorizontal: 12,
+                    paddingVertical: 6,
                     borderRadius: 8,
                     borderWidth: 1,
-                    borderColor: '#FECACA',
+                    borderColor: isDark ? '#7F1D1D' : '#FCA5A5',
                     marginTop: 4,
                   }}
                 >
-                  <Text style={{ fontSize: 11, fontWeight: '800', color: '#B91C1C' }}>
-                    {language === 'AM' ? 'የቀረቡ ሰነዶች:' : 'Submitted Documents:'} {docsCount} / 4
+                  <Text style={{ fontSize: 11, fontWeight: '800', color: isDark ? '#F87171' : '#B91C1C' }}>
+                    {language === 'AM'
+                      ? `የሰነዶች ሁኔታ፡ ${docsCount}/4 ሰነዶች ተረጋግጠዋል`
+                      : language === 'OM'
+                      ? `Haala Sanadaa: Sanadoota ${docsCount}/4 mirkanaa'an`
+                      : `Documents Status: ${docsCount}/4 Verified`}
                   </Text>
                 </View>
               </View>
             )}
 
-            {/* Consignment & Carrier Specs Grid */}
-            <View style={modalStyles.specsGrid}>
-              <View style={modalStyles.specItem}>
-                <Text style={modalStyles.specLabel}>{language === 'AM' ? 'ጭነት / እቃ' : 'CARGO CONSIGNMENT'}</Text>
-                <Text style={modalStyles.specVal} numberOfLines={1}>{cargoTitle}</Text>
-                <Text style={modalStyles.specSub}>{weight}</Text>
+            {/* Consignment Verification Table */}
+            <View style={[modalStyles.detailsCard, { backgroundColor: isDark ? '#1E293B' : '#F8FAFC', borderColor: colors.border }]}>
+              <Text style={[modalStyles.detailsHeading, { color: colors.textMuted }]}>CONSIGNMENT MANIFEST DETAILS</Text>
+
+              <View style={[modalStyles.detailRow, { borderBottomColor: colors.border }]}>
+                <Text style={[modalStyles.detailLabel, { color: colors.textMuted }]}>Cargo Commodity:</Text>
+                <Text style={[modalStyles.detailVal, { color: colors.text }]}>{cargoTitle}</Text>
               </View>
 
-              <View style={modalStyles.specItem}>
-                <Text style={modalStyles.specLabel}>{language === 'AM' ? 'አጓጓዥ መኪና ታርጋ' : 'TRUCK & CARRIER'}</Text>
-                <Text style={modalStyles.specVal}>{plate}</Text>
-                <Text style={modalStyles.specSub}>{driverName}</Text>
+              <View style={[modalStyles.detailRow, { borderBottomColor: colors.border }]}>
+                <Text style={[modalStyles.detailLabel, { color: colors.textMuted }]}>Net Weight / Volume:</Text>
+                <Text style={[modalStyles.detailVal, { color: colors.text }]}>{weight}</Text>
               </View>
 
-              <View style={modalStyles.specItem}>
-                <Text style={modalStyles.specLabel}>{language === 'AM' ? 'የጭነቱ ባለቤት (ላኪ)' : 'CONSIGNOR (SHIPPER)'}</Text>
-                <Text style={modalStyles.specVal} numberOfLines={1}>{shipperName}</Text>
-                <Text style={modalStyles.specSub}>Authorized Client</Text>
-              </View>
-
-              <View style={modalStyles.specItem}>
-                <Text style={modalStyles.specLabel}>{language === 'AM' ? 'የኮሪደር ፈቃድ' : 'TRANSIT PROTOCOL'}</Text>
-                <Text style={[modalStyles.specVal, { color: isCleared ? '#047857' : '#DC2626' }]}>
-                  {isCleared ? 'GREEN LINE' : 'RED LINE / HOLD'}
+              <View style={[modalStyles.detailRow, { borderBottomColor: colors.border }]}>
+                <Text style={[modalStyles.detailLabel, { color: colors.textMuted }]}>Assigned Vehicle:</Text>
+                <Text style={[modalStyles.detailVal, { color: colors.accent, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }]}>
+                  {plate}
                 </Text>
-                <Text style={modalStyles.specSub}>
-                  {isCleared ? 'Zero Delay Transit' : 'Inspection Required'}
-                </Text>
+              </View>
+
+              <View style={[modalStyles.detailRow, { borderBottomColor: colors.border }]}>
+                <Text style={[modalStyles.detailLabel, { color: colors.textMuted }]}>Authorized Driver:</Text>
+                <Text style={[modalStyles.detailVal, { color: colors.text }]}>{driverName}</Text>
+              </View>
+
+              <View style={modalStyles.detailRow}>
+                <Text style={[modalStyles.detailLabel, { color: colors.textMuted }]}>Registered Consignor:</Text>
+                <Text style={[modalStyles.detailVal, { color: colors.text }]}>{shipperName}</Text>
               </View>
             </View>
 
-            {/* Legal Authority Clause */}
-            <View style={[modalStyles.clauseBox, !isCleared && { backgroundColor: '#F8FAFC', borderColor: '#E2E8F0' }]}>
-              <Text style={[modalStyles.clauseText, !isCleared && { color: '#64748B' }]}>
-                {isCleared
-                  ? (language === 'AM'
-                      ? 'በኢትዮጵያ ጉምሩክ አዋጅ ቁጥር 859/2014 መሰረት ይህ ጭነት በኮሪደሩ ኬላዎች ሁሉ ያለ ምንም መዘግየት እንዲተላለፍ ተፈቅዷል።'
-                      : 'In accordance with Ethiopian Customs Proclamation No. 859/2014 & ASYCUDA single window, this consignment is authorized for unrestricted fast-track transit.')
-                  : (language === 'AM'
-                      ? 'በጉምሩክ አዋጅ መሰረት ያለ አረንጓዴ ፈቃድ የጉምሩክ ኬላዎችን ማለፍ የተከለከለ ነው። ላኪው ሰነዶችን ሲያቀርብና የጉምሩክ ኦፊሰሩ ሲያጸድቅ አረንጓዴ ፈቃዱ በቅጽበት ይከፈታል።'
-                      : 'Passing corridor checkpoints without official digital customs clearance is strictly prohibited. The Green Line pass activates immediately upon Customs Officer verification.')}
+            {/* Official Footer Verification Note */}
+            <View style={modalStyles.footerNoteBox}>
+              <Ionicons name="lock-closed" size={13} color="#94A3B8" />
+              <Text style={[modalStyles.footerNoteText, { color: colors.textMuted }]}>
+                Verified via National Single-Window Electronic Customs Clearance System (Ethio-Djibouti Trade Corridor).
               </Text>
             </View>
           </ScrollView>
 
-          {/* Bottom Action Footer */}
-          <View style={modalStyles.footer}>
+          {/* Modal Action Footer */}
+          <View style={[modalStyles.actionFooter, { backgroundColor: colors.headerBg, borderTopColor: colors.border }]}>
             <TouchableOpacity
+              style={[modalStyles.dismissBtn, { backgroundColor: colors.surfaceHover, borderColor: colors.border }]}
               onPress={onClose}
-              style={[modalStyles.closeFooterBtn, !isCleared && { backgroundColor: '#334155' }]}
               activeOpacity={0.8}
             >
-              <Text style={modalStyles.closeFooterBtnText}>
-                {language === 'AM' ? '✕ ተመለስ (ዝጋ)' : '✕ Close Pass'}
+              <Text style={[modalStyles.dismissBtnText, { color: colors.text }]}>
+                {language === 'AM' ? 'ዝጋ' : language === 'OM' ? 'Cufi' : 'Dismiss Pass'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -244,7 +262,6 @@ const modalStyles = StyleSheet.create({
     padding: 16,
   },
   card: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 24,
     width: '100%',
     maxWidth: Math.min(SCREEN_WIDTH - 32, 420),
@@ -262,9 +279,7 @@ const modalStyles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 18,
     paddingVertical: 14,
-    backgroundColor: '#0F172A',
     borderBottomWidth: 1,
-    borderBottomColor: '#1E293B',
   },
   headerTitleRow: {
     flexDirection: 'row',
@@ -277,7 +292,6 @@ const modalStyles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 10,
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -297,7 +311,6 @@ const modalStyles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#1E293B',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -307,9 +320,7 @@ const modalStyles = StyleSheet.create({
   },
   certPill: {
     alignSelf: 'center',
-    backgroundColor: '#ECFDF5',
     borderWidth: 1,
-    borderColor: '#A7F3D0',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 20,
@@ -318,7 +329,6 @@ const modalStyles = StyleSheet.create({
   certPillText: {
     fontSize: 10,
     fontWeight: '900',
-    color: '#065F46',
     letterSpacing: 0.5,
   },
   certRefBox: {
@@ -328,13 +338,11 @@ const modalStyles = StyleSheet.create({
   certRefLabel: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#64748B',
     letterSpacing: 0.5,
   },
   certRefValue: {
     fontSize: 14,
     fontWeight: '900',
-    color: '#047857',
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
     marginTop: 2,
   },
@@ -343,9 +351,7 @@ const modalStyles = StyleSheet.create({
     marginVertical: 4,
   },
   qrBorder: {
-    backgroundColor: '#F8FAFC',
     borderWidth: 2,
-    borderColor: '#E2E8F0',
     borderRadius: 20,
     padding: 16,
     alignItems: 'center',
@@ -370,7 +376,6 @@ const modalStyles = StyleSheet.create({
   qrInstruction: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#475569',
     textAlign: 'center',
     marginTop: 10,
     lineHeight: 15,
@@ -398,75 +403,68 @@ const modalStyles = StyleSheet.create({
   sealValue: {
     fontSize: 12,
     fontWeight: '900',
-    color: '#047857',
+    color: '#059669',
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   sealStation: {
-    fontSize: 10,
-    color: '#334155',
+    fontSize: 11,
+    color: '#047857',
     marginTop: 2,
   },
-  specsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 14,
-  },
-  specItem: {
-    flex: 1,
-    minWidth: '46%',
-    backgroundColor: '#F8FAFC',
+  detailsCard: {
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    padding: 10,
+    borderRadius: 16,
+    padding: 14,
+    marginTop: 14,
+    gap: 8,
   },
-  specLabel: {
-    fontSize: 8.5,
+  detailsHeading: {
+    fontSize: 10,
     fontWeight: '800',
-    color: '#64748B',
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
+    marginBottom: 4,
   },
-  specVal: {
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 5,
+    borderBottomWidth: 1,
+  },
+  detailLabel: {
+    fontSize: 11.5,
+    fontWeight: '600',
+  },
+  detailVal: {
     fontSize: 11.5,
     fontWeight: '800',
-    color: '#0F172A',
-    marginTop: 2,
+    textAlign: 'right',
   },
-  specSub: {
-    fontSize: 10,
-    color: '#64748B',
-    marginTop: 1,
-  },
-  clauseBox: {
+  footerNoteBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 8,
     marginTop: 12,
-    padding: 10,
-    backgroundColor: '#F1F5F9',
-    borderRadius: 10,
   },
-  clauseText: {
-    fontSize: 9.5,
-    color: '#475569',
+  footerNoteText: {
+    fontSize: 10,
     lineHeight: 14,
-    textAlign: 'center',
+    flex: 1,
   },
-  footer: {
+  actionFooter: {
     paddingHorizontal: 18,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
   },
-  closeFooterBtn: {
-    backgroundColor: '#0F172A',
-    paddingVertical: 12,
+  dismissBtn: {
+    borderWidth: 1,
     borderRadius: 14,
+    paddingVertical: 12,
     alignItems: 'center',
   },
-  closeFooterBtnText: {
+  dismissBtnText: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#FFFFFF',
   },
 });
-

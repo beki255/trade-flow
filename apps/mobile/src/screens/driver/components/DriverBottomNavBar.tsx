@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { TabIcon } from '../../../components/TabIcon';
-import { driverStyles as styles } from '../driverStyles';
+import { useDriverStyles } from '../driverStyles';
 import { DriverTabType } from '../types';
 import { useLanguage } from '../../../context/LanguageContext';
 
@@ -14,6 +14,7 @@ export const DriverBottomNavBar: React.FC<DriverBottomNavBarProps> = ({
   activeTab,
   onSelectTab,
 }) => {
+  const styles = useDriverStyles();
   const { t } = useLanguage();
 
   return (

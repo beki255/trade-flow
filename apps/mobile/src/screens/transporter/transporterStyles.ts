@@ -1,17 +1,19 @@
 import { StyleSheet, Platform, StatusBar } from 'react-native';
+import { useMemo } from 'react';
+import { useTheme, ThemeColors, darkColors } from '../../context/ThemeContext';
 
-export const transporterStyles = StyleSheet.create({
+export const getTransporterStyles = (colors: ThemeColors, isDark: boolean) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.headerBg,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   container: {
     flex: 1,
-    backgroundColor: '#F4F9FD',
+    backgroundColor: colors.background,
   },
   topHeader: {
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.headerBg,
     paddingHorizontal: 16,
     paddingTop: Platform.OS === 'android' ? Math.max((StatusBar.currentHeight || 0) + 14, 52) : 14,
     paddingBottom: 14,
@@ -19,7 +21,7 @@ export const transporterStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderBottomWidth: 1,
-    borderBottomColor: '#1E293B',
+    borderBottomColor: colors.border,
     zIndex: 100,
   },
   brandTitle: {
@@ -90,7 +92,7 @@ export const transporterStyles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   profileModalCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingHorizontal: 20,
@@ -100,7 +102,7 @@ export const transporterStyles = StyleSheet.create({
   },
   fullScreenModal: {
     flex: 1,
-    backgroundColor: '#F4F9FD',
+    backgroundColor: colors.background,
   },
   modalPageHeader: {
     flexDirection: 'row',
@@ -109,20 +111,20 @@ export const transporterStyles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: Platform.OS === 'android' ? Math.max((StatusBar.currentHeight || 0) + 12, 48) : 14,
     paddingBottom: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: colors.border,
     zIndex: 10,
   },
   modalPageBackBtn: {
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     ...Platform.select({
       web: { boxShadow: '0 1px 3px rgba(0,0,0,0.04)' } as any,
       default: { elevation: 1 },
@@ -136,14 +138,14 @@ export const transporterStyles = StyleSheet.create({
   modalPageTitle: {
     fontSize: 16.5,
     fontWeight: '900',
-    color: '#0F172A',
+    color: colors.text,
     letterSpacing: -0.3,
   },
   modalFormCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     padding: 16,
     gap: 14,
     marginHorizontal: 16,
@@ -159,36 +161,36 @@ export const transporterStyles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#E2EAF2',
+    borderBottomColor: colors.border,
     paddingBottom: 14,
   },
   modalTitle: {
     fontSize: 17,
     fontWeight: '900',
-    color: '#0F172A',
+    color: colors.text,
   },
   closeBtn: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   closeBtnText: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#64748B',
+    color: colors.textMuted,
   },
   profileCardSummary: {
     flexDirection: 'row',
     gap: 14,
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
     borderRadius: 18,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#E2EAF2',
+    borderColor: colors.border,
   },
   profileModalAvatar: {
     width: 52,
@@ -206,11 +208,11 @@ export const transporterStyles = StyleSheet.create({
   profileCompanyName: {
     fontSize: 16,
     fontWeight: '900',
-    color: '#0F172A',
+    color: colors.text,
   },
   profileOwnerName: {
     fontSize: 12,
-    color: '#64748B',
+    color: colors.textMuted,
     marginTop: 2,
   },
   profileBadge: {
@@ -231,7 +233,7 @@ export const transporterStyles = StyleSheet.create({
   settingsGroupTitle: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#64748B',
+    color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -239,35 +241,35 @@ export const transporterStyles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#E2EAF2',
+    borderColor: colors.border,
   },
   settingItemLabel: {
     fontSize: 13,
-    color: '#64748B',
+    color: colors.textMuted,
     fontWeight: '600',
   },
   settingItemValue: {
     fontSize: 13,
-    color: '#0F172A',
+    color: colors.text,
     fontWeight: '700',
   },
   actionBtnRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#E2EAF2',
+    borderColor: colors.border,
   },
   actionBtnLabel: {
     fontSize: 13,
-    color: '#0F172A',
+    color: colors.text,
     fontWeight: '700',
   },
   actionBtnValue: {
@@ -361,7 +363,7 @@ export const transporterStyles = StyleSheet.create({
   },
   fleetSubTabRow: {
     flexDirection: 'row',
-    backgroundColor: '#E2E8F0',
+    backgroundColor: isDark ? '#334155' : '#E2E8F0',
     borderRadius: 14,
     padding: 4,
     gap: 4,
@@ -378,7 +380,7 @@ export const transporterStyles = StyleSheet.create({
     overflow: 'hidden',
   },
   fleetSubTabActive: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     ...Platform.select({
       web: {
         boxShadow: '0 2px 4px rgba(15, 23, 42, 0.08)',
@@ -395,7 +397,7 @@ export const transporterStyles = StyleSheet.create({
   fleetSubTabText: {
     fontSize: 11.5,
     fontWeight: '700',
-    color: '#64748B',
+    color: colors.textMuted,
   },
   fleetSubTabTextActive: {
     color: '#0284C7',
@@ -404,12 +406,12 @@ export const transporterStyles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
     lineHeight: 22,
   },
   sectionSubtitle: {
     fontSize: 12,
-    color: '#64748B',
+    color: colors.textMuted,
     marginTop: 4,
     lineHeight: 17,
   },
@@ -425,11 +427,11 @@ export const transporterStyles = StyleSheet.create({
     fontWeight: '700',
   },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 18,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#E2EAF2',
+    borderColor: colors.border,
     gap: 8,
   },
   cardExpanded: {
@@ -473,10 +475,10 @@ export const transporterStyles = StyleSheet.create({
   photoUploadContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     padding: 12,
     gap: 12,
   },
@@ -523,11 +525,11 @@ export const transporterStyles = StyleSheet.create({
   photoTitle: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
   },
   photoSubtitle: {
     fontSize: 10,
-    color: '#64748B',
+    color: colors.textMuted,
     lineHeight: 14,
   },
   pickPhotoBtn: {
@@ -548,7 +550,7 @@ export const transporterStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 6,
@@ -556,7 +558,7 @@ export const transporterStyles = StyleSheet.create({
   },
   collapsedPreviewText: {
     fontSize: 11,
-    color: '#64748B',
+    color: colors.textMuted,
     flex: 1,
     marginRight: 8,
   },
@@ -583,12 +585,12 @@ export const transporterStyles = StyleSheet.create({
   truckPlate: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
     lineHeight: 20,
   },
   truckModel: {
     fontSize: 12,
-    color: '#64748B',
+    color: colors.textMuted,
     marginTop: 3,
     lineHeight: 16,
   },
@@ -617,23 +619,23 @@ export const transporterStyles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 12,
-    color: '#64748B',
+    color: colors.textMuted,
     lineHeight: 16,
   },
   infoValue: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#0F172A',
+    color: colors.text,
     lineHeight: 16,
   },
   emptyCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 20,
     padding: 30,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#E2EAF2',
+    borderColor: colors.border,
     borderStyle: 'dashed',
     gap: 8,
   },
@@ -644,18 +646,18 @@ export const transporterStyles = StyleSheet.create({
   emptyTitle: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
   },
   emptySub: {
     fontSize: 11,
-    color: '#64748B',
+    color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 16,
   },
   cardTitle: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
     marginBottom: 4,
   },
   fieldLabel: {
@@ -686,15 +688,15 @@ export const transporterStyles = StyleSheet.create({
   typeChipText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#64748B',
+    color: colors.textMuted,
   },
   typeChipTextActive: {
     color: '#0284C7',
   },
   docUploadSection: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     borderRadius: 14,
     padding: 10,
     gap: 8,
@@ -708,7 +710,7 @@ export const transporterStyles = StyleSheet.create({
   docUploadBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     borderRadius: 10,
@@ -729,7 +731,7 @@ export const transporterStyles = StyleSheet.create({
   },
   docUploadStatus: {
     fontSize: 9.5,
-    color: '#64748B',
+    color: colors.textMuted,
     marginTop: 1,
   },
   complianceRow: {
@@ -743,7 +745,7 @@ export const transporterStyles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
   },
   complianceText: {
     fontSize: 10,
@@ -751,20 +753,20 @@ export const transporterStyles = StyleSheet.create({
     color: '#334155',
   },
   input: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
     borderWidth: 1,
     borderColor: '#CBD5E1',
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 12,
-    color: '#0F172A',
+    color: colors.text,
   },
   dropdownBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
     borderWidth: 1,
     borderColor: '#CBD5E1',
     borderRadius: 12,
@@ -774,10 +776,10 @@ export const transporterStyles = StyleSheet.create({
   dropdownBtnText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#0F172A',
+    color: colors.text,
   },
   dropdownMenu: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     borderRadius: 12,
@@ -835,7 +837,7 @@ export const transporterStyles = StyleSheet.create({
   loadPreviewRoute: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#0F172A',
+    color: colors.text,
     lineHeight: 17,
     marginTop: 2,
   },
@@ -899,45 +901,45 @@ export const transporterStyles = StyleSheet.create({
   },
   kpiCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 18,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#E2EAF2',
+    borderColor: colors.border,
     gap: 4,
   },
   kpiLabel: {
     fontSize: 11,
-    color: '#64748B',
+    color: colors.textMuted,
     fontWeight: '600',
   },
   kpiValue: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#0F172A',
+    color: colors.text,
   },
   searchBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: '#E2EAF2',
+    borderColor: colors.border,
     gap: 8,
   },
   searchBarInput: {
     flex: 1,
     fontSize: 13,
-    color: '#0F172A',
+    color: colors.text,
     padding: 0,
   },
   bottomNavContainer: {
     minHeight: Platform.OS === 'android' ? 96 : (Platform.OS === 'ios' ? 76 : 64),
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderTopWidth: 1,
-    borderTopColor: '#E2EAF2',
+    borderTopColor: colors.border,
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-around',
@@ -966,3 +968,12 @@ export const transporterStyles = StyleSheet.create({
     fontWeight: '800',
   },
 });
+
+
+export const useTransporterStyles = () => {
+  const { colors, isDark } = useTheme();
+  return useMemo(() => getTransporterStyles(colors, isDark), [colors, isDark]);
+};
+
+// Backwards-compatible default instance
+export const transporterStyles = getTransporterStyles(darkColors, true);

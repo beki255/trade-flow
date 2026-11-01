@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { TabIcon } from '../../../components/TabIcon';
-import { transporterStyles as styles } from '../transporterStyles';
+import { useTransporterStyles } from '../transporterStyles';
 import { TransporterTabType, BidItem } from '../types';
 import { useLanguage } from '../../../context/LanguageContext';
 
@@ -19,6 +19,7 @@ export const TransporterBottomNavBar: React.FC<TransporterBottomNavBarProps> = (
   submittedBids,
   onSelectBidsTab,
 }) => {
+  const styles = useTransporterStyles();
   const { t } = useLanguage();
 
   return (

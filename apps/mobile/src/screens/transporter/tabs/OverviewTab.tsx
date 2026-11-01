@@ -5,7 +5,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { transporterStyles as styles } from '../transporterStyles';
+import { useTransporterStyles } from '../transporterStyles';
 import { TruckItem, DriverItem, LoadItem, BidItem } from '../types';
 import { useLanguage } from '../../../context/LanguageContext';
 
@@ -30,6 +30,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   openAddDriverModal,
   setFleetSubTab,
 }) => {
+  const styles = useTransporterStyles();
   const { t } = useLanguage();
   const availableFleetCount = fleetList.filter((f) => f.status === 'AVAILABLE').length;
   const inTransitCount = fleetList.filter((f) => f.status === 'IN_TRANSIT').length;

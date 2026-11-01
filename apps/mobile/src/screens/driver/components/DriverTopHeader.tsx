@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { driverStyles as styles } from '../driverStyles';
 import { LanguageSwitcher } from '../../../components/LanguageSwitcher';
+import { ThemeToggle } from '../../../components/ThemeToggle';
 import { useLanguage } from '../../../context/LanguageContext';
 import { isValidImageUri } from '../../../utils/imageUtils';
 
@@ -77,6 +78,8 @@ export const DriverTopHeader: React.FC<DriverTopHeaderProps> = ({
 
         {/* Right side: Language Switcher placed at far right */}
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <ThemeToggle compact />
+          <View style={{ width: 6 }} />
           <LanguageSwitcher dark={true} />
         </View>
       </View>

@@ -15,6 +15,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import { apiFetch } from '../../../utils/api';
+import { useTheme } from '../../../context/ThemeContext';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface CompleteProfileGateProps {
   user: any;
@@ -29,6 +31,8 @@ export const CompleteProfileGate: React.FC<CompleteProfileGateProps> = ({
   onProfileCompleted,
   onLogout,
 }) => {
+  const { colors, isDark } = useTheme();
+  const { t, language } = useLanguage();
   // Check if documents and compliance info were already submitted
   const hasExistingDocs = Boolean(
     user?.tin && (user?.insuranceDoc || user?.roadworthinessDoc || user?.tradeLicenseDoc)
@@ -198,14 +202,14 @@ export const CompleteProfileGate: React.FC<CompleteProfileGateProps> = ({
   // VIEW 1: Documents Submitted, Waiting for Admin Verification ("admin verfi siyadergwe endigeba")
   if (hasExistingDocs && carrierStatus === 'PENDING') {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle="dark-content" backgroundColor="#F4F9FD" />
         
         {/* Top Header Bar */}
         <View style={styles.topBar}>
           <TouchableOpacity
             onPress={onLogout}
-            style={styles.backButton}
+            style={[styles.backButton, { backgroundColor: colors.card, borderColor: colors.border }]}
             activeOpacity={0.7}
             accessibilityLabel="Back"
           >
@@ -214,7 +218,7 @@ export const CompleteProfileGate: React.FC<CompleteProfileGateProps> = ({
 
           {/* Absolute Mathematically Centered Title */}
           <View style={styles.brandTitleContainer} pointerEvents="none">
-            <Text style={styles.brandTitle}>TradeFlow</Text>
+            <Text style={[styles.brandTitle, { color: colors.text }]}>TradeFlow</Text>
           </View>
 
           <TouchableOpacity style={styles.logoutBtn} onPress={onLogout} activeOpacity={0.7}>

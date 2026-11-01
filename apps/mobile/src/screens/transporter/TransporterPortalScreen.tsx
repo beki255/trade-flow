@@ -13,7 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { TabIcon } from '../../components/TabIcon';
 import { useLanguage } from '../../context/LanguageContext';
-import { transporterStyles as styles } from './transporterStyles';
+import { useTransporterStyles } from './transporterStyles';
 import { UserProfile, TruckItem, DriverItem, LoadItem, BidItem, TransporterTabType } from './types';
 import { getApiBaseUrl, apiFetch } from '../../utils/api';
 import { validateEthiopianPhone } from '../../utils/validation';
@@ -50,7 +50,8 @@ export const TransporterPortalScreen: React.FC<TransporterPortalScreenProps> = (
   user,
 }) => {
   const { language, toggleLanguage } = useLanguage();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const styles = useTransporterStyles();
   const [currentUser, setCurrentUser] = useState<any>(user);
 
   useEffect(() => {

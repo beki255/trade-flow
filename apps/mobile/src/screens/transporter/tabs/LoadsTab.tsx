@@ -11,6 +11,7 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LoadItem, BidItem } from '../types';
 import { useLanguage } from '../../../context/LanguageContext';
+import { useTheme } from '../../../context/ThemeContext';
 
 const cleanStr = (str?: string) => (str ? String(str).replace(/^`+|`+$/g, '').trim() : '');
 
@@ -36,6 +37,7 @@ interface LoadsTabProps {
 }
 
 export const LoadsTab: React.FC<LoadsTabProps> = ({
+
   loadsList,
   filteredLoads,
   directMatchRequests,
@@ -49,6 +51,7 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
   onRefresh,
   isRefreshing,
 }) => {
+  const { colors, isDark } = useTheme();
   const { t, language } = useLanguage();
   const [expandedLoadId, setExpandedLoadId] = useState<string | null>(null);
   const [corridorFilter, setCorridorFilter] = useState<'ALL' | 'DJI_TO_ADDIS' | 'ADDIS_TO_DJI' | 'HEAVY'>('ALL');

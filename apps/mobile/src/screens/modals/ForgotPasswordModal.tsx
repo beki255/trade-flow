@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../../context/LanguageContext';
-import { lightColors } from '../../context/ThemeContext';
+import { useTheme } from '../../context/ThemeContext';
 import { apiFetch } from '../../utils/api';
 import { validatePassword, validatePasswordMatch } from '../../utils/validation';
 
@@ -31,8 +31,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
   onResetSuccess,
 }) => {
   const { t, language } = useLanguage();
-  const isDark = false;
-  const colors = lightColors;
+  const { colors, isDark } = useTheme();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [identifier, setIdentifier] = useState(defaultIdentifier);

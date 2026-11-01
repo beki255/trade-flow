@@ -11,6 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LoadItem, BidItem } from '../types';
 import { useLanguage } from '../../../context/LanguageContext';
+import { useTheme } from '../../../context/ThemeContext';
 
 const cleanStr = (str?: string) => (str ? String(str).replace(/^`+|`+$/g, '').trim() : '');
 
@@ -37,6 +38,7 @@ interface BiddingTabProps {
 }
 
 export const BiddingTab: React.FC<BiddingTabProps> = ({
+
   loadsList,
   selectedLoadId,
   setSelectedLoadId,

@@ -9,7 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { driverStyles as styles } from '../driverStyles';
+import { useDriverStyles } from '../driverStyles';
 import { IncidentRecord, DynamicRerouteProposal } from '../types';
 import { useLanguage } from '../../../context/LanguageContext';
 import { formatCleanLocation } from './TripTab';
@@ -74,6 +74,7 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
   pendingReroute,
   onConfirmReroute,
 }) => {
+  const styles = useDriverStyles();
   const { t, language } = useLanguage();
   const [showPhotoPreview, setShowPhotoPreview] = useState(false);
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
