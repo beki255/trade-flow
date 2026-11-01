@@ -1,4 +1,4 @@
-# 🚚 TradeFlow v2 — Intelligent Logistics, Telematics & Digital Escrow Platform
+# 🚚 TradeFlow v1 — Intelligent Logistics, Telematics & Digital Escrow Platform
 
 > **Accelerating Cross-Border Commerce along the Ethio-Djibouti Trade Corridor**  
 > *(Port of Doraleh ➔ Galafi Border ➔ Semera ➔ Awash ➔ Modjo Dry Port ➔ Addis Ababa)*
@@ -24,12 +24,11 @@
 | :--- | :--- | :--- |
 | **GitHub Repository** | Source Code (Monorepo) | [https://github.com/beki255/trade-flow](https://github.com/beki255/trade-flow) |
 | **Live Web Application** | Production Web Portal | [https://trade-flow-ukgu.vercel.app](https://trade-flow-ukgu.vercel.app) |
-| **Backend REST API** | Cloud Microservice | [https://tradeflow-api-7abs.onrender.com](https://tradeflow-api-7abs.onrender.com) |
-| **API Health & Metrics** | System Status Check | [https://tradeflow-api-7abs.onrender.com/health](https://tradeflow-api-7abs.onrender.com/health) |
+| **Backend REST API (Swagger Docs)** | Cloud Microservice | [https://tradeflow-api-7abs.onrender.com/api/docs](https://tradeflow-api-7abs.onrender.com/api/docs) |
+| **API Health & Status** | Operational Status Check | [https://tradeflow-api-7abs.onrender.com/api/health](https://tradeflow-api-7abs.onrender.com/api/health) |
 | **Mobile Android APK** | Standalone APK (v1.1.5) | [Download TradeFlow v1.1.5 APK](https://expo.dev/artifacts/eas/T1ZfHOLf-u_evYzO0aEfLD4MJtnN7FSQecclu_UrVAk.apk) |
 | **EAS Cloud Build Logs** | Expo CI/CD Build #858790e9 | [View Expo EAS Cloud Logs](https://expo.dev/accounts/bereket2553/projects/tradeflow-mobile/builds/858790e9-fae7-4531-b448-1df457864a6e) |
 | **Project Documentation (PDF)** | Complete Technical Report | [Download Documentation PDF](docs/TradeFlow_Project_Documentation.pdf) |
-| **Interactive Swagger API** | OpenAPI 3.0 Console | [https://tradeflow-api-7abs.onrender.com/api/docs](https://tradeflow-api-7abs.onrender.com/api/docs) |
 
 ---
 
@@ -130,7 +129,7 @@ The platform enforces strict Role-Based Access Control (RBAC):
 
 ### Monorepo Directory Layout:
 ```text
-tradeflow-v2/ (Turborepo / npm Workspaces Monorepo)
+tradeflow/ (Turborepo / npm Workspaces Monorepo)
 ├── docs/                     # Project Documentation, Technical Report & PDF
 │   ├── TradeFlow_Project_Documentation.md
 │   ├── TradeFlow_Project_Documentation.html
@@ -321,7 +320,7 @@ npm run dev:mobile  # Mobile App   ➔ http://localhost:8081 (Press 'w' for web 
 
 ## 9. 🏁 Conclusion & Future Roadmap
 
-**TradeFlow v2** demonstrates a transformative application of full-stack engineering to eliminate physical logistics bottlenecks along the Ethio-Djibouti Trade Corridor. By replacing fragmented manual brokerage with an automated freight exchange, securing carrier-shipper transactions via milestone-locked smart escrow, streaming low-latency device telematics, and expediting customs inspection through digital QR passes, the system dramatically reduces transit times, freight costs, and payment delays.
+**TradeFlow v1** demonstrates a transformative application of full-stack engineering to eliminate physical logistics bottlenecks along the Ethio-Djibouti Trade Corridor. By replacing fragmented manual brokerage with an automated freight exchange, securing carrier-shipper transactions via milestone-locked smart escrow, streaming low-latency device telematics, and expediting customs inspection through digital QR passes, the system dramatically reduces transit times, freight costs, and payment delays.
 
 ### Future Roadmap:
 1. **IoT Hardware Telematics:** Direct integration with truck CAN-bus OBD-II dongles for automated fuel monitoring.
@@ -331,4 +330,4 @@ npm run dev:mobile  # Mobile App   ➔ http://localhost:8081 (Press 'w' for web 
 
 ---
 
-*TradeFlow v2 — Built for the Ethiopian Logistics Modernization Initiative. All rights reserved © 2026.*
+*TradeFlow v1 — Built for the Ethiopian Logistics Modernization Initiative. All rights reserved © 2026.*

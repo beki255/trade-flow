@@ -548,7 +548,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
             <View style={{ alignItems: 'center', paddingVertical: 10 }}>
               <Text style={{ fontSize: 10, color: '#475569' }}>
-                TradeFlow Mobile • Carrier Edition v2.4
+                TradeFlow Mobile • Carrier Edition v1.1.5
               </Text>
             </View>
           </ScrollView>

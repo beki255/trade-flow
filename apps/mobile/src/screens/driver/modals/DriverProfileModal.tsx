@@ -574,7 +574,7 @@ export const DriverProfileModal: React.FC<DriverProfileModalProps> = ({
 
             <View style={{ alignItems: 'center', paddingVertical: 8 }}>
               <Text style={{ fontSize: 10, color: '#475569' }}>
-                TradeFlow Mobile • Driver Edition v2.4
+                TradeFlow Mobile • Driver Edition v1.1.5
               </Text>
             </View>
           </ScrollView>

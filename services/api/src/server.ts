@@ -57,7 +57,7 @@ app.get('/', (req, res) => {
     return res.json({
       status: 'ONLINE',
       service: 'TradeFlow Core REST API & Telematics Gateway',
-      version: '2.0.0',
+      version: '1.0.0',
       corridor: 'Port of Doraleh ➔ Galafi ➔ Semera ➔ Modjo ➔ Addis Ababa',
       endpoints: {
         documentation: '/api/docs',
@@ -205,7 +205,7 @@ app.get('/', (req, res) => {
       <a href="https://github.com/beki255/trade-flow" class="btn btn-secondary" target="_blank">🐙 GitHub Repository</a>
     </div>
     <div class="meta-box">
-      <div><span>Platform:</span> TradeFlow Core v2.0.0 (Production)</div>
+      <div><span>Platform:</span> TradeFlow Core v1.0.0 (Production)</div>
       <div><span>Corridor:</span> Port of Doraleh ➔ Galafi ➔ Semera ➔ Modjo ➔ Addis Ababa</div>
       <div><span>API Docs Endpoint:</span> <a href="/api/docs" style="color:#38bdf8;">/api/docs</a> (Interactive OpenAPI 3.0)</div>
       <div><span>Security:</span> TLS 1.3 | AES-256-GCM | ECC Single Window Verified</div>

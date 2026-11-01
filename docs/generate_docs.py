@@ -31,8 +31,8 @@ markdown_content = """# 🚚 TradeFlow: Intelligent Ethio-Djibouti Trade Corrido
 | :--- | :--- | :--- |
 | **GitHub Repository** | Source Code (Monorepo) | [https://github.com/beki255/trade-flow](https://github.com/beki255/trade-flow) |
 | **Live Web Application** | Production Web Portal | [https://trade-flow-ukgu.vercel.app](https://trade-flow-ukgu.vercel.app) |
-| **Backend REST API** | Cloud Microservice | [https://tradeflow-api-7abs.onrender.com](https://tradeflow-api-7abs.onrender.com) |
-| **API Health & Metrics** | System Status | [https://tradeflow-api-7abs.onrender.com/health](https://tradeflow-api-7abs.onrender.com/health) |
+| **Backend REST API (Swagger Docs)** | Cloud Microservice | [https://tradeflow-api-7abs.onrender.com/api/docs](https://tradeflow-api-7abs.onrender.com/api/docs) |
+| **API Health & Metrics** | Operational Status Check | [https://tradeflow-api-7abs.onrender.com/api/health](https://tradeflow-api-7abs.onrender.com/api/health) |
 | **Mobile Android APK** | Standalone Installable APK (v1.1.5) | [Download TradeFlow v1.1.5 APK](https://expo.dev/artifacts/eas/T1ZfHOLf-u_evYzO0aEfLD4MJtnN7FSQecclu_UrVAk.apk) |
 | **EAS Cloud Build Logs** | Expo CI/CD Build #858790e9 | [Expo EAS Build Logs](https://expo.dev/accounts/bereket2553/projects/tradeflow-mobile/builds/858790e9-fae7-4531-b448-1df457864a6e) |
 
@@ -664,7 +664,7 @@ html_content = f"""<!DOCTYPE html>
       <p><strong>Document Type:</strong> Final Project Documentation &amp; Report</p>
       <p><strong>Submission Date:</strong> November 2026</p>
       <p><strong>Repository:</strong> <a href="https://github.com/beki255/trade-flow">github.com/beki255/trade-flow</a></p>
-      <p><strong>API Endpoint:</strong> <a href="https://tradeflow-api-7abs.onrender.com">tradeflow-api-7abs.onrender.com</a></p>
+      <p><strong>API Swagger Docs:</strong> <a href="https://tradeflow-api-7abs.onrender.com/api/docs">https://tradeflow-api-7abs.onrender.com/api/docs</a></p>
       <p><strong>Android APK:</strong> <span class="badge badge-pass">v1.1.5 Production Ready</span></p>
     </div>
   </div>
@@ -697,14 +697,14 @@ html_content = f"""<!DOCTYPE html>
         <td><a href="https://trade-flow-ukgu.vercel.app">https://trade-flow-ukgu.vercel.app</a></td>
       </tr>
       <tr>
-        <td><strong>Backend REST API</strong></td>
-        <td>Render Cloud Microservice</td>
-        <td><a href="https://tradeflow-api-7abs.onrender.com">https://tradeflow-api-7abs.onrender.com</a></td>
+        <td><strong>Backend REST API (Swagger Docs)</strong></td>
+        <td>Cloud Microservice &amp; Interactive OpenAPI</td>
+        <td><a href="https://tradeflow-api-7abs.onrender.com/api/docs">https://tradeflow-api-7abs.onrender.com/api/docs</a></td>
       </tr>
       <tr>
         <td><strong>API Health Check</strong></td>
         <td>Operational Status Check</td>
-        <td><a href="https://tradeflow-api-7abs.onrender.com/health">https://tradeflow-api-7abs.onrender.com/health</a></td>
+        <td><a href="https://tradeflow-api-7abs.onrender.com/api/health">https://tradeflow-api-7abs.onrender.com/api/health</a></td>
       </tr>
       <tr>
         <td><strong>Mobile Android APK (v1.1.5)</strong></td>
