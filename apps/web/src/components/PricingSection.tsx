@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { Check, Building2, Truck, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const PricingSection: React.FC = () => {
   const { t } = useLanguage();
-  const [currency, setCurrency] = useState<'ETB' | 'USD'>('ETB');
 
   return (
     <section id="pricing" className="w-full max-w-[1240px] mx-auto px-4 sm:px-8 py-12 sm:py-16">
@@ -18,34 +17,6 @@ export const PricingSection: React.FC = () => {
         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
           {t('pricing.subtitle')}
         </p>
-
-        {/* Currency Switcher */}
-        <div className="pt-2 flex items-center justify-center">
-          <div className="inline-flex items-center p-1 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300">
-            <button
-              type="button"
-              onClick={() => setCurrency('ETB')}
-              className={`px-3.5 py-1 rounded-full transition-all cursor-pointer ${
-                currency === 'ETB'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs font-black'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              {t('pricing.currencyEtb')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setCurrency('USD')}
-              className={`px-3.5 py-1 rounded-full transition-all cursor-pointer ${
-                currency === 'USD'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs font-black'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              {t('pricing.currencyUsd')}
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* 3 Clean Cards */}
@@ -194,7 +165,7 @@ export const PricingSection: React.FC = () => {
         <span className="font-bold text-slate-800 dark:text-slate-200">💡 {t('pricing.spotTip')}</span>
         <span>{t('pricing.spotDesc')}</span>
         <strong className="text-emerald-700 dark:text-emerald-400 font-extrabold">
-          {currency === 'USD' ? '~$1,520 USD' : '~190,000 ETB'}
+          ~190,000 ETB
         </strong>
       </div>
 

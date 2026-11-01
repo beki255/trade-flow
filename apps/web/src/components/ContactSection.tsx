@@ -24,9 +24,24 @@ export const ContactSection: React.FC = () => {
     if (!formData.fullName.trim() || !formData.contactInfo.trim()) return;
 
     setIsSubmitting(true);
+    const ticketId = `TF-${Math.floor(100000 + Math.random() * 900000)}`;
+
+    // Prepare direct email dispatch to Bereket
+    const subject = encodeURIComponent(`TradeFlow Inquiry [${ticketId}] from ${formData.fullName}`);
+    const body = encodeURIComponent(
+      `Hello Bereket,\n\nA new inquiry has been submitted via TradeFlow:\n\n` +
+      `Reference Ticket: ${ticketId}\n` +
+      `Sender Name: ${formData.fullName}\n` +
+      `Sender Contact: ${formData.contactInfo}\n\n` +
+      `Inquiry Message:\n${formData.message || 'No additional message provided.'}\n\n` +
+      `Sent via TradeFlow Corridor Operations Desk (trade-flow-ukgu.vercel.app)`
+    );
+
+    window.open(`mailto:bereket2553@gmail.com?subject=${subject}&body=${body}`, '_blank');
+
     setTimeout(() => {
       setIsSubmitting(false);
-      setSubmittedTicket(`TF-${Math.floor(100000 + Math.random() * 900000)}`);
+      setSubmittedTicket(ticketId);
     }, 600);
   };
 
@@ -47,7 +62,10 @@ export const ContactSection: React.FC = () => {
         
         {/* Left: Contact Info */}
         <div className="md:col-span-5 space-y-3">
-          <div className="p-4 rounded-2xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-2xs flex items-center gap-3.5">
+          <a
+            href="tel:+251925537199"
+            className="p-4 rounded-2xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-2xs flex items-center gap-3.5 hover:border-sky-500 transition-all block"
+          >
             <div className="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
               <Phone className="w-5 h-5" />
             </div>
@@ -56,9 +74,12 @@ export const ContactSection: React.FC = () => {
               <div className="text-sm font-black text-sky-700 dark:text-sky-400">{t('contact.hotlinePhone')}</div>
               <div className="text-xs text-slate-600 dark:text-slate-400">{t('contact.deskPhone')}</div>
             </div>
-          </div>
+          </a>
 
-          <div className="p-4 rounded-2xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-2xs flex items-center gap-3.5">
+          <a
+            href="mailto:bereket2553@gmail.com"
+            className="p-4 rounded-2xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-2xs flex items-center gap-3.5 hover:border-emerald-500 transition-all block"
+          >
             <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
               <Mail className="w-5 h-5" />
             </div>
@@ -67,7 +88,7 @@ export const ContactSection: React.FC = () => {
               <div className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">{t('contact.emailAddress')}</div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400">{t('contact.emailResponse')}</div>
             </div>
-          </div>
+          </a>
 
           <div className="p-4 rounded-2xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-2xs flex items-center gap-3.5">
             <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
