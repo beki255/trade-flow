@@ -50,8 +50,173 @@ app.use((req, res, next) => {
   next();
 });
 
+// Root Route — Interactive API Landing & Status Console
+app.get('/', (req, res) => {
+  const acceptsHtml = req.accepts('html', 'json') === 'html';
+  if (!acceptsHtml) {
+    return res.json({
+      status: 'ONLINE',
+      service: 'TradeFlow Core REST API & Telematics Gateway',
+      version: '2.0.0',
+      corridor: 'Port of Doraleh ➔ Galafi ➔ Semera ➔ Modjo ➔ Addis Ababa',
+      endpoints: {
+        documentation: '/api/docs',
+        openApiJson: '/api/docs/json',
+        health: '/api/health',
+      },
+      webApp: 'https://trade-flow-ukgu.vercel.app',
+      repository: 'https://github.com/beki255/trade-flow',
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TradeFlow Core API &amp; Telematics Gateway</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: #090e17;
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 20px;
+      max-width: 640px;
+      width: 100%;
+      padding: 36px 32px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid #10b981;
+      color: #34d399;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 10px #10b981;
+    }
+    h1 {
+      font-size: 26px;
+      font-weight: 900;
+      color: #f8fafc;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+    p.subtitle {
+      color: #94a3b8;
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 520px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 13px 18px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 14px;
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+    .btn-primary {
+      background: #0284c7;
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+    }
+    .btn-primary:hover { background: #0369a1; }
+    .btn-secondary {
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid #334155;
+    }
+    .btn-secondary:hover { background: #2a374a; }
+    .meta-box {
+      background: #090e17;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 16px;
+      font-family: monospace;
+      font-size: 12px;
+      color: #94a3b8;
+      line-height: 1.6;
+    }
+    .meta-box span { color: #38bdf8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <div style="font-size: 24px; font-weight: 900; color: #0284c7;">🚚 TradeFlow</div>
+      <div class="status-badge">
+        <div class="status-dot"></div>
+        SYSTEMS ONLINE (200 OK)
+      </div>
+    </div>
+    <h1>Ethio-Djibouti Corridor Core API</h1>
+    <p class="subtitle">
+      High-throughput REST microservices, real-time WebSocket telematics, and digital smart escrow engine powering the Ethio-Djibouti Trade Corridor.
+    </p>
+    <div class="grid">
+      <a href="/api/docs" class="btn btn-primary">📑 Swagger API Docs</a>
+      <a href="/api/health" class="btn btn-secondary">💚 Health &amp; SLA Metrics</a>
+      <a href="https://trade-flow-ukgu.vercel.app" class="btn btn-secondary" target="_blank">🌐 Web Application</a>
+      <a href="https://github.com/beki255/trade-flow" class="btn btn-secondary" target="_blank">🐙 GitHub Repository</a>
+    </div>
+    <div class="meta-box">
+      <div><span>Platform:</span> TradeFlow Core v2.0.0 (Production)</div>
+      <div><span>Corridor:</span> Port of Doraleh ➔ Galafi ➔ Semera ➔ Modjo ➔ Addis Ababa</div>
+      <div><span>API Docs Endpoint:</span> <a href="/api/docs" style="color:#38bdf8;">/api/docs</a> (Interactive OpenAPI 3.0)</div>
+      <div><span>Security:</span> TLS 1.3 | AES-256-GCM | ECC Single Window Verified</div>
+    </div>
+  </div>
+</body>
+</html>`);
+});
+
 // Base Health Route with SLA & Security Compliance (NFR 7.1, 7.2, 7.4)
-app.get('/api/health', (req, res) => {
+const healthHandler = (req: express.Request, res: express.Response) => {
   res.json({
     status: 'OK',
     service: 'TradeFlow Core API',
@@ -65,9 +230,12 @@ app.get('/api/health', (req, res) => {
       customsCompliance: 'Ethiopian Customs Commission (ECC) Data Regulations Verified',
       rbacEnforcement: 'ACTIVE',
     },
-    docs: `http://localhost:${PORT}/api/docs`,
+    docs: '/api/docs',
   });
-});
+};
+
+app.get('/api/health', healthHandler);
+app.get('/health', healthHandler);
 
 // Swagger Documentation Endpoints
 app.get('/api/docs', swaggerDocsHandler);
