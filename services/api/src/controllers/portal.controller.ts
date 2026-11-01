@@ -3357,21 +3357,32 @@ export const getDriverActiveTrip = async (req: Request, res: Response): Promise<
     const isMoving = shipment.status === ShipmentStatus.IN_TRANSIT && (shipment.currentSpeedKmh || 0) > 5;
     const remainingKm = Math.max(0, Math.round(totalRoadDistanceKm * (1 - progressPct / 100)));
 
-    // Resolve Customs Clearance details for Driver Transit Pass (FR-06 & Checkpoint Verification)
-    const isCustomsCleared = shipment.customsStatus === 'CLEARED' || (shipment.customsDocuments && shipment.customsDocuments.length >= 3);
-    const certNumber = 'ECC-CLR-2026-30D2-001';
-    const digitalSeal = 'ECC-VERIFIED-822AFE';
+    // Resolve Customs Clearance details for Driver Transit Pass (Strictly based on verified ECC database state)
+    const docs = shipment.customsDocuments || [];
+    const isCustomsCleared = shipment.customsStatus === 'CLEARED';
+    const effectiveCustomsStatus = shipment.customsStatus || (docs.length > 0 ? 'SUBMITTED' : 'NOT_SUBMITTED');
+    const certNumber = isCustomsCleared ? `ECC-CLR-2026-${shipment.id.slice(-6).toUpperCase()}` : null;
+    const digitalSeal = isCustomsCleared ? `ECC-SEAL-${shipment.id.slice(0, 8).toUpperCase()}` : null;
+
     const customsPass = {
-      status: shipment.customsStatus || 'CLEARED',
+      status: effectiveCustomsStatus,
       isCleared: Boolean(isCustomsCleared),
       certificateNo: certNumber,
       clearingStation: isRerouted ? 'Dewele Border Checkpoint (Southern Bypass)' : 'Galafi Border Checkpoint (Main Corridor)',
-      clearedAt: shipment.customsClearedAt ? shipment.customsClearedAt.toISOString() : new Date().toISOString(),
+      clearedAt: shipment.customsClearedAt ? shipment.customsClearedAt.toISOString() : null,
       digitalSeal,
       authority: 'Ethiopian Customs Commission (ECC)',
-      transitPassage: 'UNRESTRICTED GREEN LINE TRANSIT PASSAGE',
-      qrData: `ECC-TRANSIT|${shipment.id}|${certNumber}|GREEN_LINE|VALID`,
-      documentsCount: (shipment.customsDocuments || []).length || 4,
+      transitPassage: isCustomsCleared
+        ? 'UNRESTRICTED GREEN LINE TRANSIT PASSAGE'
+        : (effectiveCustomsStatus === 'NOT_SUBMITTED'
+            ? 'HOLD - PENDING SHIPPER CUSTOMS DOSSIER'
+            : (effectiveCustomsStatus === 'REJECTED'
+                ? 'HOLD - CUSTOMS CLEARANCE REJECTED'
+                : 'UNDER CUSTOMS AUTHORITY REVIEW')),
+      qrData: isCustomsCleared
+        ? `ECC-TRANSIT|${shipment.id}|${certNumber}|GREEN_LINE|VALID`
+        : null,
+      documentsCount: docs.length,
     };
 
     // Fetch persisted checkin events for this active trip

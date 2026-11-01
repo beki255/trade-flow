@@ -46,13 +46,13 @@ export interface DynamicRerouteProposal {
 export interface DriverCustomsPass {
   status: string;
   isCleared: boolean;
-  certificateNo: string;
+  certificateNo?: string | null;
   clearingStation: string;
-  clearedAt?: string;
-  digitalSeal: string;
+  clearedAt?: string | null;
+  digitalSeal?: string | null;
   authority: string;
   transitPassage: string;
-  qrData?: string;
+  qrData?: string | null;
   documentsCount?: number;
 }
 

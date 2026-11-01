@@ -122,52 +122,122 @@ export const CheckinTab: React.FC<CheckinTabProps> = ({
 
       {/* Customs Transit Clearance Badge for Checkpoint Verification */}
       {activeTrip?.customsClearance && (
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            backgroundColor: '#F0FDF4',
-            borderWidth: 1,
-            borderColor: '#86EFAC',
-            borderRadius: 14,
-            paddingVertical: 10,
-            paddingHorizontal: 12,
-            marginBottom: 6,
-          }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-            <Ionicons name="shield-checkmark" size={18} color="#059669" />
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 11, fontWeight: '800', color: '#065F46' }}>
-                {language === 'AM' ? 'የጉምሩክ አረንጓዴ ፈቃድ ማረጋገጫ' : 'CUSTOMS GREEN LINE VERIFIED'}
-              </Text>
-              <Text style={{ fontSize: 9.5, color: '#047857', fontWeight: '600' }} numberOfLines={1}>
-                Ref: {activeTrip.customsClearance.certificateNo}
-              </Text>
+        activeTrip.customsClearance.isCleared ? (
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: '#F0FDF4',
+              borderWidth: 1,
+              borderColor: '#86EFAC',
+              borderRadius: 14,
+              paddingVertical: 10,
+              paddingHorizontal: 12,
+              marginBottom: 6,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+              <Ionicons name="shield-checkmark" size={18} color="#059669" />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 11, fontWeight: '800', color: '#065F46' }}>
+                  {language === 'AM' ? 'የጉምሩክ አረንጓዴ ፈቃድ ማረጋገጫ' : 'CUSTOMS GREEN LINE VERIFIED'}
+                </Text>
+                <Text style={{ fontSize: 9.5, color: '#047857', fontWeight: '600' }} numberOfLines={1}>
+                  Ref: {activeTrip.customsClearance.certificateNo || 'ECC-AUTHORIZED'}
+                </Text>
+              </View>
             </View>
+            {onOpenCustomsPass && (
+              <TouchableOpacity
+                onPress={onOpenCustomsPass}
+                style={{
+                  backgroundColor: '#059669',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 5,
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  borderRadius: 8,
+                }}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="qr-code" size={13} color="#FFFFFF" />
+                <Text style={{ fontSize: 10, fontWeight: '800', color: '#FFFFFF' }}>
+                  {language === 'AM' ? 'QR አሳይ' : 'QR Pass'}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
-          {onOpenCustomsPass && (
-            <TouchableOpacity
-              onPress={onOpenCustomsPass}
-              style={{
-                backgroundColor: '#0F172A',
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 5,
-                paddingHorizontal: 10,
-                paddingVertical: 6,
-                borderRadius: 8,
-              }}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="qr-code" size={13} color="#FFFFFF" />
-              <Text style={{ fontSize: 10, fontWeight: '800', color: '#FFFFFF' }}>
-                {language === 'AM' ? 'QR አሳይ' : 'QR Pass'}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
+        ) : (
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: activeTrip.customsClearance.status === 'NOT_SUBMITTED' ? '#FEF2F2' : '#FFFBEB',
+              borderWidth: 1,
+              borderColor: activeTrip.customsClearance.status === 'NOT_SUBMITTED' ? '#FECACA' : '#FDE68A',
+              borderRadius: 14,
+              paddingVertical: 10,
+              paddingHorizontal: 12,
+              marginBottom: 6,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+              <Ionicons
+                name={activeTrip.customsClearance.status === 'NOT_SUBMITTED' ? 'alert-circle' : 'time'}
+                size={18}
+                color={activeTrip.customsClearance.status === 'NOT_SUBMITTED' ? '#DC2626' : '#D97706'}
+              />
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontSize: 11,
+                    fontWeight: '800',
+                    color: activeTrip.customsClearance.status === 'NOT_SUBMITTED' ? '#991B1B' : '#92400E',
+                  }}
+                >
+                  {activeTrip.customsClearance.status === 'NOT_SUBMITTED'
+                    ? (language === 'AM' ? 'የጉምሩክ ሰነድ አልገባም (ቀይ መስመር)' : 'CUSTOMS DOSSIER MISSING (RED LINE)')
+                    : (language === 'AM' ? 'በጉምሩክ ምርመራ ላይ ያለ' : 'CUSTOMS UNDER REVIEW')}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 9.5,
+                    color: activeTrip.customsClearance.status === 'NOT_SUBMITTED' ? '#B91C1C' : '#B45309',
+                    fontWeight: '600',
+                  }}
+                  numberOfLines={1}
+                >
+                  {activeTrip.customsClearance.status === 'NOT_SUBMITTED'
+                    ? (language === 'AM' ? 'ላኪው ሰነድ ሳያቀርብ አረንጓዴ ፈቃድ አይሰጥም' : 'Shipper documents missing. Green line not issued.')
+                    : (language === 'AM' ? 'በጉምሩክ ኦፊሰር እየተጣራ ነው' : 'Pending official customs approval.')}
+                </Text>
+              </View>
+            </View>
+            {onOpenCustomsPass && (
+              <TouchableOpacity
+                onPress={onOpenCustomsPass}
+                style={{
+                  backgroundColor: activeTrip.customsClearance.status === 'NOT_SUBMITTED' ? '#DC2626' : '#D97706',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 5,
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  borderRadius: 8,
+                }}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="information-circle" size={13} color="#FFFFFF" />
+                <Text style={{ fontSize: 10, fontWeight: '800', color: '#FFFFFF' }}>
+                  {language === 'AM' ? 'ሁኔታ እይ' : 'Details'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )
       )}
 
       {/* Active Checkpoint Card */}
