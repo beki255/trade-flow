@@ -3,7 +3,7 @@
     "name": "TradeFlow Mobile",
     "slug": "tradeflow-mobile",
     "owner": "bereket2553",
-    "version": "1.1.5",
+    "version": "1.1.6",
     "orientation": "portrait",
     "icon": "./src/assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -18,7 +18,7 @@
     },
     "android": {
       "package": "com.tradeflow.mobile",
-      "versionCode": 16,
+      "versionCode": 17,
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
