@@ -867,9 +867,9 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
       {pendingReroute && pendingReroute.status === 'PENDING_CONFIRMATION' && (
         <View
           style={{
-            backgroundColor: '#FFFBEB',
+            backgroundColor: isDark ? '#451A03' : '#FFFBEB',
             borderBottomWidth: 1,
-            borderColor: '#FDE68A',
+            borderColor: isDark ? '#B45309' : '#FDE68A',
             paddingVertical: 9,
             paddingHorizontal: 12,
             flexDirection: 'row',
@@ -879,12 +879,12 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
           }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, flex: 1 }}>
-            <Ionicons name="warning" size={17} color="#D97706" />
+            <Ionicons name="warning" size={17} color="#F59E0B" />
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 11, fontWeight: '800', color: '#92400E' }}>
+              <Text style={{ fontSize: 11, fontWeight: '800', color: isDark ? '#FDE68A' : '#92400E' }}>
                 {language === 'AM' ? 'የኮሪደር መስመር ለውጥ ጥቆማ' : language === 'OM' ? 'Yaada Daandii Jijjiirraa' : 'Reroute Proposal'}
               </Text>
-              <Text style={{ fontSize: 9.5, color: '#B45309', fontWeight: '600' }} numberOfLines={1}>
+              <Text style={{ fontSize: 9.5, color: isDark ? '#FCD34D' : '#B45309', fontWeight: '600' }} numberOfLines={1}>
                 -{pendingReroute.estimatedTimeSavingMins} {language === 'AM' ? 'ደቂቃ ያድናል' : 'min'} | {language === 'AM' ? 'በደወሌ በኩል' : 'via Dewele'}
               </Text>
             </View>
@@ -907,7 +907,7 @@ export const DriverPortalScreen: React.FC<DriverPortalScreenProps> = ({ onLogout
             <TouchableOpacity
               onPress={() => setActiveTab('incident')}
               style={{
-                backgroundColor: '#0F172A',
+                backgroundColor: isDark ? '#1E293B' : '#0F172A',
                 paddingHorizontal: 8,
                 paddingVertical: 5,
                 borderRadius: 7,

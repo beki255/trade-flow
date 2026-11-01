@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import { ActiveTripDetails } from '../types';
 import { DriverRealCorridorMap } from '../../../components/DriverRealCorridorMap';
 import { calculateCorridorRoadDistanceKm } from '../../../shared';
 import { useLanguage } from '../../../context/LanguageContext';
-import { useTheme } from '../../../context/ThemeContext';
+import { useTheme, ThemeColors } from '../../../context/ThemeContext';
 import {
   TruckIcon,
   PlayIcon,
@@ -106,6 +106,7 @@ export const TripTab: React.FC<TripTabProps> = ({
 }) => {
   const { t, language } = useLanguage();
   const { colors, isDark } = useTheme();
+  const tabStyles = useMemo(() => getTripStyles(colors, isDark), [colors, isDark]);
   const isInTransit = activeTrip?.status?.toUpperCase() === 'IN_TRANSIT';
   const isDelivered = activeTrip?.status?.toUpperCase() === 'DELIVERED';
   const isDispatched = !!activeTrip && !isInTransit && !isDelivered;
@@ -215,9 +216,9 @@ export const TripTab: React.FC<TripTabProps> = ({
               tabStyles.statusPillText,
               isInTransit
                 ? isMoving
-                  ? { color: '#065F46' }
-                  : { color: '#92400E' }
-                : { color: '#0369A1' },
+                  ? { color: isDark ? '#6EE7B7' : '#065F46' }
+                  : { color: isDark ? '#FDE68A' : '#92400E' }
+                : { color: isDark ? '#38BDF8' : '#0369A1' },
             ]}
             numberOfLines={1}
           >
@@ -260,7 +261,9 @@ export const TripTab: React.FC<TripTabProps> = ({
             <Text
               style={[
                 tabStyles.statusBadgeText,
-                isInTransit ? { color: '#047857' } : { color: '#B45309' },
+                isInTransit
+                  ? { color: isDark ? '#6EE7B7' : '#047857' }
+                  : { color: isDark ? '#FDE68A' : '#B45309' },
               ]}
             >
               {isInTransit
@@ -309,7 +312,7 @@ export const TripTab: React.FC<TripTabProps> = ({
           ) : null}
           {activeTrip.shipperName ? (
             <View style={tabStyles.specPill}>
-              <ShipperIcon size={12} color="#475569" />
+              <ShipperIcon size={12} color={isDark ? '#94A3B8' : '#475569'} />
               <Text style={tabStyles.specPillText} numberOfLines={1}>
                 {language === 'AM' ? 'ላኪ:' : language === 'OM' ? 'Ergaa:' : 'Shipper:'} {activeTrip.shipperName}
               </Text>
@@ -469,7 +472,7 @@ export const TripTab: React.FC<TripTabProps> = ({
   );
 };
 
-const tabStyles = StyleSheet.create({
+const getTripStyles = (colors: ThemeColors, isDark: boolean) => StyleSheet.create({
   container: {
     gap: 12,
   },
@@ -483,16 +486,16 @@ const tabStyles = StyleSheet.create({
     borderWidth: 1,
   },
   statusPillReady: {
-    backgroundColor: '#F0F9FF',
-    borderColor: '#BAE6FD',
+    backgroundColor: isDark ? '#0C4A6E' : '#F0F9FF',
+    borderColor: isDark ? '#0284C7' : '#BAE6FD',
   },
   statusPillDriving: {
-    backgroundColor: '#ECFDF5',
-    borderColor: '#A7F3D0',
+    backgroundColor: isDark ? '#064E3B' : '#ECFDF5',
+    borderColor: isDark ? '#059669' : '#A7F3D0',
   },
   statusPillStationary: {
-    backgroundColor: '#FEF3C7',
-    borderColor: '#FDE68A',
+    backgroundColor: isDark ? '#451A03' : '#FEF3C7',
+    borderColor: isDark ? '#B45309' : '#FDE68A',
   },
   statusDot: {
     width: 8,
@@ -515,15 +518,15 @@ const tabStyles = StyleSheet.create({
   statusPillDistance: {
     fontSize: 10.5,
     fontWeight: '800',
-    color: '#64748B',
+    color: colors.textMuted,
   },
   missionCard: {
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.card,
     borderRadius: 18,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    shadowColor: '#0F172A',
+    borderColor: colors.border,
+    shadowColor: isDark ? '#000000' : '#0F172A',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
@@ -538,15 +541,15 @@ const tabStyles = StyleSheet.create({
   titleText: {
     fontSize: 15,
     fontWeight: '900',
-    color: '#0F172A',
+    color: colors.text,
   },
   subText: {
     fontSize: 11,
-    color: '#64748B',
+    color: colors.textMuted,
     marginTop: 1,
   },
   idBadge: {
-    backgroundColor: '#E0F2FE',
+    backgroundColor: isDark ? '#0C4A6E' : '#E0F2FE',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
@@ -554,7 +557,7 @@ const tabStyles = StyleSheet.create({
   idBadgeText: {
     fontSize: 9.5,
     fontWeight: '800',
-    color: '#0284C7',
+    color: isDark ? '#38BDF8' : '#0284C7',
   },
   statusBadge: {
     paddingHorizontal: 8,
@@ -563,24 +566,24 @@ const tabStyles = StyleSheet.create({
     borderWidth: 1,
   },
   statusBadgeReady: {
-    backgroundColor: '#FEF3C7',
-    borderColor: '#FDE68A',
+    backgroundColor: isDark ? '#451A03' : '#FEF3C7',
+    borderColor: isDark ? '#B45309' : '#FDE68A',
   },
   statusBadgeInTransit: {
-    backgroundColor: '#D1FAE5',
-    borderColor: '#A7F3D0',
+    backgroundColor: isDark ? '#064E3B' : '#D1FAE5',
+    borderColor: isDark ? '#059669' : '#A7F3D0',
   },
   statusBadgeText: {
     fontSize: 9.5,
     fontWeight: '900',
   },
   routeBox: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
     borderRadius: 12,
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: isDark ? '#334155' : '#E2E8F0',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -599,19 +602,19 @@ const tabStyles = StyleSheet.create({
   routeRole: {
     fontSize: 8.5,
     fontWeight: '800',
-    color: '#94A3B8',
+    color: colors.textMuted,
     letterSpacing: 0.5,
     marginBottom: 2,
   },
   routeCity: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
   },
   routeDistanceText: {
     fontSize: 9.5,
     fontWeight: '800',
-    color: '#0284C7',
+    color: isDark ? '#38BDF8' : '#0284C7',
   },
   specsRow: {
     flexDirection: 'row',
@@ -622,15 +625,17 @@ const tabStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: isDark ? '#1E293B' : '#F1F5F9',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: isDark ? '#334155' : '#E2E8F0',
   },
   specPillText: {
     fontSize: 10.5,
     fontWeight: '700',
-    color: '#334155',
+    color: isDark ? '#E2E8F0' : '#334155',
   },
   startTripBtn: {
     backgroundColor: '#10B981',
@@ -663,22 +668,22 @@ const tabStyles = StyleSheet.create({
     gap: 6,
   },
   pauseBtn: {
-    backgroundColor: '#FEF3C7',
-    borderColor: '#FDE68A',
+    backgroundColor: isDark ? '#451A03' : '#FEF3C7',
+    borderColor: isDark ? '#B45309' : '#FDE68A',
   },
   pauseBtnText: {
     fontSize: 11.5,
     fontWeight: '800',
-    color: '#92400E',
+    color: isDark ? '#FDE68A' : '#92400E',
   },
   resumeBtn: {
-    backgroundColor: '#DCFCE7',
-    borderColor: '#BBF7D0',
+    backgroundColor: isDark ? '#064E3B' : '#DCFCE7',
+    borderColor: isDark ? '#059669' : '#BBF7D0',
   },
   resumeBtnText: {
     fontSize: 11.5,
     fontWeight: '800',
-    color: '#047857',
+    color: isDark ? '#6EE7B7' : '#047857',
   },
   deliveredBtn: {
     flex: 1.2,
@@ -701,11 +706,11 @@ const tabStyles = StyleSheet.create({
   },
   kpiCard: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.card,
     borderRadius: 14,
     padding: 10,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     gap: 2,
   },
   kpiHeaderRow: {
@@ -715,25 +720,25 @@ const tabStyles = StyleSheet.create({
   },
   kpiLabel: {
     fontSize: 9.5,
-    color: '#64748B',
+    color: colors.textMuted,
     fontWeight: '700',
   },
   kpiValue: {
     fontSize: 14,
     fontWeight: '900',
-    color: '#0F172A',
+    color: colors.text,
   },
   kpiSub: {
     fontSize: 9.5,
-    color: '#64748B',
+    color: colors.textMuted,
     fontWeight: '600',
   },
   mapCard: {
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.card,
     borderRadius: 18,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     gap: 8,
   },
   mapHeaderRow: {
@@ -744,15 +749,15 @@ const tabStyles = StyleSheet.create({
   mapTitle: {
     fontSize: 12.5,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
   },
   mapBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#ECFDF5',
+    backgroundColor: isDark ? '#064E3B' : '#ECFDF5',
     borderWidth: 1,
-    borderColor: '#A7F3D0',
+    borderColor: isDark ? '#059669' : '#A7F3D0',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
@@ -766,25 +771,25 @@ const tabStyles = StyleSheet.create({
   mapBadgeText: {
     fontSize: 9.5,
     fontWeight: '800',
-    color: '#047857',
+    color: isDark ? '#6EE7B7' : '#047857',
   },
   emptyCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 18,
     paddingVertical: 32,
     paddingHorizontal: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     marginTop: 10,
   },
   emptyIconBadge: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: isDark ? '#1E293B' : '#F1F5F9',
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 14,
@@ -792,7 +797,7 @@ const tabStyles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: '900',
-    color: '#0F172A',
+    color: colors.text,
     textAlign: 'center',
   },
   emptySub: {
@@ -800,7 +805,7 @@ const tabStyles = StyleSheet.create({
     marginTop: 6,
     lineHeight: 18,
     fontSize: 12,
-    color: '#64748B',
+    color: colors.textMuted,
     maxWidth: 280,
   },
   emptyActionBtn: {

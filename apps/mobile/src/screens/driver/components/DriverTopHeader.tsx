@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { driverStyles as styles } from '../driverStyles';
+import { useDriverStyles } from '../driverStyles';
 import { LanguageSwitcher } from '../../../components/LanguageSwitcher';
 import { ThemeToggle } from '../../../components/ThemeToggle';
 import { useLanguage } from '../../../context/LanguageContext';
+import { useTheme } from '../../../context/ThemeContext';
 import { isValidImageUri } from '../../../utils/imageUtils';
 
 interface DriverTopHeaderProps {
@@ -20,7 +21,9 @@ export const DriverTopHeader: React.FC<DriverTopHeaderProps> = ({
   onLogout,
   onOpenProfile,
 }) => {
+  const styles = useDriverStyles();
   const { t } = useLanguage();
+  const { isDark } = useTheme();
   const photoUrl = user?.photoUrl || user?.roadworthinessDoc || user?.insuranceDoc;
 
   return (
@@ -80,7 +83,7 @@ export const DriverTopHeader: React.FC<DriverTopHeaderProps> = ({
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <ThemeToggle compact />
           <View style={{ width: 6 }} />
-          <LanguageSwitcher dark={true} />
+          <LanguageSwitcher dark={isDark} />
         </View>
       </View>
     </>

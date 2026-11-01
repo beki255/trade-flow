@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useDriverStyles } from '../driverStyles';
 import { IncidentRecord, DynamicRerouteProposal } from '../types';
 import { useLanguage } from '../../../context/LanguageContext';
+import { useTheme } from '../../../context/ThemeContext';
 import { formatCleanLocation } from './TripTab';
 import { CheckIcon } from '../../../components/AppIcons';
 import { uriToDataUrl } from '../../../utils/imageUtils';
@@ -76,6 +77,7 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
 }) => {
   const styles = useDriverStyles();
   const { t, language } = useLanguage();
+  const { colors, isDark } = useTheme();
   const [showPhotoPreview, setShowPhotoPreview] = useState(false);
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [isSeverityDropdownOpen, setIsSeverityDropdownOpen] = useState(false);
@@ -248,16 +250,16 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 4,
-                backgroundColor: '#ECFDF5',
+                backgroundColor: isDark ? '#064E3B' : '#ECFDF5',
                 paddingHorizontal: 8,
                 paddingVertical: 4,
                 borderRadius: 12,
                 borderWidth: 1,
-                borderColor: '#A7F3D0',
+                borderColor: isDark ? '#059669' : '#A7F3D0',
               }}
             >
               <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#10B981' }} />
-              <Text style={{ fontSize: 9.5, fontWeight: '800', color: '#047857' }}>
+              <Text style={{ fontSize: 9.5, fontWeight: '800', color: isDark ? '#6EE7B7' : '#047857' }}>
                 {language === 'AM' ? 'ንቁ ጂፒኤስ' : language === 'OM' ? 'GPS Hojiirra' : 'GPS ACTIVE'}
               </Text>
             </View>
@@ -267,7 +269,7 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
       {pendingReroute && pendingReroute.status === 'PENDING_CONFIRMATION' && (
         <View
           style={{
-            backgroundColor: '#FFFBEB',
+            backgroundColor: isDark ? '#451A03' : '#FFFBEB',
             borderColor: '#F59E0B',
             borderWidth: 2,
             borderRadius: 18,
@@ -276,30 +278,30 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
           }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Ionicons name="warning" size={22} color="#D97706" />
+            <Ionicons name="warning" size={22} color="#F59E0B" />
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 14, fontWeight: '900', color: '#92400E' }}>
+              <Text style={{ fontSize: 14, fontWeight: '900', color: isDark ? '#FDE68A' : '#92400E' }}>
                 {language === 'AM' ? 'ተለዋዋጭ አማራጭ መስመር ቀርቧል!' : language === 'OM' ? 'Daandiin Filannoo Dhiyaateera!' : 'Dynamic Rerouting Proposed!'}
               </Text>
-              <Text style={{ fontSize: 11, color: '#B45309', fontWeight: '700' }}>
+              <Text style={{ fontSize: 11, color: isDark ? '#FCD34D' : '#B45309', fontWeight: '700' }}>
                 {language === 'AM' ? 'ፈጣን እና አስተማማኝ አማራጭ መስመር ተገኝቷል' : language === 'OM' ? 'Daandii saffisaa fi nagaa qabu argameera' : 'Materially Faster/Safer Path Detected Along Corridor'}
               </Text>
             </View>
             <View
               style={{
-                backgroundColor: '#FEF3C7',
+                backgroundColor: isDark ? '#78350F' : '#FEF3C7',
                 paddingHorizontal: 8,
                 paddingVertical: 4,
                 borderRadius: 12,
               }}
             >
-              <Text style={{ fontSize: 10, fontWeight: '800', color: '#B45309' }}>
+              <Text style={{ fontSize: 10, fontWeight: '800', color: isDark ? '#FDE68A' : '#B45309' }}>
                 {pendingReroute.proposalId}
               </Text>
             </View>
           </View>
 
-          <Text style={{ fontSize: 12, color: '#78350F', lineHeight: 18 }}>
+          <Text style={{ fontSize: 12, color: isDark ? '#FCD34D' : '#78350F', lineHeight: 18 }}>
             {pendingReroute.reason}
           </Text>
 
@@ -308,51 +310,51 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
             <View
               style={{
                 flex: 1,
-                backgroundColor: '#ECFDF5',
+                backgroundColor: isDark ? '#064E3B' : '#ECFDF5',
                 padding: 10,
                 borderRadius: 12,
                 borderWidth: 1,
-                borderColor: '#A7F3D0',
+                borderColor: isDark ? '#059669' : '#A7F3D0',
               }}
             >
-              <Text style={{ fontSize: 10, fontWeight: '700', color: '#065F46' }}>
+              <Text style={{ fontSize: 10, fontWeight: '700', color: isDark ? '#A7F3D0' : '#065F46' }}>
                 {language === 'AM' ? 'የሚድን ግምታዊ ጊዜ' : language === 'OM' ? 'Yeroo Qusatamu' : 'EST. TIME SAVINGS'}
               </Text>
-              <Text style={{ fontSize: 15, fontWeight: '900', color: '#047857' }}>
+              <Text style={{ fontSize: 15, fontWeight: '900', color: isDark ? '#6EE7B7' : '#047857' }}>
                 -{pendingReroute.estimatedTimeSavingMins} {language === 'AM' ? 'ደቂቃ' : 'min'}
               </Text>
             </View>
             <View
               style={{
                 flex: 1,
-                backgroundColor: '#F8FAFC',
+                backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
                 padding: 10,
                 borderRadius: 12,
                 borderWidth: 1,
-                borderColor: '#E2E8F0',
+                borderColor: colors.border,
               }}
             >
-              <Text style={{ fontSize: 10, fontWeight: '700', color: '#475569' }}>
+              <Text style={{ fontSize: 10, fontWeight: '700', color: colors.textMuted }}>
                 {language === 'AM' ? 'የኪ.ሜ ልዩነት' : language === 'OM' ? 'Garaagarummaa Fageenyaa' : 'DISTANCE DELTA'}
               </Text>
-              <Text style={{ fontSize: 15, fontWeight: '900', color: '#0F172A' }}>
+              <Text style={{ fontSize: 15, fontWeight: '900', color: colors.text }}>
                 +{pendingReroute.distanceDeltaKm} {language === 'AM' ? 'ኪ.ሜ' : 'km'}
               </Text>
             </View>
             <View
               style={{
                 flex: 1,
-                backgroundColor: '#F8FAFC',
+                backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
                 padding: 10,
                 borderRadius: 12,
                 borderWidth: 1,
-                borderColor: '#E2E8F0',
+                borderColor: colors.border,
               }}
             >
-              <Text style={{ fontSize: 10, fontWeight: '700', color: '#475569' }}>
+              <Text style={{ fontSize: 10, fontWeight: '700', color: colors.textMuted }}>
                 {language === 'AM' ? 'የቀረበ ማለፊያ' : language === 'OM' ? 'Daandii Qaxxaamuraa' : 'PROPOSED BYPASS'}
               </Text>
-              <Text style={{ fontSize: 12, fontWeight: '800', color: '#0284C7' }} numberOfLines={1}>
+              <Text style={{ fontSize: 12, fontWeight: '800', color: isDark ? '#38BDF8' : '#0284C7' }} numberOfLines={1}>
                 Dewele Bypass
               </Text>
             </View>
@@ -415,8 +417,8 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
         {/* Geotagged Location Stamp */}
         <View
           style={{
-            backgroundColor: '#F8FAFC',
-            borderColor: '#E2E8F0',
+            backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
+            borderColor: colors.border,
             borderWidth: 1,
             borderRadius: 12,
             padding: 10,
@@ -430,23 +432,23 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
               width: 32,
               height: 32,
               borderRadius: 16,
-              backgroundColor: '#E0F2FE',
+              backgroundColor: isDark ? '#0C4A6E' : '#E0F2FE',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Ionicons name="location" size={16} color="#0284C7" />
+            <Ionicons name="location" size={16} color={isDark ? '#38BDF8' : '#0284C7'} />
           </View>
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-              <Text style={{ fontSize: 12.5, fontWeight: '800', color: '#0F172A', flex: 1 }} numberOfLines={1}>
+              <Text style={{ fontSize: 12.5, fontWeight: '800', color: colors.text, flex: 1 }} numberOfLines={1}>
                 {locationName}
               </Text>
-              <Text style={{ fontSize: 10, color: '#64748B', fontWeight: '600' }}>
+              <Text style={{ fontSize: 10, color: colors.textMuted, fontWeight: '600' }}>
                 {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </Text>
             </View>
-            <Text style={{ fontSize: 10.5, color: '#64748B', marginTop: 1 }}>
+            <Text style={{ fontSize: 10.5, color: colors.textMuted, marginTop: 1 }}>
               GPS: {Number(currentLat).toFixed(4)}° N, {Number(currentLng).toFixed(4)}° E • {language === 'AM' ? 'የቀጥታ ጂፒኤስ' : 'Live Geotag'}
             </Text>
           </View>
@@ -467,9 +469,9 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'space-between',
-              backgroundColor: '#FFFFFF',
+              backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
               borderWidth: 1.5,
-              borderColor: isCategoryDropdownOpen ? '#0284C7' : '#E2E8F0',
+              borderColor: isCategoryDropdownOpen ? '#0284C7' : (isDark ? '#334155' : '#E2E8F0'),
               borderRadius: 12,
               paddingHorizontal: 12,
               paddingVertical: 10,
@@ -482,7 +484,7 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
                   width: 28,
                   height: 28,
                   borderRadius: 8,
-                  backgroundColor: '#F1F5F9',
+                  backgroundColor: isDark ? '#0F172A' : '#F1F5F9',
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
@@ -493,14 +495,14 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
                   color={selectedCat.iconColor}
                 />
               </View>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: '#0F172A', flex: 1 }} numberOfLines={1}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: colors.text, flex: 1 }} numberOfLines={1}>
                 {getCategoryLabel(selectedCat.id)}
               </Text>
             </View>
             <Ionicons
               name={isCategoryDropdownOpen ? 'chevron-up' : 'chevron-down'}
               size={18}
-              color="#64748B"
+              color={colors.textMuted}
             />
           </TouchableOpacity>
 
@@ -508,9 +510,9 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
           {isCategoryDropdownOpen && (
             <View
               style={{
-                backgroundColor: '#FFFFFF',
+                backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
                 borderWidth: 1,
-                borderColor: '#CBD5E1',
+                borderColor: isDark ? '#334155' : '#CBD5E1',
                 borderRadius: 12,
                 marginTop: 4,
                 overflow: 'hidden',
@@ -537,9 +539,11 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
                       gap: 10,
                       paddingHorizontal: 12,
                       paddingVertical: 10,
-                      backgroundColor: isSelected ? '#F0F9FF' : '#FFFFFF',
+                      backgroundColor: isSelected
+                        ? (isDark ? '#0F172A' : '#F0F9FF')
+                        : (isDark ? '#1E293B' : '#FFFFFF'),
                       borderBottomWidth: idx < INCIDENT_CATEGORIES.length - 1 ? 1 : 0,
-                      borderBottomColor: '#F1F5F9',
+                      borderBottomColor: isDark ? '#334155' : '#F1F5F9',
                     }}
                   >
                     <View
@@ -547,7 +551,9 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
                         width: 26,
                         height: 26,
                         borderRadius: 7,
-                        backgroundColor: isSelected ? '#E0F2FE' : '#F8FAFC',
+                        backgroundColor: isSelected
+                          ? (isDark ? '#0C4A6E' : '#E0F2FE')
+                          : (isDark ? '#0F172A' : '#F8FAFC'),
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
@@ -555,7 +561,7 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
                       <Ionicons
                         name={cat.iconName}
                         size={15}
-                        color={isSelected ? '#0284C7' : cat.iconColor}
+                        color={isSelected ? (isDark ? '#38BDF8' : '#0284C7') : cat.iconColor}
                       />
                     </View>
                     <View style={{ flex: 1 }}>
@@ -563,7 +569,9 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
                         style={{
                           fontSize: 12.5,
                           fontWeight: isSelected ? '800' : '600',
-                          color: isSelected ? '#0369A1' : '#1E293B',
+                          color: isSelected
+                            ? (isDark ? '#38BDF8' : '#0369A1')
+                            : colors.text,
                         }}
                       >
                         {getCategoryLabel(cat.id)}
@@ -606,9 +614,9 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'space-between',
-              backgroundColor: '#FFFFFF',
+              backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
               borderWidth: 1.5,
-              borderColor: isSeverityDropdownOpen ? '#0284C7' : '#E2E8F0',
+              borderColor: isSeverityDropdownOpen ? '#0284C7' : (isDark ? '#334155' : '#E2E8F0'),
               borderRadius: 12,
               paddingHorizontal: 12,
               paddingVertical: 10,
@@ -621,7 +629,7 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
                   paddingHorizontal: 10,
                   paddingVertical: 4,
                   borderRadius: 8,
-                  backgroundColor: selectedSev.bg,
+                  backgroundColor: isDark ? '#332200' : selectedSev.bg,
                   borderWidth: 1,
                   borderColor: selectedSev.color,
                 }}
@@ -630,14 +638,14 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
                   {getSeverityLabel(selectedSev.id)}
                 </Text>
               </View>
-              <Text style={{ fontSize: 12, color: '#64748B', fontWeight: '500' }}>
+              <Text style={{ fontSize: 12, color: colors.textMuted, fontWeight: '500' }}>
                 {language === 'AM' ? 'የቅድሚያ ደረጃ' : language === 'OM' ? 'Sadarkaa Dursa' : 'Priority rating'}
               </Text>
             </View>
             <Ionicons
               name={isSeverityDropdownOpen ? 'chevron-up' : 'chevron-down'}
               size={18}
-              color="#64748B"
+              color={colors.textMuted}
             />
           </TouchableOpacity>
 
@@ -645,9 +653,9 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
           {isSeverityDropdownOpen && (
             <View
               style={{
-                backgroundColor: '#FFFFFF',
+                backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
                 borderWidth: 1,
-                borderColor: '#CBD5E1',
+                borderColor: isDark ? '#334155' : '#CBD5E1',
                 borderRadius: 12,
                 marginTop: 4,
                 overflow: 'hidden',
@@ -674,9 +682,11 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
                       justifyContent: 'space-between',
                       paddingHorizontal: 12,
                       paddingVertical: 10,
-                      backgroundColor: isSelected ? '#F8FAFC' : '#FFFFFF',
+                      backgroundColor: isSelected
+                        ? (isDark ? '#0F172A' : '#F8FAFC')
+                        : (isDark ? '#1E293B' : '#FFFFFF'),
                       borderBottomWidth: idx < SEVERITY_LEVELS.length - 1 ? 1 : 0,
-                      borderBottomColor: '#F1F5F9',
+                      borderBottomColor: isDark ? '#334155' : '#F1F5F9',
                     }}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -693,7 +703,7 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
                           paddingHorizontal: 10,
                           paddingVertical: 3,
                           borderRadius: 8,
-                          backgroundColor: sev.bg,
+                          backgroundColor: isDark ? '#332200' : sev.bg,
                         }}
                       >
                         <Text style={{ fontSize: 12, fontWeight: '800', color: sev.color }}>
@@ -719,7 +729,7 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
           <TextInput
             style={[styles.input, { height: 60, textAlignVertical: 'top' }]}
             placeholder={language === 'AM' ? 'የመንገዱን ሁኔታ፣ የሰልፍ ርዝመት ወይም የተዘጉ መስመሮችን ይግለጹ...' : language === 'OM' ? 'Haala daandii, dheerina tarree ykn cufama ibsaa...' : 'Describe obstruction, queue length, lane closures...'}
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor={colors.textMuted}
             value={incidentNotes}
             onChangeText={setIncidentNotes}
             multiline
@@ -738,8 +748,10 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'space-between',
-              backgroundColor: incidentPhoto ? '#F0FDF4' : '#F8FAFC',
-              borderColor: incidentPhoto ? '#10B981' : '#CBD5E1',
+              backgroundColor: incidentPhoto
+                ? (isDark ? '#064E3B' : '#F0FDF4')
+                : (isDark ? '#1E293B' : '#F8FAFC'),
+              borderColor: incidentPhoto ? '#10B981' : (isDark ? '#334155' : '#CBD5E1'),
               borderWidth: 1,
               borderStyle: incidentPhoto ? 'solid' : 'dashed',
               borderRadius: 12,
@@ -751,14 +763,14 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
               <Ionicons
                 name={incidentPhoto ? 'checkmark-circle' : 'camera-outline'}
                 size={18}
-                color={incidentPhoto ? '#059669' : '#64748B'}
+                color={incidentPhoto ? '#059669' : colors.textMuted}
               />
               <View style={{ flex: 1 }}>
                 <Text
                   style={{
                     fontSize: 12,
                     fontWeight: '700',
-                    color: incidentPhoto ? '#047857' : '#0F172A',
+                    color: incidentPhoto ? (isDark ? '#6EE7B7' : '#047857') : colors.text,
                   }}
                   numberOfLines={1}
                 >
@@ -766,7 +778,7 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
                     ? (language === 'AM' ? 'የአደጋው ፎቶ ተያይዟል' : language === 'OM' ? 'Suuraan Balaa Qabateera' : 'Incident Photo Attached')
                     : (language === 'AM' ? 'ቀጥታ ፎቶ ያያይዙ' : language === 'OM' ? 'Suuraa Qabsiisaa' : 'Attach Live Photo')}
                 </Text>
-                <Text style={{ fontSize: 10, color: '#64748B' }}>
+                <Text style={{ fontSize: 10, color: colors.textMuted }}>
                   {incidentPhoto
                     ? (language === 'AM' ? 'የተረጋገጠ የጂፒኤስ መረጃ ተካቷል' : 'Verified GPS EXIF metadata embedded')
                     : (language === 'AM' ? 'ፎቶ አንሳ ወይም ከማዕከለ-ስዕላት ምረጥ' : 'Capture photo or choose image')}
@@ -879,13 +891,13 @@ export const IncidentTab: React.FC<IncidentTabProps> = ({
                 </Text>
                 <View
                   style={{
-                    backgroundColor: '#DCFCE7',
+                    backgroundColor: isDark ? '#064E3B' : '#DCFCE7',
                     paddingHorizontal: 8,
                     paddingVertical: 2,
                     borderRadius: 8,
                   }}
                 >
-                  <Text style={{ fontSize: 9, fontWeight: '800', color: '#15803D' }}>
+                  <Text style={{ fontSize: 9, fontWeight: '800', color: isDark ? '#6EE7B7' : '#15803D' }}>
                     {language === 'AM' ? '✓ በባለሥልጣን የተረጋገጠ' : language === 'OM' ? '✓ Mirkanaa\'e' : '✓ Authority Verified'}
                   </Text>
                 </View>

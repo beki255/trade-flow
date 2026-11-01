@@ -6,6 +6,7 @@ import {
 import { useDriverStyles } from '../driverStyles';
 import { WaypointItem } from '../types';
 import { useLanguage } from '../../../context/LanguageContext';
+import { useTheme } from '../../../context/ThemeContext';
 
 interface WaypointsTabProps {
   waypoints: WaypointItem[];
@@ -14,6 +15,7 @@ interface WaypointsTabProps {
 export const WaypointsTab: React.FC<WaypointsTabProps> = ({ waypoints }) => {
   const styles = useDriverStyles();
   const { t } = useLanguage();
+  const { colors, isDark } = useTheme();
 
   return (
     <View style={styles.sectionContainer}>
@@ -67,7 +69,7 @@ export const WaypointsTab: React.FC<WaypointsTabProps> = ({ waypoints }) => {
                   </View>
 
                   {Boolean(wp.description) && (
-                    <Text style={{ fontSize: 11, color: '#64748B', marginTop: 2, lineHeight: 15 }}>
+                    <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 2, lineHeight: 15 }}>
                       {wp.description}
                     </Text>
                   )}
@@ -75,28 +77,28 @@ export const WaypointsTab: React.FC<WaypointsTabProps> = ({ waypoints }) => {
                   {/* Infrastructure Feature Badges (Fuel, Toll, Weighbridge, Customs) */}
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 5 }}>
                     {isToll && (
-                      <View style={{ backgroundColor: '#E0F2FE', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: '#BAE6FD', flexDirection: 'row', alignItems: 'center' }}>
-                        <Text style={{ fontSize: 9.5, fontWeight: '800', color: '#0369A1' }}>⚡ FastPass Toll (150 ETB)</Text>
+                      <View style={{ backgroundColor: isDark ? '#0C4A6E' : '#E0F2FE', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: isDark ? '#0284C7' : '#BAE6FD', flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={{ fontSize: 9.5, fontWeight: '800', color: isDark ? '#38BDF8' : '#0369A1' }}>⚡ FastPass Toll (150 ETB)</Text>
                       </View>
                     )}
                     {isFuel && (
-                      <View style={{ backgroundColor: '#DCFCE7', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: '#86EFAC', flexDirection: 'row', alignItems: 'center' }}>
-                        <Text style={{ fontSize: 9.5, fontWeight: '800', color: '#166534' }}>⛽ Diesel In Stock (61.2 ETB/L)</Text>
+                      <View style={{ backgroundColor: isDark ? '#064E3B' : '#DCFCE7', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: isDark ? '#059669' : '#86EFAC', flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={{ fontSize: 9.5, fontWeight: '800', color: isDark ? '#6EE7B7' : '#166534' }}>⛽ Diesel In Stock (61.2 ETB/L)</Text>
                       </View>
                     )}
                     {isWeigh && (
-                      <View style={{ backgroundColor: '#FEF3C7', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: '#FDE68A', flexDirection: 'row', alignItems: 'center' }}>
-                        <Text style={{ fontSize: 9.5, fontWeight: '800', color: '#92400E' }}>⚖️ Weighbridge (Max 40T)</Text>
+                      <View style={{ backgroundColor: isDark ? '#451A03' : '#FEF3C7', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: isDark ? '#B45309' : '#FDE68A', flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={{ fontSize: 9.5, fontWeight: '800', color: isDark ? '#FDE68A' : '#92400E' }}>⚖️ Weighbridge (Max 40T)</Text>
                       </View>
                     )}
                     {isCustoms && (
-                      <View style={{ backgroundColor: '#EDE9FE', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: '#DDD6FE', flexDirection: 'row', alignItems: 'center' }}>
-                        <Text style={{ fontSize: 9.5, fontWeight: '800', color: '#5B21B6' }}>🛡️ Customs Single-Window</Text>
+                      <View style={{ backgroundColor: isDark ? '#3B0764' : '#EDE9FE', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: isDark ? '#7E22CE' : '#DDD6FE', flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={{ fontSize: 9.5, fontWeight: '800', color: isDark ? '#C084FC' : '#5B21B6' }}>🛡️ Customs Single-Window</Text>
                       </View>
                     )}
                     {isDepot && !isToll && !isCustoms && (
-                      <View style={{ backgroundColor: '#F1F5F9', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: '#E2E8F0', flexDirection: 'row', alignItems: 'center' }}>
-                        <Text style={{ fontSize: 9.5, fontWeight: '800', color: '#334155' }}>🏛️ Cargo Inland Terminal</Text>
+                      <View style={{ backgroundColor: isDark ? '#1E293B' : '#F1F5F9', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: isDark ? '#334155' : '#E2E8F0', flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={{ fontSize: 9.5, fontWeight: '800', color: isDark ? '#94A3B8' : '#334155' }}>🏛️ Cargo Inland Terminal</Text>
                       </View>
                     )}
                   </View>

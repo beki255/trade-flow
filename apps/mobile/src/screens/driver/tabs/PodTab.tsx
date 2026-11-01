@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useDriverStyles } from '../driverStyles';
 import { ActiveTripDetails } from '../types';
 import { useLanguage } from '../../../context/LanguageContext';
+import { useTheme } from '../../../context/ThemeContext';
 import { formatCleanLocation } from './TripTab';
 import { ShipperIcon, CheckIcon } from '../../../components/AppIcons';
 
@@ -40,6 +41,7 @@ export const PodTab: React.FC<PodTabProps> = ({
 }) => {
   const styles = useDriverStyles();
   const { t, language } = useLanguage();
+  const { colors, isDark } = useTheme();
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [selectedOrderIndex, setSelectedOrderIndex] = useState(0);
 
@@ -191,9 +193,11 @@ export const PodTab: React.FC<PodTabProps> = ({
                     paddingHorizontal: 10,
                     paddingVertical: 6,
                     borderRadius: 20,
-                    backgroundColor: isSel ? '#0F172A' : '#FFFFFF',
+                    backgroundColor: isSel
+                      ? (isDark ? '#0284C7' : '#0F172A')
+                      : (isDark ? '#1E293B' : '#FFFFFF'),
                     borderWidth: 1.5,
-                    borderColor: isSel ? '#0284C7' : '#E2E8F0',
+                    borderColor: isSel ? '#0284C7' : (isDark ? '#334155' : '#E2E8F0'),
                     shadowColor: '#000',
                     shadowOffset: { width: 0, height: 1 },
                     shadowOpacity: isSel ? 0.15 : 0.05,
@@ -204,13 +208,13 @@ export const PodTab: React.FC<PodTabProps> = ({
                   <Ionicons
                     name={ordDelivered ? 'checkmark-circle' : 'cube'}
                     size={13}
-                    color={isSel ? (ordDelivered ? '#34D399' : '#38BDF8') : (ordDelivered ? '#10B981' : '#64748B')}
+                    color={isSel ? (ordDelivered ? '#34D399' : '#FFFFFF') : (ordDelivered ? '#10B981' : colors.textMuted)}
                   />
                   <Text
                     style={{
                       fontSize: 11,
                       fontWeight: '800',
-                      color: isSel ? '#FFFFFF' : '#334155',
+                      color: isSel ? '#FFFFFF' : (isDark ? '#F8FAFC' : '#334155'),
                     }}
                   >
                     {language === 'AM' ? `ትዕዛዝ #${idx + 1}` : language === 'OM' ? `Ajaja #${idx + 1}` : `Order #${idx + 1}`}
@@ -219,7 +223,7 @@ export const PodTab: React.FC<PodTabProps> = ({
                     style={{
                       fontSize: 10.5,
                       fontWeight: isSel ? '700' : '500',
-                      color: isSel ? '#94A3B8' : '#64748B',
+                      color: isSel ? (isDark ? '#E0F2FE' : '#94A3B8') : colors.textMuted,
                       maxWidth: 80,
                     }}
                     numberOfLines={1}
@@ -239,16 +243,16 @@ export const PodTab: React.FC<PodTabProps> = ({
       {/* ── Compact Unified Executive Consignment & e-POD Card ── */}
       <View
         style={{
-          backgroundColor: '#0F172A',
+          backgroundColor: colors.card,
           borderRadius: 16,
           padding: 13,
           marginBottom: 12,
           gap: 9,
           borderWidth: 1,
-          borderColor: '#1E293B',
+          borderColor: colors.border,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.15,
+          shadowOpacity: isDark ? 0.3 : 0.06,
           shadowRadius: 6,
           elevation: 2,
         }}
@@ -261,7 +265,7 @@ export const PodTab: React.FC<PodTabProps> = ({
                 width: 30,
                 height: 30,
                 borderRadius: 8,
-                backgroundColor: isComplete ? '#064E3B' : '#0369A1',
+                backgroundColor: isComplete ? (isDark ? '#064E3B' : '#DCFCE7') : (isDark ? '#0369A1' : '#E0F2FE'),
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
@@ -269,14 +273,14 @@ export const PodTab: React.FC<PodTabProps> = ({
               <Ionicons
                 name={isComplete ? 'shield-checkmark' : 'cube'}
                 size={16}
-                color={isComplete ? '#34D399' : '#38BDF8'}
+                color={isComplete ? (isDark ? '#34D399' : '#15803D') : (isDark ? '#38BDF8' : '#0284C7')}
               />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 14, fontWeight: '900', color: '#FFFFFF' }} numberOfLines={1}>
+              <Text style={{ fontSize: 14, fontWeight: '900', color: colors.text }} numberOfLines={1}>
                 {formatTitle(currentOrder.title)}
               </Text>
-              <Text style={{ fontSize: 10.5, color: '#94A3B8' }} numberOfLines={1}>
+              <Text style={{ fontSize: 10.5, color: colors.textMuted }} numberOfLines={1}>
                 {currentOrder.cargo || 'Freight'} ({currentOrder.weight || '30 Tons'})
               </Text>
             </View>
@@ -285,19 +289,25 @@ export const PodTab: React.FC<PodTabProps> = ({
           {/* Clean Human-Friendly Status Badge (No technical developer words) */}
           <View
             style={{
-              backgroundColor: isComplete ? 'rgba(16, 185, 129, 0.15)' : 'rgba(2, 132, 199, 0.15)',
+              backgroundColor: isComplete
+                ? (isDark ? 'rgba(16, 185, 129, 0.15)' : '#DCFCE7')
+                : (isDark ? 'rgba(2, 132, 199, 0.15)' : '#E0F2FE'),
               paddingHorizontal: 9,
               paddingVertical: 4,
               borderRadius: 6,
               borderWidth: 1,
-              borderColor: isComplete ? '#10B981' : '#0284C7',
+              borderColor: isComplete
+                ? (isDark ? '#10B981' : '#86EFAC')
+                : (isDark ? '#0284C7' : '#BAE6FD'),
             }}
           >
             <Text
               style={{
                 fontSize: 10,
                 fontWeight: '900',
-                color: isComplete ? '#34D399' : '#38BDF8',
+                color: isComplete
+                  ? (isDark ? '#34D399' : '#15803D')
+                  : (isDark ? '#38BDF8' : '#0369A1'),
                 letterSpacing: 0.5,
               }}
             >
@@ -311,36 +321,38 @@ export const PodTab: React.FC<PodTabProps> = ({
         {/* Route Details: Fully visible Origin and Destination (NEVER truncated) */}
         <View
           style={{
-            backgroundColor: '#1E293B',
+            backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
             borderRadius: 10,
             paddingVertical: 9,
             paddingHorizontal: 11,
             gap: 6,
+            borderWidth: 1,
+            borderColor: isDark ? '#334155' : '#E2E8F0',
           }}
         >
           {/* Origin Stop */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#10B981' }} />
-            <Text style={{ fontSize: 10, color: '#94A3B8', fontWeight: '700' }}>
+            <Text style={{ fontSize: 10, color: colors.textMuted, fontWeight: '700' }}>
               {language === 'AM' ? 'መነሻ:' : language === 'OM' ? 'Ka\'umsa:' : 'Origin:'}
             </Text>
-            <Text style={{ fontSize: 11.5, color: '#F1F5F9', fontWeight: '700', flex: 1 }}>
+            <Text style={{ fontSize: 11.5, color: colors.text, fontWeight: '700', flex: 1 }}>
               {formatLocation(currentOrder.origin)}
             </Text>
           </View>
 
           {/* Dotted Route Connector */}
           <View style={{ paddingLeft: 3, marginVertical: -2 }}>
-            <View style={{ width: 1, height: 6, backgroundColor: '#334155' }} />
+            <View style={{ width: 1, height: 6, backgroundColor: isDark ? '#334155' : '#CBD5E1' }} />
           </View>
 
           {/* Destination Stop */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Ionicons name="location-sharp" size={11} color="#38BDF8" />
-            <Text style={{ fontSize: 10, color: '#94A3B8', fontWeight: '700' }}>
+            <Ionicons name="location-sharp" size={11} color={isDark ? '#38BDF8' : '#0284C7'} />
+            <Text style={{ fontSize: 10, color: colors.textMuted, fontWeight: '700' }}>
               {language === 'AM' ? 'መድረሻ:' : language === 'OM' ? 'Gahumsa:' : 'Destination:'}
             </Text>
-            <Text style={{ fontSize: 11.5, color: '#38BDF8', fontWeight: '700', flex: 1 }}>
+            <Text style={{ fontSize: 11.5, color: isDark ? '#38BDF8' : '#0284C7', fontWeight: '700', flex: 1 }}>
               {formatCleanLocation(currentOrder.destination) || (language === 'AM' ? 'ቃሊቲ የደረቅ ወደብ፣ አዲስ አበባ' : 'Kaliti Inland Container Terminal, Addis Ababa')}
             </Text>
           </View>
@@ -349,17 +361,17 @@ export const PodTab: React.FC<PodTabProps> = ({
         {/* Shipper & Delivery Status Row */}
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 2 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-            <ShipperIcon size={13} color="#94A3B8" />
-            <Text style={{ fontSize: 10.5, color: '#94A3B8' }}>
+            <ShipperIcon size={13} color={colors.textMuted} />
+            <Text style={{ fontSize: 10.5, color: colors.textMuted }}>
               {language === 'AM' ? 'ላኪ:' : language === 'OM' ? 'Ergaa:' : 'Shipper:'}
             </Text>
-            <Text style={{ fontSize: 11, color: '#F1F5F9', fontWeight: '700' }} numberOfLines={1}>
+            <Text style={{ fontSize: 11, color: colors.text, fontWeight: '700' }} numberOfLines={1}>
               {currentOrder.shipperName || (language === 'AM' ? 'የተመዘገበ ላኪ' : 'Client Consignor')}
             </Text>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
             <CheckIcon size={13} color="#10B981" />
-            <Text style={{ fontSize: 10.5, color: '#34D399', fontWeight: '700' }}>
+            <Text style={{ fontSize: 10.5, color: isDark ? '#34D399' : '#059669', fontWeight: '700' }}>
               {isComplete
                 ? (language === 'AM' ? 'ርክክብ ተረጋግጧል' : language === 'OM' ? 'Mirkanaa\'eera' : 'Delivery Confirmed')
                 : (language === 'AM' ? 'በሂደት ላይ' : language === 'OM' ? 'Adeemsarra' : 'In Progress')}
@@ -371,45 +383,45 @@ export const PodTab: React.FC<PodTabProps> = ({
         {isComplete && (
           <View
             style={{
-              backgroundColor: '#132338',
+              backgroundColor: isDark ? '#132338' : '#F0F9FF',
               borderRadius: 12,
               padding: 9,
               borderWidth: 1,
-              borderColor: '#1E3A5F',
+              borderColor: isDark ? '#1E3A5F' : '#BAE6FD',
               gap: 8,
             }}
           >
             {/* Inline Handover Meta: Consignee + Payment + Date */}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 8.5, color: '#94A3B8', fontWeight: '700' }}>
+                <Text style={{ fontSize: 8.5, color: colors.textMuted, fontWeight: '700' }}>
                   {language === 'AM' ? 'ተረካቢ' : language === 'OM' ? 'FUDHATTAA' : 'CONSIGNEE'}
                 </Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 }}>
-                  <Ionicons name="person-circle" size={13} color="#38BDF8" />
-                  <Text style={{ fontSize: 11, color: '#FFFFFF', fontWeight: '800' }} numberOfLines={1}>
+                  <Ionicons name="person-circle" size={13} color={isDark ? '#38BDF8' : '#0284C7'} />
+                  <Text style={{ fontSize: 11, color: colors.text, fontWeight: '800' }} numberOfLines={1}>
                     {recipientDisplay}
                   </Text>
                 </View>
               </View>
-              <View style={{ width: 1, height: 20, backgroundColor: '#1E3A5F', marginHorizontal: 6 }} />
+              <View style={{ width: 1, height: 20, backgroundColor: isDark ? '#1E3A5F' : '#BAE6FD', marginHorizontal: 6 }} />
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 8.5, color: '#94A3B8', fontWeight: '700' }}>
+                <Text style={{ fontSize: 8.5, color: colors.textMuted, fontWeight: '700' }}>
                   {language === 'AM' ? 'ክፍያ' : language === 'OM' ? 'KAFFALTII' : 'PAYMENT'}
                 </Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 }}>
                   <Ionicons name="checkmark-circle" size={12} color="#34D399" />
-                  <Text style={{ fontSize: 10, color: '#34D399', fontWeight: '900' }}>
+                  <Text style={{ fontSize: 10, color: isDark ? '#34D399' : '#15803D', fontWeight: '900' }}>
                     {language === 'AM' ? 'ተለቋል' : language === 'OM' ? 'GADHIFFAME' : 'RELEASED'}
                   </Text>
                 </View>
               </View>
-              <View style={{ width: 1, height: 20, backgroundColor: '#1E3A5F', marginHorizontal: 6 }} />
+              <View style={{ width: 1, height: 20, backgroundColor: isDark ? '#1E3A5F' : '#BAE6FD', marginHorizontal: 6 }} />
               <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                <Text style={{ fontSize: 8.5, color: '#94A3B8', fontWeight: '700' }}>
+                <Text style={{ fontSize: 8.5, color: colors.textMuted, fontWeight: '700' }}>
                   {language === 'AM' ? 'ቀን' : language === 'OM' ? 'GUYYAA' : 'DATE'}
                 </Text>
-                <Text style={{ fontSize: 10, color: '#CBD5E1', fontWeight: '600', marginTop: 1 }} numberOfLines={1}>
+                <Text style={{ fontSize: 10, color: colors.textMuted, fontWeight: '600', marginTop: 1 }} numberOfLines={1}>
                   {deliveredDateFormatted}
                 </Text>
               </View>
@@ -442,10 +454,10 @@ export const PodTab: React.FC<PodTabProps> = ({
       {isLiveSigning && (
         <View style={[styles.card, { marginTop: 4 }]}>
           <View style={{ marginBottom: 4 }}>
-            <Text style={{ fontSize: 13, fontWeight: '800', color: '#0F172A' }}>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: colors.text }}>
               {language === 'AM' ? 'የተረካቢ ርክክብ ማረጋገጫ' : language === 'OM' ? 'Mirkaneessa Fudhattaa' : 'Consignee Handover Verification'}
             </Text>
-            <Text style={{ fontSize: 11, color: '#64748B', marginTop: 1 }}>
+            <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 1 }}>
               {language === 'AM'
                 ? 'የተረካቢውን ዝርዝር መረጃ ያስገቡ እና ዲጂታል ፊርማ ይቀበሉ።'
                 : language === 'OM'
@@ -462,14 +474,14 @@ export const PodTab: React.FC<PodTabProps> = ({
               <TextInput
                 style={[styles.input, { paddingLeft: 34 }]}
                 placeholder={language === 'AM' ? 'ምሳሌ፡ አልማዝ በቀለ (የመጋዘን ኃላፊ)' : language === 'OM' ? 'Fkn፡ Almaz Baqqalaa (Hogganaa Kuusaa)' : 'e.g. Almaz Bekele (Warehouse Manager)'}
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={colors.textMuted}
                 value={recipientName}
                 onChangeText={setRecipientName}
               />
               <Ionicons
                 name="person-outline"
                 size={16}
-                color="#64748B"
+                color={colors.textMuted}
                 style={{ position: 'absolute', left: 10, top: 11 }}
               />
             </View>
@@ -539,10 +551,10 @@ export const PodTab: React.FC<PodTabProps> = ({
       {allOrders.length > 1 && (
         <View style={{ marginTop: 6, gap: 6 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
-            <Text style={{ fontSize: 12, fontWeight: '800', color: '#475569' }}>
+            <Text style={{ fontSize: 12, fontWeight: '800', color: colors.text }}>
               {language === 'AM' ? `የቀደሙ ርክክቦች ማህደር (${allOrders.length})` : language === 'OM' ? `Kuusaa Raawwii Hunda (${allOrders.length})` : `All Deliveries Archive (${allOrders.length})`}
             </Text>
-            <Text style={{ fontSize: 10, color: '#94A3B8' }}>
+            <Text style={{ fontSize: 10, color: colors.textMuted }}>
               {language === 'AM' ? 'ዝርዝሩን ለማየት ትዕዛዙን ይጫኑ' : language === 'OM' ? 'Bal\'ina arguuf tuqaa' : 'Tap any order to view details'}
             </Text>
           </View>
@@ -564,12 +576,14 @@ export const PodTab: React.FC<PodTabProps> = ({
                   flexDirection: 'row',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  backgroundColor: isSel ? '#F0F9FF' : '#FFFFFF',
+                  backgroundColor: isSel
+                    ? (isDark ? '#0C4A6E' : '#F0F9FF')
+                    : (isDark ? '#1E293B' : '#FFFFFF'),
                   borderRadius: 12,
                   paddingVertical: 9,
                   paddingHorizontal: 12,
                   borderWidth: 1,
-                  borderColor: isSel ? '#BAE6FD' : '#E2E8F0',
+                  borderColor: isSel ? '#0284C7' : (isDark ? '#334155' : '#E2E8F0'),
                 }}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, marginRight: 8 }}>
@@ -578,7 +592,9 @@ export const PodTab: React.FC<PodTabProps> = ({
                       width: 26,
                       height: 26,
                       borderRadius: 13,
-                      backgroundColor: ordDelivered ? '#DCFCE7' : '#E0F2FE',
+                      backgroundColor: ordDelivered
+                        ? (isDark ? '#064E3B' : '#DCFCE7')
+                        : (isDark ? '#0C4A6E' : '#E0F2FE'),
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
@@ -586,19 +602,21 @@ export const PodTab: React.FC<PodTabProps> = ({
                     <Ionicons
                       name={ordDelivered ? 'checkmark' : 'time'}
                       size={13}
-                      color={ordDelivered ? '#15803D' : '#0284C7'}
+                      color={ordDelivered
+                        ? (isDark ? '#6EE7B7' : '#15803D')
+                        : (isDark ? '#38BDF8' : '#0284C7')}
                     />
                   </View>
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Text style={{ fontSize: 11, fontWeight: '800', color: '#0F172A' }}>
+                      <Text style={{ fontSize: 11, fontWeight: '800', color: colors.text }}>
                         {language === 'AM' ? `ትዕዛዝ #${idx + 1}` : language === 'OM' ? `Ajaja #${idx + 1}` : `Order #${idx + 1}`}
                       </Text>
-                      <Text style={{ fontSize: 11, fontWeight: '700', color: '#334155' }} numberOfLines={1}>
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: isDark ? '#E2E8F0' : '#334155' }} numberOfLines={1}>
                         {formatTitle(ord.title)}
                       </Text>
                     </View>
-                    <Text style={{ fontSize: 9.5, color: '#64748B' }} numberOfLines={1}>
+                    <Text style={{ fontSize: 9.5, color: colors.textMuted }} numberOfLines={1}>
                       {formatLocation(ord.origin)} ➔ {ord.destination ? ord.destination.split(',')[0] : 'Kaliti'}
                     </Text>
                   </View>
@@ -607,7 +625,9 @@ export const PodTab: React.FC<PodTabProps> = ({
                 <View style={{ alignItems: 'flex-end', gap: 2 }}>
                   <View
                     style={{
-                      backgroundColor: ordDelivered ? '#DCFCE7' : '#F1F5F9',
+                      backgroundColor: ordDelivered
+                        ? (isDark ? '#064E3B' : '#DCFCE7')
+                        : (isDark ? '#334155' : '#F1F5F9'),
                       paddingHorizontal: 6,
                       paddingVertical: 2,
                       borderRadius: 4,
@@ -617,7 +637,9 @@ export const PodTab: React.FC<PodTabProps> = ({
                       style={{
                         fontSize: 8.5,
                         fontWeight: '800',
-                        color: ordDelivered ? '#15803D' : '#475569',
+                        color: ordDelivered
+                          ? (isDark ? '#6EE7B7' : '#15803D')
+                          : (isDark ? '#CBD5E1' : '#475569'),
                       }}
                     >
                       {ordDelivered
@@ -625,7 +647,7 @@ export const PodTab: React.FC<PodTabProps> = ({
                         : (language === 'AM' ? 'በጉዞ ላይ' : language === 'OM' ? 'ADEEMSARRA' : 'IN TRANSIT')}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 9, color: '#94A3B8' }}>{formattedDate}</Text>
+                  <Text style={{ fontSize: 9, color: colors.textMuted }}>{formattedDate}</Text>
                 </View>
               </TouchableOpacity>
             );
@@ -651,15 +673,17 @@ export const PodTab: React.FC<PodTabProps> = ({
         >
           <View
             style={{
-              backgroundColor: '#FFFFFF',
+              backgroundColor: colors.card,
               borderRadius: 20,
               width: '100%',
               maxWidth: 380,
               padding: 18,
               gap: 12,
+              borderWidth: 1,
+              borderColor: colors.border,
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 10 },
-              shadowOpacity: 0.25,
+              shadowOpacity: isDark ? 0.4 : 0.2,
               shadowRadius: 15,
               elevation: 10,
             }}
@@ -667,13 +691,13 @@ export const PodTab: React.FC<PodTabProps> = ({
             {/* Modal Header */}
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Ionicons name="document-text" size={20} color="#059669" />
-                <Text style={{ fontSize: 15, fontWeight: '900', color: '#0F172A' }}>
+                <Ionicons name="document-text" size={20} color={isDark ? '#34D399' : '#059669'} />
+                <Text style={{ fontSize: 15, fontWeight: '900', color: colors.text }}>
                   {language === 'AM' ? 'የ e-POD ርክክብ ደረሰኝ' : language === 'OM' ? 'Nagahee Raawwii e-POD' : 'e-POD Delivery Receipt'}
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setShowReceiptModal(false)} style={{ padding: 4 }}>
-                <Ionicons name="close" size={20} color="#64748B" />
+                <Ionicons name="close" size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
 
@@ -682,18 +706,18 @@ export const PodTab: React.FC<PodTabProps> = ({
               style={{
                 alignItems: 'center',
                 paddingVertical: 9,
-                backgroundColor: '#F0FDF4',
+                backgroundColor: isDark ? '#064E3B' : '#F0FDF4',
                 borderRadius: 12,
                 borderWidth: 1,
-                borderColor: '#BBF7D0',
+                borderColor: isDark ? '#059669' : '#BBF7D0',
                 gap: 3,
               }}
             >
-              <Ionicons name="shield-checkmark" size={32} color="#059669" />
-              <Text style={{ fontSize: 12, fontWeight: '900', color: '#064E3B' }}>
+              <Ionicons name="shield-checkmark" size={32} color={isDark ? '#34D399' : '#059669'} />
+              <Text style={{ fontSize: 12, fontWeight: '900', color: isDark ? '#A7F3D0' : '#064E3B' }}>
                 {language === 'AM' ? 'የኢትዮ-ጅቡቲ ኮሪደር የተረጋገጠ' : language === 'OM' ? 'KORIIDARII ITOO-JIBUUTIIN MIRKANAA\'E' : 'ETHIO-DJIBOUTI CORRIDOR NOTARIZED'}
               </Text>
-              <Text style={{ fontSize: 10, color: '#047857', fontWeight: '700' }}>
+              <Text style={{ fontSize: 10, color: isDark ? '#6EE7B7' : '#047857', fontWeight: '700' }}>
                 {language === 'AM' ? 'ይፋዊ የርክክብ ሰነድ • 2026' : language === 'OM' ? 'Galmee Raawwii Seeraa • 2026' : 'Official Handover Record • 2026'}
               </Text>
             </View>
@@ -701,50 +725,50 @@ export const PodTab: React.FC<PodTabProps> = ({
             {/* Key Information */}
             <View style={{ gap: 7, paddingHorizontal: 4 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 11, color: '#64748B' }}>
+                <Text style={{ fontSize: 11, color: colors.textMuted }}>
                   {language === 'AM' ? 'ጭነት:' : language === 'OM' ? 'Fe\'isa:' : 'Consignment:'}
                 </Text>
-                <Text style={{ fontSize: 11.5, fontWeight: '800', color: '#0F172A' }}>
+                <Text style={{ fontSize: 11.5, fontWeight: '800', color: colors.text }}>
                   {formatTitle(currentOrder?.title)}
                 </Text>
               </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 11, color: '#64748B' }}>
+                <Text style={{ fontSize: 11, color: colors.textMuted }}>
                   {language === 'AM' ? 'ዓይነት እና ክብደት:' : language === 'OM' ? 'Gosa & Ulfaatina:' : 'Cargo & Weight:'}
                 </Text>
-                <Text style={{ fontSize: 11, fontWeight: '700', color: '#0F172A' }}>
+                <Text style={{ fontSize: 11, fontWeight: '700', color: colors.text }}>
                   {currentOrder?.cargo || 'Freight'} ({currentOrder?.weight || '30 Tons'})
                 </Text>
               </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 11, color: '#64748B' }}>
+                <Text style={{ fontSize: 11, color: colors.textMuted }}>
                   {language === 'AM' ? 'ፈራሚ ተረካቢ:' : language === 'OM' ? 'Fudhataa Mallatteesse:' : 'Consignee Signer:'}
                 </Text>
-                <Text style={{ fontSize: 11.5, fontWeight: '800', color: '#059669' }}>
+                <Text style={{ fontSize: 11.5, fontWeight: '800', color: isDark ? '#34D399' : '#059669' }}>
                   {recipientDisplay}
                 </Text>
               </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 11, color: '#64748B' }}>
+                <Text style={{ fontSize: 11, color: colors.textMuted }}>
                   {language === 'AM' ? 'ላኪ:' : language === 'OM' ? 'Ergaa:' : 'Shipper:'}
                 </Text>
-                <Text style={{ fontSize: 11.5, fontWeight: '700', color: '#0F172A' }}>
+                <Text style={{ fontSize: 11.5, fontWeight: '700', color: colors.text }}>
                   {currentOrder?.shipperName || (language === 'AM' ? 'የተመዘገበ ላኪ' : 'Client Consignor')}
                 </Text>
               </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 11, color: '#64748B' }}>
+                <Text style={{ fontSize: 11, color: colors.textMuted }}>
                   {language === 'AM' ? 'ክፍያ መልቀቅ:' : language === 'OM' ? 'Kaffaltii Gadhisuu:' : 'Disbursement:'}
                 </Text>
-                <Text style={{ fontSize: 11.5, fontWeight: '800', color: '#166534' }}>
+                <Text style={{ fontSize: 11.5, fontWeight: '800', color: isDark ? '#4ADE80' : '#166534' }}>
                   {language === 'AM' ? 'ከስማርት ኤስክሮው ተለቋል' : language === 'OM' ? 'Smart Escrow irraa kaffalame' : 'Settled from Smart Escrow'}
                 </Text>
               </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 11, color: '#64748B' }}>
+                <Text style={{ fontSize: 11, color: colors.textMuted }}>
                   {language === 'AM' ? 'ትክክለኛ የሰዓት ማህተም:' : language === 'OM' ? 'Mallattoo Yeroo Seeraa:' : 'Authoritative Timestamp:'}
                 </Text>
-                <Text style={{ fontSize: 10.5, color: '#0F172A', fontFamily: 'monospace' }}>
+                <Text style={{ fontSize: 10.5, color: colors.text, fontFamily: 'monospace' }}>
                   {deliveredDateFormatted} {deliveredTimeFormatted}
                 </Text>
               </View>
@@ -754,7 +778,7 @@ export const PodTab: React.FC<PodTabProps> = ({
             <TouchableOpacity
               onPress={() => setShowReceiptModal(false)}
               style={{
-                backgroundColor: '#0F172A',
+                backgroundColor: isDark ? '#1E293B' : '#0F172A',
                 borderRadius: 12,
                 paddingVertical: 11,
                 alignItems: 'center',
