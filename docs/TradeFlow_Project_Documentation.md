@@ -5,7 +5,10 @@
 **Submission Date:** November 2026  
 **Project Version:** v1.1.6 (Production Release)  
 
+---
+
 ### 👥 Project Group Members & Credentials
+
 | Student Full Name | Student ID | Academic Role | Specialized Contributions |
 | :--- | :--- | :--- | :--- |
 | **BEREKET SAHLEMARIAM** | `CTC-1041-26` | Capstone Group Member | Full-Stack Engineering, Mobile Telematics, Escrow Smart Contract Logic & Cloud Deployment |
@@ -47,92 +50,293 @@ Scan this QR code with any smartphone camera to instantly download and install t
 
 Historically, this corridor suffers from fragmented manual freight brokerage, exorbitant intermediary markups (15–25%), zero real-time in-transit visibility, frequent cross-border customs gridlocks at Galafi, severe payment defaults, and an alarming 42% empty backhaul rate.
 
+TradeFlow addresses these structural bottlenecks through an integrated digital ecosystem:
+1. **Automated Cross-Border Freight Matching Engine** connecting verified shippers and transporters with competitive, transparent pricing.
+2. **Milestone-Driven Digital Smart Escrow System** securing 100% of freight payments prior to dispatch and releasing funds upon verified digital proof-of-delivery (e-POD).
+3. **Driver Mobile App with Real-Time Telematics & Geofencing** providing automated waypoint check-ins, proximity alerts, and crowdsourced hazard/delay broadcasting.
+4. **Single-Window Customs Transit Clearance** featuring digital document dossiers, risk-tier routing (Green/Yellow/Red Line), and cryptographic QR passes for instantaneous border verification.
+5. **Universal Accessibility** through full trilingual localization (**English, Amharic, and Afaan Oromoo**) and synchronized dark/light theme engines across both Web and Mobile.
+
 ---
 
-## 1. Project Background & Corridor Context
+## 1. Project Background, Problem Formulation & Scope
 
-The 910 km multi-modal transit corridor connecting the Port of Doraleh to the dry port inland container depots of Modjo and Kaliti channels over 95% of Ethiopia's inbound and outbound trade. TradeFlow eliminates manual paper brokerage, payment defaults, and border customs queues.
+### 1.1 The Ethio-Djibouti Strategic Economic Corridor
+With a population exceeding 125 million, the Federal Democratic Republic of Ethiopia is the most populous landlocked nation globally. The nation's foreign trade depends almost entirely upon the maritime gateway provided by the Port of Doraleh in the Republic of Djibouti. The 910 km transit corridor connecting Djibouti to inland container dry port terminals at Modjo and Kaliti handles virtually all incoming industrial capital goods, agricultural fertilizer, energy supplies, and commercial imports, as well as outgoing agricultural commodities.
+
+### 1.2 Traditional Freight Logistics Bottlenecks
+Field research and logistics industry analysis identify five foundational structural failures across the corridor:
+- **Intermediary Brokerage Exploitation:** Freight brokerage is dominated by informal brokers in Addis Ababa and Djibouti who capture 15% to 25% of freight values purely through information asymmetry, inflating consumer prices while leaving transport operators undercompensated.
+- **Severe Trust Deficit & Payment Defaults:** Shippers face constant risks of cargo theft, damage, or mid-route freight extortion. Conversely, private truck drivers and small fleet owners face chronic payment defaults or delayed cash disbursements extending 30 to 90 days after delivery.
+- **Complete In-Transit Invisibility:** After departing Djibouti, trucks travel for 3 to 7 days through remote desert regions with zero automated tracking. Cargo owners cannot predict arrival times or detect delays, paralyzing industrial manufacturing schedules.
+- **Paper-Based Customs Stagnation at Galafi:** Border clearance relies on physical paper manifests and stamps. Drivers wait 24 to 72 hours in extreme desert heat at the Galafi border post, creating immense congestion and truck demurrage costs.
+- **The 42% Empty Backhaul Crisis:** Because inbound trucks lack a unified freight exchange to locate outbound agricultural export cargo, over 42% of trucks return to Djibouti completely empty, doubling freight transportation costs.
+
+### 1.3 Core Project Objectives
+The primary engineering objectives achieved by the TradeFlow platform include:
+1. **Direct Digital Matching:** Eliminate physical middleman cartels by connecting cargo owners directly with commercial truck fleets.
+2. **Payment Solvency via Smart Escrow:** Lock freight payments in digital milestone escrow before truck dispatch, releasing funds automatically upon verified electronic Proof-of-Delivery (e-POD).
+3. **Automated Telematics & Waypoint Geofencing:** Provide real-time GPS telemetry, dynamic ETA forecasting, and automated checkpoint check-ins across all 11 critical corridor hubs.
+4. **Accelerate Border Customs Clearance:** Implement a single-window digital customs interface with dynamic QR passes to reduce border gate inspection time from days to minutes.
+5. **National Linguistic Inclusion:** Deliver complete translations in English, Amharic (አማርኛ), and Afaan Oromoo with adaptive dark/light theme ergonomics.
 
 ---
 
 ## 2. Requirements Specification & User Personas
 
-The platform supports five operational personas: Shipper, Transporter, Driver, Customs Officer, and Administrator, governed by Functional Requirements FR-01 through FR-10 and rigorous Non-Functional Requirements.
+### 2.1 Five Core Actor Personas
+| Role | Target Persona | Primary Responsibilities |
+| :--- | :--- | :--- |
+| **SHIPPER** | Commercial Importer / Exporter | Creates freight listings, deposits escrow payments, tracks corridor transit in real time, approves delivery e-PODs. |
+| **TRANSPORTER** | Fleet Owner / Logistics Company | Registers trucks and drivers, browses open corridor loads, submits competitive bids, dispatches vehicles, tracks fleet earnings. |
+| **DRIVER** | Commercial Heavy Truck Driver | Views assigned trips, performs GPS waypoint check-ins, broadcasts route delays/incidents, captures recipient e-signature and photos for e-POD. |
+| **CUSTOMS OFFICER** | Ethiopian Customs Commission (ECC) Officer | Inspects digital consignment manifests, verifies declaration & packing lists, issues Green Line passes, scans QR codes at border gates. |
+| **ADMINISTRATOR** | TradeFlow System Operator | Verifies carrier business licenses, monitors platform KPIs, manages dispute resolutions, and audits escrow balances. |
+
+### 2.2 Functional Requirements (FR)
+- **FR-01 (Authentication & RBAC):** Multi-tenant authentication with JWT bearer tokens, bcrypt password hashing, and role guards protecting administrative endpoints.
+- **FR-02 (Freight Marketplace):** Dynamic tender listings with cargo specification, tonnage, packaging, pickup/delivery locations, and target price in ETB.
+- **FR-03 (Carrier Bidding Engine):** Transporters submit bids with equipment specifications and proposed freight rate; shippers award bids with a single click.
+- **FR-04 (Digital Smart Escrow):** Mandatory 100% upfront payment locking in milestone escrow prior to dispatch; atomic 95% payout release upon approved e-POD.
+- **FR-05 (Corridor Telematics & Geofencing):** Background GPS coordinate collection; automated Haversine geofence check-ins within 15 km of 11 transit hubs.
+- **FR-06 (Single-Window Customs):** 4-document electronic dossier upload; algorithmic risk routing (Green Line auto-clear); dynamic QR border pass generation.
+- **FR-07 (Electronic Proof of Delivery):** Touchscreen capacitive signature pad and geotagged camera photo capture confirming physical delivery.
+- **FR-08 (Crowdsourced Incident Broadcasting):** Drivers report corridor road blockages, accidents, and fuel outages with GPS coordinates and photos.
+- **FR-09 (Trilingual Localization):** Instant UI language toggle between English, Amharic (አማርኛ), and Afaan Oromoo across web and mobile.
+- **FR-10 (Adaptive Ergonomic Theming):** Synchronized Light Mode and High-Contrast AMOLED Dark Mode for desert daylight and nighttime driving.
 
 ---
 
-## 3. System Architecture & Technology Stack
+## 3. System Architecture & Monorepo Topology
 
-Built as a high-performance TypeScript monorepo with pnpm workspaces combining Next.js 14, React Native Expo SDK 52, Express.js, PostgreSQL Neon Serverless, and Prisma ORM.
+The TradeFlow platform is architected as a modular TypeScript monorepo managed with **pnpm workspaces**:
+```
+tradeflow-v2/
+├── apps/
+│   ├── web/               # Next.js 14 App Router, Tailwind CSS, Leaflet GIS, Lucide Icons
+│   └── mobile/            # React Native Expo SDK 52, expo-location, SQLite offline queue
+├── services/
+│   └── api/               # Node.js + Express + TypeScript REST API Microservice
+├── packages/
+│   └── shared/            # Shared TypeScript interfaces, corridor coordinates, validation schemas
+└── docs/                  # Technical documentation, PDF reports, and APK QR assets
+```
 
 ---
 
-## 4. Database Design & Prisma Schema
+## 4. Database Design & Prisma Relational Schema
 
-Normalized relational schema spanning User, Load, Bid, Shipment, CustomsClearance, Payment, IncidentReport, and Rating entities.
+```prisma
+// User Account Model
+model User {
+  id           String      @id @default(uuid())
+  email        String      @unique
+  passwordHash String
+  fullName     String
+  phoneNumber  String      @unique
+  role         UserRole    @default(SHIPPER)
+  tinNumber    String?     @unique
+  isVerified   Boolean     @default(false)
+  loads        Load[]      @relation("ShipperLoads")
+  bids         Bid[]       @relation("TransporterBids")
+  shipments    Shipment[]  @relation("DriverShipments")
+  createdAt    DateTime    @default(now())
+}
+
+// Freight Listing Model
+model Load {
+  id              String      @id @default(uuid())
+  shipperId       String
+  shipper         User        @relation("ShipperLoads", fields: [shipperId], references: [id])
+  origin          String
+  destination     String
+  cargoType       CargoType
+  weightTons      Float
+  targetRateETB   Float
+  status          LoadStatus  @default(OPEN)
+  bids            Bid[]
+  shipment        Shipment?
+}
+
+// Smart Escrow Ledger Model
+model Payment {
+  id             String        @id @default(uuid())
+  shipmentId     String        @unique
+  shipment       Shipment      @relation(fields: [shipmentId], references: [id])
+  totalAmountETB Float
+  platformFeeETB Float         // 5% Platform Revenue
+  netPayoutETB   Float         // 95% Carrier Disbursement
+  paymentMethod  PaymentMethod
+  status         PaymentStatus @default(PENDING)
+  escrowLockedAt DateTime?
+  releasedAt     DateTime?
+}
+```
 
 ---
 
 ## 5. Digital Smart Escrow Protocol & Settlements
 
-6-stage milestone escrow state machine securing 100% freight payments prior to vehicle dispatch with atomic `prisma.$transaction` releasing 95% net payout to transporters upon verified e-POD.
+TradeFlow introduces a programmable digital escrow protocol that locks 100% of agreed freight payments prior to vehicle dispatch and automatically disburses funds upon cryptographically verified proof of delivery:
+
+```
+[DRAFT] --> [ESCROW_LOCKED] --> [IN_TRANSIT] --> [ARRIVED_DESTINATION] --> [POD_VERIFIED] --> [ESCROW_RELEASED]
+```
+
+### Atomic Database Transactions via Prisma ($transaction)
+```typescript
+// Atomic Escrow Release Implementation (services/api/src/controllers/payment.controller.ts)
+export async function releaseEscrowPayout(shipmentId: string, paymentId: string) {
+  return await prisma.$transaction(async (tx) => {
+    const payment = await tx.payment.findUniqueOrThrow({ where: { id: paymentId } });
+    if (payment.status !== 'HELD_IN_ESCROW') {
+      throw new Error(`Invalid escrow state: ${payment.status}`);
+    }
+
+    const platformFee = payment.totalAmountETB * 0.05; // 5% platform commission
+    const netPayout = payment.totalAmountETB * 0.95;   // 95% carrier disbursement
+
+    // 1. Transition payment ledger status to RELEASED
+    const updatedPayment = await tx.payment.update({
+      where: { id: paymentId },
+      data: { status: 'RELEASED', releasedAt: new Date(), platformFeeETB: platformFee, netPayoutETB: netPayout }
+    });
+
+    // 2. Credit transporter digital wallet balance
+    await tx.transporterWallet.update({
+      where: { userId: payment.shipment.transporterId },
+      data: { availableBalanceETB: { increment: netPayout }, lockedEscrowETB: { decrement: payment.totalAmountETB } }
+    });
+
+    return updatedPayment;
+  });
+}
+```
 
 ---
 
-## 6. Corridor Telematics & GPS Geofencing
+## 6. Corridor Telematics, GPS Geofencing & Offline Sync
 
-11 strategic waypoints from Kaliti to Doraleh Port verified via mathematical Haversine proximity calculations (15 km geofence radius) with offline AsyncStorage queue buffering for desert dead zones.
+### 11 Strategic Transit Waypoints
+1. Addis Ababa (Kaliti ICT) - 0 km (Origin Terminal)
+2. Modjo Dry Port & Toll - 73 km (Dry Port / Expressway Junction)
+3. Adama Expressway Exit - 99 km (Tollway Interchange)
+4. Metehara Sugar Depot - 190 km (Weighbridge Rest Area)
+5. Awash Arba Safe Rest - 225 km (Fuel Stop & Truck Parking)
+6. Gewane Desert Hub - 360 km (Emergency Depot)
+7. Semera Regional Hub - 588 km (Afar Regional Capital Depot)
+8. Mille Junction Checkpoint - 515 km (Weighbridge Checkpoint)
+9. Logia Transport Terminal - 575 km (Fleet Staging Terminal)
+10. Galafi Customs Border - 690 km (Ethiopian Customs Commission Gate)
+11. Port of Doraleh (Djibouti) - 910 km (Maritime Container Terminal)
+
+### Mathematical Haversine Distance Formula
+```typescript
+// Corridor Geofence Calculation (apps/mobile/src/shared/corridor.ts)
+export function calculateHaversineDistance(
+  lat1: number, lon1: number,
+  lat2: number, lon2: number
+): number {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c);
+}
+```
 
 ---
 
-## 7. Single-Window Customs Transit Clearance
+## 7. Single-Window Customs Clearance & QR Pass
 
-4-document digital dossier management (Declaration, Commercial Invoice, Packing List, Cargo Insurance) with automated Green Line routing and cryptographic dynamic QR transit passes.
+The Galafi border post separating Ethiopia and Djibouti is the primary bottleneck on the corridor. TradeFlow integrates a Single-Window Electronic Customs Dossier (Declaration, Invoice, Packing List, Insurance) and generates a dynamic cryptographic QR pass on the driver mobile screen for instant ECC border clearance.
 
 ---
 
-## 8. Driver Mobile Application Engineering
+## 8. Driver Mobile Application (React Native Expo SDK 52)
 
-React Native Expo SDK 52 mobile client with geofenced check-in workflows, crowdsourced route hazard broadcasting, and dual-factor electronic Proof of Delivery (capacitive signature canvas + cargo photo).
+Engineered for extreme durability and offline resilience:
+- Dynamic Waypoint Check-Ins with 15 km Haversine geofence unlocking.
+- Crowdsourced road hazards and delay broadcasts with geotags.
+- Dual-factor electronic Proof of Delivery (e-POD) with touchscreen signature canvas and cargo camera photo.
+- AsyncStorage local FIFO queue preserving telemetry pings during Afar desert network drops.
 
 ---
 
 ## 9. Transporter Fleet Management Portal
 
-Fleet vehicle management, driver allocation, open load bidding engine, and real-time escrow wallet ledger.
+- Heavy truck and trailer registry (Flatbed, Lowbed, Box, Tanker).
+- Driver allocation and commercial license tracking.
+- Open loads bidding engine with ETB rates and transit commitments.
+- Real-time escrow wallet ledger with separate locked vs available balances.
 
 ---
 
-## 10. Shipper & Customs Commission Web Portals
+## 10. Shipper & Customs Web Portals
 
-Shipper freight tender wizard, Leaflet GIS live corridor map, one-click e-POD approval, and ECC single-window border inspection console.
+- Next.js 14 tender creation wizard with automated distance calculation.
+- Live Leaflet GIS corridor tracking map with real-time speed and heading.
+- Ethiopian Customs Commission (ECC) pre-arrival manifest queue and gate scanner.
+- One-click delivery review and atomic escrow release.
 
 ---
 
 ## 11. Trilingual Localization & Adaptive Theming
 
-Complete instant language switching across English, Amharic, and Afaan Oromoo with synchronized high-contrast AMOLED dark mode.
+- Trilingual dictionaries in English, Amharic (አማርኛ), and Afaan Oromoo.
+- Instant language toggle via React Context without page reloads.
+- Synchronized Light Mode and high-contrast AMOLED Dark Mode.
 
 ---
 
 ## 12. Backend REST API Architecture
 
-Node.js Express REST API controllers, comprehensive endpoints catalog, interactive Swagger OpenAPI specification (`/api/docs`), and health checks (`/api/health`).
+- Express.js controller-service architecture.
+- 15+ real endpoints covering Auth, Loads, Bids, Shipments, Escrow, Customs, Incidents, and Telematics.
+- Interactive Swagger OpenAPI documentation (`/api/docs`).
+- Health and metrics check (`/api/health`).
 
 ---
 
 ## 13. Testing, Verification & Quality Assurance
 
-Comprehensive test suite (TC-01 through TC-12) covering unit, integration, escrow settlement, and physical device testing across Samsung Galaxy A13, Tecno Spark 10, and Xiaomi Redmi Note 11.
+| Test ID | Module | Scenario Tested | Expected Result | Status |
+| :--- | :--- | :--- | :--- | :---: |
+| **TC-01** | Auth | Multi-role registration & login | Valid JWT token & proper portal routing | **PASS** |
+| **TC-02** | Marketplace | Freight listing creation & bid submission | Bid appears on shipper console in real-time | **PASS** |
+| **TC-03** | Escrow | Payment locking upon bid acceptance | Escrow status transitions to `HELD_IN_ESCROW` | **PASS** |
+| **TC-04** | Telematics | GPS coordinate submission via mobile | Live map updates truck marker on corridor route | **PASS** |
+| **TC-05** | Geofencing | Checkpoint arrival within 15 km | Automated waypoint check-in unlocks | **PASS** |
+| **TC-06** | Customs | Single-window document submission | Green Line risk classification & QR seal generated | **PASS** |
+| **TC-07** | e-POD | Digital signature & photo capture | Shipment marked `DELIVERED`, triggering escrow release | **PASS** |
+| **TC-08** | Escrow | Payout execution upon e-POD approval | 95% credited to transporter, 5% platform fee retained | **PASS** |
+| **TC-09** | i18n | Trilingual language toggle (EN/AM/OM) | Complete interface translates immediately | **PASS** |
+| **TC-10** | Mobile | Standalone Android APK build (v1.1.6) | Installs & runs natively on Android physical devices | **PASS** |
 
 ---
 
-## 14. Technical Challenges & Innovative Solutions
+## 14. Technical Challenges & Applied Solutions
 
-Resolving desert cellular dropouts via offline FIFO queueing, Samsung dark mode color inversion via dynamic factory hooks, and escrow concurrency race conditions via atomic database transactions.
+1. **Afar Desert Cellular Dropouts:** Solved via local AsyncStorage FIFO queue and exponential backoff sync.
+2. **Samsung Galaxy A13 Dark Mode Contrast:** Solved via dynamic React style hooks (`getDriverStyles(theme)`).
+3. **Escrow Double Payout Race Conditions:** Solved via atomic `prisma.$transaction` database locking.
+4. **Expo SDK 52 Native Build Failures:** Solved via custom Expo config plugins and Gradle memory tuning in `eas.json`.
+5. **Mountainous Geofence False Positives:** Solved by combining the 15 km threshold with chronological waypoint ordering.
 
 ---
 
-## 15. Capstone Team Allocation & Evaluation
+## 15. Conclusion & Capstone Team Contributions
 
-Detailed contribution allocation for Bereket Sahlemariam (`CTC-1041-26`), Dagnaw Mekasha (`CTC-1339-26`), and Hamelmal Belayneh (`CTC-1116-26`), along with academic endorsement and supervisor sign-off table.
+### 👥 Capstone Project Group Members
+| Student Full Name | Student ID | Academic Role | Specialized Contributions |
+| :--- | :--- | :--- | :--- |
+| **BEREKET SAHLEMARIAM** | `CTC-1041-26` | Capstone Group Member | Full-Stack Engineering, Mobile Telematics, Escrow Smart Contract Logic & Cloud Deployment |
+| **DAGNAW MEKASHA** | `CTC-1339-26` | Capstone Group Member | System Architecture, Database Schema Design, REST API Engineering & Automated Testing |
+| **HAMELMAL BELAYNEH** | `CTC-1116-26` | Capstone Group Member | UI/UX Design System, Multi-Language Localization (Amharic & Afaan Oromoo), Documentation & QA |
+
+---
+*TradeFlow — Empowering the Ethio-Djibouti Trade Corridor with Smart Logistics & Escrow.*
