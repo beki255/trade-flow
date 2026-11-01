@@ -288,7 +288,7 @@ export const CORRIDOR_WAYPOINTS = [
 The system computes road distances using a composite piecewise Haversine distance model along verified corridor waypoints rather than unrealistic straight-line vectors.
 
 ### 5.2 Module 2: Digital Smart Escrow Financial Vault
-Payment security is enforced programmatically in `services/api/src/routes/portal.ts`:
+Payment security is enforced programmatically in `services/api/src/controllers/portal.controller.ts` and `routes/portal.routes.ts`:
 - Shippers deposit funds via simulated Telebirr or CBE Birr gateways.
 - Funds transition to `HELD_IN_ESCROW` status. The system locks the funds under a unique escrow transaction hash (`TB-TF-XXXXXX`).
 - When the driver delivers the cargo, an electronic Proof of Delivery (e-POD) containing a recipient signature and geocoded delivery photo is uploaded.
@@ -298,8 +298,8 @@ Payment security is enforced programmatically in `services/api/src/routes/portal
 To guarantee tamper-proof tracking without relying on expensive proprietary hardware:
 1. The driver mobile application utilizes the phone's native GPS chip via `expo-location`.
 2. As the driver navigates the corridor, the app continuously calculates the distance to the next upcoming checkpoint:
-   $$	ext{Distance} = 2 R rcsin\left(\sqrt{\sin^2\left(rac{\Delta\phi}{2}ight) + \cos(\phi_1)\cos(\phi_2)\sin^2\left(rac{\Delta\lambda}{2}ight)}ight)$$
-3. When $	ext{Distance} \le 15	ext{ km}$, the system enables the **"Confirm Waypoint Check-In"** button and marks the arrival timestamp directly on the customs ledger.
+   $$\text{Distance} = 2 R \arcsin\left(\sqrt{\sin^2\left(\frac{\Delta\phi}{2}\right) + \cos(\phi_1)\cos(\phi_2)\sin^2\left(\frac{\Delta\lambda}{2}\right)}\right)$$
+3. When $\text{Distance} \le 15\text{ km}$, the system enables the **"Confirm Waypoint Check-In"** button and marks the arrival timestamp directly on the customs ledger.
 
 ### 5.4 Module 4: Single-Window Customs Clearance & QR Pass
 - Shippers upload 4 mandatory digital trade documents: Customs Declaration, Commercial Invoice, Packing List, and Cargo Insurance.
