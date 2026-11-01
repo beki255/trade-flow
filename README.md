@@ -26,9 +26,23 @@
 | **Live Web Application** | Production Web Portal | [https://trade-flow-ukgu.vercel.app](https://trade-flow-ukgu.vercel.app) |
 | **Backend REST API (Swagger Docs)** | Cloud Microservice | [https://tradeflow-api-7abs.onrender.com/api/docs](https://tradeflow-api-7abs.onrender.com/api/docs) |
 | **API Health & Status** | Operational Status Check | [https://tradeflow-api-7abs.onrender.com/api/health](https://tradeflow-api-7abs.onrender.com/api/health) |
-| **Mobile Android APK** | Standalone APK (v1.1.5) | [Download TradeFlow v1.1.5 APK](https://expo.dev/artifacts/eas/T1ZfHOLf-u_evYzO0aEfLD4MJtnN7FSQecclu_UrVAk.apk) |
-| **EAS Cloud Build Logs** | Expo CI/CD Build #858790e9 | [View Expo EAS Cloud Logs](https://expo.dev/accounts/bereket2553/projects/tradeflow-mobile/builds/858790e9-fae7-4531-b448-1df457864a6e) |
+| **Mobile Android APK (v1.1.6)** | Standalone Installable APK | [Download TradeFlow v1.1.6 APK](https://expo.dev/artifacts/eas/s_fuNuQqeCoh1iD_uAtLD8ATz7XDYnuO9WwikUil4JI.apk) |
+| **EAS Cloud Build Logs** | Expo CI/CD Build #5dbf3408 | [View Expo EAS Cloud Logs](https://expo.dev/accounts/bereket2553/projects/tradeflow-mobile/builds/5dbf3408-9ce5-4517-b42d-85e8580555b2) |
 | **Project Documentation (PDF)** | Complete Technical Report | [Download Documentation PDF](docs/TradeFlow_Project_Documentation.pdf) |
+
+### 📱 Mobile Android APK — Instant Camera QR Code & Download
+
+Scan this QR code with any smartphone camera to instantly download and install the standalone **TradeFlow Android App (v1.1.6)**:
+
+<p align="center">
+  <a href="https://expo.dev/artifacts/eas/s_fuNuQqeCoh1iD_uAtLD8ATz7XDYnuO9WwikUil4JI.apk">
+    <img src="docs/tradeflow_v116_qr.png" alt="TradeFlow Android APK Download QR Code" width="180" />
+  </a>
+  <br />
+  <a href="https://expo.dev/artifacts/eas/s_fuNuQqeCoh1iD_uAtLD8ATz7XDYnuO9WwikUil4JI.apk">
+    <b>📲 Click Here to Download TradeFlow v1.1.6 APK Directly</b>
+  </a>
+</p>
 
 ---
 

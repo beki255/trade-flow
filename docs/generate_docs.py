@@ -21,7 +21,7 @@ markdown_content = """# 🚚 TradeFlow: Intelligent Ethio-Djibouti Trade Corrido
 **Comprehensive Final Project Documentation & Technical Report**  
 *Software Development Training — Final Group Capstone Project*  
 **Submission Date:** November 2026  
-**Project Version:** v1.1.5 (Production Release)  
+**Project Version:** v1.1.6 (Production Release)  
 
 ---
 
@@ -33,8 +33,22 @@ markdown_content = """# 🚚 TradeFlow: Intelligent Ethio-Djibouti Trade Corrido
 | **Live Web Application** | Production Web Portal | [https://trade-flow-ukgu.vercel.app](https://trade-flow-ukgu.vercel.app) |
 | **Backend REST API (Swagger Docs)** | Cloud Microservice | [https://tradeflow-api-7abs.onrender.com/api/docs](https://tradeflow-api-7abs.onrender.com/api/docs) |
 | **API Health & Metrics** | Operational Status Check | [https://tradeflow-api-7abs.onrender.com/api/health](https://tradeflow-api-7abs.onrender.com/api/health) |
-| **Mobile Android APK** | Standalone Installable APK (v1.1.5) | [Download TradeFlow v1.1.5 APK](https://expo.dev/artifacts/eas/T1ZfHOLf-u_evYzO0aEfLD4MJtnN7FSQecclu_UrVAk.apk) |
-| **EAS Cloud Build Logs** | Expo CI/CD Build #858790e9 | [Expo EAS Build Logs](https://expo.dev/accounts/bereket2553/projects/tradeflow-mobile/builds/858790e9-fae7-4531-b448-1df457864a6e) |
+| **Mobile Android APK** | Standalone Installable APK (v1.1.6) | [Download TradeFlow v1.1.6 APK](https://expo.dev/artifacts/eas/s_fuNuQqeCoh1iD_uAtLD8ATz7XDYnuO9WwikUil4JI.apk) |
+| **EAS Cloud Build Logs** | Expo CI/CD Build #5dbf3408 | [Expo EAS Build Logs](https://expo.dev/accounts/bereket2553/projects/tradeflow-mobile/builds/5dbf3408-9ce5-4517-b42d-85e8580555b2) |
+
+### 📱 Instant Mobile APK Camera QR Scan & Download
+
+Scan this QR code with any smartphone camera to instantly download and install the standalone **TradeFlow Android App (v1.1.6)**:
+
+<p align="center">
+  <a href="https://expo.dev/artifacts/eas/s_fuNuQqeCoh1iD_uAtLD8ATz7XDYnuO9WwikUil4JI.apk">
+    <img src="tradeflow_v116_qr.png" alt="TradeFlow Android APK Download QR Code" width="160" />
+  </a>
+  <br />
+  <a href="https://expo.dev/artifacts/eas/s_fuNuQqeCoh1iD_uAtLD8ATz7XDYnuO9WwikUil4JI.apk">
+    <b>📲 Click Here to Download TradeFlow v1.1.6 APK Directly</b>
+  </a>
+</p>
 
 ---
 
@@ -400,7 +414,7 @@ The platform was subjected to a comprehensive multi-tier quality assurance proto
 ### 9.1 Conclusion
 The **TradeFlow** project successfully demonstrates how modern full-stack web and mobile technologies can solve deep-seated physical supply chain challenges in developing trade corridors. By digitizing freight brokerage, securing milestone payments via digital escrow, streaming real-time telematics, and expediting customs through single-window QR passes, TradeFlow bridges the efficiency gap on the Ethio-Djibouti economic artery.
 
-The system was designed, developed, tested, and packaged into production-ready artifacts including a live web application, RESTful microservices, and a standalone installable Android APK (v1.1.5).
+The system was designed, developed, tested, and packaged into production-ready artifacts including a live web application, RESTful microservices, and a standalone installable Android APK (v1.1.6).
 
 ### 9.2 Future Roadmap
 1. **IoT OBD-II Hardware Telematics:** Direct integration with truck CAN-bus sensors to track fuel consumption, engine diagnostics, and driver fatigue in real time.
@@ -660,12 +674,12 @@ html_content = f"""<!DOCTYPE html>
     
     <div class="cover-meta">
       <p><strong>Project Name:</strong> TradeFlow Logistics Platform</p>
-      <p><strong>Version:</strong> v1.1.5 (Production Release)</p>
+      <p><strong>Version:</strong> v1.1.6 (Production Release)</p>
       <p><strong>Document Type:</strong> Final Project Documentation &amp; Report</p>
       <p><strong>Submission Date:</strong> November 2026</p>
       <p><strong>Repository:</strong> <a href="https://github.com/beki255/trade-flow">github.com/beki255/trade-flow</a></p>
       <p><strong>API Swagger Docs:</strong> <a href="https://tradeflow-api-7abs.onrender.com/api/docs">https://tradeflow-api-7abs.onrender.com/api/docs</a></p>
-      <p><strong>Android APK:</strong> <span class="badge badge-pass">v1.1.5 Production Ready</span></p>
+      <p><strong>Android APK:</strong> <span class="badge badge-pass">v1.1.6 Production Ready</span></p>
     </div>
   </div>
 
@@ -707,17 +721,31 @@ html_content = f"""<!DOCTYPE html>
         <td><a href="https://tradeflow-api-7abs.onrender.com/api/health">https://tradeflow-api-7abs.onrender.com/api/health</a></td>
       </tr>
       <tr>
-        <td><strong>Mobile Android APK (v1.1.5)</strong></td>
+        <td><strong>Mobile Android APK (v1.1.6)</strong></td>
         <td>Standalone Android App</td>
-        <td><a href="https://expo.dev/artifacts/eas/T1ZfHOLf-u_evYzO0aEfLD4MJtnN7FSQecclu_UrVAk.apk">Download TradeFlow v1.1.5 APK</a></td>
+        <td><a href="https://expo.dev/artifacts/eas/s_fuNuQqeCoh1iD_uAtLD8ATz7XDYnuO9WwikUil4JI.apk">Download TradeFlow v1.1.6 APK</a></td>
       </tr>
       <tr>
         <td><strong>Expo EAS Cloud Build Logs</strong></td>
-        <td>EAS Build Pipeline #858790e9</td>
-        <td><a href="https://expo.dev/accounts/bereket2553/projects/tradeflow-mobile/builds/858790e9-fae7-4531-b448-1df457864a6e">View Cloud Build Logs</a></td>
+        <td>EAS Build Pipeline #5dbf3408</td>
+        <td><a href="https://expo.dev/accounts/bereket2553/projects/tradeflow-mobile/builds/5dbf3408-9ce5-4517-b42d-85e8580555b2">View Cloud Build Logs</a></td>
       </tr>
     </tbody>
   </table>
+
+  <!-- MOBILE APK INSTANT QR CODE CARD -->
+  <div style="margin: 20px 0 28px 0; padding: 18px 24px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 14px; display: flex; align-items: center; gap: 24px;">
+    <img src="tradeflow_v116_qr.png" alt="TradeFlow APK Download QR Code" style="width: 130px; height: 130px; border-radius: 10px; border: 1px solid #94a3b8; background: #ffffff; padding: 4px;" />
+    <div>
+      <h3 style="margin: 0 0 6px 0; color: #0f172a; font-size: 13pt;">📱 Instant Mobile APK Camera QR Scan</h3>
+      <p style="margin: 0 0 10px 0; color: #475569; font-size: 10pt; line-height: 1.45;">
+        Scan this QR code with any smartphone camera to instantly download and install the standalone <strong>TradeFlow Android App (v1.1.6)</strong>. No Expo installation required.
+      </p>
+      <a href="https://expo.dev/artifacts/eas/s_fuNuQqeCoh1iD_uAtLD8ATz7XDYnuO9WwikUil4JI.apk" style="display: inline-block; background: #0284c7; color: #ffffff; font-weight: 700; font-size: 10pt; padding: 7px 16px; border-radius: 8px; text-decoration: none;">
+        📲 Download APK v1.1.6 Directly
+      </a>
+    </div>
+  </div>
 
   <!-- EXECUTIVE SUMMARY -->
   <h1>📑 Executive Summary</h1>
@@ -814,7 +842,7 @@ html_content = f"""<!DOCTYPE html>
 |                              CLIENT TIER (APPLICATIONS)                           |
 |                                                                                   |
 |   Next.js 14 (React 18) Web Portal           Expo SDK 58 (React Native) Mobile    |
-|   - Tailwind CSS / Lucide Icons              - Standalone Android APK (v1.1.5)    |
+|   - Tailwind CSS / Lucide Icons              - Standalone Android APK (v1.1.6)    |
 |   - Leaflet Geospatial Maps                  - Native Device GPS & Camera         |
 |   - Trilingual i18n Engine                   - Offline Telemetry SQLite Buffer    |
 +-----------------------------------------+-----------------------------------------+
@@ -962,7 +990,7 @@ const isWithinGeofence = distanceKm <= 15;</code></pre>
     <li><strong>Capacity-Aware Dispatch:</strong> Automatically blocks dispatching vehicles that do not satisfy cargo weight constraints.</li>
   </ul>
 
-  <h2>6.3 Driver Mobile Portal (Android APK v1.1.5)</h2>
+  <h2>6.3 Driver Mobile Portal (Android APK v1.1.6)</h2>
   <ul>
     <li><strong>Trip Dashboard:</strong> High-contrast interface displaying departure terminal, destination, and live telematics status.</li>
     <li><strong>Location Check-In:</strong> Geofence-verified check-in at Kaliti, Modjo, Awash, Semera, Galafi, and Doraleh.</li>
@@ -1066,7 +1094,7 @@ const isWithinGeofence = distanceKm <= 15;</code></pre>
         <td><strong>TC-BUILD-12</strong></td>
         <td>Mobile CI/CD</td>
         <td>Expo EAS Android Preview build compilation</td>
-        <td>Build succeeded; valid APK (v1.1.5) generated.</td>
+        <td>Build succeeded; valid APK (v1.1.6) generated.</td>
         <td><span class="badge badge-pass">PASS</span></td>
       </tr>
     </tbody>
@@ -1086,7 +1114,7 @@ const isWithinGeofence = distanceKm <= 15;</code></pre>
 
   <hr style="margin-top: 40px; border: 0; border-top: 1px solid #cbd5e1;">
   <p style="text-align: center; font-size: 9pt; color: #64748b; margin-top: 14px;">
-    <strong>TradeFlow Technical Project Documentation &bull; Software Development Training Capstone &bull; Version 1.1.5</strong>
+    <strong>TradeFlow Technical Project Documentation &bull; Software Development Training Capstone &bull; Version 1.1.6</strong>
   </p>
 
 </body>

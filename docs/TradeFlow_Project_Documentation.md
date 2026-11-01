@@ -3,7 +3,7 @@
 **Comprehensive Final Project Documentation & Technical Report**  
 *Software Development Training — Final Group Capstone Project*  
 **Submission Date:** November 2026  
-**Project Version:** v1.1.5 (Production Release)  
+**Project Version:** v1.1.6 (Production Release)  
 
 ---
 
@@ -15,8 +15,22 @@
 | **Live Web Application** | Production Web Portal | [https://trade-flow-ukgu.vercel.app](https://trade-flow-ukgu.vercel.app) |
 | **Backend REST API (Swagger Docs)** | Cloud Microservice | [https://tradeflow-api-7abs.onrender.com/api/docs](https://tradeflow-api-7abs.onrender.com/api/docs) |
 | **API Health & Metrics** | Operational Status Check | [https://tradeflow-api-7abs.onrender.com/api/health](https://tradeflow-api-7abs.onrender.com/api/health) |
-| **Mobile Android APK** | Standalone Installable APK (v1.1.5) | [Download TradeFlow v1.1.5 APK](https://expo.dev/artifacts/eas/T1ZfHOLf-u_evYzO0aEfLD4MJtnN7FSQecclu_UrVAk.apk) |
-| **EAS Cloud Build Logs** | Expo CI/CD Build #858790e9 | [Expo EAS Build Logs](https://expo.dev/accounts/bereket2553/projects/tradeflow-mobile/builds/858790e9-fae7-4531-b448-1df457864a6e) |
+| **Mobile Android APK** | Standalone Installable APK (v1.1.6) | [Download TradeFlow v1.1.6 APK](https://expo.dev/artifacts/eas/s_fuNuQqeCoh1iD_uAtLD8ATz7XDYnuO9WwikUil4JI.apk) |
+| **EAS Cloud Build Logs** | Expo CI/CD Build #5dbf3408 | [Expo EAS Build Logs](https://expo.dev/accounts/bereket2553/projects/tradeflow-mobile/builds/5dbf3408-9ce5-4517-b42d-85e8580555b2) |
+
+### 📱 Instant Mobile APK Camera QR Scan & Download
+
+Scan this QR code with any smartphone camera to instantly download and install the standalone **TradeFlow Android App (v1.1.6)**:
+
+<p align="center">
+  <a href="https://expo.dev/artifacts/eas/s_fuNuQqeCoh1iD_uAtLD8ATz7XDYnuO9WwikUil4JI.apk">
+    <img src="tradeflow_v116_qr.png" alt="TradeFlow Android APK Download QR Code" width="160" />
+  </a>
+  <br />
+  <a href="https://expo.dev/artifacts/eas/s_fuNuQqeCoh1iD_uAtLD8ATz7XDYnuO9WwikUil4JI.apk">
+    <b>📲 Click Here to Download TradeFlow v1.1.6 APK Directly</b>
+  </a>
+</p>
 
 ---
 
@@ -382,7 +396,7 @@ The platform was subjected to a comprehensive multi-tier quality assurance proto
 ### 9.1 Conclusion
 The **TradeFlow** project successfully demonstrates how modern full-stack web and mobile technologies can solve deep-seated physical supply chain challenges in developing trade corridors. By digitizing freight brokerage, securing milestone payments via digital escrow, streaming real-time telematics, and expediting customs through single-window QR passes, TradeFlow bridges the efficiency gap on the Ethio-Djibouti economic artery.
 
-The system was designed, developed, tested, and packaged into production-ready artifacts including a live web application, RESTful microservices, and a standalone installable Android APK (v1.1.5).
+The system was designed, developed, tested, and packaged into production-ready artifacts including a live web application, RESTful microservices, and a standalone installable Android APK (v1.1.6).
 
 ### 9.2 Future Roadmap
 1. **IoT OBD-II Hardware Telematics:** Direct integration with truck CAN-bus sensors to track fuel consumption, engine diagnostics, and driver fatigue in real time.
