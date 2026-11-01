@@ -10,6 +10,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTransporterStyles } from '../transporterStyles';
 import { TruckItem, DriverItem } from '../types';
 import { useLanguage } from '../../../context/LanguageContext';
+import { useTheme } from '../../../context/ThemeContext';
 import { isValidImageUri } from '../../../utils/imageUtils';
 
 interface FleetTabProps {
@@ -39,6 +40,7 @@ export const FleetTab: React.FC<FleetTabProps> = ({
 }) => {
   const styles = useTransporterStyles();
   const { t, language } = useLanguage();
+  const { colors, isDark } = useTheme();
   const [internalSubTab, setInternalSubTab] = useState<'vehicles' | 'drivers'>('vehicles');
   const activeSubTab = fleetSubTab !== undefined ? fleetSubTab : internalSubTab;
   const changeSubTab = (tab: 'vehicles' | 'drivers') => {
@@ -111,16 +113,16 @@ export const FleetTab: React.FC<FleetTabProps> = ({
           {pendingDriversCount > 0 && (
             <View
               style={{
-                backgroundColor: '#FEF3C7',
+                backgroundColor: isDark ? '#451A03' : '#FEF3C7',
                 paddingHorizontal: 5,
                 paddingVertical: 2,
                 borderRadius: 6,
                 borderWidth: 1,
-                borderColor: '#FCD34D',
+                borderColor: isDark ? '#B45309' : '#FCD34D',
                 flexShrink: 0,
               }}
             >
-              <Text style={{ fontSize: 9, fontWeight: '800', color: '#B45309' }}>
+              <Text style={{ fontSize: 9, fontWeight: '800', color: isDark ? '#FDE68A' : '#B45309' }}>
                 {pendingDriversCount} {language === 'AM' ? 'በመጠባበቅ ላይ' : language === 'OM' ? 'Eeggachaa Jira' : 'Pending'}
               </Text>
             </View>
@@ -184,13 +186,13 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                           styles.statusBadge,
                           trk.status === 'AVAILABLE'
                             ? styles.statusAvailable
-                            : { backgroundColor: '#E0F2FE' },
+                            : { backgroundColor: isDark ? '#0C4A6E' : '#E0F2FE' },
                         ]}
                       >
                         <Text
                           style={[
                             styles.statusText,
-                            trk.status === 'AVAILABLE' ? {} : { color: '#0369A1' },
+                            trk.status === 'AVAILABLE' ? {} : { color: isDark ? '#38BDF8' : '#0369A1' },
                           ]}
                         >
                           {trk.status}
@@ -285,7 +287,7 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                       </View>
 
                       {/* Fleet Vehicle Actions: Edit & Delete */}
-                      <View style={{ flexDirection: 'row', gap: 10, marginTop: 8, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#F1F5F9' }}>
+                      <View style={{ flexDirection: 'row', gap: 10, marginTop: 8, paddingTop: 10, borderTopWidth: 1, borderTopColor: isDark ? '#334155' : '#F1F5F9' }}>
                         {onEditTruck && (
                           <TouchableOpacity
                             style={{
@@ -295,16 +297,16 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                               justifyContent: 'center',
                               gap: 6,
                               paddingVertical: 9,
-                              backgroundColor: '#F0F9FF',
+                              backgroundColor: isDark ? '#0C4A6E' : '#F0F9FF',
                               borderRadius: 8,
                               borderWidth: 1,
-                              borderColor: '#BAE6FD',
+                              borderColor: isDark ? '#0284C7' : '#BAE6FD',
                             }}
                             onPress={() => onEditTruck(trk)}
                             activeOpacity={0.75}
                           >
-                            <Ionicons name="create-outline" size={16} color="#0284C7" />
-                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#0284C7' }}>
+                            <Ionicons name="create-outline" size={16} color={isDark ? '#38BDF8' : '#0284C7'} />
+                            <Text style={{ fontSize: 13, fontWeight: '700', color: isDark ? '#38BDF8' : '#0284C7' }}>
                               {language === 'AM' ? 'ተሽከርካሪ አርትዕ' : language === 'OM' ? 'Konkolaataa Gulaali' : 'Edit Vehicle'}
                             </Text>
                           </TouchableOpacity>
@@ -318,10 +320,10 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                               justifyContent: 'center',
                               gap: 6,
                               paddingVertical: 9,
-                              backgroundColor: '#FEF2F2',
+                              backgroundColor: isDark ? '#450A0A' : '#FEF2F2',
                               borderRadius: 8,
                               borderWidth: 1,
-                              borderColor: '#FECACA',
+                              borderColor: isDark ? '#991B1B' : '#FECACA',
                             }}
                             onPress={() => {
                               Alert.alert(
@@ -420,20 +422,20 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                         style={[
                           styles.statusBadge,
                           isPending
-                            ? { backgroundColor: '#FEF3C7', borderWidth: 1, borderColor: '#FCD34D', paddingHorizontal: 7, paddingVertical: 3 }
+                            ? { backgroundColor: isDark ? '#451A03' : '#FEF3C7', borderWidth: 1, borderColor: isDark ? '#B45309' : '#FCD34D', paddingHorizontal: 7, paddingVertical: 3 }
                             : drv.status === 'ACTIVE'
                             ? styles.statusAvailable
-                            : { backgroundColor: '#E0F2FE' },
+                            : { backgroundColor: isDark ? '#0C4A6E' : '#E0F2FE' },
                         ]}
                       >
                         <Text
                           style={[
                             styles.statusText,
                             isPending
-                              ? { color: '#92400E', fontWeight: '800', fontSize: 10.5 }
+                              ? { color: isDark ? '#FDE68A' : '#92400E', fontWeight: '800', fontSize: 10.5 }
                               : drv.status === 'ACTIVE'
                               ? {}
-                              : { color: '#0369A1' },
+                              : { color: isDark ? '#38BDF8' : '#0369A1' },
                           ]}
                         >
                           {isPending
@@ -579,7 +581,7 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                       ) : null}
 
                       {/* Driver Actions: Edit & Delete */}
-                      <View style={{ flexDirection: 'row', gap: 10, marginTop: 8, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#F1F5F9' }}>
+                      <View style={{ flexDirection: 'row', gap: 10, marginTop: 8, paddingTop: 10, borderTopWidth: 1, borderTopColor: isDark ? '#334155' : '#F1F5F9' }}>
                         {onEditDriver && (
                           <TouchableOpacity
                             style={{
@@ -589,16 +591,16 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                               justifyContent: 'center',
                               gap: 6,
                               paddingVertical: 9,
-                              backgroundColor: '#F0F9FF',
+                              backgroundColor: isDark ? '#0C4A6E' : '#F0F9FF',
                               borderRadius: 8,
                               borderWidth: 1,
-                              borderColor: '#BAE6FD',
+                              borderColor: isDark ? '#0284C7' : '#BAE6FD',
                             }}
                             onPress={() => onEditDriver(drv)}
                             activeOpacity={0.75}
                           >
-                            <Ionicons name="create-outline" size={16} color="#0284C7" />
-                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#0284C7' }}>
+                            <Ionicons name="create-outline" size={16} color={isDark ? '#38BDF8' : '#0284C7'} />
+                            <Text style={{ fontSize: 13, fontWeight: '700', color: isDark ? '#38BDF8' : '#0284C7' }}>
                               {language === 'AM' ? 'አሽከርካሪ አርትዕ' : language === 'OM' ? 'Konkolaachisaa Gulaali' : 'Edit Driver'}
                             </Text>
                           </TouchableOpacity>
@@ -612,10 +614,10 @@ export const FleetTab: React.FC<FleetTabProps> = ({
                               justifyContent: 'center',
                               gap: 6,
                               paddingVertical: 9,
-                              backgroundColor: '#FEF2F2',
+                              backgroundColor: isDark ? '#450A0A' : '#FEF2F2',
                               borderRadius: 8,
                               borderWidth: 1,
-                              borderColor: '#FECACA',
+                              borderColor: isDark ? '#991B1B' : '#FECACA',
                             }}
                             onPress={() => {
                               Alert.alert(

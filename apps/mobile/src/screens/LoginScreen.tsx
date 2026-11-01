@@ -289,10 +289,19 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 onPress={() => setRememberMe(!rememberMe)}
                 activeOpacity={0.8}
               >
-                <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+                <View
+                  style={[
+                    styles.checkbox,
+                    {
+                      backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+                      borderColor: isDark ? '#475569' : '#94A3B8',
+                    },
+                    rememberMe && styles.checkboxChecked,
+                  ]}
+                >
                   {rememberMe && <Ionicons name="checkmark" size={12} color="#FFFFFF" />}
                 </View>
-                <Text style={styles.rememberText}>{t('rememberMe')}</Text>
+                <Text style={[styles.rememberText, { color: colors.textMuted }]}>{t('rememberMe')}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity

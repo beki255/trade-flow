@@ -363,7 +363,7 @@ export const getTransporterStyles = (colors: ThemeColors, isDark: boolean) => St
   },
   fleetSubTabRow: {
     flexDirection: 'row',
-    backgroundColor: isDark ? '#334155' : '#E2E8F0',
+    backgroundColor: isDark ? '#1E293B' : '#E2E8F0',
     borderRadius: 14,
     padding: 4,
     gap: 4,
@@ -435,8 +435,8 @@ export const getTransporterStyles = (colors: ThemeColors, isDark: boolean) => St
     gap: 8,
   },
   cardExpanded: {
-    borderColor: '#BAE6FD',
-    backgroundColor: '#FBFDFF',
+    borderColor: isDark ? '#0284C7' : '#BAE6FD',
+    backgroundColor: isDark ? '#1E293B' : '#FBFDFF',
     ...Platform.select({
       web: {
         boxShadow: '0 4px 8px rgba(2, 132, 199, 0.08)',
@@ -454,7 +454,7 @@ export const getTransporterStyles = (colors: ThemeColors, isDark: boolean) => St
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#E0F2FE',
+    backgroundColor: isDark ? '#0C4A6E' : '#E0F2FE',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -462,7 +462,7 @@ export const getTransporterStyles = (colors: ThemeColors, isDark: boolean) => St
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#E0F2FE',
+    backgroundColor: isDark ? '#0C4A6E' : '#E0F2FE',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -486,7 +486,7 @@ export const getTransporterStyles = (colors: ThemeColors, isDark: boolean) => St
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#E0F2FE',
+    backgroundColor: isDark ? '#0C4A6E' : '#E0F2FE',
     borderWidth: 2,
     borderColor: '#0284C7',
     alignItems: 'center',
@@ -520,7 +520,7 @@ export const getTransporterStyles = (colors: ThemeColors, isDark: boolean) => St
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: isDark ? '#0F172A' : '#FFFFFF',
   },
   photoTitle: {
     fontSize: 12,
@@ -535,7 +535,7 @@ export const getTransporterStyles = (colors: ThemeColors, isDark: boolean) => St
   pickPhotoBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E0F2FE',
+    backgroundColor: isDark ? '#0C4A6E' : '#E0F2FE',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
@@ -544,7 +544,7 @@ export const getTransporterStyles = (colors: ThemeColors, isDark: boolean) => St
   pickPhotoBtnText: {
     fontSize: 10.5,
     fontWeight: '700',
-    color: '#0284C7',
+    color: isDark ? '#38BDF8' : '#0284C7',
   },
   collapsedPreviewRow: {
     flexDirection: 'row',
@@ -571,11 +571,11 @@ export const getTransporterStyles = (colors: ThemeColors, isDark: boolean) => St
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#F0F9FF',
+    backgroundColor: isDark ? '#1E293B' : '#F0F9FF',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#BAE6FD',
+    borderColor: isDark ? '#334155' : '#BAE6FD',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -600,16 +600,16 @@ export const getTransporterStyles = (colors: ThemeColors, isDark: boolean) => St
     borderRadius: 20,
   },
   statusAvailable: {
-    backgroundColor: '#DCFCE7',
+    backgroundColor: isDark ? '#064E3B' : '#DCFCE7',
   },
   statusText: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#166534',
+    color: isDark ? '#6EE7B7' : '#166534',
   },
   cardDivider: {
     height: 1,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: isDark ? '#334155' : '#F1F5F9',
     marginVertical: 4,
   },
   infoRow: {
@@ -663,7 +663,7 @@ export const getTransporterStyles = (colors: ThemeColors, isDark: boolean) => St
   fieldLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#475569',
+    color: colors.textMuted,
     marginTop: 6,
     marginBottom: 2,
   },
@@ -674,15 +674,15 @@ export const getTransporterStyles = (colors: ThemeColors, isDark: boolean) => St
     marginBottom: 4,
   },
   typeChip: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: isDark ? '#1E293B' : '#F1F5F9',
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: isDark ? '#334155' : '#CBD5E1',
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
   typeChipActive: {
-    backgroundColor: '#E0F2FE',
+    backgroundColor: isDark ? '#0C4A6E' : '#E0F2FE',
     borderColor: '#0284C7',
   },
   typeChipText: {
@@ -705,21 +705,21 @@ export const getTransporterStyles = (colors: ThemeColors, isDark: boolean) => St
   docSectionTitle: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#334155',
+    color: colors.text,
   },
   docUploadBox: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: isDark ? '#334155' : '#CBD5E1',
     borderRadius: 10,
     padding: 8,
     gap: 8,
   },
   docUploadBoxActive: {
-    borderColor: '#22C55E',
-    backgroundColor: '#F0FDF4',
+    borderColor: isDark ? '#059669' : '#22C55E',
+    backgroundColor: isDark ? '#064E3B' : '#F0FDF4',
   },
   docUploadIcon: {
     fontSize: 16,
@@ -727,7 +727,7 @@ export const getTransporterStyles = (colors: ThemeColors, isDark: boolean) => St
   docUploadLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#1E293B',
+    color: colors.text,
   },
   docUploadStatus: {
     fontSize: 9.5,
@@ -740,22 +740,22 @@ export const getTransporterStyles = (colors: ThemeColors, isDark: boolean) => St
     marginTop: 4,
   },
   complianceBadge: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: isDark ? '#1E293B' : '#F1F5F9',
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: isDark ? '#334155' : colors.border,
   },
   complianceText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#334155',
+    color: isDark ? '#E2E8F0' : '#334155',
   },
   input: {
     backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: isDark ? '#334155' : '#CBD5E1',
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -768,7 +768,7 @@ export const getTransporterStyles = (colors: ThemeColors, isDark: boolean) => St
     justifyContent: 'space-between',
     backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: isDark ? '#334155' : '#CBD5E1',
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -781,7 +781,7 @@ export const getTransporterStyles = (colors: ThemeColors, isDark: boolean) => St
   dropdownMenu: {
     backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: isDark ? '#334155' : '#CBD5E1',
     borderRadius: 12,
     marginTop: 4,
     overflow: 'hidden',
@@ -805,24 +805,24 @@ export const getTransporterStyles = (colors: ThemeColors, isDark: boolean) => St
     paddingHorizontal: 12,
     paddingVertical: 9,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: isDark ? '#334155' : '#F1F5F9',
   },
   dropdownItemActive: {
-    backgroundColor: '#F0F9FF',
+    backgroundColor: isDark ? '#0C4A6E' : '#F0F9FF',
   },
   dropdownItemText: {
     fontSize: 11.5,
     fontWeight: '600',
-    color: '#475569',
+    color: colors.textMuted,
   },
   dropdownItemTextActive: {
     color: '#0284C7',
     fontWeight: '800',
   },
   loadPreviewBox: {
-    backgroundColor: '#F0F9FF',
+    backgroundColor: isDark ? '#0C4A6E' : '#F0F9FF',
     borderWidth: 1,
-    borderColor: '#BAE6FD',
+    borderColor: isDark ? '#0284C7' : '#BAE6FD',
     borderRadius: 14,
     padding: 12,
     marginVertical: 10,
@@ -831,7 +831,7 @@ export const getTransporterStyles = (colors: ThemeColors, isDark: boolean) => St
   loadPreviewTitle: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#0369A1',
+    color: isDark ? '#38BDF8' : '#0369A1',
     lineHeight: 18,
   },
   loadPreviewRoute: {
@@ -847,18 +847,18 @@ export const getTransporterStyles = (colors: ThemeColors, isDark: boolean) => St
     alignItems: 'center',
     paddingTop: 6,
     borderTopWidth: 1,
-    borderTopColor: '#E0F2FE',
+    borderTopColor: isDark ? '#0284C7' : '#E0F2FE',
     marginTop: 4,
   },
   loadPreviewWeight: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#0284C7',
+    color: isDark ? '#38BDF8' : '#0284C7',
   },
   loadPreviewBudget: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#0369A1',
+    color: isDark ? '#7DD3FC' : '#0369A1',
   },
   inputGroup: {
     gap: 4,
@@ -867,7 +867,7 @@ export const getTransporterStyles = (colors: ThemeColors, isDark: boolean) => St
   inputLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#475569',
+    color: colors.textMuted,
     lineHeight: 15,
   },
   submitBidBtn: {
@@ -883,15 +883,15 @@ export const getTransporterStyles = (colors: ThemeColors, isDark: boolean) => St
     fontWeight: '800',
   },
   successBox: {
-    backgroundColor: '#DCFCE7',
+    backgroundColor: isDark ? '#064E3B' : '#DCFCE7',
     borderWidth: 1,
-    borderColor: '#86EFAC',
+    borderColor: isDark ? '#059669' : '#86EFAC',
     borderRadius: 12,
     padding: 12,
     alignItems: 'center',
   },
   successText: {
-    color: '#166534',
+    color: isDark ? '#A7F3D0' : '#166534',
     fontSize: 12,
     fontWeight: '700',
   },

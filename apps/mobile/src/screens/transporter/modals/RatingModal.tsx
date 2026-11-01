@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Modal,
   View,
@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BidItem, UserProfile } from '../types';
-import { useTheme } from '../../../context/ThemeContext';
+import { useTheme, ThemeColors } from '../../../context/ThemeContext';
 import { useLanguage } from '../../../context/LanguageContext';
 import { apiFetch } from '../../../utils/api';
 
@@ -52,6 +52,7 @@ export const RatingModal: React.FC<RatingModalProps> = ({
   const isWeb = Platform.OS === 'web';
   const { colors, isDark } = useTheme();
   const { t, language } = useLanguage();
+  const styles = useMemo(() => getRatingModalStyles(colors, isDark), [colors, isDark]);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.92)).current;
 
@@ -486,7 +487,7 @@ export const RatingModal: React.FC<RatingModalProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+export const getRatingModalStyles = (colors: ThemeColors, isDark: boolean) => StyleSheet.create({
   overlayContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -502,10 +503,10 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 500,
     maxHeight: '90%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 16 },
     shadowOpacity: 0.25,
@@ -519,8 +520,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    backgroundColor: '#FFFFFF',
+    borderBottomColor: colors.border,
+    backgroundColor: colors.card,
   },
   headerIconBadge: {
     width: 40,
@@ -533,18 +534,18 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 16,
     fontWeight: '900',
-    color: '#0F172A',
+    color: colors.text,
   },
   headerSubTitle: {
     fontSize: 11.5,
-    color: '#64748B',
+    color: colors.textMuted,
     marginTop: 2,
   },
   closeButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: isDark ? '#1E293B' : '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -554,9 +555,9 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   deliveredCard: {
-    backgroundColor: '#F0FDF4',
+    backgroundColor: isDark ? '#064E3B' : '#F0FDF4',
     borderWidth: 1,
-    borderColor: '#BBF7D0',
+    borderColor: isDark ? '#059669' : '#BBF7D0',
     borderRadius: 14,
     padding: 14,
     gap: 4,
@@ -564,17 +565,17 @@ const styles = StyleSheet.create({
   deliveredTag: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#16A34A',
+    color: isDark ? '#6EE7B7' : '#16A34A',
     letterSpacing: 0.5,
   },
   partnerName: {
     fontSize: 14,
     fontWeight: '900',
-    color: '#0F172A',
+    color: colors.text,
   },
   routeText: {
     fontSize: 11.5,
-    color: '#475569',
+    color: colors.textMuted,
   },
   sectionBox: {
     gap: 8,
@@ -582,7 +583,7 @@ const styles = StyleSheet.create({
   sectionHeading: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#1E293B',
+    color: colors.text,
   },
   starsRow: {
     flexDirection: 'row',
@@ -608,33 +609,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 10,
   },
   tagPillSelected: {
-    backgroundColor: '#E0F2FE',
-    borderColor: '#7DD3FC',
+    backgroundColor: isDark ? '#0C4A6E' : '#E0F2FE',
+    borderColor: isDark ? '#0284C7' : '#7DD3FC',
   },
   tagText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#475569',
+    color: colors.textMuted,
   },
   tagTextSelected: {
-    color: '#0369A1',
+    color: isDark ? '#38BDF8' : '#0369A1',
   },
   textInput: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.inputBg,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.inputBorder,
     borderRadius: 12,
     padding: 12,
     fontSize: 12,
-    color: '#0F172A',
+    color: colors.text,
     minHeight: 70,
     textAlignVertical: 'top',
   },
@@ -643,8 +644,8 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 16,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-    backgroundColor: '#FFFFFF',
+    borderTopColor: colors.border,
+    backgroundColor: colors.card,
     gap: 8,
   },
   submitBtn: {
@@ -673,6 +674,6 @@ const styles = StyleSheet.create({
   cancelBtnText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#64748B',
+    color: colors.textMuted,
   },
 });

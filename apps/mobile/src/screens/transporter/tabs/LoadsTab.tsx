@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LoadItem, BidItem } from '../types';
 import { useLanguage } from '../../../context/LanguageContext';
-import { useTheme } from '../../../context/ThemeContext';
+import { useTheme, ThemeColors } from '../../../context/ThemeContext';
 
 const cleanStr = (str?: string) => (str ? String(str).replace(/^`+|`+$/g, '').trim() : '');
 
@@ -52,6 +52,7 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
   isRefreshing,
 }) => {
   const { colors, isDark } = useTheme();
+  const styles = useMemo(() => getLoadsStyles(colors, isDark), [colors, isDark]);
   const { t, language } = useLanguage();
   const [expandedLoadId, setExpandedLoadId] = useState<string | null>(null);
   const [corridorFilter, setCorridorFilter] = useState<'ALL' | 'DJI_TO_ADDIS' | 'ADDIS_TO_DJI' | 'HEAVY'>('ALL');
@@ -550,7 +551,7 @@ export const LoadsTab: React.FC<LoadsTabProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const getLoadsStyles = (colors: ThemeColors, isDark: boolean) => StyleSheet.create({
   container: {
     paddingHorizontal: 16,
     paddingTop: 12,
@@ -566,21 +567,21 @@ const styles = StyleSheet.create({
   pageTitle: {
     fontSize: 20,
     fontWeight: '900',
-    color: '#0F172A',
+    color: colors.text,
     letterSpacing: -0.4,
   },
   pageSubtitle: {
     fontSize: 12,
-    color: '#64748B',
+    color: colors.textMuted,
     marginTop: 1,
   },
   activePill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#ECFDF5',
+    backgroundColor: isDark ? '#064E3B' : '#ECFDF5',
     borderWidth: 1,
-    borderColor: '#A7F3D0',
+    borderColor: isDark ? '#059669' : '#A7F3D0',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -594,14 +595,14 @@ const styles = StyleSheet.create({
   activePillText: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#047857',
+    color: isDark ? '#6EE7B7' : '#047857',
   },
   aiMatchCard: {
-    backgroundColor: '#FFFBEB',
+    backgroundColor: isDark ? '#451A03' : '#FFFBEB',
     borderRadius: 16,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#FDE68A',
+    borderColor: isDark ? '#B45309' : '#FDE68A',
     gap: 6,
   },
   aiMatchTopRow: {
@@ -612,16 +613,16 @@ const styles = StyleSheet.create({
   aiMatchTitle: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#92400E',
+    color: isDark ? '#FDE68A' : '#92400E',
   },
   aiMatchPrice: {
     fontSize: 14,
     fontWeight: '900',
-    color: '#B45309',
+    color: isDark ? '#FCD34D' : '#B45309',
   },
   aiMatchRoute: {
     fontSize: 11.5,
-    color: '#78350F',
+    color: isDark ? '#FEF3C7' : '#78350F',
     fontWeight: '600',
     flex: 1,
     flexWrap: 'wrap',
@@ -648,22 +649,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: isDark ? '#334155' : '#E2E8F0',
     alignItems: 'center',
   },
   aiDeclineBtnText: {
     fontSize: 11.5,
     fontWeight: '700',
-    color: '#64748B',
+    color: colors.textMuted,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     borderRadius: 14,
     paddingHorizontal: 12,
     height: 42,
@@ -676,7 +677,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 12.5,
-    color: '#0F172A',
+    color: colors.text,
     paddingVertical: 6,
   },
   filterPillsRow: {
@@ -688,29 +689,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: isDark ? '#334155' : '#E2E8F0',
   },
   filterPillActive: {
-    backgroundColor: '#0F172A',
-    borderColor: '#0F172A',
+    backgroundColor: isDark ? '#0284C7' : '#0F172A',
+    borderColor: '#0284C7',
   },
   filterPillText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#64748B',
+    color: colors.textMuted,
   },
   filterPillTextActive: {
     color: '#FFFFFF',
     fontWeight: '800',
   },
   loadCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 18,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     gap: 8,
     ...Platform.select({
       web: { boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)' } as any,
@@ -725,11 +726,11 @@ const styles = StyleSheet.create({
   cargoTitle: {
     fontSize: 15,
     fontWeight: '900',
-    color: '#0F172A',
+    color: colors.text,
     letterSpacing: -0.3,
   },
   weightBadge: {
-    backgroundColor: '#E0F2FE',
+    backgroundColor: isDark ? '#0C4A6E' : '#E0F2FE',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 5,
@@ -737,22 +738,22 @@ const styles = StyleSheet.create({
   weightBadgeText: {
     fontSize: 9.5,
     fontWeight: '800',
-    color: '#0369A1',
+    color: isDark ? '#38BDF8' : '#0369A1',
   },
   cargoTypeSub: {
     fontSize: 11,
-    color: '#64748B',
+    color: colors.textMuted,
     marginTop: 1,
   },
   budgetText: {
     fontSize: 15,
     fontWeight: '900',
-    color: '#0284C7',
+    color: isDark ? '#38BDF8' : '#0284C7',
   },
   budgetLabel: {
     fontSize: 9.5,
     fontWeight: '600',
-    color: '#94A3B8',
+    color: colors.textMuted,
   },
   routeRow: {
     flexDirection: 'row',
@@ -762,7 +763,7 @@ const styles = StyleSheet.create({
   routeText: {
     fontSize: 12.5,
     fontWeight: '700',
-    color: '#334155',
+    color: colors.text,
     flex: 1,
   },
   tagsRow: {
@@ -772,7 +773,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   miniTag: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: isDark ? '#1E293B' : '#F1F5F9',
     paddingHorizontal: 7,
     paddingVertical: 2.5,
     borderRadius: 6,
@@ -780,18 +781,18 @@ const styles = StyleSheet.create({
   miniTagText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#475569',
+    color: isDark ? '#E2E8F0' : '#475569',
   },
   escrowTag: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    backgroundColor: '#ECFDF5',
+    backgroundColor: isDark ? '#064E3B' : '#ECFDF5',
   },
   escrowTagText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#047857',
+    color: isDark ? '#6EE7B7' : '#047857',
   },
   expandToggle: {
     flexDirection: 'row',
@@ -802,23 +803,23 @@ const styles = StyleSheet.create({
   expandToggleText: {
     fontSize: 10.5,
     fontWeight: '700',
-    color: '#0284C7',
+    color: isDark ? '#38BDF8' : '#0284C7',
   },
   expandedDetailsBox: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
     borderRadius: 12,
     padding: 10,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: isDark ? '#334155' : '#E2E8F0',
     gap: 8,
     marginTop: 4,
   },
   waypointRouteCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 10,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     gap: 8,
   },
   waypointRow: {
@@ -842,7 +843,7 @@ const styles = StyleSheet.create({
   waypointConnectingLine: {
     width: 2,
     height: 20,
-    backgroundColor: '#CBD5E1',
+    backgroundColor: isDark ? '#475569' : '#CBD5E1',
     marginVertical: 2,
     borderRadius: 1,
   },
@@ -860,14 +861,14 @@ const styles = StyleSheet.create({
   waypointTypeLabel: {
     fontSize: 9.5,
     fontWeight: '800',
-    color: '#64748B',
+    color: colors.textMuted,
     letterSpacing: 0.3,
     marginBottom: 2,
   },
   waypointAddressText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#0F172A',
+    color: colors.text,
     lineHeight: 17,
     flexWrap: 'wrap',
   },
@@ -887,14 +888,14 @@ const styles = StyleSheet.create({
   secondaryDetailText: {
     fontSize: 10.5,
     fontWeight: '600',
-    color: '#475569',
+    color: colors.textMuted,
     flex: 1,
   },
   cardFooter: {
     marginTop: 2,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: isDark ? '#334155' : '#F1F5F9',
   },
   quoteBtn: {
     backgroundColor: '#0284C7',
@@ -916,9 +917,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#ECFDF5',
+    backgroundColor: isDark ? '#064E3B' : '#ECFDF5',
     borderWidth: 1,
-    borderColor: '#A7F3D0',
+    borderColor: isDark ? '#059669' : '#A7F3D0',
     paddingHorizontal: 10,
     paddingVertical: 7,
     borderRadius: 10,
@@ -926,7 +927,7 @@ const styles = StyleSheet.create({
   statusPillDispatchedText: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#15803D',
+    color: isDark ? '#6EE7B7' : '#15803D',
     flex: 1,
   },
   assignFleetBtn: {
@@ -947,9 +948,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FEF3C7',
+    backgroundColor: isDark ? '#451A03' : '#FEF3C7',
     borderWidth: 1,
-    borderColor: '#FDE68A',
+    borderColor: isDark ? '#B45309' : '#FDE68A',
     paddingHorizontal: 10,
     paddingVertical: 7,
     borderRadius: 10,
@@ -957,7 +958,7 @@ const styles = StyleSheet.create({
   statusPillPendingText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#92400E',
+    color: isDark ? '#FDE68A' : '#92400E',
   },
   withdrawLink: {
     fontSize: 10.5,
@@ -969,46 +970,46 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 5,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: isDark ? '#1E293B' : '#F1F5F9',
     paddingVertical: 7,
     borderRadius: 10,
   },
   statusPillLockedText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#64748B',
+    color: colors.textMuted,
   },
   emptyCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 20,
     padding: 30,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     marginTop: 10,
     gap: 8,
   },
   emptyTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
   },
   emptySubtitle: {
     fontSize: 12,
-    color: '#64748B',
+    color: colors.textMuted,
     textAlign: 'center',
   },
   clearBtn: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: isDark ? '#1E293B' : '#F1F5F9',
     marginTop: 4,
   },
   clearBtnText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#0284C7',
+    color: isDark ? '#38BDF8' : '#0284C7',
   },
 });

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import {
   Modal,
   View,
@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { TruckItem, DriverItem, BidItem } from '../types';
-import { useTheme } from '../../../context/ThemeContext';
+import { useTheme, ThemeColors } from '../../../context/ThemeContext';
 import { useLanguage } from '../../../context/LanguageContext';
 
 interface DispatchModalProps {
@@ -43,6 +43,7 @@ export const DispatchModal: React.FC<DispatchModalProps> = ({
   const isWeb = Platform.OS === 'web';
   const { colors, isDark } = useTheme();
   const { t, language } = useLanguage();
+  const modalStyles = useMemo(() => getDispatchModalStyles(colors, isDark), [colors, isDark]);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.92)).current;
 
@@ -212,9 +213,15 @@ export const DispatchModal: React.FC<DispatchModalProps> = ({
                     </Text>
                   </View>
                 ) : (
-                  <View style={[modalStyles.routeMetaPill, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
-                    <Ionicons name="lock-closed" size={13} color="#D97706" />
-                    <Text style={[modalStyles.routeMetaPillText, { color: '#92400E' }]}>
+                  <View style={[
+                    modalStyles.routeMetaPill,
+                    {
+                      backgroundColor: isDark ? '#451A03' : '#FFFBEB',
+                      borderColor: isDark ? '#B45309' : '#FDE68A',
+                    },
+                  ]}>
+                    <Ionicons name="lock-closed" size={13} color={isDark ? '#FBBF24' : '#D97706'} />
+                    <Text style={[modalStyles.routeMetaPillText, { color: isDark ? '#FDE68A' : '#92400E' }]}>
                       Awaiting Escrow
                     </Text>
                   </View>
@@ -224,13 +231,19 @@ export const DispatchModal: React.FC<DispatchModalProps> = ({
 
             {/* Escrow Not Secured Warning */}
             {!isEscrowSecured && (
-              <View style={[modalStyles.lockedBanner, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
-                <Ionicons name="lock-closed" size={20} color="#D97706" />
+              <View style={[
+                modalStyles.lockedBanner,
+                {
+                  backgroundColor: isDark ? '#451A03' : '#FFFBEB',
+                  borderColor: isDark ? '#B45309' : '#FDE68A',
+                },
+              ]}>
+                <Ionicons name="lock-closed" size={20} color={isDark ? '#FBBF24' : '#D97706'} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[modalStyles.lockedBannerTitle, { color: '#92400E' }]}>
+                  <Text style={[modalStyles.lockedBannerTitle, { color: isDark ? '#FDE68A' : '#92400E' }]}>
                     Digital Escrow Not Funded Yet
                   </Text>
-                  <Text style={[modalStyles.lockedBannerSub, { color: '#B45309' }]}>
+                  <Text style={[modalStyles.lockedBannerSub, { color: isDark ? '#FCD34D' : '#B45309' }]}>
                     For your financial security, fleet assignment is blocked until the shipper deposits funds into TradeFlow Escrow. Once funded, you can assign your vehicle and driver immediately.
                   </Text>
                 </View>
@@ -292,7 +305,10 @@ export const DispatchModal: React.FC<DispatchModalProps> = ({
                           modalStyles.selectionCard,
                           isSelected && modalStyles.selectionCardActive,
                           isDisabled && modalStyles.selectionCardDisabled,
-                          isUnderCapacity && { borderColor: '#FCA5A5', backgroundColor: '#FFF5F5' },
+                          isUnderCapacity && {
+                            borderColor: isDark ? '#991B1B' : '#FCA5A5',
+                            backgroundColor: isDark ? '#450A0A' : '#FFF5F5',
+                          },
                         ]}
                         onPress={() => !isDisabled && setDispatchTruck(trk.plate)}
                       >
@@ -301,14 +317,14 @@ export const DispatchModal: React.FC<DispatchModalProps> = ({
                           style={[
                             modalStyles.itemIconBox,
                             isSelected && modalStyles.itemIconBoxActive,
-                            isBusy && { backgroundColor: '#F1F5F9' },
-                            isUnderCapacity && { backgroundColor: '#FEE2E2' },
+                            isBusy && { backgroundColor: isDark ? '#1E293B' : '#F1F5F9' },
+                            isUnderCapacity && { backgroundColor: isDark ? '#450A0A' : '#FEE2E2' },
                           ]}
                         >
                           <MaterialCommunityIcons
                             name="truck"
                             size={20}
-                            color={isSelected ? '#0284C7' : isUnderCapacity ? '#DC2626' : isBusy ? '#94A3B8' : '#475569'}
+                            color={isSelected ? (isDark ? '#38BDF8' : '#0284C7') : isUnderCapacity ? (isDark ? '#F87171' : '#DC2626') : isBusy ? '#94A3B8' : (isDark ? '#94A3B8' : '#475569')}
                           />
                         </View>
 
@@ -318,9 +334,9 @@ export const DispatchModal: React.FC<DispatchModalProps> = ({
                             <Text
                               style={[
                                 modalStyles.itemTitle,
-                                isSelected && { color: '#0369A1' },
+                                isSelected && { color: isDark ? '#38BDF8' : '#0369A1' },
                                 isBusy && { color: '#94A3B8' },
-                                isUnderCapacity && { color: '#991B1B' },
+                                isUnderCapacity && { color: isDark ? '#FCA5A5' : '#991B1B' },
                               ]}
                             >
                               {trk.plate}
@@ -420,7 +436,10 @@ export const DispatchModal: React.FC<DispatchModalProps> = ({
                           modalStyles.selectionCard,
                           isSelected && modalStyles.selectionCardActive,
                           isDisabled && modalStyles.selectionCardDisabled,
-                          isPending && { borderColor: '#FDE68A', backgroundColor: '#FFFDF5' },
+                          isPending && {
+                            borderColor: isDark ? '#B45309' : '#FDE68A',
+                            backgroundColor: isDark ? '#451A03' : '#FFFDF5',
+                          },
                         ]}
                         onPress={() => !isDisabled && setDispatchDriver(drv.fullName)}
                       >
@@ -429,8 +448,8 @@ export const DispatchModal: React.FC<DispatchModalProps> = ({
                           style={[
                             modalStyles.itemIconBox,
                             isSelected && modalStyles.itemIconBoxActive,
-                            isPending && { backgroundColor: '#FEF3C7' },
-                            isBusy && { backgroundColor: '#F1F5F9' },
+                            isPending && { backgroundColor: isDark ? '#78350F' : '#FEF3C7' },
+                            isBusy && { backgroundColor: isDark ? '#1E293B' : '#F1F5F9' },
                           ]}
                         >
                           <Ionicons
@@ -438,12 +457,12 @@ export const DispatchModal: React.FC<DispatchModalProps> = ({
                             size={18}
                             color={
                               isSelected
-                                ? '#0284C7'
+                                ? (isDark ? '#38BDF8' : '#0284C7')
                                 : isPending
-                                ? '#B45309'
+                                ? (isDark ? '#FDE68A' : '#B45309')
                                 : isBusy
                                 ? '#94A3B8'
-                                : '#475569'
+                                : (isDark ? '#94A3B8' : '#475569')
                             }
                           />
                         </View>
@@ -454,7 +473,7 @@ export const DispatchModal: React.FC<DispatchModalProps> = ({
                             <Text
                               style={[
                                 modalStyles.itemTitle,
-                                isSelected && { color: '#0369A1' },
+                                isSelected && { color: isDark ? '#38BDF8' : '#0369A1' },
                                 isBusy && { color: '#94A3B8' },
                               ]}
                             >
@@ -557,7 +576,7 @@ export const DispatchModal: React.FC<DispatchModalProps> = ({
   );
 };
 
-const modalStyles = StyleSheet.create({
+export const getDispatchModalStyles = (colors: ThemeColors, isDark: boolean) => StyleSheet.create({
   overlayContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -573,10 +592,10 @@ const modalStyles = StyleSheet.create({
     width: '100%',
     maxWidth: 520,
     maxHeight: '90%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 16 },
     shadowOpacity: 0.25,
@@ -590,8 +609,8 @@ const modalStyles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    backgroundColor: '#FFFFFF',
+    borderBottomColor: colors.border,
+    backgroundColor: colors.card,
   },
   headerIconBadge: {
     width: 40,
@@ -609,19 +628,19 @@ const modalStyles = StyleSheet.create({
   headerTitle: {
     fontSize: 16,
     fontWeight: '900',
-    color: '#0F172A',
+    color: colors.text,
     letterSpacing: -0.2,
   },
   headerSubTitle: {
     fontSize: 11.5,
-    color: '#64748B',
+    color: colors.textMuted,
     marginTop: 2,
   },
   closeButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: isDark ? '#1E293B' : '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -631,11 +650,11 @@ const modalStyles = StyleSheet.create({
     gap: 16,
   },
   routeCard: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     gap: 6,
   },
   routeHeaderRow: {
@@ -652,7 +671,7 @@ const modalStyles = StyleSheet.create({
   routeMainText: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
     lineHeight: 18,
   },
   routeMetaRow: {
@@ -665,9 +684,9 @@ const modalStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#F0F9FF',
+    backgroundColor: isDark ? '#0C4A6E' : '#F0F9FF',
     borderWidth: 1,
-    borderColor: '#BAE6FD',
+    borderColor: isDark ? '#0284C7' : '#BAE6FD',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -675,14 +694,14 @@ const modalStyles = StyleSheet.create({
   routeMetaPillText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#0369A1',
+    color: isDark ? '#38BDF8' : '#0369A1',
   },
   lockedBanner: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: isDark ? '#450A0A' : '#FEF2F2',
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#FECACA',
+    borderColor: isDark ? '#991B1B' : '#FECACA',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
@@ -690,11 +709,11 @@ const modalStyles = StyleSheet.create({
   lockedBannerTitle: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#DC2626',
+    color: isDark ? '#F87171' : '#DC2626',
   },
   lockedBannerSub: {
     fontSize: 11,
-    color: '#B91C1C',
+    color: isDark ? '#FCA5A5' : '#B91C1C',
     marginTop: 2,
     lineHeight: 15,
   },
@@ -722,26 +741,26 @@ const modalStyles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
   },
   sectionCountText: {
     fontSize: 11.5,
-    color: '#64748B',
+    color: colors.textMuted,
     fontWeight: '600',
   },
   selectionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     borderRadius: 14,
     padding: 12,
     gap: 12,
   },
   selectionCardActive: {
     borderColor: '#0284C7',
-    backgroundColor: '#F0F9FF',
+    backgroundColor: isDark ? '#0C4A6E' : '#F0F9FF',
     shadowColor: '#0284C7',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.12,
@@ -750,32 +769,32 @@ const modalStyles = StyleSheet.create({
   },
   selectionCardDisabled: {
     opacity: 0.5,
-    backgroundColor: '#F8FAFC',
-    borderColor: '#E2E8F0',
+    backgroundColor: isDark ? '#0F172A' : '#F8FAFC',
+    borderColor: colors.border,
   },
   itemIconBox: {
     width: 38,
     height: 38,
     borderRadius: 10,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: isDark ? '#1E293B' : '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
   },
   itemIconBoxActive: {
-    backgroundColor: '#E0F2FE',
+    backgroundColor: isDark ? '#0369A1' : '#E0F2FE',
   },
   itemTitle: {
     fontSize: 13.5,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
   },
   itemSub: {
     fontSize: 11,
-    color: '#64748B',
+    color: colors.textMuted,
     marginTop: 2,
   },
   itemTypeBadge: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: isDark ? '#1E293B' : '#F1F5F9',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
@@ -783,27 +802,27 @@ const modalStyles = StyleSheet.create({
   itemTypeBadgeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#475569',
+    color: isDark ? '#94A3B8' : '#475569',
   },
   radioCircle: {
     width: 22,
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: '#CBD5E1',
+    borderColor: isDark ? '#475569' : '#CBD5E1',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
   },
   radioCircleActive: {
     borderColor: '#0284C7',
     backgroundColor: '#0284C7',
   },
   emptyBox: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     borderStyle: 'dashed',
     padding: 16,
     alignItems: 'center',
@@ -813,15 +832,15 @@ const modalStyles = StyleSheet.create({
   emptyText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#475569',
+    color: colors.text,
   },
   emptySubText: {
     fontSize: 11,
-    color: '#94A3B8',
+    color: colors.textMuted,
     textAlign: 'center',
   },
   pendingBadge: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: isDark ? '#451A03' : '#FEF3C7',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
@@ -829,10 +848,10 @@ const modalStyles = StyleSheet.create({
   pendingBadgeText: {
     fontSize: 9.5,
     fontWeight: '800',
-    color: '#B45309',
+    color: isDark ? '#FDE68A' : '#B45309',
   },
   busyBadge: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: isDark ? '#1E293B' : '#F1F5F9',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
@@ -840,10 +859,10 @@ const modalStyles = StyleSheet.create({
   busyBadgeText: {
     fontSize: 9.5,
     fontWeight: '700',
-    color: '#64748B',
+    color: colors.textMuted,
   },
   verifiedBadge: {
-    backgroundColor: '#DCFCE7',
+    backgroundColor: isDark ? '#064E3B' : '#DCFCE7',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
@@ -851,14 +870,14 @@ const modalStyles = StyleSheet.create({
   verifiedBadgeText: {
     fontSize: 9.5,
     fontWeight: '800',
-    color: '#15803D',
+    color: isDark ? '#6EE7B7' : '#15803D',
   },
   readyPillContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0FDF4',
+    backgroundColor: isDark ? '#064E3B' : '#F0FDF4',
     borderWidth: 1,
-    borderColor: '#BBF7D0',
+    borderColor: isDark ? '#059669' : '#BBF7D0',
     borderRadius: 12,
     padding: 12,
     gap: 10,
@@ -866,11 +885,11 @@ const modalStyles = StyleSheet.create({
   readyPillTitle: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#15803D',
+    color: isDark ? '#A7F3D0' : '#15803D',
   },
   readyPillSub: {
     fontSize: 11,
-    color: '#166534',
+    color: isDark ? '#6EE7B7' : '#166534',
     marginTop: 1,
   },
   footerContainer: {
@@ -878,8 +897,8 @@ const modalStyles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 16,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-    backgroundColor: '#FFFFFF',
+    borderTopColor: colors.border,
+    backgroundColor: colors.card,
     gap: 8,
   },
   submitButton: {
@@ -898,7 +917,7 @@ const modalStyles = StyleSheet.create({
     backgroundColor: '#0284C7',
   },
   submitButtonDisabled: {
-    backgroundColor: '#94A3B8',
+    backgroundColor: isDark ? '#334155' : '#94A3B8',
     shadowOpacity: 0,
     elevation: 0,
   },
@@ -915,6 +934,6 @@ const modalStyles = StyleSheet.create({
   cancelButtonText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#64748B',
+    color: colors.textMuted,
   },
 });

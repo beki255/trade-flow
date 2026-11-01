@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LoadItem, BidItem } from '../types';
 import { useLanguage } from '../../../context/LanguageContext';
-import { useTheme } from '../../../context/ThemeContext';
+import { useTheme, ThemeColors } from '../../../context/ThemeContext';
 
 const cleanStr = (str?: string) => (str ? String(str).replace(/^`+|`+$/g, '').trim() : '');
 
@@ -58,6 +58,8 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
   onDeleteBid,
   onNavigateToLoads,
 }) => {
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => getBiddingStyles(colors, isDark), [colors, isDark]);
   const { t, language } = useLanguage();
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'ACCEPTED' | 'REJECTED'>('ALL');
 
@@ -435,16 +437,16 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
                   {/* ACTION OR DISPATCH STATUS BOX */}
                   {b.loadStatus === 'DELIVERED' ? (
                     /* DELIVERED: Completed e-POD and Rate Shipper CTA */
-                    <View style={[styles.dispatchFooter, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
+                    <View style={[styles.dispatchFooter, { backgroundColor: isDark ? '#064E3B' : '#F0FDF4', borderColor: isDark ? '#059669' : '#BBF7D0' }]}>
                       <View style={styles.fleetInfoRow}>
-                        <View style={[styles.truckIconBadge, { backgroundColor: '#DCFCE7' }]}>
-                          <Ionicons name="checkmark-done" size={14} color="#16A34A" />
+                        <View style={[styles.truckIconBadge, { backgroundColor: isDark ? '#0C4A6E' : '#DCFCE7' }]}>
+                          <Ionicons name="checkmark-done" size={14} color={isDark ? '#6EE7B7' : '#16A34A'} />
                         </View>
                         <View style={{ flex: 1 }}>
-                          <Text style={[styles.fleetPlateText, { color: '#166534' }]} numberOfLines={1}>
+                          <Text style={[styles.fleetPlateText, { color: isDark ? '#A7F3D0' : '#166534' }]} numberOfLines={1}>
                             {language === 'AM' ? 'ደርሷል • በዲጂታል ርክክብ (e-POD) ተጠናቋል' : language === 'OM' ? 'Ga’eera • e-POD dhaan walharkaa fuudhame' : 'Delivered • Handed Over via e-POD'}
                           </Text>
-                          <Text style={[styles.fleetStatusSubText, { color: '#15803D' }]}>
+                          <Text style={[styles.fleetStatusSubText, { color: isDark ? '#6EE7B7' : '#15803D' }]}>
                             {b.dispatchedTruck ? `${language === 'AM' ? 'መኪና:' : language === 'OM' ? 'Konkolaataa:' : 'Fleet:'} ${b.dispatchedTruck} • ` : ''}{language === 'AM' ? 'የኤስክሮው ክፍያ ተፈጽሟል' : language === 'OM' ? 'Kaffaltiin Mirkanaa\'e' : 'Escrow Payout Settled'}
                           </Text>
                         </View>
@@ -514,14 +516,14 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
                     </View>
                   ) : isAccepted ? (
                     !b.isEscrowLocked ? (
-                      <View style={{ backgroundColor: '#FFFBEB', borderColor: '#FDE68A', borderWidth: 1, borderRadius: 12, padding: 10, gap: 4 }}>
+                      <View style={{ backgroundColor: isDark ? '#451A03' : '#FFFBEB', borderColor: isDark ? '#B45309' : '#FDE68A', borderWidth: 1, borderRadius: 12, padding: 10, gap: 4 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          <Ionicons name="lock-closed" size={13} color="#D97706" />
-                          <Text style={{ fontSize: 12, fontWeight: '800', color: '#92400E' }}>
+                          <Ionicons name="lock-closed" size={13} color="#F59E0B" />
+                          <Text style={{ fontSize: 12, fontWeight: '800', color: isDark ? '#FDE68A' : '#92400E' }}>
                             {language === 'AM' ? 'አሸንፈዋል • የላኪው የኤስክሮው ተቀማጭ በመጠባበቅ ላይ' : language === 'OM' ? 'Injifattaniittu • Qabsiisa kaffaltii eegaa jira' : 'Won • Awaiting Shipper Escrow Deposit'}
                           </Text>
                         </View>
-                        <Text style={{ fontSize: 11, color: '#B45309' }}>
+                        <Text style={{ fontSize: 11, color: isDark ? '#FCD34D' : '#B45309' }}>
                           {language === 'AM'
                             ? 'ላኪው ክፍያውን በTradeFlow ኤስክሮው እስኪያሲዝ ድረስ ተሽከርካሪ መመደብ አይቻልም። ክፍያው ሲገባ ማሳወቂያ ይደርስዎታል!'
                             : language === 'OM'
@@ -578,7 +580,7 @@ export const BiddingTab: React.FC<BiddingTabProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const getBiddingStyles = (colors: ThemeColors, isDark: boolean) => StyleSheet.create({
   container: {
     paddingHorizontal: 16,
     paddingTop: 12,
@@ -593,12 +595,12 @@ const styles = StyleSheet.create({
   pageTitle: {
     fontSize: 20,
     fontWeight: '900',
-    color: '#0F172A',
+    color: colors.text,
     letterSpacing: -0.4,
   },
   pageSubtitle: {
     fontSize: 12,
-    color: '#64748B',
+    color: colors.textMuted,
     marginTop: 1,
   },
   findLoadsBtn: {
@@ -629,29 +631,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 13,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: isDark ? '#334155' : '#E2E8F0',
   },
   filterChipActive: {
-    backgroundColor: '#0F172A',
-    borderColor: '#0F172A',
+    backgroundColor: isDark ? '#0284C7' : '#0F172A',
+    borderColor: '#0284C7',
   },
   filterChipText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#64748B',
+    color: colors.textMuted,
   },
   filterChipTextActive: {
     color: '#FFFFFF',
     fontWeight: '800',
   },
   quoteCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     gap: 8,
     ...Platform.select({
       web: {
@@ -663,14 +665,14 @@ const styles = StyleSheet.create({
   quoteCardAccepted: {
     borderLeftWidth: 3.5,
     borderLeftColor: '#10B981',
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
   },
   quoteCardRejected: {
     borderLeftWidth: 3.5,
     borderLeftColor: '#EF4444',
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
   },
   quoteCardTop: {
     flexDirection: 'row',
@@ -680,20 +682,20 @@ const styles = StyleSheet.create({
   quoteTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
     letterSpacing: -0.2,
     textTransform: 'capitalize',
   },
   shipperSubText: {
     fontSize: 11.5,
-    color: '#64748B',
+    color: colors.textMuted,
     marginTop: 2,
     fontWeight: '500',
   },
   quotePrice: {
     fontSize: 15.5,
     fontWeight: '900',
-    color: '#0F172A',
+    color: colors.text,
   },
   miniBadge: {
     flexDirection: 'row',
@@ -705,16 +707,16 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   miniBadgeDispatched: {
-    backgroundColor: '#ECFDF5',
+    backgroundColor: isDark ? '#064E3B' : '#ECFDF5',
   },
   miniBadgeWon: {
-    backgroundColor: '#DCFCE7',
+    backgroundColor: isDark ? '#064E3B' : '#DCFCE7',
   },
   miniBadgePending: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: isDark ? '#451A03' : '#FEF3C7',
   },
   miniBadgeRejected: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: isDark ? '#1E293B' : '#F1F5F9',
   },
   statusDot: {
     width: 5,
@@ -735,7 +737,7 @@ const styles = StyleSheet.create({
   routeValueText: {
     fontSize: 12.5,
     fontWeight: '700',
-    color: '#1E293B',
+    color: colors.text,
     flex: 1,
     flexWrap: 'wrap',
     lineHeight: 18,
@@ -747,43 +749,43 @@ const styles = StyleSheet.create({
   },
   metaDetailsText: {
     fontSize: 11,
-    color: '#94A3B8',
+    color: colors.textMuted,
     fontWeight: '500',
   },
   dispatchFooter: {
     marginTop: 2,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: isDark ? '#334155' : '#F1F5F9',
   },
   fleetInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: isDark ? '#334155' : '#E2E8F0',
   },
   truckIconBadge: {
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: '#ECFDF5',
+    backgroundColor: isDark ? '#0C4A6E' : '#ECFDF5',
     alignItems: 'center',
     justifyContent: 'center',
   },
   fleetPlateText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#0F172A',
+    color: colors.text,
   },
   fleetStatusSubText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#059669',
+    color: isDark ? '#34D399' : '#059669',
     marginTop: 1,
   },
   dispatchActionBtn: {
@@ -814,7 +816,7 @@ const styles = StyleSheet.create({
   notesText: {
     fontSize: 11,
     fontStyle: 'italic',
-    color: '#64748B',
+    color: colors.textMuted,
     flex: 1,
     marginRight: 8,
   },
@@ -830,24 +832,24 @@ const styles = StyleSheet.create({
     color: '#DC2626',
   },
   emptyCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 20,
     padding: 30,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     marginTop: 10,
     gap: 8,
   },
   emptyTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
   },
   emptySubtitle: {
     fontSize: 12,
-    color: '#64748B',
+    color: colors.textMuted,
     textAlign: 'center',
   },
   browseBtn: {
@@ -866,9 +868,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#ECFDF5',
+    backgroundColor: isDark ? '#064E3B' : '#ECFDF5',
     borderWidth: 1,
-    borderColor: '#A7F3D0',
+    borderColor: isDark ? '#059669' : '#A7F3D0',
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
@@ -877,7 +879,7 @@ const styles = StyleSheet.create({
   successText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#047857',
+    color: isDark ? '#A7F3D0' : '#047857',
   },
   formContainer: {
     gap: 12,
@@ -889,31 +891,31 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingVertical: 6,
     paddingHorizontal: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: isDark ? '#334155' : '#E2E8F0',
   },
   backBtnText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#0F172A',
+    color: colors.text,
   },
   loadSummaryCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     gap: 4,
   },
   loadTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
   },
   cargoBadge: {
-    backgroundColor: '#E0F2FE',
+    backgroundColor: isDark ? '#0C4A6E' : '#E0F2FE',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 6,
@@ -921,13 +923,13 @@ const styles = StyleSheet.create({
   cargoBadgeText: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#0369A1',
+    color: isDark ? '#38BDF8' : '#0369A1',
     textTransform: 'uppercase',
   },
   routeText: {
     fontSize: 12.5,
     fontWeight: '700',
-    color: '#1E293B',
+    color: colors.text,
     flex: 1,
     flexWrap: 'wrap',
     lineHeight: 18,
@@ -938,19 +940,19 @@ const styles = StyleSheet.create({
     marginTop: 6,
     paddingTop: 6,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: isDark ? '#334155' : '#F1F5F9',
   },
   metaText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#64748B',
+    color: colors.textMuted,
   },
   inputCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 20,
     padding: 18,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     gap: 12,
   },
   inputGroup: {
@@ -959,17 +961,17 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#334155',
+    color: colors.text,
   },
   inputField: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: isDark ? '#334155' : '#E2E8F0',
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 9,
     fontSize: 13,
-    color: '#0F172A',
+    color: colors.text,
   },
   primaryActionBtn: {
     backgroundColor: '#0284C7',
@@ -991,6 +993,6 @@ const styles = StyleSheet.create({
   cancelLinkText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#64748B',
+    color: colors.textMuted,
   },
 });

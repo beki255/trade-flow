@@ -189,8 +189,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
               activeOpacity={0.7}
               onPress={() => Linking.openURL('https://tradeflow.et').catch(() => {})}
             >
-              <Text style={[styles.footerLinkText, { color: isDark ? '#38BDF8' : '#0284C7' }]}>
-                TradeFlow
+              <Text style={styles.footerLinkText}>
+                teleHub
               </Text>
             </TouchableOpacity>
 
@@ -198,7 +198,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
               activeOpacity={0.7}
               onPress={() => Linking.openURL('tel:9924').catch(() => {})}
             >
-              <Text style={[styles.footerLinkText, { color: isDark ? '#38BDF8' : '#0284C7' }]}>
+              <Text style={styles.footerLinkText}>
                 {language === 'AM' ? 'እርዳታ' : language === 'OM' ? 'Gargaarsa' : 'Help'}
               </Text>
             </TouchableOpacity>
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingTop: Platform.OS === 'android' ? 6 : 8,
-    paddingBottom: Platform.OS === 'android' ? 84 : 28,
+    paddingBottom: Platform.OS === 'android' ? 36 : 20,
     width: '100%',
   },
 
@@ -232,28 +232,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'android' ? Math.max((StatusBar.currentHeight || 0) + 8, 36) : 8,
-    position: 'relative',
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 12) + 8 : 12,
     minHeight: 52,
   },
   headerLeftSpacer: {
     width: 60,
   },
   brandTitleContainer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: -1,
   },
   brandLogo: {
     width: 135,
     height: 38,
   },
   headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    width: 60,
+    alignItems: 'flex-end',
   },
 
   // Carousel Area
@@ -321,13 +317,13 @@ const styles = StyleSheet.create({
   buttonsWrapper: {
     width: '100%',
     paddingHorizontal: 24,
-    gap: 14,
-    paddingBottom: Platform.OS === 'android' ? 14 : 8,
-    marginTop: 4,
+    gap: 12,
+    paddingBottom: Platform.OS === 'android' ? 12 : 8,
+    marginTop: 8,
   },
   loginButton: {
     backgroundColor: '#0284C7',
-    paddingVertical: 15,
+    paddingVertical: 14,
     borderRadius: 16,
     alignItems: 'center',
     ...Platform.select({
@@ -353,7 +349,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 4,
+    paddingTop: 2,
   },
   registerPrompt: {
     fontSize: 13,
@@ -362,18 +358,18 @@ const styles = StyleSheet.create({
   registerLink: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#0284C7',
+    color: '#7CB342', // Telebirr brand green
   },
   footerLinksRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 52,
-    paddingTop: 6,
+    gap: 60,
+    paddingTop: 4,
   },
   footerLinkText: {
     fontSize: 13.5,
     fontWeight: '700',
-    color: '#0284C7',
+    color: '#7CB342', // Telebirr brand green
   },
 });

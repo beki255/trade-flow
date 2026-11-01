@@ -1,11 +1,12 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { transporterStyles as styles } from '../transporterStyles';
+import { useTransporterStyles } from '../transporterStyles';
 import { UserProfile } from '../types';
 import { LanguageSwitcher } from '../../../components/LanguageSwitcher';
 import { ThemeToggle } from '../../../components/ThemeToggle';
 import { useLanguage } from '../../../context/LanguageContext';
+import { useTheme } from '../../../context/ThemeContext';
 
 interface TransporterHeaderProps {
   user?: UserProfile;
@@ -24,7 +25,9 @@ export const TransporterHeader: React.FC<TransporterHeaderProps> = ({
   unreadCount = 0,
   onLogout,
 }) => {
+  const styles = useTransporterStyles();
   const { t, language } = useLanguage();
+  const { colors, isDark } = useTheme();
 
   return (
     <View style={styles.topHeader}>
@@ -79,16 +82,16 @@ export const TransporterHeader: React.FC<TransporterHeaderProps> = ({
               width: 32,
               height: 32,
               borderRadius: 16,
-              backgroundColor: '#1E293B',
+              backgroundColor: isDark ? '#1E293B' : '#F1F5F9',
               alignItems: 'center',
               justifyContent: 'center',
               borderWidth: 1,
-              borderColor: '#334155',
+              borderColor: isDark ? '#334155' : '#E2E8F0',
             }}
             activeOpacity={0.7}
             accessibilityLabel="Notifications"
           >
-            <Ionicons name="notifications-outline" size={16} color="#F8FAFC" />
+            <Ionicons name="notifications-outline" size={16} color={colors.text} />
             {unreadCount > 0 && (
               <View
                 style={{
@@ -103,7 +106,7 @@ export const TransporterHeader: React.FC<TransporterHeaderProps> = ({
                   justifyContent: 'center',
                   paddingHorizontal: 2,
                   borderWidth: 1.5,
-                  borderColor: '#0F172A',
+                  borderColor: isDark ? '#0F172A' : '#FFFFFF',
                 }}
               >
                 <Text style={{ color: '#FFFFFF', fontSize: 8.5, fontWeight: '900' }}>
@@ -114,7 +117,7 @@ export const TransporterHeader: React.FC<TransporterHeaderProps> = ({
           </TouchableOpacity>
         )}
         <ThemeToggle compact />
-        <LanguageSwitcher dark={true} />
+        <LanguageSwitcher dark={isDark} />
       </View>
     </View>
   );

@@ -9,6 +9,7 @@ import { useTransporterStyles } from '../transporterStyles';
 import { UserProfile, BidItem } from '../types';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../../../context/LanguageContext';
+import { useTheme } from '../../../context/ThemeContext';
 import { apiFetch } from '../../../utils/api';
 
 interface EarningsTabProps {
@@ -19,6 +20,7 @@ interface EarningsTabProps {
 export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = [] }) => {
   const styles = useTransporterStyles();
   const { t, language } = useLanguage();
+  const { colors, isDark } = useTheme();
   const [payments, setPayments] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -174,16 +176,16 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 4,
-                backgroundColor: '#F0F9FF',
+                backgroundColor: isDark ? '#0C4A6E' : '#F0F9FF',
                 paddingHorizontal: 8,
                 paddingVertical: 4,
                 borderRadius: 6,
                 borderWidth: 1,
-                borderColor: '#BAE6FD',
+                borderColor: isDark ? '#0284C7' : '#BAE6FD',
               }}
             >
-              <Ionicons name="refresh" size={11} color="#0284C7" />
-              <Text style={{ fontSize: 9.5, fontWeight: '700', color: '#0284C7' }}>
+              <Ionicons name="refresh" size={11} color={isDark ? '#38BDF8' : '#0284C7'} />
+              <Text style={{ fontSize: 9.5, fontWeight: '700', color: isDark ? '#38BDF8' : '#0284C7' }}>
                 {language === 'AM' ? 'አድስ' : language === 'OM' ? 'Haaresi' : 'Refresh'}
               </Text>
             </TouchableOpacity>
@@ -191,15 +193,15 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
         </View>
 
         {payments.length === 0 ? (
-          <View style={{ backgroundColor: '#F8FAFC', borderRadius: 10, padding: 14, alignItems: 'center' }}>
+          <View style={{ backgroundColor: isDark ? '#1E293B' : '#F8FAFC', borderRadius: 10, padding: 14, alignItems: 'center' }}>
             {loading ? (
               <ActivityIndicator size="small" color="#0284C7" style={{ marginVertical: 8 }} />
             ) : (
               <>
-                <Text style={{ fontSize: 11, fontWeight: '700', color: '#64748B' }}>
+                <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textMuted }}>
                   {t('noPaymentsYet')}
                 </Text>
-                <Text style={{ fontSize: 9.5, color: '#94A3B8', marginTop: 2, textAlign: 'center' }}>
+                <Text style={{ fontSize: 9.5, color: colors.textMuted, marginTop: 2, textAlign: 'center' }}>
                   {t('noPaymentsYetSub')}
                 </Text>
               </>
@@ -222,15 +224,15 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
               <View
                 key={pay.id}
                 style={{
-                  backgroundColor: '#FFFFFF',
+                  backgroundColor: colors.card,
                   borderRadius: 12,
                   padding: 11,
                   marginBottom: 8,
                   borderWidth: 1.5,
-                  borderColor: isSettled ? '#86EFAC' : '#E2E8F0',
+                  borderColor: isSettled ? (isDark ? '#059669' : '#86EFAC') : colors.border,
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.05,
+                  shadowOpacity: isDark ? 0.2 : 0.05,
                   shadowRadius: 2,
                   elevation: 1,
                 }}
@@ -240,9 +242,9 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
                     <Ionicons
                       name={pay.paymentMethod === 'CBE_BIRR' ? 'business' : 'phone-portrait'}
                       size={13}
-                      color="#0284C7"
+                      color={isDark ? '#38BDF8' : '#0284C7'}
                     />
-                    <Text style={{ fontSize: 11, fontFamily: 'monospace', fontWeight: '800', color: '#0F172A' }}>
+                    <Text style={{ fontSize: 11, fontFamily: 'monospace', fontWeight: '800', color: colors.text }}>
                       {txNo}
                     </Text>
                   </View>
@@ -251,20 +253,24 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
                       paddingHorizontal: 8,
                       paddingVertical: 3,
                       borderRadius: 6,
-                      backgroundColor: isSettled ? '#DCFCE7' : '#FEF3C7',
+                      backgroundColor: isSettled
+                        ? (isDark ? '#064E3B' : '#DCFCE7')
+                        : (isDark ? '#451A03' : '#FEF3C7'),
                     }}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                       {isSettled ? (
-                        <Ionicons name="checkmark-circle" size={11} color="#166534" />
+                        <Ionicons name="checkmark-circle" size={11} color={isDark ? '#6EE7B7' : '#166534'} />
                       ) : (
-                        <Ionicons name="lock-closed" size={10} color="#92400E" />
+                        <Ionicons name="lock-closed" size={10} color={isDark ? '#FDE68A' : '#92400E'} />
                       )}
                       <Text
                         style={{
                           fontSize: 8.5,
                           fontWeight: '900',
-                          color: isSettled ? '#166534' : '#92400E',
+                          color: isSettled
+                            ? (isDark ? '#6EE7B7' : '#166534')
+                            : (isDark ? '#FDE68A' : '#92400E'),
                         }}
                       >
                         {isSettled
@@ -276,22 +282,22 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
                 </View>
 
                 {/* Cargo & Route details */}
-                <View style={{ marginTop: 6, paddingVertical: 4, borderTopWidth: 1, borderTopColor: '#F1F5F9' }}>
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#1E293B' }} numberOfLines={1}>
+                <View style={{ marginTop: 6, paddingVertical: 4, borderTopWidth: 1, borderTopColor: isDark ? '#334155' : '#F1F5F9' }}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: colors.text }} numberOfLines={1}>
                     {language === 'AM' ? 'ጭነት:' : language === 'OM' ? 'Fe\'isa:' : 'Cargo:'} {cargoTitle}
                   </Text>
-                  <Text style={{ fontSize: 9.5, color: '#64748B' }} numberOfLines={1}>
+                  <Text style={{ fontSize: 9.5, color: colors.textMuted }} numberOfLines={1}>
                     {originLocation.split(',')[0]} → {destLocation.split(',')[0]}
                   </Text>
                 </View>
 
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 4, paddingTop: 6, borderTopWidth: 1, borderTopColor: '#F1F5F9' }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 4, paddingTop: 6, borderTopWidth: 1, borderTopColor: isDark ? '#334155' : '#F1F5F9' }}>
                   <View>
-                    <Text style={{ fontSize: 9.5, color: '#64748B' }}>
+                    <Text style={{ fontSize: 9.5, color: colors.textMuted }}>
                       {language === 'AM' ? 'ጠቅላላ:' : language === 'OM' ? 'Waliigala:' : 'Gross:'} {grossAmount.toLocaleString()} ETB ({language === 'AM' ? '5% የአገልግሎት ክፍያ' : language === 'OM' ? 'Kaffaltii 5%' : '5% fee'})
                     </Text>
                     {settledDate && (
-                      <Text style={{ fontSize: 9, color: '#94A3B8', marginTop: 1 }}>
+                      <Text style={{ fontSize: 9, color: colors.textMuted, marginTop: 1 }}>
                         {isSettled
                           ? (language === 'AM' ? 'የተከፈለበት: ' : language === 'OM' ? 'Kan Kaffalame: ' : 'Settled: ')
                           : (language === 'AM' ? 'የተቀመጠበት: ' : language === 'OM' ? 'Kan Qabame: ' : 'Deposited: ')}
@@ -300,7 +306,7 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
                     )}
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={{ fontSize: 8.5, color: '#64748B', fontWeight: '600' }}>
+                    <Text style={{ fontSize: 8.5, color: colors.textMuted, fontWeight: '600' }}>
                       {language === 'AM' ? 'የአጓጓዥ የተጣራ' : language === 'OM' ? 'Qulqulluu Geejjibaa' : 'Transporter Net'}
                     </Text>
                     <Text style={{ fontSize: 13, fontWeight: '900', color: isSettled ? '#059669' : '#0284C7' }}>
@@ -328,7 +334,7 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
               <Text style={{ fontSize: 18, fontWeight: '900', color: hasRatings ? '#D97706' : '#94A3B8' }}>{ratingAvg}</Text>
               <Ionicons name="star" size={16} color={hasRatings ? '#F59E0B' : '#CBD5E1'} />
             </View>
-            <Text style={{ fontSize: 10, color: '#64748B' }}>
+            <Text style={{ fontSize: 10, color: colors.textMuted }}>
               {hasRatings
                 ? (language === 'AM' ? `${reviews.length} የተረጋገጡ ግምገማዎች` : language === 'OM' ? `Qorannoowwan ${reviews.length} mirkanaa\'an` : `${reviews.length} verified reviews`)
                 : (language === 'AM' ? 'አዲስ አጓጓዥ (ደረጃ ያልተሰጠው)' : language === 'OM' ? 'Geejjibaa Haaraa' : 'New Carrier (Unrated)')}
@@ -338,26 +344,26 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
 
         <View style={styles.cardDivider} />
 
-        <Text style={{ fontSize: 11, fontWeight: '800', color: '#1E293B', marginTop: 2, marginBottom: 6 }}>
+        <Text style={{ fontSize: 11, fontWeight: '800', color: colors.text, marginTop: 2, marginBottom: 6 }}>
           {t('recentReviews')}
         </Text>
         {reviews.length === 0 ? (
-          <View style={{ backgroundColor: '#F8FAFC', borderRadius: 10, padding: 14, alignItems: 'center' }}>
-            <Text style={{ fontSize: 11, fontWeight: '700', color: '#64748B' }}>
+          <View style={{ backgroundColor: isDark ? '#1E293B' : '#F8FAFC', borderRadius: 10, padding: 14, alignItems: 'center' }}>
+            <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textMuted }}>
               {t('noReviewsYet')}
             </Text>
-            <Text style={{ fontSize: 9.5, color: '#94A3B8', marginTop: 2, textAlign: 'center' }}>
+            <Text style={{ fontSize: 9.5, color: colors.textMuted, marginTop: 2, textAlign: 'center' }}>
               {t('noReviewsYetSub')}
             </Text>
           </View>
         ) : (
           reviews.map((rev) => (
-            <View key={rev.id} style={{ backgroundColor: '#F8FAFC', borderRadius: 10, padding: 12, marginBottom: 6 }}>
-              <Text style={{ fontSize: 11, fontWeight: '700', color: '#1E293B' }}>
+            <View key={rev.id} style={{ backgroundColor: isDark ? '#1E293B' : '#F8FAFC', borderRadius: 10, padding: 12, marginBottom: 6 }}>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: colors.text }}>
                 "{rev.comment || rev.reviewText || (language === 'AM' ? 'በሰዓቱ ደርሷል።' : 'Delivered on time.')}"
               </Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                <Text style={{ fontSize: 9.5, color: '#64748B' }}>
+                <Text style={{ fontSize: 9.5, color: colors.textMuted }}>
                   — {rev.fromUser?.companyName || rev.fromUser?.fullName || (language === 'AM' ? 'የተረጋገጠ ላኪ' : language === 'OM' ? 'Ergaa Mirkanaa\'e' : 'Verified Shipper')} •
                 </Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -365,7 +371,7 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
                     <Ionicons key={s} name="star" size={10} color="#F59E0B" />
                   ))}
                 </View>
-                <Text style={{ fontSize: 9.5, color: '#64748B' }}>({rev.scoreStars || 5}.0)</Text>
+                <Text style={{ fontSize: 9.5, color: colors.textMuted }}>({rev.scoreStars || 5}.0)</Text>
               </View>
             </View>
           ))
@@ -373,9 +379,9 @@ export const EarningsTab: React.FC<EarningsTabProps> = ({ user, submittedBids = 
       </View>
 
       {/* Smart Escrow Safety Summary */}
-      <View style={[styles.card, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
-        <Text style={[styles.cardTitle, { color: '#166534' }]}>{t('escrowProtectedBoxTitle')}</Text>
-        <Text style={{ fontSize: 11, color: '#166534', lineHeight: 16 }}>
+      <View style={[styles.card, { backgroundColor: isDark ? '#064E3B' : '#F0FDF4', borderColor: isDark ? '#059669' : '#BBF7D0' }]}>
+        <Text style={[styles.cardTitle, { color: isDark ? '#A7F3D0' : '#166534' }]}>{t('escrowProtectedBoxTitle')}</Text>
+        <Text style={{ fontSize: 11, color: isDark ? '#D1FAE5' : '#166534', lineHeight: 16 }}>
           {t('escrowProtectedBoxDesc')}
         </Text>
       </View>
