@@ -58,7 +58,7 @@ Scan this QR code with any smartphone camera to instantly download and install t
 - [5. Digital Smart Escrow Protocol & Settlements](#ch5) (Page 11)
 - [6. Corridor Telematics, GPS Geofencing & Offline Sync](#ch6) (Page 12)
 - [7. Single-Window Customs Clearance & QR Pass](#ch7) (Page 14)
-- [8. Driver Mobile Application (React Native Expo SDK 52)](#ch8) (Page 15)
+- [8. Driver Mobile Application (React Native Expo SDK 58)](#ch8) (Page 15)
 - [9. Transporter Fleet Management Portal](#ch9) (Page 16)
 - [10. Shipper & Customs Commission Web Portals](#ch10) (Page 17)
 - [11. Trilingual Localization & Ergonomic Theming](#ch11) (Page 18)
@@ -142,8 +142,8 @@ The TradeFlow platform is architected as a modular TypeScript monorepo managed w
 ```
 tradeflow-v2/
 ├── apps/
-│   ├── web/               # Next.js 14 App Router, Tailwind CSS, Leaflet GIS, Lucide Icons
-│   └── mobile/            # React Native Expo SDK 52, expo-location, SQLite offline queue
+│   ├── web/               # Vite 5 + React 18 SPA, React Router DOM v6, Tailwind CSS, Leaflet GIS
+│   └── mobile/            # React Native Expo SDK 58, React Native 0.88, expo-location, SQLite/Storage
 ├── services/
 │   └── api/               # Node.js + Express + TypeScript REST API Microservice
 ├── packages/
@@ -291,7 +291,7 @@ The Galafi border post separating Ethiopia and Djibouti is the primary bottlenec
 ---
 
 <a id="ch8"></a>
-## 8. Driver Mobile Application (React Native Expo SDK 52)
+## 8. Driver Mobile Application (React Native Expo SDK 58)
 
 Engineered for extreme durability and offline resilience:
 - Dynamic Waypoint Check-Ins with 15 km Haversine geofence unlocking.
@@ -314,7 +314,7 @@ Engineered for extreme durability and offline resilience:
 <a id="ch10"></a>
 ## 10. Shipper & Customs Web Portals
 
-- Next.js 14 tender creation wizard with automated distance calculation.
+- Vite + React 18 tender creation wizard with interactive GPS map coordinate picker.
 - Live Leaflet GIS corridor tracking map with real-time speed and heading.
 - Ethiopian Customs Commission (ECC) pre-arrival manifest queue and gate scanner.
 - One-click delivery review and atomic escrow release.
@@ -333,10 +333,19 @@ Engineered for extreme durability and offline resilience:
 <a id="ch12"></a>
 ## 12. Backend REST API Architecture
 
-- Express.js controller-service architecture.
-- 15+ real endpoints covering Auth, Loads, Bids, Shipments, Escrow, Customs, Incidents, and Telematics.
-- Interactive Swagger OpenAPI documentation (`/api/docs`).
-- Health and metrics check (`/api/health`).
+- **Modular Express.js Controller-Service Architecture:** Strictly separates route definitions, business controllers, and Prisma PostgreSQL persistence.
+- **22+ Real Production Endpoints Cataloged via Swagger (`/api/docs`):**
+  - `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`: Multi-role JWT authentication and session state.
+  - `GET /api/portal/loads`, `POST /api/portal/loads`: Freight tender publication, searching, and status transitions.
+  - `GET /api/portal/bids`, `POST /api/portal/bids`, `POST /api/portal/bids/respond`: Transparent carrier bidding and bid awarding.
+  - `POST /api/payments/initiate`: TeleBirr / CBE Birr escrow funding with 5% platform commission lock.
+  - `POST /api/payments/settle`: Automated 95% carrier wallet disbursement upon electronic Proof-of-Delivery (e-POD).
+  - `POST /api/tracking/telemetry`, `GET /api/tracking/live`: Background mobile GPS telemetry and Leaflet live truck tracking.
+  - `POST /api/portal/driver/checkin`: Geofence check-ins across all 11 Ethio-Djibouti corridor transit waypoints.
+  - `POST /api/customs/documents`, `GET /api/customs/queue`, `PATCH /api/customs/shipments/:id/clearance`: Single-window customs review and dynamic QR pass verification.
+  - `POST /api/optimization/incident`, `GET /api/optimization/incidents`: Crowdsourced driver road hazard reporting.
+  - `POST /api/pricing/spot-rate`, `GET /api/pricing/contracts`: Dynamic algorithmic pricing engine.
+- **Operational Health Check:** Live cloud monitor at `/api/health`.
 
 ---
 
@@ -364,7 +373,7 @@ Engineered for extreme durability and offline resilience:
 1. **Afar Desert Cellular Dropouts:** Solved via local AsyncStorage FIFO queue and exponential backoff sync.
 2. **Samsung Galaxy A13 Dark Mode Contrast:** Solved via dynamic React style hooks (`getDriverStyles(theme)`).
 3. **Escrow Double Payout Race Conditions:** Solved via atomic `prisma.$transaction` database locking.
-4. **Expo SDK 52 Native Build Failures:** Solved via custom Expo config plugins and Gradle memory tuning in `eas.json`.
+4. **Expo SDK 58 Native Build Failures:** Solved via custom Expo config plugins and Gradle memory tuning in `eas.json`.
 5. **Mountainous Geofence False Positives:** Solved by combining the 15 km threshold with chronological waypoint ordering.
 
 ---
